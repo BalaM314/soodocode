@@ -32,25 +32,41 @@ function executeLine(line, context) {
 }
 function executeSoodocode() {
 }
+let firstRun = false;
 document.getElementById("run-button").addEventListener("click", e => {
+    if (firstRun)
+        return;
+    firstRun = true;
     document.getElementById("run-button").innerText = "Processing, please wait...";
-    const iframe = document.createElement("iframe");
-    iframe.id = "rickroll-frame";
-    iframe.width = "560px";
-    iframe.height = "315px";
-    iframe.src = "https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0";
-    iframe.frameBorder = "0";
-    iframe.allow = "autoplay";
-    iframe.allowFullscreen = true;
-    iframe.classList.add("behind");
+    // const iframe = document.createElement("iframe");
+    // iframe.id = "rickroll-frame";
+    // iframe.width = "560px";
+    // iframe.height = "315px";
+    // iframe.src = "https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0";
+    // iframe.frameBorder = "0";
+    // iframe.allow = "autoplay";
+    // iframe.allowFullscreen = true;
+    // iframe.classList.add("behind");
+    // setTimeout(() => {
+    // 	document.getElementById("input-wrapper")?.appendChild(iframe);
+    // }, 2500);
     setTimeout(() => {
-        var _a;
-        (_a = document.getElementById("input-wrapper")) === null || _a === void 0 ? void 0 : _a.appendChild(iframe);
-    }, 2500);
+        document.getElementById("run-button").innerText = "An error occurred while executing the program: Segmentation fault (core dumped)";
+    }, 500);
     setTimeout(() => {
-        var _a;
-        iframe.classList.remove("behind");
-        (_a = document.getElementById("soodocode-input")) === null || _a === void 0 ? void 0 : _a.remove();
-        document.getElementById("run-button").innerText = "An error occurred while executing the program.";
-    }, 3000);
+        // iframe.classList.remove("behind");
+        // document.getElementById("soodocode-input")?.remove();
+        open("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+        document.getElementById("soodocode-input").textContent =
+            `\
+DECLARE Count: INTEGER
+OUTPUT "Never gonna give you up"
+OUTPUT "Never gonna let you down"
+OUTPUT "Never gonna run around and desert you"
+FOR Count <- 1 TO 100
+		CALL RickRoll(you)
+		OUTPUT "Happy April Fools' Day!"
+NEXT Count
+`;
+    }, 1000);
 });
