@@ -75,3 +75,24 @@ function executeLine(line:string, context:ExecutionContext){
 function executeSoodocode(){
 
 }
+
+document.getElementById("run-button")!.addEventListener("click", e => {
+	document.getElementById("run-button")!.innerText = "Processing, please wait...";
+	const iframe = document.createElement("iframe");
+	iframe.id = "rickroll-frame";
+	iframe.width = "560px";
+	iframe.height = "315px";
+	iframe.src = "https://www.youtube.com/embed/dQw4w9WgXcQ?controls=0";
+	iframe.frameBorder = "0";
+	iframe.allow = "autoplay";
+	iframe.allowFullscreen = true;
+	iframe.classList.add("behind");
+	setTimeout(() => {
+		document.getElementById("input-wrapper")?.appendChild(iframe);
+	}, 2500);
+	setTimeout(() => {
+		iframe.classList.remove("behind");
+		document.getElementById("soodocode-input")?.remove();
+		document.getElementById("run-button")!.innerText = "An error occurred while executing the program.";
+	}, 3000);
+});

@@ -28,3 +28,12 @@ html {
 #run-button {
 	font-size: larger;
 }
+#input-wrapper {
+	margin: 0px;
+	padding: 0px;
+	border: 0px;
+}
+.behind {
+	position: absolute;
+	z-index: -1;
+}
