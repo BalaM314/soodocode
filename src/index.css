@@ -1,0 +1,30 @@
+#container {
+	margin: 20px;
+	border: ridge green 10px;
+	padding: 15px;
+	background-color: #002;
+	color: whitesmoke;
+	font-size: 20px;
+}
+body {
+	margin-top: 0px;
+	background-image: url("https://balam314.github.io/starfield.png");
+	background-repeat: no-repeat;
+	background-color: #000;
+	height: 100%;
+	overflow-y: scroll;
+}
+html {
+	height: 100%;
+	overflow: hidden;
+}
+#soodocode-input {
+	font-size: larger;
+	margin: 20px;
+	padding: 10px;
+	background-color: #051505;
+	color: #FFF;
+}
+#run-button {
+	font-size: larger;
+}

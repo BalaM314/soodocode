@@ -1,0 +1,30 @@
+{
+  "name": "soodocode",
+  "version": "1.0.0",
+  "description": "Runtime and checker for Cambridge Computer Science pseudocode",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BalaM314/soodocode.git"
+  },
+  "keywords": [
+    "cambridge",
+    "pseudocode",
+    "runtime",
+    "igcse",
+    "as-a-levels"
+  ],
+  "author": "BalaM314",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/BalaM314/soodocode/issues"
+  },
+  "homepage": "https://github.com/BalaM314/soodocode#readme",
+  "devDependencies": {
+    "@types/jasmine": "^4.3.1",
+    "jasmine": "^4.6.0"
+  }
+}
