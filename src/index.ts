@@ -1,6 +1,15 @@
-
-
-
+/*
+temp0.onkeydown = e => {
+	if(e.key == "Tab"){
+		e.preventDefault();
+		const start = temp0.selectionStart;
+		let x = temp0.value.split("");
+		x.splice(start, 0, "\t");
+		temp0.value = x.join("");
+		temp0.selectionStart = temp0.selectionEnd = start + 1;
+	}
+}
+*/
 interface ExecutionContext {
 	variables: {
 		[index: string]: VariableData;
