@@ -11,6 +11,19 @@ function getElement(id, type) {
 const title = getElement("title", HTMLHeadingElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const runButton = getElement("run-button", HTMLButtonElement);
+soodocodeInput.onkeydown = e => {
+    if (e.key == "Tab") {
+        e.preventDefault();
+        //Save cursor position
+        const start = soodocodeInput.selectionStart;
+        //Insert tab
+        let x = soodocodeInput.value.split("");
+        x.splice(start, 0, "\t");
+        soodocodeInput.value = x.join("");
+        //Replace cursor position
+        soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
+    }
+};
 runButton.addEventListener("click", e => {
     if (firstRun)
         return;
