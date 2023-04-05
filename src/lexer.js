@@ -75,6 +75,12 @@ export const FirstTokenizer = {
                 str.write(["operator", "less_than_equal"]);
             else if (str.cons("<>"))
                 str.write(["operator", "not_equal_to"]);
+            else if (str.cons("//"))
+                str.write(["comment", "singleline"]);
+            else if (str.cons("/*"))
+                str.write(["comment", "multiline_open"]);
+            else if (str.cons("*/"))
+                str.write(["comment", "multiline_close"]);
             else if (str.cons("="))
                 str.write(["operator", "equal_to"]);
             else if (str.cons(">"))

@@ -17,6 +17,7 @@ type TokenType =
 	["bracket", "open" | "close"] |
 	["parentheses", "open" | "close"] |
 	["punctuation", "colon" | "semicolon" | "comma"] |
+	["comment", "singleline" | "multiline_open" | "multiline_close"] |
 	["word"] |
 	["space"] |
 	["newline"] |
@@ -101,6 +102,9 @@ export const FirstTokenizer = {
 			else if(str.cons(">=")) str.write(["operator", "greater_than_equal"]);
 			else if(str.cons("<=")) str.write(["operator", "less_than_equal"]);
 			else if(str.cons("<>")) str.write(["operator", "not_equal_to"]);
+			else if(str.cons("//")) str.write(["comment", "singleline"]);
+			else if(str.cons("/*")) str.write(["comment", "multiline_open"]);
+			else if(str.cons("*/")) str.write(["comment", "multiline_close"]);
 			else if(str.cons("=")) str.write(["operator", "equal_to"]);
 			else if(str.cons(">")) str.write(["operator", "greater_than"]);
 			else if(str.cons("<")) str.write(["operator", "less_than"]);
