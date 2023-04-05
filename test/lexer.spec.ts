@@ -1,5 +1,0 @@
-import "jasmine";
-
-describe("WhitespaceLexer", () => {
-
-});
