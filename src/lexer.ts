@@ -14,7 +14,9 @@ type TokenType =
 	["number", "decimal"] |
 	["quote", "single" | "double"] |
 	["brace", "open" | "close"] |
+	["bracket", "open" | "close"] |
 	["parentheses", "open" | "close"] |
+	["punctuation", "colon" | "semicolon" | "comma"] |
 	["word"] |
 	["space"] |
 	["newline"] |
@@ -37,7 +39,7 @@ interface Tokenizer {
 	parse(input:string): Token[];
 }
 
-class TokenizerInput {
+class TokenizerIO {
 	lastMatched:string = "";
 	output:Token[] = [];
 	constructor(public string:string, public offset:number = 0){}
@@ -87,8 +89,7 @@ class TokenizerInput {
 const FirstTokenizer = {
 	numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
 	parse(input:string){
-		const str = new TokenizerInput(input);
-		//if(...MOD) ["operator", "mod"]
+		const str = new TokenizerIO(input);
 		while(str.has()){
 			if(false) 0;
 			else if(str.cons("MOD")) str.write(["operator", "mod"]);
@@ -114,6 +115,9 @@ const FirstTokenizer = {
 			else if(str.cons("}")) str.write(["brace", "close"]);
 			else if(str.cons(`'`)) str.write(["quote", "single"]);
 			else if(str.cons(`"`)) str.write(["quote", "double"]);
+			else if(str.cons(`:`)) str.write(["punctuation", "colon"]);
+			else if(str.cons(`;`)) str.write(["punctuation", "semicolon"]);
+			else if(str.cons(`,`)) str.write(["punctuation", "comma"]);
 			else if(str.cons(" ")) str.write(["space"]);
 			else if(str.cons("\n")) str.write(["newline"]);
 			else if(str.isNumber()){
@@ -137,12 +141,44 @@ const FirstTokenizer = {
 }
 
 function debugParse(input:string){
-	console.log(`Parsing input "${input}"`);
+	console.log(`Parsing input: ${input}`);
 	try {
-		console.log(FirstTokenizer.parse(input));
+		console.log(FirstTokenizer.parse(input).map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type.join(".")}`).join("\n"));
 	} catch(err){
 		console.log(`Error: ${(err as any).message}`);
 	}
 }
-
-debugParse("x <- 5");
+const procedureCode = `\
+PROCEDURE OutputRange()
+DECLARE First, Last, Count, Index, ThisErr : INTEGER
+DECLARE ThisMess : STRING
+DECLARE PastLast: BOOLEAN
+Count <- 0
+Index <- 1
+PastLast <- FALSE
+OUTPUT "Please input first error number: "
+INPUT First
+OUTPUT "Please input last error number: "
+INPUT Last
+OUTPUT "List of error numbers from ", First, " to ",
+Last
+WHILE Index < 501 AND NOT PastLast
+ThisErr <- ErrCode[Index]
+IF ThisErr > Last THEN
+PastLast <- TRUE
+ELSE
+IF ThisErr >= First THEN
+ThisMess <- ErrText[Index]
+IF ThisMess = "" THEN
+ThisMess <- "Error Text Missing"
+ENDIF
+OUTPUT ThisErr, " : ", ThisMess
+Count <- Count + 1
+ENDIF
+ENDIF
+Index <- Index + 1
+ENDWHILE
+OUTPUT Count, " error numbers output"
+ENDPROCEDURE`
+;
+procedureCode.split("\n").forEach(line => debugParse(line));
