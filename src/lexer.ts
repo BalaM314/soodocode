@@ -152,7 +152,7 @@ export function symbolize(input:string){
 	return str.output;
 }
 
-function tokenize(input:Symbol[]):Token[] {
+export function tokenize(input:Symbol[]):Token[] {
 	const output:Token[] = [];
 	const state = {
 		sComment: false,
@@ -190,7 +190,12 @@ function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "quote.single") state.sString = true;
 		else if(symbol.type === "quote.double") state.dString = true;
 		else if(symbol.type === "space") void 0;
-		else output.push(symbol as Token);
+		else if(symbol.type === "word"){
+			switch(symbol.text){
+				//case ""
+				default: output.push({type: "name", text: symbol.text});
+			}
+		} else output.push(symbol as Token);
 	}
 	return output;
 }

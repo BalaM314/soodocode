@@ -136,7 +136,7 @@ export function symbolize(input) {
     }
     return str.output;
 }
-function tokenize(input) {
+export function tokenize(input) {
     const output = [];
     const state = {
         sComment: false,
@@ -186,6 +186,12 @@ function tokenize(input) {
             state.dString = true;
         else if (symbol.type === "space")
             void 0;
+        else if (symbol.type === "word") {
+            switch (symbol.text) {
+                //case ""
+                default: output.push({ type: "name", text: symbol.text });
+            }
+        }
         else
             output.push(symbol);
     }
