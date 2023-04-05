@@ -25,6 +25,7 @@
   "homepage": "https://github.com/BalaM314/soodocode#readme",
   "devDependencies": {
     "@types/jasmine": "^4.3.1",
+    "@types/node": "^18.15.11",
     "jasmine": "^4.6.0"
   },
   "type": "module"

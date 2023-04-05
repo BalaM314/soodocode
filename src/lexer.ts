@@ -86,7 +86,7 @@ class TokenizerIO {
 }
 
 
-const FirstTokenizer = {
+export const FirstTokenizer = {
 	numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
 	parse(input:string){
 		const str = new TokenizerIO(input);
@@ -181,4 +181,6 @@ ENDWHILE
 OUTPUT Count, " error numbers output"
 ENDPROCEDURE`
 ;
-procedureCode.split("\n").forEach(line => debugParse(line));
+
+if(process.argv.slice(2).includes("--debug"))
+	procedureCode.split("\n").forEach(line => debugParse(line));
