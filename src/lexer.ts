@@ -11,28 +11,36 @@ type ASTNode = {
 	
 }
 
+type SymbolType =
+	"number.decimal" |
+	"quote.single" | "quote.double" |
+	"brace.open" | "brace.close" |
+	"bracket.open" | "bracket.close" |
+	"parentheses.open" | "parentheses.close" |
+	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
+	"comment.singleline" | "comment.multiline_open" | "comment.multiline_close" |
+	"word" |
+	"space" |
+	"newline" |
+	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
+
+type Symbol = {
+	type: SymbolType;
+	text: string;
+}
+
 type TokenType =
-	["number", "decimal"] |
-	["quote", "single" | "double"] |
-	["brace", "open" | "close"] |
-	["bracket", "open" | "close"] |
-	["parentheses", "open" | "close"] |
-	["punctuation", "colon" | "semicolon" | "comma"] |
-	["comment", "singleline" | "multiline_open" | "multiline_close"] |
-	["word"] |
-	["keyword",
-		"declare" | "constant" |
-		"if" | "if_end" | "for" | "for_end" | "while" | "while_end" | "repeat" | "repeat_end" | "function" | "function_end" |
-		"return" | "returns" |
-		"openfile" | "readfile" | "writefile"
-	] |
-	["space"] |
-	["newline"] |
-	["operator",
-		"add" | "subtract" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" |
-		"equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" |
-		"assignment"
-	];
+	"number.decimal" |
+	"string" |
+	"brace.open" | "brace.close" |
+	"bracket.open" | "bracket.close" |
+	"parentheses.open" | "parentheses.close" |
+	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
+	"comment" |
+	"name" |
+	"keyword.declare" | "keyword.constant" | "keyword.if" | "keyword.if_end" | "keyword.for" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.repeat" | "keyword.repeat_end" | "keyword.function" | "keyword.function_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
+	"newline" |
+	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
 type Token = {
 	type: TokenType;
 	text: string;
@@ -42,13 +50,10 @@ interface Lexer {
 	parse(input:string): LexemeAST;
 }
 
-interface Tokenizer {
-	parse(input:string): Token[];
-}
 
-class TokenizerIO {
+class SymbolizerIO {
 	lastMatched:string = "";
-	output:Token[] = [];
+	output:Symbol[] = [];
 	constructor(public string:string, public offset:number = 0){}
 	inc(amount:number){
 		this.offset += amount;
@@ -72,10 +77,10 @@ class TokenizerIO {
 	length(){
 		return this.string.length;
 	}
-	writeText(type:TokenType, text:string){
+	writeText(type:SymbolType, text:string){
 		this.output.push({type, text});
 	}
-	write(type:TokenType){
+	write(type:SymbolType){
 		this.output.push({type, text: this.lastMatched});
 	}
 	isNumber(){
@@ -93,64 +98,110 @@ class TokenizerIO {
 }
 
 
-export function parse(input:string){
-	const str = new TokenizerIO(input);
+export function symbolize(input:string){
+	const str = new SymbolizerIO(input);
 	while(str.has()){
 		if(false) 0;
-		else if(str.cons("MOD")) str.write(["operator", "mod"]);
-		else if(str.cons("AND")) str.write(["operator", "and"]);
-		else if(str.cons("OR")) str.write(["operator", "or"]);
-		else if(str.cons("NOT")) str.write(["operator", "not"]);
-		else if(str.cons("DIV")) str.write(["operator", "integer_divide"]);
-		else if(str.cons("<-")) str.write(["operator", "assignment"]);
-		else if(str.cons(">=")) str.write(["operator", "greater_than_equal"]);
-		else if(str.cons("<=")) str.write(["operator", "less_than_equal"]);
-		else if(str.cons("<>")) str.write(["operator", "not_equal_to"]);
-		else if(str.cons("//")) str.write(["comment", "singleline"]);
-		else if(str.cons("/*")) str.write(["comment", "multiline_open"]);
-		else if(str.cons("*/")) str.write(["comment", "multiline_close"]);
-		else if(str.cons("=")) str.write(["operator", "equal_to"]);
-		else if(str.cons(">")) str.write(["operator", "greater_than"]);
-		else if(str.cons("<")) str.write(["operator", "less_than"]);
-		else if(str.cons("-")) str.write(["operator", "subtract"]);
-		else if(str.cons("+")) str.write(["operator", "add"]);
-		else if(str.cons("-")) str.write(["operator", "subtract"]);
-		else if(str.cons("*")) str.write(["operator", "multiply"]);
-		else if(str.cons("/")) str.write(["operator", "divide"]);
-		else if(str.cons("(")) str.write(["parentheses", "open"]);
-		else if(str.cons(")")) str.write(["parentheses", "close"]);
-		else if(str.cons("{")) str.write(["brace", "open"]);
-		else if(str.cons("}")) str.write(["brace", "close"]);
-		else if(str.cons(`'`)) str.write(["quote", "single"]);
-		else if(str.cons(`"`)) str.write(["quote", "double"]);
-		else if(str.cons(`:`)) str.write(["punctuation", "colon"]);
-		else if(str.cons(`;`)) str.write(["punctuation", "semicolon"]);
-		else if(str.cons(`,`)) str.write(["punctuation", "comma"]);
-		else if(str.cons(" ")) str.write(["space"]);
-		else if(str.cons("\n")) str.write(["newline"]);
+		else if(str.cons("MOD")) str.write("operator.mod");
+		else if(str.cons("AND")) str.write("operator.and");
+		else if(str.cons("OR")) str.write("operator.or");
+		else if(str.cons("NOT")) str.write("operator.not");
+		else if(str.cons("DIV")) str.write("operator.integer_divide");
+		else if(str.cons("<-")) str.write("operator.assignment");
+		else if(str.cons(">=")) str.write("operator.greater_than_equal");
+		else if(str.cons("<=")) str.write("operator.less_than_equal");
+		else if(str.cons("<>")) str.write("operator.not_equal_to");
+		else if(str.cons("//")) str.write("comment.singleline");
+		else if(str.cons("/*")) str.write("comment.multiline_open");
+		else if(str.cons("*/")) str.write("comment.multiline_close");
+		else if(str.cons("=")) str.write("operator.equal_to");
+		else if(str.cons(">")) str.write("operator.greater_than");
+		else if(str.cons("<")) str.write("operator.less_than");
+		else if(str.cons("-")) str.write("operator.subtract");
+		else if(str.cons("+")) str.write("operator.add");
+		else if(str.cons("-")) str.write("operator.subtract");
+		else if(str.cons("*")) str.write("operator.multiply");
+		else if(str.cons("/")) str.write("operator.divide");
+		else if(str.cons("(")) str.write("parentheses.open");
+		else if(str.cons(")")) str.write("parentheses.close");
+		else if(str.cons("{")) str.write("brace.open");
+		else if(str.cons("}")) str.write("brace.close");
+		else if(str.cons(`'`)) str.write("quote.single");
+		else if(str.cons(`"`)) str.write("quote.double");
+		else if(str.cons(`:`)) str.write("punctuation.colon");
+		else if(str.cons(`;`)) str.write("punctuation.semicolon");
+		else if(str.cons(`,`)) str.write("punctuation.comma");
+		else if(str.cons(" ")) str.write("space");
+		else if(str.cons("\n")) str.write("newline");
 		else if(str.isNumber()){
 			let number = "";
 			do {
 				number += str.read();
 			} while(str.isNumber())
-			str.writeText(["number", "decimal"], number);
+			str.writeText("number.decimal", number);
 		}
 		else if(str.isAlphanumeric()){
 			let word = "";
 			do {
 				word += str.read();
 			} while(str.isAlphanumeric())
-			str.writeText(["word"], word);
+			str.writeText("word", word);
 		}
 		else throw new Error(`Invalid character "${str.at()}"`);
 	}
 	return str.output;
 }
 
+function tokenize(input:Symbol[]):Token[] {
+	const output:Token[] = [];
+	const state = {
+		sComment: false,
+		mComment: false,
+		sString: false,
+		dString: false,
+	}
+	let currentString = "";
+	for(const symbol of input){
+		if(state.sComment){
+			if(symbol.type === "newline"){
+				state.sComment = false;
+				output.push(symbol as Token);
+			}
+		} else if(state.mComment){
+			if(symbol.type === "comment.multiline_close") state.mComment = false;
+		} else if(state.sString){
+			if(symbol.type === "quote.single"){
+				state.sString = false;
+				output.push({text: currentString, type: "string"});
+				currentString = "";
+			} else {
+				currentString += symbol.text;
+			}
+		} else if(state.dString){
+			if(symbol.type === "quote.double"){
+				state.dString = false;
+				output.push({text: currentString, type: "string"});
+				currentString = "";
+			} else {
+				currentString += symbol.text;
+			}
+		} else if(symbol.type === "comment.singleline") state.sComment = true;
+		else if(symbol.type === "comment.multiline_open") state.mComment = true;
+		else if(symbol.type === "quote.single") state.sString = true;
+		else if(symbol.type === "quote.double") state.dString = true;
+		else if(symbol.type === "space") void 0;
+		else output.push(symbol as Token);
+	}
+	return output;
+}
+
 function debugParse(input:string){
 	console.log(`Parsing input: ${input}`);
 	try {
-		console.log(parse(input).map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type.join(".")}`).join("\n"));
+		const symbols = symbolize(input);
+		console.log(symbols.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
+		const tokens = tokenize(symbols);
+		console.log(tokens.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
 	} catch(err){
 		console.log(`Error: ${(err as any).message}`);
 	}

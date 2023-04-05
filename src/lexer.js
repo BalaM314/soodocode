@@ -1,4 +1,4 @@
-class TokenizerIO {
+class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;
         this.offset = offset;
@@ -50,96 +50,154 @@ class TokenizerIO {
             (code >= 97 && code <= 122);
     }
 }
-export function parse(input) {
-    const str = new TokenizerIO(input);
+export function symbolize(input) {
+    const str = new SymbolizerIO(input);
     while (str.has()) {
         if (false)
             0;
         else if (str.cons("MOD"))
-            str.write(["operator", "mod"]);
+            str.write("operator.mod");
         else if (str.cons("AND"))
-            str.write(["operator", "and"]);
+            str.write("operator.and");
         else if (str.cons("OR"))
-            str.write(["operator", "or"]);
+            str.write("operator.or");
         else if (str.cons("NOT"))
-            str.write(["operator", "not"]);
+            str.write("operator.not");
         else if (str.cons("DIV"))
-            str.write(["operator", "integer_divide"]);
+            str.write("operator.integer_divide");
         else if (str.cons("<-"))
-            str.write(["operator", "assignment"]);
+            str.write("operator.assignment");
         else if (str.cons(">="))
-            str.write(["operator", "greater_than_equal"]);
+            str.write("operator.greater_than_equal");
         else if (str.cons("<="))
-            str.write(["operator", "less_than_equal"]);
+            str.write("operator.less_than_equal");
         else if (str.cons("<>"))
-            str.write(["operator", "not_equal_to"]);
+            str.write("operator.not_equal_to");
         else if (str.cons("//"))
-            str.write(["comment", "singleline"]);
+            str.write("comment.singleline");
         else if (str.cons("/*"))
-            str.write(["comment", "multiline_open"]);
+            str.write("comment.multiline_open");
         else if (str.cons("*/"))
-            str.write(["comment", "multiline_close"]);
+            str.write("comment.multiline_close");
         else if (str.cons("="))
-            str.write(["operator", "equal_to"]);
+            str.write("operator.equal_to");
         else if (str.cons(">"))
-            str.write(["operator", "greater_than"]);
+            str.write("operator.greater_than");
         else if (str.cons("<"))
-            str.write(["operator", "less_than"]);
+            str.write("operator.less_than");
         else if (str.cons("-"))
-            str.write(["operator", "subtract"]);
+            str.write("operator.subtract");
         else if (str.cons("+"))
-            str.write(["operator", "add"]);
+            str.write("operator.add");
         else if (str.cons("-"))
-            str.write(["operator", "subtract"]);
+            str.write("operator.subtract");
         else if (str.cons("*"))
-            str.write(["operator", "multiply"]);
+            str.write("operator.multiply");
         else if (str.cons("/"))
-            str.write(["operator", "divide"]);
+            str.write("operator.divide");
         else if (str.cons("("))
-            str.write(["parentheses", "open"]);
+            str.write("parentheses.open");
         else if (str.cons(")"))
-            str.write(["parentheses", "close"]);
+            str.write("parentheses.close");
         else if (str.cons("{"))
-            str.write(["brace", "open"]);
+            str.write("brace.open");
         else if (str.cons("}"))
-            str.write(["brace", "close"]);
+            str.write("brace.close");
         else if (str.cons(`'`))
-            str.write(["quote", "single"]);
+            str.write("quote.single");
         else if (str.cons(`"`))
-            str.write(["quote", "double"]);
+            str.write("quote.double");
         else if (str.cons(`:`))
-            str.write(["punctuation", "colon"]);
+            str.write("punctuation.colon");
         else if (str.cons(`;`))
-            str.write(["punctuation", "semicolon"]);
+            str.write("punctuation.semicolon");
         else if (str.cons(`,`))
-            str.write(["punctuation", "comma"]);
+            str.write("punctuation.comma");
         else if (str.cons(" "))
-            str.write(["space"]);
+            str.write("space");
         else if (str.cons("\n"))
-            str.write(["newline"]);
+            str.write("newline");
         else if (str.isNumber()) {
             let number = "";
             do {
                 number += str.read();
             } while (str.isNumber());
-            str.writeText(["number", "decimal"], number);
+            str.writeText("number.decimal", number);
         }
         else if (str.isAlphanumeric()) {
             let word = "";
             do {
                 word += str.read();
             } while (str.isAlphanumeric());
-            str.writeText(["word"], word);
+            str.writeText("word", word);
         }
         else
             throw new Error(`Invalid character "${str.at()}"`);
     }
     return str.output;
 }
+function tokenize(input) {
+    const output = [];
+    const state = {
+        sComment: false,
+        mComment: false,
+        sString: false,
+        dString: false,
+    };
+    let currentString = "";
+    for (const symbol of input) {
+        if (state.sComment) {
+            if (symbol.type === "newline") {
+                state.sComment = false;
+                output.push(symbol);
+            }
+        }
+        else if (state.mComment) {
+            if (symbol.type === "comment.multiline_close")
+                state.mComment = false;
+        }
+        else if (state.sString) {
+            if (symbol.type === "quote.single") {
+                state.sString = false;
+                output.push({ text: currentString, type: "string" });
+                currentString = "";
+            }
+            else {
+                currentString += symbol.text;
+            }
+        }
+        else if (state.dString) {
+            if (symbol.type === "quote.double") {
+                state.dString = false;
+                output.push({ text: currentString, type: "string" });
+                currentString = "";
+            }
+            else {
+                currentString += symbol.text;
+            }
+        }
+        else if (symbol.type === "comment.singleline")
+            state.sComment = true;
+        else if (symbol.type === "comment.multiline_open")
+            state.mComment = true;
+        else if (symbol.type === "quote.single")
+            state.sString = true;
+        else if (symbol.type === "quote.double")
+            state.dString = true;
+        else if (symbol.type === "space")
+            void 0;
+        else
+            output.push(symbol);
+    }
+    return output;
+}
 function debugParse(input) {
     console.log(`Parsing input: ${input}`);
     try {
-        console.log(parse(input).map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type.join(".")}`).join("\n"));
+        const symbols = symbolize(input);
+        console.log(symbols.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
+        const tokens = tokenize(symbols);
+        console.log(tokens.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
     }
     catch (err) {
         console.log(`Error: ${err.message}`);
