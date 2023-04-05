@@ -10,6 +10,7 @@ interface LexemeAST {
 type ASTNode = {
 	
 }
+
 type TokenType =
 	["number", "decimal"] |
 	["quote", "single" | "double"] |
@@ -19,6 +20,12 @@ type TokenType =
 	["punctuation", "colon" | "semicolon" | "comma"] |
 	["comment", "singleline" | "multiline_open" | "multiline_close"] |
 	["word"] |
+	["keyword",
+		"declare" | "constant" |
+		"if" | "if_end" | "for" | "for_end" | "while" | "while_end" | "repeat" | "repeat_end" | "function" | "function_end" |
+		"return" | "returns" |
+		"openfile" | "readfile" | "writefile"
+	] |
 	["space"] |
 	["newline"] |
 	["operator",
@@ -26,7 +33,6 @@ type TokenType =
 		"equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" |
 		"assignment"
 	];
-
 type Token = {
 	type: TokenType;
 	text: string;
@@ -87,67 +93,64 @@ class TokenizerIO {
 }
 
 
-export const FirstTokenizer = {
-	numbers: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
-	parse(input:string){
-		const str = new TokenizerIO(input);
-		while(str.has()){
-			if(false) 0;
-			else if(str.cons("MOD")) str.write(["operator", "mod"]);
-			else if(str.cons("AND")) str.write(["operator", "and"]);
-			else if(str.cons("OR")) str.write(["operator", "or"]);
-			else if(str.cons("NOT")) str.write(["operator", "not"]);
-			else if(str.cons("DIV")) str.write(["operator", "integer_divide"]);
-			else if(str.cons("<-")) str.write(["operator", "assignment"]);
-			else if(str.cons(">=")) str.write(["operator", "greater_than_equal"]);
-			else if(str.cons("<=")) str.write(["operator", "less_than_equal"]);
-			else if(str.cons("<>")) str.write(["operator", "not_equal_to"]);
-			else if(str.cons("//")) str.write(["comment", "singleline"]);
-			else if(str.cons("/*")) str.write(["comment", "multiline_open"]);
-			else if(str.cons("*/")) str.write(["comment", "multiline_close"]);
-			else if(str.cons("=")) str.write(["operator", "equal_to"]);
-			else if(str.cons(">")) str.write(["operator", "greater_than"]);
-			else if(str.cons("<")) str.write(["operator", "less_than"]);
-			else if(str.cons("-")) str.write(["operator", "subtract"]);
-			else if(str.cons("+")) str.write(["operator", "add"]);
-			else if(str.cons("-")) str.write(["operator", "subtract"]);
-			else if(str.cons("*")) str.write(["operator", "multiply"]);
-			else if(str.cons("/")) str.write(["operator", "divide"]);
-			else if(str.cons("(")) str.write(["parentheses", "open"]);
-			else if(str.cons(")")) str.write(["parentheses", "close"]);
-			else if(str.cons("{")) str.write(["brace", "open"]);
-			else if(str.cons("}")) str.write(["brace", "close"]);
-			else if(str.cons(`'`)) str.write(["quote", "single"]);
-			else if(str.cons(`"`)) str.write(["quote", "double"]);
-			else if(str.cons(`:`)) str.write(["punctuation", "colon"]);
-			else if(str.cons(`;`)) str.write(["punctuation", "semicolon"]);
-			else if(str.cons(`,`)) str.write(["punctuation", "comma"]);
-			else if(str.cons(" ")) str.write(["space"]);
-			else if(str.cons("\n")) str.write(["newline"]);
-			else if(str.isNumber()){
-				let number = "";
-				do {
-					number += str.read();
-				} while(str.isNumber())
-				str.writeText(["number", "decimal"], number);
-			}
-			else if(str.isAlphanumeric()){
-				let word = "";
-				do {
-					word += str.read();
-				} while(str.isAlphanumeric())
-				str.writeText(["word"], word);
-			}
-			else throw new Error(`Invalid character "${str.at()}"`);
+export function parse(input:string){
+	const str = new TokenizerIO(input);
+	while(str.has()){
+		if(false) 0;
+		else if(str.cons("MOD")) str.write(["operator", "mod"]);
+		else if(str.cons("AND")) str.write(["operator", "and"]);
+		else if(str.cons("OR")) str.write(["operator", "or"]);
+		else if(str.cons("NOT")) str.write(["operator", "not"]);
+		else if(str.cons("DIV")) str.write(["operator", "integer_divide"]);
+		else if(str.cons("<-")) str.write(["operator", "assignment"]);
+		else if(str.cons(">=")) str.write(["operator", "greater_than_equal"]);
+		else if(str.cons("<=")) str.write(["operator", "less_than_equal"]);
+		else if(str.cons("<>")) str.write(["operator", "not_equal_to"]);
+		else if(str.cons("//")) str.write(["comment", "singleline"]);
+		else if(str.cons("/*")) str.write(["comment", "multiline_open"]);
+		else if(str.cons("*/")) str.write(["comment", "multiline_close"]);
+		else if(str.cons("=")) str.write(["operator", "equal_to"]);
+		else if(str.cons(">")) str.write(["operator", "greater_than"]);
+		else if(str.cons("<")) str.write(["operator", "less_than"]);
+		else if(str.cons("-")) str.write(["operator", "subtract"]);
+		else if(str.cons("+")) str.write(["operator", "add"]);
+		else if(str.cons("-")) str.write(["operator", "subtract"]);
+		else if(str.cons("*")) str.write(["operator", "multiply"]);
+		else if(str.cons("/")) str.write(["operator", "divide"]);
+		else if(str.cons("(")) str.write(["parentheses", "open"]);
+		else if(str.cons(")")) str.write(["parentheses", "close"]);
+		else if(str.cons("{")) str.write(["brace", "open"]);
+		else if(str.cons("}")) str.write(["brace", "close"]);
+		else if(str.cons(`'`)) str.write(["quote", "single"]);
+		else if(str.cons(`"`)) str.write(["quote", "double"]);
+		else if(str.cons(`:`)) str.write(["punctuation", "colon"]);
+		else if(str.cons(`;`)) str.write(["punctuation", "semicolon"]);
+		else if(str.cons(`,`)) str.write(["punctuation", "comma"]);
+		else if(str.cons(" ")) str.write(["space"]);
+		else if(str.cons("\n")) str.write(["newline"]);
+		else if(str.isNumber()){
+			let number = "";
+			do {
+				number += str.read();
+			} while(str.isNumber())
+			str.writeText(["number", "decimal"], number);
 		}
-		return str.output;
+		else if(str.isAlphanumeric()){
+			let word = "";
+			do {
+				word += str.read();
+			} while(str.isAlphanumeric())
+			str.writeText(["word"], word);
+		}
+		else throw new Error(`Invalid character "${str.at()}"`);
 	}
+	return str.output;
 }
 
 function debugParse(input:string){
 	console.log(`Parsing input: ${input}`);
 	try {
-		console.log(FirstTokenizer.parse(input).map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type.join(".")}`).join("\n"));
+		console.log(parse(input).map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type.join(".")}`).join("\n"));
 	} catch(err){
 		console.log(`Error: ${(err as any).message}`);
 	}

@@ -31,7 +31,7 @@ runButton.addEventListener("click", e => {
     runButton.innerText = "Processing, please wait...";
     setTimeout(() => {
         try {
-            executeSoodocode(soodocodeInput.textContent);
+            executeSoodocode(soodocodeInput.value);
         }
         catch (err) {
             runButton.innerText = "An error occurred while executing the program: Segmentation fault (core dumped)";
