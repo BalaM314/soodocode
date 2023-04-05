@@ -145,7 +145,7 @@ export function tokenize(input) {
         dString: false,
     };
     let currentString = "";
-    for (const symbol of input) {
+    for (var symbol of input) {
         if (state.sComment) {
             if (symbol.type === "newline") {
                 state.sComment = false;
@@ -188,20 +188,82 @@ export function tokenize(input) {
             void 0;
         else if (symbol.type === "word") {
             switch (symbol.text) {
-                //case ""
-                default: output.push({ type: "name", text: symbol.text });
+                case "DECLARE":
+                    write("keyword.declare");
+                    break;
+                case "CONSTANT":
+                    write("keyword.constant");
+                    break;
+                case "IF":
+                    write("keyword.if");
+                    break;
+                case "ENDIF":
+                    write("keyword.if_end");
+                    break;
+                case "FOR":
+                    write("keyword.for");
+                    break;
+                case "ENDFOR":
+                    write("keyword.for_end");
+                    break;
+                case "WHILE":
+                    write("keyword.while");
+                    break;
+                case "ENDWHILE":
+                    write("keyword.while_end");
+                    break;
+                case "REPEAT":
+                    write("keyword.dowhile");
+                    break;
+                case "UNTIL":
+                    write("keyword.dowhile_end");
+                    break;
+                case "FUNCTION":
+                    write("keyword.function");
+                    break;
+                case "ENDFUNCTION":
+                    write("keyword.function_end");
+                    break;
+                case "PROCEDURE":
+                    write("keyword.procedure");
+                    break;
+                case "ENDPROCEDURE":
+                    write("keyword.procedure_end");
+                    break;
+                case "RETURN":
+                    write("keyword.return");
+                    break;
+                case "RETURNS":
+                    write("keyword.returns");
+                    break;
+                case "OPENFILE":
+                    write("keyword.openfile");
+                    break;
+                case "READFILE":
+                    write("keyword.readfile");
+                    break;
+                case "WRITEFILE":
+                    write("keyword.writefile");
+                    break;
+                default:
+                    output.push({ type: "name", text: symbol.text });
+                    break;
             }
         }
         else
             output.push(symbol);
     }
     return output;
+    function write(type) {
+        output.push({ type, text: symbol.text });
+    }
 }
 function debugParse(input) {
     console.log(`Parsing input: ${input}`);
     try {
         const symbols = symbolize(input);
         console.log(symbols.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
+        console.log("----");
         const tokens = tokenize(symbols);
         console.log(tokens.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
     }
@@ -209,37 +271,42 @@ function debugParse(input) {
         console.log(`Error: ${err.message}`);
     }
 }
+// const procedureCode = `\
+// PROCEDURE OutputRange()
+// DECLARE First, Last, Count, Index, ThisErr : INTEGER
+// DECLARE ThisMess : STRING
+// DECLARE PastLast: BOOLEAN
+// Count <- 0
+// Index <- 1
+// PastLast <- FALSE
+// OUTPUT "Please input first error number: "
+// INPUT First
+// OUTPUT "Please input last error number: "
+// INPUT Last
+// OUTPUT "List of error numbers from ", First, " to ",
+// Last
+// WHILE Index < 501 AND NOT PastLast
+// ThisErr <- ErrCode[Index]
+// IF ThisErr > Last THEN
+// PastLast <- TRUE
+// ELSE
+// IF ThisErr >= First THEN
+// ThisMess <- ErrText[Index]
+// IF ThisMess = "" THEN
+// ThisMess <- "Error Text Missing"
+// ENDIF
+// OUTPUT ThisErr, " : ", ThisMess
+// Count <- Count + 1
+// ENDIF
+// ENDIF
+// Index <- Index + 1
+// ENDWHILE
+// OUTPUT Count, " error numbers output"
+// ENDPROCEDURE`
+// ;
 const procedureCode = `\
-PROCEDURE OutputRange()
-DECLARE First, Last, Count, Index, ThisErr : INTEGER
-DECLARE ThisMess : STRING
-DECLARE PastLast: BOOLEAN
-Count <- 0
-Index <- 1
-PastLast <- FALSE
-OUTPUT "Please input first error number: "
-INPUT First
-OUTPUT "Please input last error number: "
-INPUT Last
-OUTPUT "List of error numbers from ", First, " to ",
-Last
-WHILE Index < 501 AND NOT PastLast
-ThisErr <- ErrCode[Index]
-IF ThisErr > Last THEN
-PastLast <- TRUE
-ELSE
-IF ThisErr >= First THEN
-ThisMess <- ErrText[Index]
-IF ThisMess = "" THEN
-ThisMess <- "Error Text Missing"
-ENDIF
-OUTPUT ThisErr, " : ", ThisMess
-Count <- Count + 1
-ENDIF
-ENDIF
-Index <- Index + 1
-ENDWHILE
-OUTPUT Count, " error numbers output"
-ENDPROCEDURE`;
+WHILE Index < 501 AND "sussy PROCEDURE"
+OUTPUT "sussy ", index
+ENDWHILE`;
 if (process.argv.slice(2).includes("--debug"))
     procedureCode.split("\n").forEach(line => debugParse(line));

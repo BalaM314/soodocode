@@ -164,4 +164,30 @@ describe("tokenizer", () => {
             { text: ")", type: "parentheses.close" },
         ]);
     });
+    it("should parse keywords", () => {
+        expect(tokenize([
+            { text: "WHILE", type: "word" },
+            { text: " ", type: "space" },
+            { text: "Index", type: "word" },
+            { text: " ", type: "space" },
+            { text: "<", type: "operator.less_than" },
+            { text: " ", type: "space" },
+            { text: "501", type: "number.decimal" },
+            { text: " ", type: "space" },
+            { text: "AND", type: "operator.and" },
+            { text: " ", type: "space" },
+            { text: `"`, type: "quote.double" },
+            { text: "sussy", type: "word" },
+            { text: " ", type: "space" },
+            { text: "PROCEDURE", type: "word" },
+            { text: `"`, type: "quote.double" },
+        ])).toEqual([
+            { text: "WHILE", type: "keyword.while" },
+            { text: "Index", type: "name" },
+            { text: "<", type: "operator.less_than" },
+            { text: "501", type: "number.decimal" },
+            { text: "AND", type: "operator.and" },
+            { text: `sussy PROCEDURE`, type: "string" },
+        ]);
+    });
 });

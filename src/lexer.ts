@@ -38,7 +38,7 @@ type TokenType =
 	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
 	"comment" |
 	"name" |
-	"keyword.declare" | "keyword.constant" | "keyword.if" | "keyword.if_end" | "keyword.for" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.repeat" | "keyword.repeat_end" | "keyword.function" | "keyword.function_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
+	"keyword.declare" | "keyword.constant" | "keyword.if" | "keyword.if_end" | "keyword.for" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
 type Token = {
@@ -161,7 +161,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		dString: false,
 	}
 	let currentString = "";
-	for(const symbol of input){
+	for(var symbol of input){
 		if(state.sComment){
 			if(symbol.type === "newline"){
 				state.sComment = false;
@@ -192,12 +192,34 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "space") void 0;
 		else if(symbol.type === "word"){
 			switch(symbol.text){
-				//case ""
-				default: output.push({type: "name", text: symbol.text});
+				case "DECLARE": write("keyword.declare"); break;
+				case "CONSTANT": write("keyword.constant"); break;
+				case "IF": write("keyword.if"); break;
+				case "ENDIF": write("keyword.if_end"); break;
+				case "FOR": write("keyword.for"); break;
+				case "ENDFOR": write("keyword.for_end"); break;
+				case "WHILE": write("keyword.while"); break;
+				case "ENDWHILE": write("keyword.while_end"); break;
+				case "REPEAT": write("keyword.dowhile"); break;
+				case "UNTIL": write("keyword.dowhile_end"); break;
+				case "FUNCTION": write("keyword.function"); break;
+				case "ENDFUNCTION": write("keyword.function_end"); break;
+				case "PROCEDURE": write("keyword.procedure"); break;
+				case "ENDPROCEDURE": write("keyword.procedure_end"); break;
+				case "RETURN": write("keyword.return"); break;
+				case "RETURNS": write("keyword.returns"); break;
+				case "OPENFILE": write("keyword.openfile"); break;
+				case "READFILE": write("keyword.readfile"); break;
+				case "WRITEFILE": write("keyword.writefile"); break;
+				default: output.push({type: "name", text: symbol.text}); break;
 			}
 		} else output.push(symbol as Token);
 	}
 	return output;
+
+	function write(type:TokenType){
+		output.push({type, text: symbol.text});
+	}
 }
 
 function debugParse(input:string){
@@ -205,44 +227,50 @@ function debugParse(input:string){
 	try {
 		const symbols = symbolize(input);
 		console.log(symbols.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
+		console.log("----");
 		const tokens = tokenize(symbols);
 		console.log(tokens.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
 	} catch(err){
 		console.log(`Error: ${(err as any).message}`);
 	}
 }
+// const procedureCode = `\
+// PROCEDURE OutputRange()
+// DECLARE First, Last, Count, Index, ThisErr : INTEGER
+// DECLARE ThisMess : STRING
+// DECLARE PastLast: BOOLEAN
+// Count <- 0
+// Index <- 1
+// PastLast <- FALSE
+// OUTPUT "Please input first error number: "
+// INPUT First
+// OUTPUT "Please input last error number: "
+// INPUT Last
+// OUTPUT "List of error numbers from ", First, " to ",
+// Last
+// WHILE Index < 501 AND NOT PastLast
+// ThisErr <- ErrCode[Index]
+// IF ThisErr > Last THEN
+// PastLast <- TRUE
+// ELSE
+// IF ThisErr >= First THEN
+// ThisMess <- ErrText[Index]
+// IF ThisMess = "" THEN
+// ThisMess <- "Error Text Missing"
+// ENDIF
+// OUTPUT ThisErr, " : ", ThisMess
+// Count <- Count + 1
+// ENDIF
+// ENDIF
+// Index <- Index + 1
+// ENDWHILE
+// OUTPUT Count, " error numbers output"
+// ENDPROCEDURE`
+// ;
 const procedureCode = `\
-PROCEDURE OutputRange()
-DECLARE First, Last, Count, Index, ThisErr : INTEGER
-DECLARE ThisMess : STRING
-DECLARE PastLast: BOOLEAN
-Count <- 0
-Index <- 1
-PastLast <- FALSE
-OUTPUT "Please input first error number: "
-INPUT First
-OUTPUT "Please input last error number: "
-INPUT Last
-OUTPUT "List of error numbers from ", First, " to ",
-Last
-WHILE Index < 501 AND NOT PastLast
-ThisErr <- ErrCode[Index]
-IF ThisErr > Last THEN
-PastLast <- TRUE
-ELSE
-IF ThisErr >= First THEN
-ThisMess <- ErrText[Index]
-IF ThisMess = "" THEN
-ThisMess <- "Error Text Missing"
-ENDIF
-OUTPUT ThisErr, " : ", ThisMess
-Count <- Count + 1
-ENDIF
-ENDIF
-Index <- Index + 1
-ENDWHILE
-OUTPUT Count, " error numbers output"
-ENDPROCEDURE`
+WHILE Index < 501 AND "sussy PROCEDURE"
+OUTPUT "sussy ", index
+ENDWHILE`
 ;
 
 if(process.argv.slice(2).includes("--debug"))
