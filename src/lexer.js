@@ -99,6 +99,10 @@ export function symbolize(input) {
             str.write("parentheses.open");
         else if (str.cons(")"))
             str.write("parentheses.close");
+        else if (str.cons("["))
+            str.write("bracket.open");
+        else if (str.cons("]"))
+            str.write("bracket.close");
         else if (str.cons("{"))
             str.write("brace.open");
         else if (str.cons("}"))
@@ -113,7 +117,7 @@ export function symbolize(input) {
             str.write("punctuation.semicolon");
         else if (str.cons(`,`))
             str.write("punctuation.comma");
-        else if (str.cons(" "))
+        else if (str.cons(" ") || str.cons("\t"))
             str.write("space");
         else if (str.cons("\n"))
             str.write("newline");
@@ -194,6 +198,12 @@ export function tokenize(input) {
                 case "CONSTANT":
                     write("keyword.constant");
                     break;
+                case "OUTPUT":
+                    write("keyword.output");
+                    break;
+                case "INPUT":
+                    write("keyword.input");
+                    break;
                 case "IF":
                     write("keyword.if");
                     break;
@@ -203,7 +213,7 @@ export function tokenize(input) {
                 case "FOR":
                     write("keyword.for");
                     break;
-                case "ENDFOR":
+                case "NEXT":
                     write("keyword.for_end");
                     break;
                 case "WHILE":

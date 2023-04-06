@@ -38,7 +38,8 @@ type TokenType =
 	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
 	"comment" |
 	"name" |
-	"keyword.declare" | "keyword.constant" | "keyword.if" | "keyword.if_end" | "keyword.for" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
+	"keyword.declare" | "keyword.constant" | "keyword.output" | "keyword.input" |
+	"keyword.if" | "keyword.if_end" | "keyword.for" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
 type Token = {
@@ -124,6 +125,8 @@ export function symbolize(input:string){
 		else if(str.cons("/")) str.write("operator.divide");
 		else if(str.cons("(")) str.write("parentheses.open");
 		else if(str.cons(")")) str.write("parentheses.close");
+		else if(str.cons("[")) str.write("bracket.open");
+		else if(str.cons("]")) str.write("bracket.close");
 		else if(str.cons("{")) str.write("brace.open");
 		else if(str.cons("}")) str.write("brace.close");
 		else if(str.cons(`'`)) str.write("quote.single");
@@ -131,7 +134,7 @@ export function symbolize(input:string){
 		else if(str.cons(`:`)) str.write("punctuation.colon");
 		else if(str.cons(`;`)) str.write("punctuation.semicolon");
 		else if(str.cons(`,`)) str.write("punctuation.comma");
-		else if(str.cons(" ")) str.write("space");
+		else if(str.cons(" ") || str.cons("\t")) str.write("space");
 		else if(str.cons("\n")) str.write("newline");
 		else if(str.isNumber()){
 			let number = "";
@@ -194,10 +197,12 @@ export function tokenize(input:Symbol[]):Token[] {
 			switch(symbol.text){
 				case "DECLARE": write("keyword.declare"); break;
 				case "CONSTANT": write("keyword.constant"); break;
+				case "OUTPUT": write("keyword.output"); break;
+				case "INPUT": write("keyword.input"); break;
 				case "IF": write("keyword.if"); break;
 				case "ENDIF": write("keyword.if_end"); break;
 				case "FOR": write("keyword.for"); break;
-				case "ENDFOR": write("keyword.for_end"); break;
+				case "NEXT": write("keyword.for_end"); break;
 				case "WHILE": write("keyword.while"); break;
 				case "ENDWHILE": write("keyword.while_end"); break;
 				case "REPEAT": write("keyword.dowhile"); break;
