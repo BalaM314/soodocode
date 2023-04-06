@@ -227,7 +227,7 @@ export function tokenize(input:Symbol[]):Token[] {
 	}
 }
 
-function debugParse(input:string){
+export function debugParse(input:string){
 	console.log(`Parsing input: ${input}`);
 	try {
 		const symbols = symbolize(input);
@@ -277,6 +277,6 @@ WHILE Index < 501 AND "sussy PROCEDURE"
 OUTPUT "sussy ", index
 ENDWHILE`
 ;
-
-if(process.argv.slice(2).includes("--debug"))
-	procedureCode.split("\n").forEach(line => debugParse(line));
+try {
+	if(process.argv.slice(2).includes("--debug")) procedureCode.split("\n").forEach(line => debugParse(line));
+} catch(err){}
