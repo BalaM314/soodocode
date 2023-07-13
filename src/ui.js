@@ -31,10 +31,16 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerHTML = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked).replaceAll("\t", "  ")
+        let text = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked).replaceAll("\t", "  ")
+            //Syntax highlighting
             .replace(/([+\-*\/])/g, d => `<span style="color:cyan;">${d}</span>`)
-            .replace(/(\d+)/g, d => `<span style="color:#B5CEA8;">${d}</span>`)
-            .replace(/(.*)[()]/g, d => `${d.split(/[()]/)[0]}<span style="color:hsl(${((d.length - 1) / 2) * (360 / 6)}, 100%, 70%);">${d.at(-1)}</span>`);
+            .replace(/(\d+)/g, d => `<span style="color:#B5CEA8;">${d}</span>`);
+        if (dumpExpressionTreeVerbose.checked) {
+            //Context-sensitive syntax highlighting
+            text = text
+                .replace(/(.*)[()]/g, d => `${d.split(/[()]/)[0]}<span style="color:hsl(${((d.length - 1) / 2) * (360 / 6)}, 100%, 70%);">${d.at(-1)}</span>`);
+        }
+        expressionOutputDiv.innerHTML = text;
         expressionOutputDiv.style.color = "white";
     }
     catch (err) {
