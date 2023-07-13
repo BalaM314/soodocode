@@ -31,7 +31,10 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerText = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked).replaceAll("\t", "  ");
+        expressionOutputDiv.innerHTML = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked).replaceAll("\t", "  ")
+            .replace(/([+\-*\/])/g, d => `<span style="color:cyan;">${d}</span>`)
+            .replace(/(\d+)/g, d => `<span style="color:#B5CEA8;">${d}</span>`)
+            .replace(/(.*)[()]/g, d => `${d.split(/[()]/)[0]}<span style="color:hsl(${((d.length - 1) / 2) * (360 / 6)}, 100%, 70%);">${d.at(-1)}</span>`);
         expressionOutputDiv.style.color = "white";
     }
     catch (err) {
