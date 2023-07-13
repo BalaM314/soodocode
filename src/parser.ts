@@ -43,12 +43,17 @@ function getOperatorIndex(input:Token[], operators:string[]){
 export function parse(input:Token[]):ASTNode {
 	for(const operatorsOfPriority of operators){
 		if(input.length == 1){
-			return input[0];
+			if(input[0].type == "number.decimal")
+				return input[0];
+			else
+				throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number.`);
 		}
 		const index = getOperatorIndex(input, operatorsOfPriority);
 		if(index != -1){
 			const left = input.slice(0, index);
 			const right = input.slice(index + 1);
+			if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator.`);
+			if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator.`);
 			return {
 				token: input[index],
 				nodes: [parse(left), parse(right)]
