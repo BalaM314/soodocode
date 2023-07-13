@@ -69,9 +69,9 @@ export function display(node:ASTNode, expand = false):string {
 	} else {
 		return expand ? (
 `(
-${display(node.nodes[0], expand).split("\n").map(l => "\t" + l).join("\n")}
-	${node.token.text}
-${display(node.nodes[1], expand).split("\n").map(l => "\t" + l).join("\n")}
+${display(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
+${node.token.text}
+${display(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`
 		) : (
 `(${display(node.nodes[0])} ${node.token.text} ${display(node.nodes[1])})`
