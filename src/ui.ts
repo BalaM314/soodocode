@@ -4,7 +4,7 @@ import * as parser from "./parser.js";
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
 	if(element instanceof type) return element as T["prototype"];
-	else if(element instanceof HTMLElement) throw new Error(`Element with id was fetched as type ${type}, but was of type ${element.constructor.name}`);
+	else if(element instanceof HTMLElement) throw new Error(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
 	else throw new Error(`Element with id ${id} does not exist`);
 }
 
@@ -14,6 +14,46 @@ const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const runButton = getElement("run-button", HTMLButtonElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
+const expressionInput = getElement("expression-input", HTMLInputElement);
+const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
+const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
+const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
+
+evaluateExpressionButton.addEventListener("click", e => {
+	try {
+		expressionOutputDiv.innerText = parser.evaluate(
+			parser.parse(
+				lexer.tokenize(
+					lexer.symbolize(
+						expressionInput.value
+					)
+				)
+			)
+		).toString();
+		expressionOutputDiv.style.color = "white";
+	} catch(err){
+		expressionOutputDiv.style.color = "red";
+		expressionOutputDiv.innerText = "Error: " + (err as Error).message;
+	}
+});
+
+dumpExpressionTreeButton.addEventListener("click", e => {
+	try {
+		expressionOutputDiv.innerText = parser.display(
+			parser.parse(
+				lexer.tokenize(
+					lexer.symbolize(
+						expressionInput.value
+					)
+				)
+			)
+		).toString();
+		expressionOutputDiv.style.color = "white";
+	} catch(err){
+		expressionOutputDiv.style.color = "red";
+		expressionOutputDiv.innerText = "Error: " + (err as Error).message;
+	}
+});
 
 soodocodeInput.onkeydown = e => {
 	if(e.key == "Tab"){
