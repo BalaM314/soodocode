@@ -1,17 +1,5 @@
 
-type lexemeTypes = Record<string, LexemeType>;
-interface LexemeType {
-	matcher: RegExp;
-}
-interface LexemeAST {
-	nodes: ASTNode[];
-	
-}
-type ASTNode = {
-	
-}
-
-type SymbolType =
+export type SymbolType =
 	"number.decimal" |
 	"quote.single" | "quote.double" |
 	"brace.open" | "brace.close" |
@@ -24,12 +12,12 @@ type SymbolType =
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
 
-type Symbol = {
+export type Symbol = {
 	type: SymbolType;
 	text: string;
 }
 
-type TokenType =
+export type TokenType =
 	"number.decimal" |
 	"string" |
 	"brace.open" | "brace.close" |
@@ -42,13 +30,9 @@ type TokenType =
 	"keyword.if" | "keyword.if_end" | "keyword.for" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
-type Token = {
+export type Token = {
 	type: TokenType;
 	text: string;
-}
-
-interface Lexer {
-	parse(input:string): LexemeAST;
 }
 
 
@@ -239,6 +223,11 @@ export function debugParse(input:string){
 		console.log(`Error: ${(err as any).message}`);
 	}
 }
+
+export function getText(tokens:Token[]){
+	return tokens.map(t => t.text).join(" ");
+}
+
 // const procedureCode = `\
 // PROCEDURE OutputRange()
 // DECLARE First, Last, Count, Index, ThisErr : INTEGER

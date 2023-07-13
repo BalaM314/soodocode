@@ -281,6 +281,9 @@ export function debugParse(input) {
         console.log(`Error: ${err.message}`);
     }
 }
+export function getText(tokens) {
+    return tokens.map(t => t.text).join(" ");
+}
 // const procedureCode = `\
 // PROCEDURE OutputRange()
 // DECLARE First, Last, Count, Index, ThisErr : INTEGER
