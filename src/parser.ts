@@ -34,8 +34,8 @@ const out:ASTTreeNode = {
 
 const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
 
-function getOperator(input:Token[], operators:string[]){
-	return input.findIndex(
+function getOperatorIndex(input:Token[], operators:string[]){
+	return input.findLastIndex(
 		t => operators.map(o => `operator.${o}`).includes(t.type) //Find the first token whose type is one of the operators
 	);
 }
@@ -45,7 +45,7 @@ export function parse(input:Token[]):ASTNode {
 		if(input.length == 1){
 			return input[0];
 		}
-		const index = getOperator(input, operatorsOfPriority);
+		const index = getOperatorIndex(input, operatorsOfPriority);
 		if(index != -1){
 			const left = input.slice(0, index);
 			const right = input.slice(index + 1);
