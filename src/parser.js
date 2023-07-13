@@ -46,6 +46,31 @@ export function parse(input) {
     }
     throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found.`);
 }
+export function display(node) {
+    if ("type" in node) {
+        return `${node.text}`;
+    }
+    else {
+        return `(${display(node.nodes[0])}${node.token.text}${display(node.nodes[1])})`;
+    }
+}
+export function evaluate(node) {
+    if ("type" in node) {
+        if (node.type == "number.decimal")
+            return Number(node.text);
+        else
+            throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
+    }
+    else if (node.token.type.startsWith("operator.")) {
+        switch (node.token.type.split("operator.")[1]) {
+            case "add": return evaluate(node.nodes[0]) + evaluate(node.nodes[1]);
+            case "subtract": return evaluate(node.nodes[0]) - evaluate(node.nodes[1]);
+            case "multiply": return evaluate(node.nodes[0]) * evaluate(node.nodes[1]);
+            case "divide": return evaluate(node.nodes[0]) / evaluate(node.nodes[1]);
+        }
+    }
+    throw new Error(`Cannot evaluate expression: cannot evaluate node <${display(node)}>: unknown operator token type ${node.token.type}`);
+}
 // const x:ProgramAST = {nodes: [
 // 	{nodes: ["DECLARE" , "Count", ":", "INTEGER"]},
 // 	Count <- 1
