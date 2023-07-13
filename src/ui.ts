@@ -1,4 +1,5 @@
 import * as lexer from "./lexer.js";
+import * as parser from "./parser.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
@@ -74,3 +75,10 @@ dumpTokensButton.addEventListener("click", e => {
 		console.log(`Error: ${(err as any).message}`);
 	}
 });
+
+function dumpFunctionsToGlobalScope(){
+	Object.assign(window, lexer, parser);
+}
+
+dumpFunctionsToGlobalScope();
+
