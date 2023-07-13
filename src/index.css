@@ -53,3 +53,13 @@ th {
 td, th {
 	padding: 5px;
 }
+
+.output-div {
+	min-width: 100px;
+	width: fit-content;
+	min-height: 50px;
+	background-color: black;
+	border: 2px dashed green;
+	font-family: 'Courier New', Courier, monospace;
+
+}
