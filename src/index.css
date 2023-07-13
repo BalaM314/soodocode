@@ -18,7 +18,7 @@ html {
 	height: 100%;
 	overflow: hidden;
 }
-#soodocode-input, input {
+#soodocode-input, input[type="text"] {
 	font-size: larger;
 	margin: 20px;
 	padding: 10px;
@@ -61,5 +61,7 @@ td, th {
 	background-color: black;
 	border: 2px dashed green;
 	font-family: 'Courier New', Courier, monospace;
-
+	white-space: pre;
+	margin: 20px;
+	padding: 5px;
 }
