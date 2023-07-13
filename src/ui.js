@@ -17,6 +17,7 @@ const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const expressionInput = getElement("expression-input", HTMLInputElement);
 const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
 const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
+const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 evaluateExpressionButton.addEventListener("click", e => {
     try {
@@ -30,7 +31,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerText = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value)))).toString();
+        expressionOutputDiv.innerText = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked).replaceAll("\t", "  ");
         expressionOutputDiv.style.color = "white";
     }
     catch (err) {

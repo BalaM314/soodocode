@@ -46,28 +46,36 @@ export function parse(input:Token[]):ASTNode {
 			if(input[0].type == "number.decimal")
 				return input[0];
 			else
-				throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number.`);
+				throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number`);
 		}
 		const index = getOperatorIndex(input, operatorsOfPriority);
 		if(index != -1){
 			const left = input.slice(0, index);
 			const right = input.slice(index + 1);
-			if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator.`);
-			if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator.`);
+			if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[index].text}`);
+			if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[index].text}`);
 			return {
 				token: input[index],
 				nodes: [parse(left), parse(right)]
 			};
 		}
 	}
-	throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found.`);
+	throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }
 
-export function display(node:ASTNode):string {
+export function display(node:ASTNode, expand = false):string {
 	if("type" in node){
 		return `${node.text}`;
 	} else {
-		return `(${display(node.nodes[0])}${node.token.text}${display(node.nodes[1])})`;
+		return expand ? (
+`(
+${display(node.nodes[0], expand).split("\n").map(l => "\t" + l).join("\n")}
+	${node.token.text}
+${display(node.nodes[1], expand).split("\n").map(l => "\t" + l).join("\n")}
+)`
+		) : (
+`(${display(node.nodes[0])} ${node.token.text} ${display(node.nodes[1])})`
+		);
 	}
 }
 
