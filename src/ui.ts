@@ -53,17 +53,22 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 		//Syntax highlighting
 		let outputText = "";
 		let linePos = 0;
+		let lineParenColor:string | null = null;
 		for(const char of text){
 			if(char == "\t") outputText += "  ";
 			else if(['+','-','*','/'].includes(char)) outputText += `<span style="color:white;font-weight:bold;">${char}</span>`;
 			else if(/\d/.test(char)) outputText += `<span style="color:#B5CEA8;">${char}</span>`;
 			else if(dumpExpressionTreeVerbose.checked && ['(',')'].includes(char)){
-				outputText += `<span style="color:hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`
+				lineParenColor ??= `hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%)`;
+				outputText += `<span style="color:${lineParenColor}">${char}</span>`
 			} else if(dumpExpressionTreeVerbose.checked && ['↱','↳'].includes(char)){
 				outputText += `<span style="color:hsl(${(1 + linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`
 			} else outputText += char;
 			linePos ++;
-			if(char == "\n") linePos = 0;
+			if(char == "\n"){
+				linePos = 0;
+				lineParenColor = null;
+			}
 		}
 
 		expressionOutputDiv.innerHTML = outputText;
