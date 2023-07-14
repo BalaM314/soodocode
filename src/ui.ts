@@ -40,7 +40,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 
 dumpExpressionTreeButton.addEventListener("click", e => {
 	try {
-		let text = parser.display(
+		const text = parser.display(
 			parser.parse(
 				lexer.tokenize(
 					lexer.symbolize(
@@ -48,16 +48,25 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 					)
 				)
 			), dumpExpressionTreeVerbose.checked
-		).replaceAll("\t", "  ")
+		)
+
 		//Syntax highlighting
-		.replace(/([+\-*\/])/g, d => `<span style="color:cyan;">${d}</span>`)
-		.replace(/(\d+)/g, d => `<span style="color:#B5CEA8;">${d}</span>`)
-		if(dumpExpressionTreeVerbose.checked){
-			//Context-sensitive syntax highlighting
-			text = text
-			.replace(/(.*)[()]/g, d => `${d.split(/[()]/)[0]}<span style="color:hsl(${((d.length - 1) / 2) * (360 / 6)}, 100%, 70%);">${d.at(-1)}</span>`);
+		let outputText = "";
+		let linePos = 0;
+		for(const char of text){
+			if(char == "\t") outputText += "  ";
+			else if(['+','-','*','/'].includes(char)) outputText += `<span style="color:white;font-weight:bold;">${char}</span>`;
+			else if(/\d/.test(char)) outputText += `<span style="color:#B5CEA8;">${char}</span>`;
+			else if(dumpExpressionTreeVerbose.checked && ['(',')'].includes(char)){
+				outputText += `<span style="color:hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`
+			} else if(dumpExpressionTreeVerbose.checked && ['↱','↳'].includes(char)){
+				outputText += `<span style="color:hsl(${(1 + linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`
+			} else outputText += char;
+			linePos ++;
+			if(char == "\n") linePos = 0;
 		}
-		expressionOutputDiv.innerHTML = text;
+
+		expressionOutputDiv.innerHTML = outputText;
 		expressionOutputDiv.style.color = "white";
 	} catch(err){
 		expressionOutputDiv.style.color = "red";
