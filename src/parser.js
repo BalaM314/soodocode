@@ -30,26 +30,40 @@ function getOperatorIndex(input, operators) {
     );
 }
 export function parse(input) {
+    var _a, _b;
+    if (input.length == 1) {
+        if (input[0].type == "number.decimal")
+            return input[0];
+        else
+            throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number`);
+    }
+    if (((_a = input[0]) === null || _a === void 0 ? void 0 : _a.type) == "parentheses.open" && ((_b = input.at(-1)) === null || _b === void 0 ? void 0 : _b.type) == "parentheses.close")
+        return parse(input.slice(1, -1));
     for (const operatorsOfPriority of operators) {
-        if (input.length == 1) {
-            if (input[0].type == "number.decimal")
-                return input[0];
-            else
-                throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number`);
+        let parenNestLevel = 0;
+        for (let i = input.length - 1; i >= 0; i--) {
+            if (input[i].type == "parentheses.close")
+                parenNestLevel++;
+            else if (input[i].type == "parentheses.open")
+                parenNestLevel--;
+            if (parenNestLevel < 0)
+                throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
+            if (operatorsOfPriority.map(o => `operator.${o}`).includes(input[i].type) &&
+                parenNestLevel == 0) {
+                const left = input.slice(0, i);
+                const right = input.slice(i + 1);
+                if (left.length == 0)
+                    throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                if (right.length == 0)
+                    throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                return {
+                    token: input[i],
+                    nodes: [parse(left), parse(right)]
+                };
+            }
         }
-        const index = getOperatorIndex(input, operatorsOfPriority);
-        if (index != -1) {
-            const left = input.slice(0, index);
-            const right = input.slice(index + 1);
-            if (left.length == 0)
-                throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[index].text}`);
-            if (right.length == 0)
-                throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[index].text}`);
-            return {
-                token: input[index],
-                nodes: [parse(left), parse(right)]
-            };
-        }
+        if (parenNestLevel != 0)
+            throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
     }
     throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }
