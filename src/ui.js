@@ -123,7 +123,7 @@ dumpTokensButton.addEventListener("click", e => {
 </table>`;
     }
     catch (err) {
-        console.log(`Error: ${err.message}`);
+        outputDiv.innerText = `Error: ${err.message}`;
     }
 });
 function dumpFunctionsToGlobalScope() {

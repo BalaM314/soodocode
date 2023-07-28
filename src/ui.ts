@@ -136,7 +136,7 @@ dumpTokensButton.addEventListener("click", e => {
 </table>`
 		;
 	} catch(err){
-		console.log(`Error: ${(err as any).message}`);
+		outputDiv.innerText = `Error: ${(err as any).message}`;
 	}
 });
 
