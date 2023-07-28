@@ -27,6 +27,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 				lexer.tokenize(
 					lexer.symbolize(
 						expressionInput.value
+						// |> operator when
 					)
 				)
 			)

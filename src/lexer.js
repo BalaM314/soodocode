@@ -94,6 +94,7 @@ const symbolTypes = [
     ["-", "operator.subtract"],
     ["*", "operator.multiply"],
     ["/", "operator.divide"],
+    ["^", "operator.pointer"],
     ["(", "parentheses.open"],
     [")", "parentheses.close"],
     ["[", "bracket.open"],

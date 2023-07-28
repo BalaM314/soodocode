@@ -21,7 +21,9 @@ const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTM
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 evaluateExpressionButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerText = parser.evaluate(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value)))).toString();
+        expressionOutputDiv.innerText = parser.evaluate(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value
+        // |> operator when
+        )))).toString();
         expressionOutputDiv.style.color = "white";
     }
     catch (err) {

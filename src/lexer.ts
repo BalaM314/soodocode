@@ -10,7 +10,7 @@ export type SymbolType =
 	"word" |
 	"space" |
 	"newline" |
-	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
+	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer";
 
 export type Symbol = {
 	type: SymbolType;
@@ -136,6 +136,7 @@ const symbolTypes: [
 	["-", "operator.subtract"],
 	["*", "operator.multiply"],
 	["/", "operator.divide"],
+	["^", "operator.pointer"],
 	["(", "parentheses.open"],
 	[")", "parentheses.close"],
 	["[", "bracket.open"],
