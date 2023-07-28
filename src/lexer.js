@@ -52,94 +52,65 @@ class SymbolizerIO {
 }
 export function symbolize(input) {
     const str = new SymbolizerIO(input);
-    while (str.has()) {
-        if (false)
-            0;
-        else if (str.cons("MOD"))
-            str.write("operator.mod");
-        else if (str.cons("AND"))
-            str.write("operator.and");
-        else if (str.cons("OR"))
-            str.write("operator.or");
-        else if (str.cons("NOT"))
-            str.write("operator.not");
-        else if (str.cons("DIV"))
-            str.write("operator.integer_divide");
-        else if (str.cons("<-"))
-            str.write("operator.assignment");
-        else if (str.cons(">="))
-            str.write("operator.greater_than_equal");
-        else if (str.cons("<="))
-            str.write("operator.less_than_equal");
-        else if (str.cons("<>"))
-            str.write("operator.not_equal_to");
-        else if (str.cons("//"))
-            str.write("comment.singleline");
-        else if (str.cons("/*"))
-            str.write("comment.multiline_open");
-        else if (str.cons("*/"))
-            str.write("comment.multiline_close");
-        else if (str.cons("="))
-            str.write("operator.equal_to");
-        else if (str.cons(">"))
-            str.write("operator.greater_than");
-        else if (str.cons("<"))
-            str.write("operator.less_than");
-        else if (str.cons("-"))
-            str.write("operator.subtract");
-        else if (str.cons("+"))
-            str.write("operator.add");
-        else if (str.cons("-"))
-            str.write("operator.subtract");
-        else if (str.cons("*"))
-            str.write("operator.multiply");
-        else if (str.cons("/"))
-            str.write("operator.divide");
-        else if (str.cons("("))
-            str.write("parentheses.open");
-        else if (str.cons(")"))
-            str.write("parentheses.close");
-        else if (str.cons("["))
-            str.write("bracket.open");
-        else if (str.cons("]"))
-            str.write("bracket.close");
-        else if (str.cons("{"))
-            str.write("brace.open");
-        else if (str.cons("}"))
-            str.write("brace.close");
-        else if (str.cons(`'`))
-            str.write("quote.single");
-        else if (str.cons(`"`))
-            str.write("quote.double");
-        else if (str.cons(`:`))
-            str.write("punctuation.colon");
-        else if (str.cons(`;`))
-            str.write("punctuation.semicolon");
-        else if (str.cons(`,`))
-            str.write("punctuation.comma");
-        else if (str.cons(" ") || str.cons("\t"))
-            str.write("space");
-        else if (str.cons("\n"))
-            str.write("newline");
-        else if (str.isNumber()) {
-            let number = "";
-            do {
-                number += str.read();
-            } while (str.isNumber());
-            str.writeText("number.decimal", number);
+    toNextCharacter: while (str.has()) {
+        for (const [identifier, symbolType] of symbolTypes) {
+            if (typeof identifier == "string") {
+                if (str.cons(identifier)) {
+                    str.write(symbolType);
+                    continue toNextCharacter;
+                }
+            }
+            else if (identifier.call(str)) {
+                let buffer = "";
+                do {
+                    buffer += str.read();
+                } while (identifier.call(str));
+                str.writeText(symbolType, buffer);
+                continue toNextCharacter;
+            }
         }
-        else if (str.isAlphanumeric()) {
-            let word = "";
-            do {
-                word += str.read();
-            } while (str.isAlphanumeric());
-            str.writeText("word", word);
-        }
-        else
-            throw new Error(`Invalid character "${str.at()}"`);
+        throw new Error(`Invalid character "${str.at()}"`);
     }
     return str.output;
 }
+const symbolTypes = [
+    ["MOD", "operator.mod"],
+    ["AND", "operator.and"],
+    ["OR", "operator.or"],
+    ["NOT", "operator.not"],
+    ["DIV", "operator.integer_divide"],
+    ["<-", "operator.assignment"],
+    [">=", "operator.greater_than_equal"],
+    ["<=", "operator.less_than_equal"],
+    ["<>", "operator.not_equal_to"],
+    ["//", "comment.singleline"],
+    ["/*", "comment.multiline_open"],
+    ["*/", "comment.multiline_close"],
+    ["=", "operator.equal_to"],
+    [">", "operator.greater_than"],
+    ["<", "operator.less_than"],
+    ["-", "operator.subtract"],
+    ["+", "operator.add"],
+    ["-", "operator.subtract"],
+    ["*", "operator.multiply"],
+    ["/", "operator.divide"],
+    ["(", "parentheses.open"],
+    [")", "parentheses.close"],
+    ["[", "bracket.open"],
+    ["]", "bracket.close"],
+    ["{", "brace.open"],
+    ["}", "brace.close"],
+    ["'", "quote.single"],
+    ["\"", "quote.double"],
+    [":", "punctuation.colon"],
+    [";", "punctuation.semicolon"],
+    [",", "punctuation.comma"],
+    [" ", "space"],
+    ["\t", "space"],
+    ["\n", "newline"],
+    [SymbolizerIO.prototype.isNumber, "number.decimal"],
+    [SymbolizerIO.prototype.isAlphanumeric, "word"],
+];
 export function tokenize(input) {
     const output = [];
     const state = {

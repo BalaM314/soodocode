@@ -107,6 +107,7 @@ export function symbolize(input:string){
 	return str.output;
 }
 
+//TS magic: _ is a default type argument to create a variable inside a generic, which is necessary to trigger DCT
 type Funcs<
 	Proto = (typeof SymbolizerIO)["prototype"],
 	_ = Proto[keyof Proto]
@@ -115,7 +116,7 @@ type Funcs<
 const symbolTypes: [
 	identifier: string | Funcs, symbol:SymbolType
 ][] = [
-    ["MOD", "operator.mod"],
+	["MOD", "operator.mod"],
 	["AND", "operator.and"],
 	["OR", "operator.or"],
 	["NOT", "operator.not"],
