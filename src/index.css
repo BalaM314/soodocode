@@ -1,13 +1,6 @@
-#container {
-	margin: 20px;
-	border: ridge green 10px;
-	padding: 15px;
-	background-color: #002;
-	color: whitesmoke;
-	font-size: 20px;
-}
+
 body {
-	margin-top: 0px;
+	margin: 0px;
 	background-image: url("https://balam314.github.io/starfield.png");
 	background-repeat: no-repeat;
 	background-color: #000;
@@ -18,6 +11,14 @@ html {
 	height: 100%;
 	overflow: hidden;
 }
+#container {
+	margin: 20px;
+	border: ridge green 10px;
+	padding: 15px;
+	background-color: #002;
+	color: whitesmoke;
+	font-size: 20px;
+}
 #soodocode-input, input[type="text"] {
 	font-size: larger;
 	margin: 20px;
@@ -25,7 +26,19 @@ html {
 	background-color: #051505;
 	color: #FFF;
 }
-#run-button {
+@media screen and (max-width: 600px) {
+	#container {
+		margin: 0px;
+		padding: 15px 1.5vw;
+		border-width: 5px;
+		background-color: #0046;
+	}
+	#soodocode-input {
+		margin: 0px;
+		width: 95%;
+	}
+}
+button {
 	font-size: larger;
 }
 #input-wrapper {
