@@ -177,39 +177,6 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 	throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }
 
-export function displayExpression(node:ExpressionASTNode, expand = false):string {
-	if("type" in node){
-		return `${node.text}`;
-	} else if(!expand || ("type" in node.nodes[0] && "type" in node.nodes[1])){
-		return (
-		`(${displayExpression(node.nodes[0])} ${node.token.text} ${displayExpression(node.nodes[1])})`
-		);
-	} else {
-		return (
-`(
-${displayExpression(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.token.text}
-${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
-)`
-		);
-	}
-}
-
-export function evaluateExpression(node:ExpressionASTNode):number {
-	if("type" in node){
-		if(node.type == "number.decimal") return Number(node.text);
-		else throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
-	} else if(node.token.type.startsWith("operator.")){
-		switch(node.token.type.split("operator.")[1]){
-			case "add": return evaluateExpression(node.nodes[0]) + evaluateExpression(node.nodes[1]);
-			case "subtract": return evaluateExpression(node.nodes[0]) - evaluateExpression(node.nodes[1]);
-			case "multiply": return evaluateExpression(node.nodes[0]) * evaluateExpression(node.nodes[1]);
-			case "divide": return evaluateExpression(node.nodes[0]) / evaluateExpression(node.nodes[1]);
-		}
-	}
-	throw new Error(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator token type ${node.token.type}`)
-}
-
 // const x:ProgramAST = {nodes: [
 // 	{nodes: ["DECLARE" , "Count", ":", "INTEGER"]},
 

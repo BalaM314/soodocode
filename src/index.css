@@ -78,3 +78,8 @@ td, th {
 	margin: 20px;
 	padding: 5px;
 }
+
+.program-display-block {
+	border: 5px solid cyan;
+	padding: 10px;
+}

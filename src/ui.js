@@ -9,6 +9,61 @@ function getElement(id, type) {
     else
         throw new Error(`Element with id ${id} does not exist`);
 }
+export function displayExpression(node, expand = false) {
+    if ("type" in node) {
+        return `${node.text}`;
+    }
+    else if (!expand || ("type" in node.nodes[0] && "type" in node.nodes[1])) {
+        return (`(${displayExpression(node.nodes[0])} ${node.token.text} ${displayExpression(node.nodes[1])})`);
+    }
+    else {
+        return (`(
+${displayExpression(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
+${node.token.text}
+${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
+)`);
+    }
+}
+export function stringifyStatement(statement) {
+    return statement.tokens.map(t => t.text).join(" ");
+}
+export function flattenTree(program) {
+    return program.map(s => {
+        if ("startStatement" in s)
+            return flattenTree(s.nodes).map(([depth, statement]) => [depth + 1, statement]);
+        else
+            return [[0, s]];
+    }).flat(1);
+}
+export function displayProgram(program) {
+    return program.map(node => {
+        if ("startStatement" in node)
+            return (`<div class="program-display-block">
+${stringifyStatement(node.startStatement)}
+${displayProgram(node.nodes)}
+${stringifyStatement(node.endStatement)}
+</div>`);
+        else
+            return stringifyStatement(node);
+    }).join("\n");
+}
+export function evaluateExpression(node) {
+    if ("type" in node) {
+        if (node.type == "number.decimal")
+            return Number(node.text);
+        else
+            throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
+    }
+    else if (node.token.type.startsWith("operator.")) {
+        switch (node.token.type.split("operator.")[1]) {
+            case "add": return evaluateExpression(node.nodes[0]) + evaluateExpression(node.nodes[1]);
+            case "subtract": return evaluateExpression(node.nodes[0]) - evaluateExpression(node.nodes[1]);
+            case "multiply": return evaluateExpression(node.nodes[0]) * evaluateExpression(node.nodes[1]);
+            case "divide": return evaluateExpression(node.nodes[0]) / evaluateExpression(node.nodes[1]);
+        }
+    }
+    throw new Error(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator token type ${node.token.type}`);
+}
 const title = getElement("title", HTMLHeadingElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
@@ -21,7 +76,7 @@ const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTM
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 evaluateExpressionButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerText = parser.evaluateExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
+        expressionOutputDiv.innerText = evaluateExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
         // |> operator when
         )))).toString();
         expressionOutputDiv.style.color = "white";
@@ -33,7 +88,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        const text = parser.displayExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked);
+        const text = displayExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked);
         //Syntax highlighting
         let outputText = "";
         let linePos = 0;
@@ -125,14 +180,7 @@ dumpTokensButton.addEventListener("click", e => {
 	</tbody>
 </table>
 <h3>Statements</h3>
-<table>
-	<thead>
-		<tr> <th>Text</th> <th>Type</th> </tr>
-	</thead>
-	<tbody>
-		${program.filter((t) => "tokens" in t).map(t => `<tr><td>"${t.tokens.map(t => `<span style="text-decoration: underline;">${t.text}</span>`).join(" ")}"</td><td>${t.type}</td></tr>`).join("\n")}
-	</tbody>
-</table>`;
+${displayProgram(program)}`;
     }
     catch (err) {
         outputDiv.innerText = `Error: ${err.message}`;
