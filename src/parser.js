@@ -1,6 +1,16 @@
 import { getText } from "./lexer.js";
 export function parse(tokens) {
-    todo();
+    const lines = [[]];
+    for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].type == "newline") {
+            if (i != (tokens.length - 1) && lines.at(-1).length != 0)
+                lines.push([]);
+        }
+        else {
+            lines.at(-1).push(tokens[i]);
+        }
+    }
+    return lines.map(l => parseStatement(l));
 }
 /**
  * Parses a string of tokens into a Statement.

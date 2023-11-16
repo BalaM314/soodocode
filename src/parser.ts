@@ -23,7 +23,16 @@ export type StatementType =
 	"declaration" | "assignment" | "output" | "input";
 
 export function parse(tokens:Token[]):ProgramAST {
-	todo();
+	const lines:Token[][] = [[]];
+	for(let i = 0; i < tokens.length; i ++){
+		if(tokens[i].type == "newline"){
+			if(i != (tokens.length - 1) && lines.at(-1)!.length != 0)
+				lines.push([]);
+		} else {
+			lines.at(-1)!.push(tokens[i]);
+		}
+	}
+	return lines.map(l => parseStatement(l));
 }
 
 /**
