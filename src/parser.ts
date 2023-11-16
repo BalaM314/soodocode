@@ -15,12 +15,18 @@ export type Statement = {
 export type ProgramASTLeafNode = Statement;
 export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode;
 export type ProgramASTTreeNode = {
-	token: Token;
+	startStatement: Statement;
+	endStatement: Statement;
+	type: ProgramASTTreeNodeType;
 	nodes: ProgramASTNode[];
 }
+//not necessary
+//export type UnfinishedProgramASTTreeNode = Partial<ProgramASTTreeNode> & Omit<ProgramASTTreeNode, "endStatement">;
 
-export type StatementType = 
-	"declaration" | "assignment" | "output" | "input" | "if";
+export type ProgramASTTreeNodeType = "if";
+export type StatementType =
+	"declaration" | "assignment" | "output" | "input" |
+	"if" | "if.end";
 
 export function parse(tokens:Token[]):ProgramAST {
 	const lines:Token[][] = [[]];
@@ -34,8 +40,35 @@ export function parse(tokens:Token[]):ProgramAST {
 	}
 	const statements = lines.map(parseStatement);
 	const program:ProgramAST = [];
+	function getActiveBuffer(){
+		if(blockStack.length == 0) return program; else return blockStack.at(-1)!.nodes;
+	}
+	const blockStack:ProgramASTTreeNode[] = [];
 	for(const statement of statements){
-		if(["declaration", "assignment", "output", "input", "if"].includes(statement.type)) program.push(statement);
+		switch(statement.type){
+			case "assignment": case "declaration": case "output": case "input":
+				getActiveBuffer().push(statement);
+				break;
+			case "if":
+				const node:ProgramASTTreeNode = {
+					startStatement: statement,
+					endStatement: null!, //null! goes brr
+					type: "if",
+					nodes: []
+				};
+				getActiveBuffer().push(node);
+				blockStack.push(node);
+				break;
+			case "if.end":
+				const lastNode = blockStack.at(-1);
+				if(!lastNode) throw new Error(`Cannot ENDIF: no open blocks`);
+				else if(lastNode.startStatement.type == "if"){
+					lastNode.endStatement = statement;
+					blockStack.pop();
+				} else throw new Error(`Cannot ENDIF: current block is of type ${lastNode.startStatement.type}, not IF`);
+				break;
+				default: statement.type satisfies never; break;
+		}
 	}
 	return program;
 }
@@ -58,6 +91,7 @@ export function parseStatement(tokens:Token[]):Statement {
 			if(tokens[1] && tokens[1].type == "operator.assignment")
 				return { type: "assignment", tokens };
 			else throw new Error(`Invalid statement`);
+		case "keyword.if_end": return { type: "if.end", tokens };
 		default: throw new Error(`Invalid statement`);
 	}
 }

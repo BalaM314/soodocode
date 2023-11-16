@@ -12,9 +12,46 @@ export function parse(tokens) {
     }
     const statements = lines.map(parseStatement);
     const program = [];
+    function getActiveBuffer() {
+        if (blockStack.length == 0)
+            return program;
+        else
+            return blockStack.at(-1).nodes;
+    }
+    const blockStack = [];
     for (const statement of statements) {
-        if (["declaration", "assignment", "output", "input", "if"].includes(statement.type))
-            program.push(statement);
+        switch (statement.type) {
+            case "assignment":
+            case "declaration":
+            case "output":
+            case "input":
+                getActiveBuffer().push(statement);
+                break;
+            case "if":
+                const node = {
+                    startStatement: statement,
+                    endStatement: null,
+                    type: "if",
+                    nodes: []
+                };
+                getActiveBuffer().push(node);
+                blockStack.push(node);
+                break;
+            case "if.end":
+                const lastNode = blockStack.at(-1);
+                if (!lastNode)
+                    throw new Error(`Cannot ENDIF: no open blocks`);
+                else if (lastNode.startStatement.type == "if") {
+                    lastNode.endStatement = statement;
+                    blockStack.pop();
+                }
+                else
+                    throw new Error(`Cannot ENDIF: current block is of type ${lastNode.startStatement.type}, not IF`);
+                break;
+            default:
+                statement.type;
+                break;
+        }
     }
     return program;
 }
@@ -39,6 +76,7 @@ export function parseStatement(tokens) {
                 return { type: "assignment", tokens };
             else
                 throw new Error(`Invalid statement`);
+        case "keyword.if_end": return { type: "if.end", tokens };
         default: throw new Error(`Invalid statement`);
     }
 }
