@@ -183,26 +183,28 @@ export function tokenize(input:Symbol[]):Token[] {
 		} else if(state.mComment){
 			if(symbol.type === "comment.multiline_close") state.mComment = false;
 		} else if(state.sString){
+			currentString += symbol.text;
 			if(symbol.type === "quote.single"){
 				state.sString = false;
 				output.push({text: currentString, type: "string"});
 				currentString = "";
-			} else {
-				currentString += symbol.text;
 			}
 		} else if(state.dString){
+			currentString += symbol.text;
 			if(symbol.type === "quote.double"){
 				state.dString = false;
 				output.push({text: currentString, type: "string"});
 				currentString = "";
-			} else {
-				currentString += symbol.text;
 			}
 		} else if(symbol.type === "comment.singleline") state.sComment = true;
 		else if(symbol.type === "comment.multiline_open") state.mComment = true;
-		else if(symbol.type === "quote.single") state.sString = true;
-		else if(symbol.type === "quote.double") state.dString = true;
-		else if(symbol.type === "space") void 0;
+		else if(symbol.type === "quote.single"){
+			state.sString = true;
+			currentString += symbol.text;
+		} else if(symbol.type === "quote.double"){
+			state.dString = true;
+			currentString += symbol.text;
+		} else if(symbol.type === "space") void 0;
 		else if(symbol.type === "unknown") throw new Error(`Invalid symbol ${symbol.text}`);
 		else if(symbol.type === "word"){
 			switch(symbol.text){

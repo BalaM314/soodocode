@@ -158,9 +158,9 @@ describe("tokenizer", () => {
             { text: "501", type: "number.decimal" },
             { text: "]", type: "bracket.close" },
             { text: "(", type: "parentheses.open" },
-            { text: "AND 501", type: "string" },
+            { text: "'AND 501'", type: "string" },
             { text: "<>", type: "operator.not_equal_to" },
-            { text: "AND 501", type: "string" },
+            { text: `"AND 501"`, type: "string" },
             { text: ")", type: "parentheses.close" },
         ]);
     });
@@ -187,7 +187,7 @@ describe("tokenizer", () => {
             { text: "<", type: "operator.less_than" },
             { text: "501", type: "number.decimal" },
             { text: "AND", type: "operator.and" },
-            { text: `sussy PROCEDURE`, type: "string" },
+            { text: `"sussy PROCEDURE"`, type: "string" },
         ]);
     });
 });

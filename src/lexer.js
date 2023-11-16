@@ -144,33 +144,33 @@ export function tokenize(input) {
                 state.mComment = false;
         }
         else if (state.sString) {
+            currentString += symbol.text;
             if (symbol.type === "quote.single") {
                 state.sString = false;
                 output.push({ text: currentString, type: "string" });
                 currentString = "";
             }
-            else {
-                currentString += symbol.text;
-            }
         }
         else if (state.dString) {
+            currentString += symbol.text;
             if (symbol.type === "quote.double") {
                 state.dString = false;
                 output.push({ text: currentString, type: "string" });
                 currentString = "";
-            }
-            else {
-                currentString += symbol.text;
             }
         }
         else if (symbol.type === "comment.singleline")
             state.sComment = true;
         else if (symbol.type === "comment.multiline_open")
             state.mComment = true;
-        else if (symbol.type === "quote.single")
+        else if (symbol.type === "quote.single") {
             state.sString = true;
-        else if (symbol.type === "quote.double")
+            currentString += symbol.text;
+        }
+        else if (symbol.type === "quote.double") {
             state.dString = true;
+            currentString += symbol.text;
+        }
         else if (symbol.type === "space")
             void 0;
         else if (symbol.type === "unknown")
