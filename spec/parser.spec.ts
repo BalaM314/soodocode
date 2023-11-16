@@ -61,6 +61,25 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			]
 		}
 	],
+	if: [
+		[
+			{text: "IF", type: "keyword.if"},
+			{text: "5", type: "number.decimal"},
+			{text: `<`, type: "operator.less_than"},
+			{text: "x", type: "name"},
+			{text: "THEN", type: "keyword.then"},
+		],
+		{
+			type: "if",
+			tokens: [
+				{text: "IF", type: "keyword.if"},
+				{text: "5", type: "number.decimal"},
+				{text: `<`, type: "operator.less_than"},
+				{text: "x", type: "name"},
+				{text: "THEN", type: "keyword.then"},
+			]
+		}
+	],
 	empty: [
 		[
 		],

@@ -20,7 +20,7 @@ export type ProgramASTTreeNode = {
 }
 
 export type StatementType = 
-	"declaration" | "assignment" | "output" | "input";
+	"declaration" | "assignment" | "output" | "input" | "if";
 
 export function parse(tokens:Token[]):ProgramAST {
 	const lines:Token[][] = [[]];
@@ -32,7 +32,12 @@ export function parse(tokens:Token[]):ProgramAST {
 			lines.at(-1)!.push(tokens[i]);
 		}
 	}
-	return lines.map(l => parseStatement(l));
+	const statements = lines.map(parseStatement);
+	const program:ProgramAST = [];
+	for(const statement of statements){
+		if(["declaration", "assignment", "output", "input", "if"].includes(statement.type)) program.push(statement);
+	}
+	return program;
 }
 
 /**
@@ -45,6 +50,10 @@ export function parseStatement(tokens:Token[]):Statement {
 		case "keyword.declare": return { type: "declaration", tokens };
 		case "keyword.output": return { type: "output", tokens };
 		case "keyword.input": return { type: "input", tokens };
+		case "keyword.if":
+			if(tokens.length >= 3 && tokens.at(-1)!.type == "keyword.then")
+				return { type: "if", tokens };
+				else throw new Error(`Invalid if statement`);
 		case "name":
 			if(tokens[1] && tokens[1].type == "operator.assignment")
 				return { type: "assignment", tokens };
