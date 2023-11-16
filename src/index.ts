@@ -50,7 +50,7 @@ const tokens = {
 	escape: /\\/,
 };
 
-/**If I had a nickel for every time I made a super long AST to store every command in someone else's programming language, I'd have two nickels. That's not a lot, but it's weird that it happened twice. */
+/**If I had a nickel for every time I made a super long data object to store every command in someone else's programming language, I'd have two nickels. That's not a lot, but it's weird that it happened twice. */
 const statements = {
 	declare: {
 		matcher: /DECLARE/,

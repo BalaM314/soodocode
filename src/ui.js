@@ -21,7 +21,7 @@ const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTM
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 evaluateExpressionButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerText = parser.evaluate(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value
+        expressionOutputDiv.innerText = parser.evaluateExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
         // |> operator when
         )))).toString();
         expressionOutputDiv.style.color = "white";
@@ -33,7 +33,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        const text = parser.display(parser.parse(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked);
+        const text = parser.displayExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked);
         //Syntax highlighting
         let outputText = "";
         let linePos = 0;

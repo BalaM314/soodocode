@@ -22,8 +22,8 @@ const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLBu
 
 evaluateExpressionButton.addEventListener("click", e => {
 	try {
-		expressionOutputDiv.innerText = parser.evaluate(
-			parser.parse(
+		expressionOutputDiv.innerText = parser.evaluateExpression(
+			parser.parseExpression(
 				lexer.tokenize(
 					lexer.symbolize(
 						expressionInput.value
@@ -41,8 +41,8 @@ evaluateExpressionButton.addEventListener("click", e => {
 
 dumpExpressionTreeButton.addEventListener("click", e => {
 	try {
-		const text = parser.display(
-			parser.parse(
+		const text = parser.displayExpression(
+			parser.parseExpression(
 				lexer.tokenize(
 					lexer.symbolize(
 						expressionInput.value

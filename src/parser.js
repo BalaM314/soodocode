@@ -1,4 +1,14 @@
 import { getText } from "./lexer.js";
+export function parse(tokens) {
+    todo();
+}
+/**
+ * Parses a string of tokens into a Statement.
+ * @argument tokens must not contain any newlines.
+ **/
+export function parseStatement(tokens) {
+    todo();
+}
 const out = {
     token: { text: "+", type: "operator.add" },
     nodes: [
@@ -25,7 +35,7 @@ const out = {
     ]
 };
 const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
-export function parse(input) {
+export function parseExpression(input) {
     var _a, _b;
     //If there is only one token
     if (input.length == 1) {
@@ -36,7 +46,7 @@ export function parse(input) {
     }
     //If the whole expression is surrounded by parentheses, parse the inner expression
     if (((_a = input[0]) === null || _a === void 0 ? void 0 : _a.type) == "parentheses.open" && ((_b = input.at(-1)) === null || _b === void 0 ? void 0 : _b.type) == "parentheses.close")
-        return parse(input.slice(1, -1));
+        return parseExpression(input.slice(1, -1));
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     for (const operatorsOfPriority of operators) {
         let parenNestLevel = 0;
@@ -65,7 +75,7 @@ export function parse(input) {
                     throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                 return {
                     token: input[i],
-                    nodes: [parse(left), parse(right)]
+                    nodes: [parseExpression(left), parseExpression(right)]
                 };
             }
         }
@@ -77,22 +87,22 @@ export function parse(input) {
     //No operators found at all, something went wrong
     throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }
-export function display(node, expand = false) {
+export function displayExpression(node, expand = false) {
     if ("type" in node) {
         return `${node.text}`;
     }
     else if (!expand || ("type" in node.nodes[0] && "type" in node.nodes[1])) {
-        return (`(${display(node.nodes[0])} ${node.token.text} ${display(node.nodes[1])})`);
+        return (`(${displayExpression(node.nodes[0])} ${node.token.text} ${displayExpression(node.nodes[1])})`);
     }
     else {
         return (`(
-${display(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
+${displayExpression(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
 ${node.token.text}
-${display(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
+${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`);
     }
 }
-export function evaluate(node) {
+export function evaluateExpression(node) {
     if ("type" in node) {
         if (node.type == "number.decimal")
             return Number(node.text);
@@ -101,13 +111,13 @@ export function evaluate(node) {
     }
     else if (node.token.type.startsWith("operator.")) {
         switch (node.token.type.split("operator.")[1]) {
-            case "add": return evaluate(node.nodes[0]) + evaluate(node.nodes[1]);
-            case "subtract": return evaluate(node.nodes[0]) - evaluate(node.nodes[1]);
-            case "multiply": return evaluate(node.nodes[0]) * evaluate(node.nodes[1]);
-            case "divide": return evaluate(node.nodes[0]) / evaluate(node.nodes[1]);
+            case "add": return evaluateExpression(node.nodes[0]) + evaluateExpression(node.nodes[1]);
+            case "subtract": return evaluateExpression(node.nodes[0]) - evaluateExpression(node.nodes[1]);
+            case "multiply": return evaluateExpression(node.nodes[0]) * evaluateExpression(node.nodes[1]);
+            case "divide": return evaluateExpression(node.nodes[0]) / evaluateExpression(node.nodes[1]);
         }
     }
-    throw new Error(`Cannot evaluate expression: cannot evaluate node <${display(node)}>: unknown operator token type ${node.token.type}`);
+    throw new Error(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator token type ${node.token.type}`);
 }
 // const x:ProgramAST = {nodes: [
 // 	{nodes: ["DECLARE" , "Count", ":", "INTEGER"]},
