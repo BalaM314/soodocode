@@ -104,6 +104,7 @@ dumpTokensButton.addEventListener("click", e => {
     try {
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
+        const program = parser.parse(tokens);
         outputDiv.innerHTML = `\
 <h3>Symbols</h3>
 <table>
@@ -121,6 +122,15 @@ dumpTokensButton.addEventListener("click", e => {
 	</thead>
 	<tbody>
 		${tokens.map(t => `<tr><td>"${t.text}"</td><td>${t.type}</td></tr>`).join("\n")}
+	</tbody>
+</table>
+<h3>Statements</h3>
+<table>
+	<thead>
+		<tr> <th>Text</th> <th>Type</th> </tr>
+	</thead>
+	<tbody>
+		${program.filter((t) => "tokens" in t).map(t => `<tr><td>"${t.tokens.map(t => `<span style="text-decoration: underline;">${t.text}</span>`).join(" ")}"</td><td>${t.type}</td></tr>`).join("\n")}
 	</tbody>
 </table>`;
     }
