@@ -7,7 +7,19 @@ export function parse(tokens) {
  * @argument tokens must not contain any newlines.
  **/
 export function parseStatement(tokens) {
-    todo();
+    if (tokens.length == 0)
+        throw new Error(`Invalid statement: empty`);
+    switch (tokens[0].type) {
+        case "keyword.declare": return { type: "declaration", tokens };
+        case "keyword.output": return { type: "output", tokens };
+        case "keyword.input": return { type: "input", tokens };
+        case "name":
+            if (tokens[1] && tokens[1].type == "operator.assignment")
+                return { type: "assignment", tokens };
+            else
+                throw new Error(`Invalid statement`);
+        default: throw new Error(`Invalid statement`);
+    }
 }
 const out = {
     token: { text: "+", type: "operator.add" },
