@@ -8,6 +8,7 @@ export type SymbolType =
 	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
 	"comment.singleline" | "comment.multiline_open" | "comment.multiline_close" |
 	"word" |
+	"unknown" |
 	"space" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer";
@@ -46,12 +47,20 @@ class SymbolizerIO {
 	at(){
 		return this.lastMatched = this.string[this.offset];
 	}
-	cons(input:string){
-		if(input.split("").every((v, i) => this.string[this.offset + i] == v)){
-			this.lastMatched = input;
-			this.offset += input.length;
+	cons(input:string | RegExp):boolean {
+		if(input instanceof RegExp){
+			const matchData = input.exec(this.string.slice(this.offset));
+			if(matchData == null || matchData.index == 0) return false;
+			this.lastMatched = matchData[0];
+			this.offset += matchData[0].length;
 			return true;
-		} else return false;
+		} else {
+			if(input.split("").every((v, i) => this.string[this.offset + i] == v)){
+				this.lastMatched = input;
+				this.offset += input.length;
+				return true;
+			} else return false;
+		}
 	}
 	has(){
 		return this.string[this.offset] != undefined;

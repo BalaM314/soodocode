@@ -12,13 +12,23 @@ class SymbolizerIO {
         return this.lastMatched = this.string[this.offset];
     }
     cons(input) {
-        if (input.split("").every((v, i) => this.string[this.offset + i] == v)) {
-            this.lastMatched = input;
-            this.offset += input.length;
+        if (input instanceof RegExp) {
+            const matchData = input.exec(this.string.slice(this.offset));
+            if (matchData == null || matchData.index == 0)
+                return false;
+            this.lastMatched = matchData[0];
+            this.offset += matchData[0].length;
             return true;
         }
-        else
-            return false;
+        else {
+            if (input.split("").every((v, i) => this.string[this.offset + i] == v)) {
+                this.lastMatched = input;
+                this.offset += input.length;
+                return true;
+            }
+            else
+                return false;
+        }
     }
     has() {
         return this.string[this.offset] != undefined;
