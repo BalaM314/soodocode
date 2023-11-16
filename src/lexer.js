@@ -14,7 +14,7 @@ class SymbolizerIO {
     cons(input) {
         if (input instanceof RegExp) {
             const matchData = input.exec(this.string.slice(this.offset));
-            if (matchData == null || matchData.index == 0)
+            if (matchData == null || matchData.index != 0)
                 return false;
             this.lastMatched = matchData[0];
             this.offset += matchData[0].length;
@@ -64,7 +64,7 @@ export function symbolize(input) {
     const str = new SymbolizerIO(input);
     toNextCharacter: while (str.has()) {
         for (const [identifier, symbolType] of symbolTypes) {
-            if (typeof identifier == "string") {
+            if (typeof identifier == "string" || identifier instanceof RegExp) {
                 if (str.cons(identifier)) {
                     str.write(symbolType);
                     continue toNextCharacter;
@@ -121,6 +121,7 @@ const symbolTypes = [
     ["\n", "newline"],
     [SymbolizerIO.prototype.isNumber, "number.decimal"],
     [SymbolizerIO.prototype.isAlphanumeric, "word"],
+    [/^./, "unknown"],
 ];
 export function tokenize(input) {
     const output = [];
@@ -172,6 +173,8 @@ export function tokenize(input) {
             state.dString = true;
         else if (symbol.type === "space")
             void 0;
+        else if (symbol.type === "unknown")
+            throw new Error(`Invalid symbol ${symbol.text}`);
         else if (symbol.type === "word") {
             switch (symbol.text) {
                 case "DECLARE":

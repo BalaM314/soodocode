@@ -50,7 +50,7 @@ class SymbolizerIO {
 	cons(input:string | RegExp):boolean {
 		if(input instanceof RegExp){
 			const matchData = input.exec(this.string.slice(this.offset));
-			if(matchData == null || matchData.index == 0) return false;
+			if(matchData == null || matchData.index != 0) return false;
 			this.lastMatched = matchData[0];
 			this.offset += matchData[0].length;
 			return true;
@@ -97,7 +97,7 @@ export function symbolize(input:string){
 	toNextCharacter:
 	while(str.has()){
 		for(const [identifier, symbolType] of symbolTypes){
-			if(typeof identifier == "string"){
+			if(typeof identifier == "string" || identifier instanceof RegExp){
 				if(str.cons(identifier)){
 					str.write(symbolType);
 					continue toNextCharacter;
@@ -123,7 +123,7 @@ type Funcs<
 > = _ extends () => boolean ? _ : never;
 
 const symbolTypes: [
-	identifier: string | Funcs, symbol:SymbolType
+	identifier: string | Funcs | RegExp, symbol:SymbolType
 ][] = [
 	["MOD", "operator.mod"],
 	["AND", "operator.and"],
@@ -162,6 +162,7 @@ const symbolTypes: [
 	["\n", "newline"],
 	[SymbolizerIO.prototype.isNumber, "number.decimal"],
 	[SymbolizerIO.prototype.isAlphanumeric, "word"],
+	[/^./, "unknown"],
 ];
 
 export function tokenize(input:Symbol[]):Token[] {
@@ -202,6 +203,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "quote.single") state.sString = true;
 		else if(symbol.type === "quote.double") state.dString = true;
 		else if(symbol.type === "space") void 0;
+		else if(symbol.type === "unknown") throw new Error(`Invalid symbol ${symbol.text}`);
 		else if(symbol.type === "word"){
 			switch(symbol.text){
 				case "DECLARE": write("keyword.declare"); break;
