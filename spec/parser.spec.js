@@ -215,6 +215,98 @@ const samplePrograms = Object.entries({
             }
         ],
     ],
+    nested_if: [
+        [
+            { text: "INPUT", type: "keyword.input" },
+            { text: `x`, type: "name" },
+            { text: "\n", type: "newline" },
+            { text: "IF", type: "keyword.if" },
+            { text: "x", type: "name" },
+            { text: "<", type: "operator.less_than" },
+            { text: "5", type: "number.decimal" },
+            { text: "THEN", type: "keyword.then" },
+            { text: "\n", type: "newline" },
+            { text: "OUTPUT", type: "keyword.output" },
+            { text: `"amogus"`, type: "string" },
+            { text: "\n", type: "newline" },
+            { text: "IF", type: "keyword.if" },
+            { text: "x", type: "name" },
+            { text: "<", type: "operator.less_than" },
+            { text: "2", type: "number.decimal" },
+            { text: "THEN", type: "keyword.then" },
+            { text: "\n", type: "newline" },
+            { text: "OUTPUT", type: "keyword.output" },
+            { text: `"sussy"`, type: "string" },
+            { text: "\n", type: "newline" },
+            { text: "ENDIF", type: "keyword.if_end" },
+            { text: "\n", type: "newline" },
+            { text: "ENDIF", type: "keyword.if_end" },
+        ],
+        [
+            {
+                type: "input",
+                tokens: [
+                    { text: "INPUT", type: "keyword.input" },
+                    { text: `x`, type: "name" },
+                ]
+            }, {
+                type: "if",
+                startStatement: {
+                    type: "if",
+                    tokens: [
+                        { text: "IF", type: "keyword.if" },
+                        { text: "x", type: "name" },
+                        { text: "<", type: "operator.less_than" },
+                        { text: "5", type: "number.decimal" },
+                        { text: "THEN", type: "keyword.then" },
+                    ]
+                },
+                nodes: [
+                    {
+                        type: "output",
+                        tokens: [
+                            { text: "OUTPUT", type: "keyword.output" },
+                            { text: `"amogus"`, type: "string" },
+                        ]
+                    },
+                    {
+                        type: "if",
+                        startStatement: {
+                            type: "if",
+                            tokens: [
+                                { text: "IF", type: "keyword.if" },
+                                { text: "x", type: "name" },
+                                { text: "<", type: "operator.less_than" },
+                                { text: "2", type: "number.decimal" },
+                                { text: "THEN", type: "keyword.then" },
+                            ]
+                        },
+                        nodes: [
+                            {
+                                type: "output",
+                                tokens: [
+                                    { text: "OUTPUT", type: "keyword.output" },
+                                    { text: `"sussy"`, type: "string" },
+                                ]
+                            }
+                        ],
+                        endStatement: {
+                            type: "if.end",
+                            tokens: [
+                                { text: "ENDIF", type: "keyword.if_end" },
+                            ]
+                        },
+                    }
+                ],
+                endStatement: {
+                    type: "if.end",
+                    tokens: [
+                        { text: "ENDIF", type: "keyword.if_end" },
+                    ]
+                },
+            }
+        ],
+    ]
 }).map(p => [p[0], p[1][0], p[1][1]]);
 describe("parseStatement", () => {
     for (const [name, program, output] of sampleStatements) {
