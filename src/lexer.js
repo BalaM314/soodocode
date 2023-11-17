@@ -201,6 +201,9 @@ export function tokenize(input) {
                 case "FOR":
                     write("keyword.for");
                     break;
+                case "TO":
+                    write("keyword.to");
+                    break;
                 case "NEXT":
                     write("keyword.for_end");
                     break;
