@@ -25,6 +25,7 @@ html {
 	padding: 10px;
 	background-color: #051505;
 	color: #FFF;
+	tab-size: 4;
 }
 @media screen and (max-width: 600px) {
 	#container {
