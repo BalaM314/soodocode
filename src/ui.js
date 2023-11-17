@@ -132,6 +132,13 @@ soodocodeInput.onkeydown = e => {
         //Replace cursor position
         soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
     }
+    //Update text
+    const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2013", "-");
+    if (soodocodeInput.value != newText) {
+        const start = soodocodeInput.selectionStart;
+        soodocodeInput.value = newText;
+        soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start;
+    }
 };
 runButton.addEventListener("click", e => {
     if (firstRun)
