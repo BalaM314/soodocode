@@ -23,7 +23,7 @@ export type ProgramASTTreeNode = {
 //not necessary
 //export type UnfinishedProgramASTTreeNode = Partial<ProgramASTTreeNode> & Omit<ProgramASTTreeNode, "endStatement">;
 
-export type ProgramASTTreeNodeType = "if";
+export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 export type StatementType =
 	"declaration" | "assignment" | "output" | "input" |
 	"if" | "if.end" |
@@ -75,7 +75,7 @@ export function parse(tokens:Token[]):ProgramAST {
 			default: statement.type satisfies never; break;
 		}
 	}
-	if(blockStack.length) throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1).startStatement)}`);
+	if(blockStack.length) throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1)!.startStatement)}`);
 	return program;
 }
 

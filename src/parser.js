@@ -28,31 +28,43 @@ export function parse(tokens) {
                 getActiveBuffer().push(statement);
                 break;
             case "if":
+            case "for":
+            case "while":
+            case "dowhile":
+            case "function":
+            case "procedure":
                 const node = {
                     startStatement: statement,
                     endStatement: null,
-                    type: "if",
+                    type: statement.type,
                     nodes: []
                 };
                 getActiveBuffer().push(node);
                 blockStack.push(node);
                 break;
             case "if.end":
+            case "for.end":
+            case "while.end":
+            case "dowhile.end":
+            case "function.end":
+            case "procedure.end":
                 const lastNode = blockStack.at(-1);
                 if (!lastNode)
-                    throw new Error(`Cannot ENDIF: no open blocks`);
-                else if (lastNode.startStatement.type == "if") {
+                    throw new Error(`Invalid statement ${stringifyStatement(statement)}: no open blocks`);
+                else if (lastNode.startStatement.type == statement.type.split(".")[0]) { //probably bad code
                     lastNode.endStatement = statement;
                     blockStack.pop();
                 }
                 else
-                    throw new Error(`Cannot ENDIF: current block is of type ${lastNode.startStatement.type}, not IF`);
+                    throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
                 break;
             default:
                 statement.type;
                 break;
         }
     }
+    if (blockStack.length)
+        throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1).startStatement)}`);
     return program;
 }
 /**
@@ -66,6 +78,7 @@ export function parseStatement(tokens) {
         case "keyword.declare": return { type: "declaration", tokens };
         case "keyword.output": return { type: "output", tokens };
         case "keyword.input": return { type: "input", tokens };
+        //TODO other block statements
         case "keyword.if":
             if (tokens.length >= 3 && tokens.at(-1).type == "keyword.then")
                 return { type: "if", tokens };
@@ -79,6 +92,9 @@ export function parseStatement(tokens) {
         case "keyword.if_end": return { type: "if.end", tokens };
         default: throw new Error(`Invalid statement`);
     }
+}
+export function stringifyStatement(statement) {
+    return statement.tokens.map(t => t.text).join(" ");
 }
 const out = {
     token: { text: "+", type: "operator.add" },
