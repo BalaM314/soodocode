@@ -70,7 +70,7 @@ export function parse(tokens:Token[]):ProgramAST {
 			default: statement.type satisfies never; break;
 		}
 	}
-	if(blockStack.length) throw new Error(`There were unclosed blocks: ${blockStack.at(-1).startStatement}`);
+	if(blockStack.length) throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1).startStatement)}`);
 	return program;
 }
 
@@ -95,6 +95,10 @@ export function parseStatement(tokens:Token[]):Statement {
 		case "keyword.if_end": return { type: "if.end", tokens };
 		default: throw new Error(`Invalid statement`);
 	}
+}
+
+export function stringifyStatement(statement:Statement):string {
+	return statement.tokens.map(t => t.text).join(" ");
 }
 
 const out:ExpressionASTTreeNode = {

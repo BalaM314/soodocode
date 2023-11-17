@@ -29,10 +29,6 @@ ${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "
 
 type FlattenTreeOutput = [depth:number, statement:Statement];
 
-export function stringifyStatement(statement:Statement):string {
-	return statement.tokens.map(t => t.text).join(" ");
-}
-
 export function flattenTree(program:ProgramAST):FlattenTreeOutput[]{
 	return program.map(s => {
 		if("startStatement" in s) return flattenTree(s.nodes).map(([depth, statement]) => [depth + 1, statement] as FlattenTreeOutput);
@@ -44,13 +40,13 @@ export function displayProgram(program:ProgramAST):string {
 		if("startStatement" in node)
 			return (
 `<div class="program-display-block">
-${stringifyStatement(node.startStatement)}
+${parser.stringifyStatement(node.startStatement)}
 ${displayProgram(node.nodes)}
-${stringifyStatement(node.endStatement)}
+${parser.stringifyStatement(node.endStatement)}
 </div>`
 			);
 		else
-			return stringifyStatement(node);
+			return parser.stringifyStatement(node);
 	}).join("\n");
 }
 
