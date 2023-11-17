@@ -26,7 +26,12 @@ export type ProgramASTTreeNode = {
 export type ProgramASTTreeNodeType = "if";
 export type StatementType =
 	"declaration" | "assignment" | "output" | "input" |
-	"if" | "if.end";
+	"if" | "if.end" |
+	"for" | "for.end" |
+	"while" | "while.end" |
+	"dowhile" | "dowhile.end" |
+	"function" | "function.end" |
+	"procedure" | "procedure.end";
 
 export function parse(tokens:Token[]):ProgramAST {
 	const lines:Token[][] = [[]];
@@ -53,7 +58,7 @@ export function parse(tokens:Token[]):ProgramAST {
 				const node:ProgramASTTreeNode = {
 					startStatement: statement,
 					endStatement: null!, //null! goes brr
-					type: "if",
+					type: statement.type,
 					nodes: []
 				};
 				getActiveBuffer().push(node);
@@ -61,11 +66,11 @@ export function parse(tokens:Token[]):ProgramAST {
 				break;
 			case "if.end":
 				const lastNode = blockStack.at(-1);
-				if(!lastNode) throw new Error(`Cannot ENDIF: no open blocks`);
-				else if(lastNode.startStatement.type == "if"){
+				if(!lastNode) throw new Error(`Invalid statement ${stringifyStatement(statement)}: no open blocks`);
+				else if(lastNode.startStatement.type == statement.type.split(".")[0]){ //probably bad code
 					lastNode.endStatement = statement;
 					blockStack.pop();
-				} else throw new Error(`Cannot ENDIF: current block is of type ${lastNode.startStatement.type}, not IF`);
+				} else throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
 				break;
 			default: statement.type satisfies never; break;
 		}
