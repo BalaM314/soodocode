@@ -67,9 +67,10 @@ export function parse(tokens:Token[]):ProgramAST {
 					blockStack.pop();
 				} else throw new Error(`Cannot ENDIF: current block is of type ${lastNode.startStatement.type}, not IF`);
 				break;
-				default: statement.type satisfies never; break;
+			default: statement.type satisfies never; break;
 		}
 	}
+	if(blockStack.length) throw new Error(`There were unclosed blocks: ${blockStack.at(-1).startStatement}`);
 	return program;
 }
 
