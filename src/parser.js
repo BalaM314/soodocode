@@ -25,6 +25,7 @@ export function parse(tokens) {
             case "declaration":
             case "output":
             case "input":
+            case "return":
                 getActiveBuffer().push(statement);
                 break;
             case "if":
@@ -84,6 +85,10 @@ export function parseStatement(tokens) {
                 return { type: "assignment", tokens };
             else
                 throw new Error(`Invalid statement`);
+        case "keyword.return": if (tokens.length >= 2)
+            return { type: "return", tokens };
+        else
+            throw new Error(`Invalid statement`);
         case "keyword.if":
             if (tokens.length >= 3 && tokens.at(-1).type == "keyword.then")
                 return { type: "if", tokens };

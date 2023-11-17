@@ -25,7 +25,7 @@ export type ProgramASTTreeNode = {
 
 export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 export type StatementType =
-	"declaration" | "assignment" | "output" | "input" |
+	"declaration" | "assignment" | "output" | "input" | "return" |
 	"if" | "if.end" |
 	"for" | "for.end" |
 	"while" | "while.end" |
@@ -51,7 +51,7 @@ export function parse(tokens:Token[]):ProgramAST {
 	const blockStack:ProgramASTTreeNode[] = [];
 	for(const statement of statements){
 		switch(statement.type){
-			case "assignment": case "declaration": case "output": case "input":
+			case "assignment": case "declaration": case "output": case "input": case "return":
 				getActiveBuffer().push(statement);
 				break;
 			case "if": case "for": case "while": case "dowhile": case "function": case "procedure":
@@ -94,6 +94,7 @@ export function parseStatement(tokens:Token[]):Statement {
 			if(tokens.length >= 3 && tokens[1].type == "operator.assignment")
 				return { type: "assignment", tokens };
 			else throw new Error(`Invalid statement`);
+		case "keyword.return": if(tokens.length >= 2) return { type: "return", tokens }; else throw new Error(`Invalid statement`);
 		case "keyword.if":
 			if(tokens.length >= 3 && tokens.at(-1)!.type == "keyword.then") return { type: "if", tokens }; else throw new Error(`Invalid statement`);
 		case "keyword.for":
