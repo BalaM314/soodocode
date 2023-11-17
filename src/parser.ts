@@ -118,7 +118,7 @@ export function parseStatement(tokens:Token[]):Statement {
 				tokens.at(-3)!.type == "parentheses.close" &&
 				tokens.at(-2)!.type == "keyword.returns" &&
 				tokens.at(-1)!.type == "name"
-			) return { type: "procedure", tokens }; else throw new Error(`Invalid statement`);
+			) return { type: "function", tokens }; else throw new Error(`Invalid statement`);
 		case "keyword.procedure":
 			if(
 				tokens.length >= 4 &&

@@ -117,7 +117,7 @@ export function parseStatement(tokens) {
                 tokens.at(-3).type == "parentheses.close" &&
                 tokens.at(-2).type == "keyword.returns" &&
                 tokens.at(-1).type == "name")
-                return { type: "procedure", tokens };
+                return { type: "function", tokens };
             else
                 throw new Error(`Invalid statement`);
         case "keyword.procedure":
