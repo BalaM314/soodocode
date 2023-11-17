@@ -75,21 +75,85 @@ export function parseStatement(tokens) {
     if (tokens.length == 0)
         throw new Error(`Invalid statement: empty`);
     switch (tokens[0].type) {
+        //TODO bad implementation, take stuff from MLOGX
         case "keyword.declare": return { type: "declaration", tokens };
         case "keyword.output": return { type: "output", tokens };
         case "keyword.input": return { type: "input", tokens };
-        //TODO other block statements
+        case "name":
+            if (tokens.length >= 3 && tokens[1].type == "operator.assignment")
+                return { type: "assignment", tokens };
+            else
+                throw new Error(`Invalid statement`);
         case "keyword.if":
             if (tokens.length >= 3 && tokens.at(-1).type == "keyword.then")
                 return { type: "if", tokens };
             else
-                throw new Error(`Invalid if statement`);
-        case "name":
-            if (tokens[1] && tokens[1].type == "operator.assignment")
-                return { type: "assignment", tokens };
+                throw new Error(`Invalid statement`);
+        case "keyword.for":
+            if (tokens.length == 6 &&
+                tokens[1].type == "name" &&
+                tokens[2].type == "operator.assignment" &&
+                (tokens[3].type == "name" || tokens[3].type == "number.decimal") &&
+                tokens[4].type == "keyword.to" &&
+                (tokens[5].type == "name" || tokens[5].type == "number.decimal"))
+                return { type: "for", tokens };
             else
                 throw new Error(`Invalid statement`);
-        case "keyword.if_end": return { type: "if.end", tokens };
+        case "keyword.while":
+            if (tokens.length >= 2)
+                return { type: "while", tokens };
+            else
+                throw new Error(`Invalid statement`);
+        case "keyword.dowhile":
+            if (tokens.length == 1)
+                return { type: "if", tokens };
+            else
+                throw new Error(`Invalid statement`);
+        case "keyword.function":
+            if (tokens.length >= 4 &&
+                tokens[1].type == "name" &&
+                tokens[2].type == "parentheses.open" &&
+                //arguments inside, difficult to parse
+                tokens.at(-3).type == "parentheses.close" &&
+                tokens.at(-2).type == "keyword.returns" &&
+                tokens.at(-1).type == "name")
+                return { type: "procedure", tokens };
+            else
+                throw new Error(`Invalid statement`);
+        case "keyword.procedure":
+            if (tokens.length >= 4 &&
+                tokens[1].type == "name" &&
+                tokens[2].type == "parentheses.open" &&
+                //arguments inside, difficult to parse
+                tokens.at(-1).type == "parentheses.close")
+                return { type: "procedure", tokens };
+            else
+                throw new Error(`Invalid statement`);
+        case "keyword.if_end": if (tokens.length == 1)
+            return { type: "if.end", tokens };
+        else
+            throw new Error(`Invalid statement`);
+        case "keyword.for_end":
+            if (tokens.length == 2 && tokens[1].type == "name")
+                return { type: "for.end", tokens };
+            else
+                throw new Error(`Invalid statement`);
+        case "keyword.while_end": if (tokens.length == 1)
+            return { type: "while.end", tokens };
+        else
+            throw new Error(`Invalid statement`);
+        case "keyword.dowhile_end": if (tokens.length >= 2)
+            return { type: "dowhile.end", tokens };
+        else
+            throw new Error(`Invalid statement`);
+        case "keyword.function_end": if (tokens.length == 1)
+            return { type: "function.end", tokens };
+        else
+            throw new Error(`Invalid statement`);
+        case "keyword.procedure_end": if (tokens.length == 1)
+            return { type: "procedure.end", tokens };
+        else
+            throw new Error(`Invalid statement`);
         default: throw new Error(`Invalid statement`);
     }
 }
