@@ -9,15 +9,33 @@ export type ExpressionASTTreeNode = {
 }
 
 export abstract class Statement {
-	constructor(public tokens:Token[], public type:StatementType;){}
+	constructor(public tokens:Token[], public type:StatementType){}
 	toString(){
 		return this.tokens.map(t => t.text).join(" ");
 	}
 }
 export class FunctionStatement extends Statement {
+	//FUNCTION Amogus ( amogus : type , sussy : type ) RETURNS BOOLEAN
 	/** Mapping between name and type */
-	arguments: Record<string, string> = {};
-	
+	args: Map<string, string>;
+	returnType: string;
+	constructor(tokens:Token[]){
+		super(tokens, "function");
+		if(
+			//TODO genericify this part
+			tokens.length >= 6 &&
+			//tokens[0] is the keyword function, which was used to determine the statement type
+			tokens[1].type == "name" &&
+			tokens[2].type == "parentheses.open" &&
+			//variable number of arguments
+			tokens.at(-3)!.type == "parentheses.close" &&
+			tokens.at(-2)!.type == "keyword.returns" &&
+			tokens.at(-1)!.type == "name"
+		){
+			this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+			this.returnType = tokens.at(-1)!.text.toUpperCase();
+		} else throw new Error("Invalid statement");
+	}
 }
 
 export type ProgramAST = ProgramASTNode[];
@@ -41,6 +59,32 @@ export type StatementType =
 	"dowhile" | "dowhile.end" |
 	"function" | "function.end" |
 	"procedure" | "procedure.end";
+
+/** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
+export function parseFunctionArguments(tokens:Token[], low:number, high:number):Map<string, string> {
+	const size = high - low + 1;
+	if(!(size != 0 || size % 4 != 3))
+		throw new Error(`Invalid function arguments: incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`);
+	const numArgs = Math.ceil(size / 4);
+	const args = new Map<string, string>();
+
+	for(let i = 0; i < numArgs; i ++){
+		const name = tokens[low + 4 * i + 0];
+		const colon = tokens[low + 4 * i + 1];
+		const type = tokens[low + 4 * i + 2];
+		const comma = tokens[low + 4 * i + 3];
+		if(
+			name.type == "name" &&
+			colon.type == "punctuation.colon" &&
+			type.type == "name" &&
+			(i == numArgs - 1
+				? comma.type == "parentheses.close" //Last argument and the 4th token is the closing paren
+				: comma.type == "punctuation.comma") //Not the last argument and the token is a comma
+		) args.set(name.text, type.text.toUpperCase());
+		else throw new Error("Invalid function arguments");
+	}
+	return args;
+}
 
 export function parse(tokens:Token[]):ProgramAST {
 	const lines:Token[][] = [[]];
@@ -108,7 +152,7 @@ export function parseStatement(tokens:Token[]):Statement {
 			if(tokens.length >= 3 && tokens.at(-1)!.type == "keyword.then") return { type: "if", tokens }; else throw new Error(`Invalid statement`);
 		case "keyword.for":
 			if(
-				tokens.length == 6 &&
+				tokens.length >= 6 &&
 				tokens[1].type == "name" &&
 				tokens[2].type == "operator.assignment" &&
 				(tokens[3].type == "name" || tokens[3].type == "number.decimal") &&
@@ -121,7 +165,7 @@ export function parseStatement(tokens:Token[]):Statement {
 			if(tokens.length == 1) return { type: "if", tokens }; else throw new Error(`Invalid statement`);
 		case "keyword.function":
 			if(
-				tokens.length >= 4 &&
+				tokens.length >= 6 &&
 				tokens[1].type == "name" &&
 				tokens[2].type == "parentheses.open" &&
 				//arguments inside, difficult to parse

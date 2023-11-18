@@ -1,19 +1,57 @@
 import { getText } from "./lexer.js";
 export class Statement {
-    constructor(tokens) {
+    constructor(tokens, type) {
         this.tokens = tokens;
+        this.type = type;
     }
     toString() {
         return this.tokens.map(t => t.text).join(" ");
     }
 }
 export class FunctionStatement extends Statement {
-    constructor() {
-        super(...arguments);
-        this.type = "function";
-        /** Mapping between name and type */
-        this.arguments = {};
+    constructor(tokens) {
+        super(tokens, "function");
+        if (
+        //TODO genericify this part
+        tokens.length >= 6 &&
+            //tokens[0] is the keyword function, which was used to determine the statement type
+            tokens[1].type == "name" &&
+            tokens[2].type == "parentheses.open" &&
+            //variable number of arguments
+            tokens.at(-3).type == "parentheses.close" &&
+            tokens.at(-2).type == "keyword.returns" &&
+            tokens.at(-1).type == "name") {
+            this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+            this.returnType = tokens.at(-1).text.toUpperCase();
+        }
+        else
+            throw new Error("Invalid statement");
     }
+}
+/** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
+export function parseFunctionArguments(tokens, low, high) {
+    const size = high - low + 1;
+    if (!(size != 0 || size % 4 != 3))
+        throw new Error(`Invalid function arguments: incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`);
+    const numArgs = Math.ceil(size / 4);
+    const args = new Map();
+    for (let i = 0; i < numArgs; i++) {
+        const name = tokens[low + 4 * i + 0];
+        const colon = tokens[low + 4 * i + 1];
+        const type = tokens[low + 4 * i + 2];
+        const comma = tokens[low + 4 * i + 3];
+        if (name.type == "name" &&
+            colon.type == "punctuation.colon" &&
+            type.type == "name" &&
+            (i == numArgs - 1
+                ? comma.type == "parentheses.close" //Last argument and the 4th token is the closing paren
+                : comma.type == "punctuation.comma") //Not the last argument and the token is a comma
+        )
+            args.set(name.text, type.text.toUpperCase());
+        else
+            throw new Error("Invalid function arguments");
+    }
+    return args;
 }
 export function parse(tokens) {
     const lines = [[]];
@@ -111,7 +149,7 @@ export function parseStatement(tokens) {
             else
                 throw new Error(`Invalid statement`);
         case "keyword.for":
-            if (tokens.length == 6 &&
+            if (tokens.length >= 6 &&
                 tokens[1].type == "name" &&
                 tokens[2].type == "operator.assignment" &&
                 (tokens[3].type == "name" || tokens[3].type == "number.decimal") &&
@@ -131,7 +169,7 @@ export function parseStatement(tokens) {
             else
                 throw new Error(`Invalid statement`);
         case "keyword.function":
-            if (tokens.length >= 4 &&
+            if (tokens.length >= 6 &&
                 tokens[1].type == "name" &&
                 tokens[2].type == "parentheses.open" &&
                 //arguments inside, difficult to parse
