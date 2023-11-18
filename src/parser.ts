@@ -1,5 +1,6 @@
 import { getText, type Token, type TokenType } from "./lexer.js";
 
+export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTLeafNode = Token;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTTreeNode;
 export type ExpressionASTTreeNode = {
@@ -7,11 +8,19 @@ export type ExpressionASTTreeNode = {
 	nodes: ExpressionASTNode[];
 }
 
-export type ProgramAST = ProgramASTNode[];
-export type Statement = {
-	type: StatementType;
-	tokens: Token[];
+export abstract class Statement {
+	constructor(public tokens:Token[], public type:StatementType;){}
+	toString(){
+		return this.tokens.map(t => t.text).join(" ");
+	}
 }
+export class FunctionStatement extends Statement {
+	/** Mapping between name and type */
+	arguments: Record<string, string> = {};
+	
+}
+
+export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;
 export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode;
 export type ProgramASTTreeNode = {

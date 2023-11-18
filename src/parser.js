@@ -1,4 +1,20 @@
 import { getText } from "./lexer.js";
+export class Statement {
+    constructor(tokens) {
+        this.tokens = tokens;
+    }
+    toString() {
+        return this.tokens.map(t => t.text).join(" ");
+    }
+}
+export class FunctionStatement extends Statement {
+    constructor() {
+        super(...arguments);
+        this.type = "function";
+        /** Mapping between name and type */
+        this.arguments = {};
+    }
+}
 export function parse(tokens) {
     const lines = [[]];
     for (let i = 0; i < tokens.length; i++) {
