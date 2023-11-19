@@ -1,5 +1,5 @@
 import "jasmine";
-import { parse, parseStatement } from "../src/parser.js";
+import { parse, parseFunctionArguments, parseStatement } from "../src/parser.js";
 const sampleStatements = Object.entries({
     output: [
         [
@@ -308,6 +308,117 @@ const samplePrograms = Object.entries({
         ],
     ]
 }).map(p => [p[0], p[1][0], p[1][1]]);
+describe("parseFunctionArguments", () => {
+    it("should parse function arguments", () => {
+        expect(Object.fromEntries(parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 2).entries())).toEqual({});
+        expect(Object.fromEntries(parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "INTEGER" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 5).entries())).toEqual({
+            arg: "INTEGER"
+        });
+        expect(Object.fromEntries(parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "INTEGER" },
+            { type: "punctuation.comma", text: "," },
+            { type: "name", text: "arg2" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "BOOLEAN" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 9).entries())).toEqual({
+            arg: "INTEGER",
+            arg2: "BOOLEAN"
+        });
+        expect(Object.fromEntries(parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "INTEGER" },
+            { type: "punctuation.comma", text: "," },
+            { type: "name", text: "arg2" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "BOOLEAN" },
+            { type: "punctuation.comma", text: "," },
+            { type: "name", text: "arg3" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "USERSUPPLIED" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 9).entries())).toEqual({
+            arg: "INTEGER",
+            arg2: "BOOLEAN",
+            arg3: "UserSupplied",
+        });
+    });
+    it("should throw on invalid function arguments", () => {
+        expect(() => parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg2" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 3)).toThrow();
+        expect(() => parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg2" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 4)).toThrow();
+        expect(() => parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg2" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "INTEGER" },
+            { type: "name", text: "arg2" },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 6)).toThrow();
+        expect(() => parseFunctionArguments([
+            { type: "keyword.function", text: "FUNCTION" },
+            { type: "name", text: "Amogus" },
+            { type: "parentheses.open", text: "(" },
+            { type: "name", text: "arg2" },
+            { type: "punctuation.colon", text: ":" },
+            { type: "name", text: "INTEGER" },
+            { type: "punctuation.comma", text: "," },
+            { type: "parentheses.close", text: ")" },
+            { type: "keyword.returns", text: "RETURNS" },
+            { type: "name", text: "INTEGER " }
+        ], 3, 6)).toThrow();
+    });
+});
 describe("parseStatement", () => {
     for (const [name, program, output] of sampleStatements) {
         if (output == "error") {
