@@ -8,12 +8,11 @@ export class Statement {
         return this.tokens.map(t => t.text).join(" ");
     }
 }
+//@statement(["keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name"])
 export class FunctionStatement extends Statement {
     constructor(tokens) {
         super(tokens, "function");
-        if (
-        //TODO genericify this part
-        tokens.length >= 6 &&
+        if (tokens.length >= 6 &&
             //tokens[0] is the keyword function, which was used to determine the statement type
             tokens[1].type == "name" &&
             tokens[2].type == "parentheses.open" &&
