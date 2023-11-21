@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { getText } from "./lexer.js";
-const statements = {
+export const statements = {
     startKeyword: {},
     irregular: [],
 };
@@ -63,9 +63,10 @@ function statement(type, ...args) {
             statements.irregular.push(input);
         }
         else {
-            if (statements.startKeyword[args[0]])
-                throw new Error(`Statement starting with ${args[0]} already registered`); //TODO overloads, eg FOR STEP
-            statements.startKeyword[args[0]] = input;
+            const firstToken = args[0];
+            if (statements.startKeyword[firstToken])
+                throw new Error(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
+            statements.startKeyword[firstToken] = input;
         }
         return input;
     };
@@ -99,6 +100,25 @@ export class Statement {
     }
 }
 Statement.tokens = null;
+let DeclarationStatement = (() => {
+    let _classDecorators = [statement("declaration", "keyword.declare")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var DeclarationStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "DeclarationStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        DeclarationStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return DeclarationStatement = _classThis;
+})();
+export { DeclarationStatement };
 let AssignmentStatement = (() => {
     let _classDecorators = [statement("assignment", "#", "name", "operator.assignment", "...")];
     let _classDescriptor;
@@ -260,7 +280,10 @@ let FunctionStatement = (() => {
     var FunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+            const args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+            if (typeof args == "string")
+                throw new Error(`Invalid function arguments: ${args}`);
+            this.args = args;
             this.returnType = tokens.at(-1).text.toUpperCase();
         }
     };
@@ -284,7 +307,10 @@ let ProcedueStatement = (() => {
     var ProcedueStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            this.args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+            const args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+            if (typeof args == "string")
+                throw new Error(`Invalid function arguments: ${args}`);
+            this.args = args;
         }
     };
     __setFunctionName(_classThis, "ProcedueStatement");
@@ -302,7 +328,7 @@ export { ProcedueStatement };
 export function parseFunctionArguments(tokens, low, high) {
     const size = high - low + 1;
     if (!(size != 0 || size % 4 != 3))
-        throw new Error(`Invalid function arguments: incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`);
+        return `Incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`;
     const numArgs = Math.ceil(size / 4);
     const args = new Map();
     for (let i = 0; i < numArgs; i++) {
@@ -310,16 +336,25 @@ export function parseFunctionArguments(tokens, low, high) {
         const colon = tokens[low + 4 * i + 1];
         const type = tokens[low + 4 * i + 2];
         const comma = tokens[low + 4 * i + 3];
-        if (name.type == "name" &&
-            colon.type == "punctuation.colon" &&
-            type.type == "name" &&
-            (i == numArgs - 1
-                ? comma.type == "parentheses.close" //Last argument and the 4th token is the closing paren
-                : comma.type == "punctuation.comma") //Not the last argument and the token is a comma
-        )
-            args.set(name.text, type.text.toUpperCase());
-        else
-            throw new Error("Invalid function arguments");
+        if (!name)
+            return `Missing name`;
+        if (name.type != "name")
+            return `Expected a name, got ${name.text} (${name.type})`;
+        if (!colon)
+            return `Missing colon`;
+        if (colon.type != "punctuation.colon")
+            return `Expected a name, got ${colon.text} (${colon.type})`;
+        if (!type)
+            return `Missing type`;
+        if (type.type != "name")
+            return `Expected a name, got ${type.text} (${type.type})`;
+        if (!comma)
+            return `Missing comma`;
+        if (i == numArgs - 1 && comma.type == "parentheses.close") //Last argument and the 4th token is the closing paren
+            return `Expected closing parentheses, got ${comma.text} (${comma.type})`;
+        if (i != numArgs - 1 && comma.type == "punctuation.comma") //Not the last argument and the token is a comma
+            return `Expected a comma, got ${comma.text} (${comma.type})`;
+        args.set(name.text, type.text.toUpperCase());
     }
     return args;
 }

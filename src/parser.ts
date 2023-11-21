@@ -8,8 +8,8 @@ export type ExpressionASTTreeNode = {
 	nodes: ExpressionASTNode[];
 }
 
-const statements = {
-	startKeyword: {} as Record<string, typeof Statement>,
+export const statements = {
+	startKeyword: {} as Partial<Record<TokenType, typeof Statement>>,
 	irregular: [] as (typeof Statement)[],
 };
 
@@ -42,8 +42,10 @@ function statement<TClass extends typeof Statement>(type:StatementType, ...args:
 		if(args[0] == "#"){
 			statements.irregular.push(input);
 		} else {
-			if(statements.startKeyword[args[0]]) throw new Error(`Statement starting with ${args[0]} already registered`); //TODO overloads, eg FOR STEP
-			statements.startKeyword[args[0]] = input;
+			const firstToken = args[0] as TokenType;
+			if(statements.startKeyword[firstToken])
+				throw new Error(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
+			statements.startKeyword[firstToken] = input;
 		}
 		return input;
 	}
@@ -77,6 +79,8 @@ export class Statement {
 	}
 }
 
+@statement("declaration", "keyword.declare")
+export class DeclarationStatement extends Statement {}
 @statement("assignment", "#", "name", "operator.assignment", "...")
 export class AssignmentStatement extends Statement {}
 @statement("output", "keyword.output", "...")
@@ -104,7 +108,9 @@ export class FunctionStatement extends Statement {
 	returnType: string;
 	constructor(tokens:Token[]){
 		super(tokens);
-		this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+		const args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+		if(typeof args == "string") throw new Error(`Invalid function arguments: ${args}`);
+		this.args = args;
 		this.returnType = tokens.at(-1)!.text.toUpperCase();
 	}
 }
@@ -116,7 +122,9 @@ export class ProcedueStatement extends Statement {
 	args: Map<string, string>;
 	constructor(tokens:Token[]){
 		super(tokens);
-		this.args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+		const args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+		if(typeof args == "string") throw new Error(`Invalid function arguments: ${args}`);
+		this.args = args;
 	}
 }
 
@@ -145,10 +153,10 @@ export type StatementType =
 export type StatementCategory = "normal" | "block" | "block_end";
 
 /** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
-export function parseFunctionArguments(tokens:Token[], low:number, high:number):Map<string, string> {
+export function parseFunctionArguments(tokens:Token[], low:number, high:number):Map<string, string> | string {
 	const size = high - low + 1;
 	if(!(size != 0 || size % 4 != 3))
-		throw new Error(`Invalid function arguments: incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`);
+		return `Incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`;
 	const numArgs = Math.ceil(size / 4);
 	const args = new Map<string, string>();
 
@@ -157,15 +165,18 @@ export function parseFunctionArguments(tokens:Token[], low:number, high:number):
 		const colon = tokens[low + 4 * i + 1];
 		const type = tokens[low + 4 * i + 2];
 		const comma = tokens[low + 4 * i + 3];
-		if(
-			name.type == "name" &&
-			colon.type == "punctuation.colon" &&
-			type.type == "name" &&
-			(i == numArgs - 1
-				? comma.type == "parentheses.close" //Last argument and the 4th token is the closing paren
-				: comma.type == "punctuation.comma") //Not the last argument and the token is a comma
-		) args.set(name.text, type.text.toUpperCase());
-		else throw new Error("Invalid function arguments");
+		if(!name) return `Missing name`;
+		if(name.type != "name") return `Expected a name, got ${name.text} (${name.type})`;
+		if(!colon) return `Missing colon`;
+		if(colon.type != "punctuation.colon") return `Expected a name, got ${colon.text} (${colon.type})`;
+		if(!type) return `Missing type`;
+		if(type.type != "name") return `Expected a name, got ${type.text} (${type.type})`;
+		if(!comma) return `Missing comma`;
+		if(i == numArgs - 1 && comma.type == "parentheses.close") //Last argument and the 4th token is the closing paren
+			return `Expected closing parentheses, got ${comma.text} (${comma.type})`;
+		if(i != numArgs - 1 && comma.type == "punctuation.comma") //Not the last argument and the token is a comma
+			return `Expected a comma, got ${comma.text} (${comma.type})`;
+		args.set(name.text, type.text.toUpperCase());
 	}
 	return args;
 }
@@ -223,7 +234,7 @@ export function parseStatement(tokens:Token[]):Statement {
 export function getStatement(tokens:Token[]):typeof Statement | string {
 	if(tokens.length < 1) return "Empty statement";
 	let possibleStatements:(typeof Statement)[];
-	if(tokens[0].type in statements.startKeyword) possibleStatements = [statements.startKeyword[tokens[0].type]];
+	if(tokens[0].type in statements.startKeyword) possibleStatements = [statements.startKeyword[tokens[0].type]!];
 	else possibleStatements = statements.irregular;
 	if(possibleStatements.length == 0) return `No possible statements`;
 	let errors:[message:string, priority:number][] = [];
