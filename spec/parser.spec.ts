@@ -1,7 +1,7 @@
 import "jasmine";
 import type { Token } from "../src/lexer.js";
 import { ProgramAST, parse, parseFunctionArguments, parseStatement } from "../src/parser.js";
-import { AssignmentStatement, DeclarationStatement, IfStatement, InputStatement, OutputStatement, Statement, statements } from "../src/statements.js";
+import { Statement, statements } from "../src/statements.js";
 
 const sampleStatements:[name:string, program:Token[], output:Statement | "error"][] = Object.entries<[program:Token[], output:Statement | "error"]>({
 	output: [
@@ -9,7 +9,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		],
-		new OutputStatement([
+		new statements.byType["output"]([
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		])
@@ -19,7 +19,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "INPUT", type: "keyword.input"},
 			{text: `amogus`, type: "name"},
 		],
-		new InputStatement([
+		new statements.byType["input"]([
 			{text: "INPUT", type: "keyword.input"},
 			{text: `amogus`, type: "name"},
 		])
@@ -31,7 +31,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: ":", type: "punctuation.colon"},
 			{text: "NUMBER", type: "name"},
 		],
-		new DeclarationStatement([
+		new statements.byType["declaration"]([
 			{text: "DECLARE", type: "keyword.declare"},
 			{text: "amogus", type: "name"},
 			{text: ":", type: "punctuation.colon"},
@@ -44,7 +44,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `<-`, type: "operator.assignment"},
 			{text: "31415", type: "number.decimal"},
 		],
-		new AssignmentStatement([
+		new statements.byType["assignment"]([
 			{text: "amogus", type: "name"},
 			{text: `<-`, type: "operator.assignment"},
 			{text: "31415", type: "number.decimal"},
@@ -58,7 +58,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "x", type: "name"},
 			{text: "THEN", type: "keyword.then"},
 		],
-		new IfStatement([
+		new statements.byType["if"]([
 			{text: "IF", type: "keyword.if"},
 			{text: "5", type: "number.decimal"},
 			{text: `<`, type: "operator.less_than"},
@@ -95,7 +95,7 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: `"amogus"`, type: "string"},
 			{text: "\n", type: "newline"},
 		],
-		[new OutputStatement([
+		[new statements.byType["output"]([
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		])]
@@ -118,21 +118,21 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "31415", type: "number.decimal"},
 		],
 		[
-			new OutputStatement([
+			new statements.byType["output"]([
 				{text: "OUTPUT", type: "keyword.output"},
 				{text: `"amogus"`, type: "string"},
 			]),
-			new InputStatement([
+			new statements.byType["input"]([
 				{text: "INPUT", type: "keyword.input"},
 				{text: `amogus`, type: "name"},
 			]),
-			new DeclarationStatement([
+			new statements.byType["declaration"]([
 				{text: "DECLARE", type: "keyword.declare"},
 				{text: "amogus", type: "name"},
 				{text: ":", type: "punctuation.colon"},
 				{text: "NUMBER", type: "name"},
 			]),
-			new AssignmentStatement([
+			new statements.byType["assignment"]([
 				{text: "amogus", type: "name"},
 				{text: `<-`, type: "operator.assignment"},
 				{text: "31415", type: "number.decimal"},
@@ -156,13 +156,13 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "ENDIF", type: "keyword.if_end"},
 		],
 		[
-			new InputStatement([
+			new statements.byType["input"]([
 				{text: "INPUT", type: "keyword.input"},
 				{text: `x`, type: "name"},
 			]),
 			{
 				type: "if",
-				startStatement: new IfStatement([
+				startStatement: new statements.byType["if"]([
 					{text: "IF", type: "keyword.if"},
 					{text: "x", type: "name"},
 					{text: "<", type: "operator.less_than"},
@@ -170,12 +170,12 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 					{text: "THEN", type: "keyword.then"},
 				]),
 				nodes: [
-					new OutputStatement([
+					new statements.byType["output"]([
 						{text: "OUTPUT", type: "keyword.output"},
 						{text: `"amogus"`, type: "string"},
 					]),
 				],
-				endStatement: new statements.startKeyword["keyword.if_end"]!([ //TODO bad
+				endStatement: new statements.byType["if.end"]([
 					{text: "ENDIF", type: "keyword.if_end"}
 				]),
 			}
@@ -209,13 +209,13 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "ENDIF", type: "keyword.if_end"},
 		],
 		[
-			new InputStatement([
+			new statements.byType["input"]([
 				{text: "INPUT", type: "keyword.input"},
 				{text: `x`, type: "name"},
 			]),
 			{
 				type: "if",
-				startStatement: new IfStatement([
+				startStatement: new statements.byType["if"]([
 					{text: "IF", type: "keyword.if"},
 					{text: "x", type: "name"},
 					{text: "<", type: "operator.less_than"},
@@ -223,13 +223,13 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 					{text: "THEN", type: "keyword.then"},
 				]),
 				nodes: [
-					new OutputStatement([
+					new statements.byType["output"]([
 						{text: "OUTPUT", type: "keyword.output"},
 						{text: `"X is less than 5"`, type: "string"},
 					]),
 					{
 						type: "if",
-						startStatement: new IfStatement([
+						startStatement: new statements.byType["if"]([
 							{text: "IF", type: "keyword.if"},
 							{text: "x", type: "name"},
 							{text: "<", type: "operator.less_than"},
@@ -237,17 +237,17 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 							{text: "THEN", type: "keyword.then"},
 						]),
 						nodes: [
-							new OutputStatement([
+							new statements.byType["output"]([
 								{text: "OUTPUT", type: "keyword.output"},
 								{text: `"X is also less than 2"`, type: "string"},
 							]),
 						],
-						endStatement: new statements.startKeyword["keyword.if_end"]!([ //TODO bad
+						endStatement: new statements.byType["if.end"]([
 							{text: "ENDIF", type: "keyword.if_end"}
 						]),
 					}
 				],
-				endStatement: new statements.startKeyword["keyword.if_end"]!([ //TODO bad
+				endStatement: new statements.byType["if.end"]([
 					{text: "ENDIF", type: "keyword.if_end"}
 				]),
 			}

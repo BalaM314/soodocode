@@ -14,6 +14,7 @@ export type StatementCategory = "normal" | "block" | "block_end";
 
 export const statements = {
 	startKeyword: {} as Partial<Record<TokenType, typeof Statement>>,
+	byType: {} as Record<StatementType, typeof Statement>,
 	irregular: [] as (typeof Statement)[],
 };
 
@@ -55,6 +56,15 @@ function statement<TClass extends typeof Statement>(type:StatementType, ...args:
 	}
 }
 
+function makeStatement(type:StatementType, ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, irregular:"#", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, category:"block" | "block_end", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):typeof Statement;
+
+function makeStatement(type:StatementType, ...args:any[]):typeof Statement {
+	return statement(type, ...args)(class __temp extends Statement {});
+}
+
 export class Statement {
 	type:typeof Statement;
 	stype:StatementType;
@@ -92,26 +102,17 @@ export class Statement {
 	}
 }
 
-@statement("declaration", "keyword.declare")
-export class DeclarationStatement extends Statement {}
-@statement("assignment", "#", "name", "operator.assignment", ".+")
-export class AssignmentStatement extends Statement {}
-@statement("output", "keyword.output", ".+")
-export class OutputStatement extends Statement {}
-@statement("input", "keyword.input", "name")
-export class InputStatement extends Statement {}
-@statement("return", "keyword.return")
-export class ReturnStatement extends Statement {}
+makeStatement("declaration", "keyword.declare");
+makeStatement("assignment", "#", "name", "operator.assignment", ".+");
+makeStatement("output", "keyword.output", ".+");
+makeStatement("input", "keyword.input", "name");
+makeStatement("return", "keyword.return");
 
 
-@statement("if", "block", "auto", "keyword.if", ".+", "keyword.then")
-export class IfStatement extends Statement {}
-@statement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal")
-export class ForStatement extends Statement {} //TODO fix endfor: should be `NEXT i`, not `NEXT`
-@statement("while", "block", "auto", "keyword.while", ".+")
-export class WhileStatement extends Statement {}
-@statement("dowhile", "block", "auto", "keyword.dowhile")
-export class DoWhileStatement extends Statement {}
+makeStatement("if", "block", "auto", "keyword.if", ".+", "keyword.then");
+makeStatement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT`
+makeStatement("while", "block", "auto", "keyword.while", ".+");
+makeStatement("dowhile", "block", "auto", "keyword.dowhile");
 
 @statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class FunctionStatement extends Statement {
@@ -129,7 +130,7 @@ export class FunctionStatement extends Statement {
 }
 
 @statement("procedure", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
-export class ProcedueStatement extends Statement {
+export class ProcedureStatement extends Statement {
 	//PROCEDURE Amogus ( amogus : type , sussy : type )
 	/** Mapping between name and type */
 	args: Map<string, string>;
