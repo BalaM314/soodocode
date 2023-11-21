@@ -98,7 +98,7 @@ dumpExpressionTreeButton.addEventListener("click", e => {
             else if (/\d/.test(char))
                 outputText += `<span style="color:#B5CEA8;">${char}</span>`;
             else if (dumpExpressionTreeVerbose.checked && ['(', ')'].includes(char)) {
-                lineParenColor !== null && lineParenColor !== void 0 ? lineParenColor : (lineParenColor = `hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%)`);
+                lineParenColor ?? (lineParenColor = `hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%)`);
                 outputText += `<span style="color:${lineParenColor}">${char}</span>`;
             }
             else if (dumpExpressionTreeVerbose.checked && ['↱', '↳'].includes(char)) {

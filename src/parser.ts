@@ -8,21 +8,63 @@ export type ExpressionASTTreeNode = {
 	nodes: ExpressionASTNode[];
 }
 
-export abstract class Statement {
-	constructor(public tokens:Token[], public type:StatementType){}
+const statements = {
+	startKeyword: {} as Record<string, typeof Statement>,
+	irregular: [] as (typeof Statement)[],
+};
+
+function statement<TClass extends typeof Statement>(...tokens: string[]):
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
+function statement<TClass extends typeof Statement>(irregular:"#", ...tokens:string[]):
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
+
+
+function statement<TClass extends typeof Statement>(...tokens:string[]){
+	return function (input:TClass, context:ClassDecoratorContext<TClass>):TClass {
+		if(tokens.length < 1) throw new Error(`All statements must contain at least one token`);
+		if(tokens[0] == "#"){
+			statements.irregular.push(input);
+		} else {
+			if(statements.startKeyword[tokens[0]]) throw new Error(`Statement starting with ${tokens[0]} already registered`); //TODO overloads, eg FOR STEP
+		}
+		return input;
+	}
+}
+
+export class Statement {
+	type:typeof Statement;
+	stype:StatementType;
+	static type:StatementType;
+	static tokens:(string | "#" | "...")[] = null!;
+	static check(input:Token[]):[message:string, priority:number] | true {
+		for(let i = this.tokens[0] == "#" ? 1 : 0, j = 0; i < this.tokens.length; i ++){
+			if(this.tokens[i] == "..."){
+				if(i == this.tokens.length - 1) return true; //Last token is a wildcard
+				else throw new Error("todo");
+			} else if(this.tokens[i] == "#") throw new Error(`absurd`);
+			else if(this.tokens[i] == input[j].type) j++; //Token matches, move to next one
+			else return [`Expected a ${this.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+		}
+		return true;
+	}
+	constructor(public tokens:Token[]){
+		this.type = this.constructor as typeof Statement;
+		this.stype = this.type.type;
+	}
 	toString(){
 		return this.tokens.map(t => t.text).join(" ");
 	}
 }
 
-//@statement(["keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name"])
+@statement("keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name")
 export class FunctionStatement extends Statement {
 	//FUNCTION Amogus ( amogus : type , sussy : type ) RETURNS BOOLEAN
 	/** Mapping between name and type */
 	args: Map<string, string>;
 	returnType: string;
+	static type:StatementType = "function";
 	constructor(tokens:Token[]){
-		super(tokens, "function");
+		super(tokens);
 		if(
 			tokens.length >= 6 &&
 			//tokens[0] is the keyword function, which was used to determine the statement type
@@ -38,6 +80,12 @@ export class FunctionStatement extends Statement {
 		} else throw new Error("Invalid statement");
 	}
 }
+
+@statement("#", "name", "operator.assignment", "...")
+class AssignmentStatement extends Statement {
+	static type:StatementType = "assignment";
+}
+
 
 export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;
@@ -104,7 +152,7 @@ export function parse(tokens:Token[]):ProgramAST {
 	}
 	const blockStack:ProgramASTTreeNode[] = [];
 	for(const statement of statements){
-		switch(statement.type){
+		switch(statement.stype){
 			case "assignment": case "declaration": case "output": case "input": case "return":
 				getActiveBuffer().push(statement);
 				break;
@@ -112,7 +160,7 @@ export function parse(tokens:Token[]):ProgramAST {
 				const node:ProgramASTTreeNode = {
 					startStatement: statement,
 					endStatement: null!, //null! goes brr
-					type: statement.type,
+					type: statement.stype,
 					nodes: []
 				};
 				getActiveBuffer().push(node);
@@ -121,12 +169,12 @@ export function parse(tokens:Token[]):ProgramAST {
 			case "if.end": case "for.end": case "while.end": case "dowhile.end": case "function.end": case "procedure.end":
 				const lastNode = blockStack.at(-1);
 				if(!lastNode) throw new Error(`Invalid statement ${stringifyStatement(statement)}: no open blocks`);
-				else if(lastNode.startStatement.type == statement.type.split(".")[0]){ //probably bad code
+				else if(lastNode.startStatement.stype == statement.stype.split(".")[0]){ //probably bad code
 					lastNode.endStatement = statement;
 					blockStack.pop();
 				} else throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
 				break;
-			default: statement.type satisfies never; break;
+			default: statement.stype satisfies never; break;
 		}
 	}
 	if(blockStack.length) throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1)!.startStatement)}`);
@@ -138,61 +186,27 @@ export function parse(tokens:Token[]):ProgramAST {
  * @argument tokens must not contain any newlines.
  **/
 export function parseStatement(tokens:Token[]):Statement {
-	if(tokens.length == 0) throw new Error(`Invalid statement: empty`);
-	switch(tokens[0].type){
-		//TODO bad implementation, take stuff from MLOGX
-		case "keyword.declare": return { type: "declaration", tokens };
-		case "keyword.output": return { type: "output", tokens };
-		case "keyword.input": return { type: "input", tokens };
-		case "name":
-			if(tokens.length >= 3 && tokens[1].type == "operator.assignment")
-				return { type: "assignment", tokens };
-			else throw new Error(`Invalid statement`);
-		case "keyword.return": if(tokens.length >= 2) return { type: "return", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.if":
-			if(tokens.length >= 3 && tokens.at(-1)!.type == "keyword.then") return { type: "if", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.for":
-			if(
-				tokens.length >= 6 &&
-				tokens[1].type == "name" &&
-				tokens[2].type == "operator.assignment" &&
-				(tokens[3].type == "name" || tokens[3].type == "number.decimal") &&
-				tokens[4].type == "keyword.to" &&
-				(tokens[5].type == "name" || tokens[5].type == "number.decimal")
-			) return { type: "for", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.while":
-			if(tokens.length >= 2) return { type: "while", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.dowhile":
-			if(tokens.length == 1) return { type: "if", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.function":
-			if(
-				tokens.length >= 6 &&
-				tokens[1].type == "name" &&
-				tokens[2].type == "parentheses.open" &&
-				//arguments inside, difficult to parse
-				tokens.at(-3)!.type == "parentheses.close" &&
-				tokens.at(-2)!.type == "keyword.returns" &&
-				tokens.at(-1)!.type == "name"
-			) return { type: "function", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.procedure":
-			if(
-				tokens.length >= 4 &&
-				tokens[1].type == "name" &&
-				tokens[2].type == "parentheses.open" &&
-				//arguments inside, difficult to parse
-				tokens.at(-1)!.type == "parentheses.close"
-			) return { type: "procedure", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.if_end": if(tokens.length == 1) return { type: "if.end", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.for_end":
-			if(
-				tokens.length == 2 && tokens[1].type == "name"
-			) return { type: "for.end", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.while_end": if(tokens.length == 1) return { type: "while.end", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.dowhile_end": if(tokens.length >= 2) return { type: "dowhile.end", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.function_end": if(tokens.length == 1) return { type: "function.end", tokens }; else throw new Error(`Invalid statement`);
-		case "keyword.procedure_end": if(tokens.length == 1) return { type: "procedure.end", tokens }; else throw new Error(`Invalid statement`);
-		default: throw new Error(`Invalid statement`);
+	const statement = getStatement(tokens);
+	if(typeof statement == "string") throw new Error(`Invalid line ${tokens.map(t => t.type).join(" ")}: ${statement}`);
+	return new statement(tokens);
+}
+export function getStatement(tokens:Token[]):typeof Statement | string {
+	if(tokens.length < 1) return "Empty statement";
+	let possibleStatements:(typeof Statement)[];
+	if(tokens[0].type in statements.startKeyword) possibleStatements = [statements.startKeyword[tokens[0].type]];
+	else possibleStatements = statements.irregular;
+	if(possibleStatements.length == 0) return `No possible statements`;
+	let errors:[message:string, priority:number][] = [];
+	for(const possibleStatement of possibleStatements){
+		const result = possibleStatement.check(tokens);
+		if(Array.isArray(result)) errors.push(result);
+		else return possibleStatement;
 	}
+	let maxError:[message:string, priority:number] = errors[0];
+	for(const error of errors){
+		if(error[1] > maxError[1]) maxError = error;
+	}
+	return maxError[0];
 }
 
 export function stringifyStatement(statement:Statement):string {

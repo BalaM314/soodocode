@@ -1,32 +1,147 @@
+var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
+    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
+    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
+    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
+    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
+    var _, done = false;
+    for (var i = decorators.length - 1; i >= 0; i--) {
+        var context = {};
+        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
+        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
+        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
+        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
+        if (kind === "accessor") {
+            if (result === void 0) continue;
+            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
+            if (_ = accept(result.get)) descriptor.get = _;
+            if (_ = accept(result.set)) descriptor.set = _;
+            if (_ = accept(result.init)) initializers.unshift(_);
+        }
+        else if (_ = accept(result)) {
+            if (kind === "field") initializers.unshift(_);
+            else descriptor[key] = _;
+        }
+    }
+    if (target) Object.defineProperty(target, contextIn.name, descriptor);
+    done = true;
+};
+var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
+    var useValue = arguments.length > 2;
+    for (var i = 0; i < initializers.length; i++) {
+        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
+    }
+    return useValue ? value : void 0;
+};
+var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
+    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
+    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+};
 import { getText } from "./lexer.js";
+const statements = {
+    startKeyword: {},
+    irregular: [],
+};
+function statement(...tokens) {
+    return function (input, context) {
+        if (tokens.length < 1)
+            throw new Error(`All statements must contain at least one token`);
+        if (tokens[0] == "#") {
+            statements.irregular.push(input);
+        }
+        else {
+            if (statements.startKeyword[tokens[0]])
+                throw new Error(`Statement starting with ${tokens[0]} already registered`); //TODO overloads, eg FOR STEP
+        }
+        return input;
+    };
+}
 export class Statement {
-    constructor(tokens, type) {
+    static check(input) {
+        for (let i = this.tokens[0] == "#" ? 1 : 0, j = 0; i < this.tokens.length; i++) {
+            if (this.tokens[i] == "...") {
+                if (i == this.tokens.length - 1)
+                    return true; //Last token is a wildcard
+                else
+                    throw new Error("todo");
+            }
+            else if (this.tokens[i] == "#")
+                throw new Error(`absurd`);
+            else if (this.tokens[i] == input[j].type)
+                j++; //Token matches, move to next one
+            else
+                return [`Expected a ${this.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+        }
+        return true;
+    }
+    constructor(tokens) {
         this.tokens = tokens;
-        this.type = type;
+        this.type = this.constructor;
+        this.stype = this.type.type;
     }
     toString() {
         return this.tokens.map(t => t.text).join(" ");
     }
 }
-//@statement(["keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name"])
-export class FunctionStatement extends Statement {
-    constructor(tokens) {
-        super(tokens, "function");
-        if (tokens.length >= 6 &&
-            //tokens[0] is the keyword function, which was used to determine the statement type
-            tokens[1].type == "name" &&
-            tokens[2].type == "parentheses.open" &&
-            //variable number of arguments
-            tokens.at(-3).type == "parentheses.close" &&
-            tokens.at(-2).type == "keyword.returns" &&
-            tokens.at(-1).type == "name") {
-            this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
-            this.returnType = tokens.at(-1).text.toUpperCase();
+Statement.tokens = null;
+let FunctionStatement = (() => {
+    let _classDecorators = [statement("keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var FunctionStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            if (tokens.length >= 6 &&
+                //tokens[0] is the keyword function, which was used to determine the statement type
+                tokens[1].type == "name" &&
+                tokens[2].type == "parentheses.open" &&
+                //variable number of arguments
+                tokens.at(-3).type == "parentheses.close" &&
+                tokens.at(-2).type == "keyword.returns" &&
+                tokens.at(-1).type == "name") {
+                this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+                this.returnType = tokens.at(-1).text.toUpperCase();
+            }
+            else
+                throw new Error("Invalid statement");
         }
-        else
-            throw new Error("Invalid statement");
-    }
-}
+    };
+    __setFunctionName(_classThis, "FunctionStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        FunctionStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.type = "function";
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return FunctionStatement = _classThis;
+})();
+export { FunctionStatement };
+let AssignmentStatement = (() => {
+    let _classDecorators = [statement("#", "name", "operator.assignment", "...")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var AssignmentStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "AssignmentStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        AssignmentStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.type = "assignment";
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return AssignmentStatement = _classThis;
+})();
 /** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
 export function parseFunctionArguments(tokens, low, high) {
     const size = high - low + 1;
@@ -73,7 +188,7 @@ export function parse(tokens) {
     }
     const blockStack = [];
     for (const statement of statements) {
-        switch (statement.type) {
+        switch (statement.stype) {
             case "assignment":
             case "declaration":
             case "output":
@@ -90,7 +205,7 @@ export function parse(tokens) {
                 const node = {
                     startStatement: statement,
                     endStatement: null,
-                    type: statement.type,
+                    type: statement.stype,
                     nodes: []
                 };
                 getActiveBuffer().push(node);
@@ -105,7 +220,7 @@ export function parse(tokens) {
                 const lastNode = blockStack.at(-1);
                 if (!lastNode)
                     throw new Error(`Invalid statement ${stringifyStatement(statement)}: no open blocks`);
-                else if (lastNode.startStatement.type == statement.type.split(".")[0]) { //probably bad code
+                else if (lastNode.startStatement.stype == statement.stype.split(".")[0]) { //probably bad code
                     lastNode.endStatement = statement;
                     blockStack.pop();
                 }
@@ -113,7 +228,7 @@ export function parse(tokens) {
                     throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
                 break;
             default:
-                statement.type;
+                statement.stype;
                 break;
         }
     }
@@ -126,94 +241,35 @@ export function parse(tokens) {
  * @argument tokens must not contain any newlines.
  **/
 export function parseStatement(tokens) {
-    if (tokens.length == 0)
-        throw new Error(`Invalid statement: empty`);
-    switch (tokens[0].type) {
-        //TODO bad implementation, take stuff from MLOGX
-        case "keyword.declare": return { type: "declaration", tokens };
-        case "keyword.output": return { type: "output", tokens };
-        case "keyword.input": return { type: "input", tokens };
-        case "name":
-            if (tokens.length >= 3 && tokens[1].type == "operator.assignment")
-                return { type: "assignment", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.return": if (tokens.length >= 2)
-            return { type: "return", tokens };
+    const statement = getStatement(tokens);
+    if (typeof statement == "string")
+        throw new Error(`Invalid line ${tokens.map(t => t.type).join(" ")}: ${statement}`);
+    return new statement(tokens);
+}
+export function getStatement(tokens) {
+    if (tokens.length < 1)
+        return "Empty statement";
+    let possibleStatements;
+    if (tokens[0].type in statements.startKeyword)
+        possibleStatements = [statements.startKeyword[tokens[0].type]];
+    else
+        possibleStatements = statements.irregular;
+    if (possibleStatements.length == 0)
+        return `No possible statements`;
+    let errors = [];
+    for (const possibleStatement of possibleStatements) {
+        const result = possibleStatement.check(tokens);
+        if (Array.isArray(result))
+            errors.push(result);
         else
-            throw new Error(`Invalid statement`);
-        case "keyword.if":
-            if (tokens.length >= 3 && tokens.at(-1).type == "keyword.then")
-                return { type: "if", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.for":
-            if (tokens.length >= 6 &&
-                tokens[1].type == "name" &&
-                tokens[2].type == "operator.assignment" &&
-                (tokens[3].type == "name" || tokens[3].type == "number.decimal") &&
-                tokens[4].type == "keyword.to" &&
-                (tokens[5].type == "name" || tokens[5].type == "number.decimal"))
-                return { type: "for", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.while":
-            if (tokens.length >= 2)
-                return { type: "while", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.dowhile":
-            if (tokens.length == 1)
-                return { type: "if", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.function":
-            if (tokens.length >= 6 &&
-                tokens[1].type == "name" &&
-                tokens[2].type == "parentheses.open" &&
-                //arguments inside, difficult to parse
-                tokens.at(-3).type == "parentheses.close" &&
-                tokens.at(-2).type == "keyword.returns" &&
-                tokens.at(-1).type == "name")
-                return { type: "function", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.procedure":
-            if (tokens.length >= 4 &&
-                tokens[1].type == "name" &&
-                tokens[2].type == "parentheses.open" &&
-                //arguments inside, difficult to parse
-                tokens.at(-1).type == "parentheses.close")
-                return { type: "procedure", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.if_end": if (tokens.length == 1)
-            return { type: "if.end", tokens };
-        else
-            throw new Error(`Invalid statement`);
-        case "keyword.for_end":
-            if (tokens.length == 2 && tokens[1].type == "name")
-                return { type: "for.end", tokens };
-            else
-                throw new Error(`Invalid statement`);
-        case "keyword.while_end": if (tokens.length == 1)
-            return { type: "while.end", tokens };
-        else
-            throw new Error(`Invalid statement`);
-        case "keyword.dowhile_end": if (tokens.length >= 2)
-            return { type: "dowhile.end", tokens };
-        else
-            throw new Error(`Invalid statement`);
-        case "keyword.function_end": if (tokens.length == 1)
-            return { type: "function.end", tokens };
-        else
-            throw new Error(`Invalid statement`);
-        case "keyword.procedure_end": if (tokens.length == 1)
-            return { type: "procedure.end", tokens };
-        else
-            throw new Error(`Invalid statement`);
-        default: throw new Error(`Invalid statement`);
+            return possibleStatement;
     }
+    let maxError = errors[0];
+    for (const error of errors) {
+        if (error[1] > maxError[1])
+            maxError = error;
+    }
+    return maxError[0];
 }
 export function stringifyStatement(statement) {
     return statement.tokens.map(t => t.text).join(" ");
@@ -245,7 +301,6 @@ const out = {
 };
 const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
 export function parseExpression(input) {
-    var _a, _b;
     //If there is only one token
     if (input.length == 1) {
         if (input[0].type == "number.decimal") //and it's a number
@@ -254,7 +309,7 @@ export function parseExpression(input) {
             throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number`);
     }
     //If the whole expression is surrounded by parentheses, parse the inner expression
-    if (((_a = input[0]) === null || _a === void 0 ? void 0 : _a.type) == "parentheses.open" && ((_b = input.at(-1)) === null || _b === void 0 ? void 0 : _b.type) == "parentheses.close")
+    if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
         return parseExpression(input.slice(1, -1));
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     for (const operatorsOfPriority of operators) {

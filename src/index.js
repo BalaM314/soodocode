@@ -24,7 +24,12 @@ const statements = {
     declare: {
         matcher: /DECLARE/,
         executor: (statement, context) => {
-            return Object.assign(Object.assign({}, context), { variables: Object.assign({}, context.variables) });
+            return {
+                ...context,
+                variables: {
+                    ...context.variables,
+                }
+            };
         }
     }
 };
