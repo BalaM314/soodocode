@@ -256,7 +256,7 @@ describe("parseFunctionArguments", () => {
             if (input instanceof Map)
                 return Object.fromEntries(input.entries());
             else
-                throw new Error(input);
+                return input;
         }
         expect(process(parseFunctionArguments([
             { type: "keyword.function", text: "FUNCTION" },
@@ -315,14 +315,14 @@ describe("parseFunctionArguments", () => {
             { type: "parentheses.close", text: ")" },
             { type: "keyword.returns", text: "RETURNS" },
             { type: "name", text: "INTEGER " }
-        ], 3, 9))).toEqual({
+        ], 3, 13))).toEqual({
             arg: "INTEGER",
             arg2: "BOOLEAN",
-            arg3: "UserSupplied",
+            arg3: "USERSUPPLIED",
         });
     });
     it("should throw on invalid function arguments", () => {
-        expect(() => parseFunctionArguments([
+        expect(parseFunctionArguments([
             { type: "keyword.function", text: "FUNCTION" },
             { type: "name", text: "Amogus" },
             { type: "parentheses.open", text: "(" },
@@ -331,7 +331,7 @@ describe("parseFunctionArguments", () => {
             { type: "keyword.returns", text: "RETURNS" },
             { type: "name", text: "INTEGER " }
         ], 3, 3)).toEqual(jasmine.any(String));
-        expect(() => parseFunctionArguments([
+        expect(parseFunctionArguments([
             { type: "keyword.function", text: "FUNCTION" },
             { type: "name", text: "Amogus" },
             { type: "parentheses.open", text: "(" },
@@ -341,7 +341,7 @@ describe("parseFunctionArguments", () => {
             { type: "keyword.returns", text: "RETURNS" },
             { type: "name", text: "INTEGER " }
         ], 3, 4)).toEqual(jasmine.any(String));
-        expect(() => parseFunctionArguments([
+        expect(parseFunctionArguments([
             { type: "keyword.function", text: "FUNCTION" },
             { type: "name", text: "Amogus" },
             { type: "parentheses.open", text: "(" },
@@ -353,7 +353,7 @@ describe("parseFunctionArguments", () => {
             { type: "keyword.returns", text: "RETURNS" },
             { type: "name", text: "INTEGER " }
         ], 3, 6)).toEqual(jasmine.any(String));
-        expect(() => parseFunctionArguments([
+        expect(parseFunctionArguments([
             { type: "keyword.function", text: "FUNCTION" },
             { type: "name", text: "Amogus" },
             { type: "parentheses.open", text: "(" },
@@ -370,12 +370,12 @@ describe("parseFunctionArguments", () => {
 describe("parseStatement", () => {
     for (const [name, program, output] of sampleStatements) {
         if (output == "error") {
-            it(`should parse ${name} into a statement`, () => {
+            it(`should not parse ${name} into a statement`, () => {
                 expect(() => parseStatement(program)).toThrow();
             });
         }
         else {
-            it(`should not parse ${name} into a statement`, () => {
+            it(`should parse ${name} into a statement`, () => {
                 expect(parseStatement(program)).toEqual(output);
             });
         }

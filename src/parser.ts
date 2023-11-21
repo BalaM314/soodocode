@@ -27,13 +27,13 @@ function statement<TClass extends typeof Statement>(type:StatementType, ...args:
 	return function (input:TClass):TClass {
 		input.type = type;
 		if(args[0] == "block"){
-			args.unshift();
+			args.shift();
 			input.category = "block";
 		} else {
 			input.category = "normal";
 		}
 		if(args[0] == "auto" && input.category == "block"){
-			args.unshift();
+			args.shift();
 			statement(type + ".end" as StatementType, args[0] + "_end" as TokenType)( //REFACTOR CHECK
 				class __endStatement extends Statement {}
 			);
@@ -47,6 +47,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, ...args:
 				throw new Error(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
 			statements.startKeyword[firstToken] = input;
 		}
+		input.tokens = args;
 		return input;
 	}
 }
@@ -166,16 +167,16 @@ export function parseFunctionArguments(tokens:Token[], low:number, high:number):
 		const type = tokens[low + 4 * i + 2];
 		const comma = tokens[low + 4 * i + 3];
 		if(!name) return `Missing name`;
-		if(name.type != "name") return `Expected a name, got ${name.text} (${name.type})`;
+		if(name.type != "name") return `Expected a name, got "${name.text}" (${name.type})`;
 		if(!colon) return `Missing colon`;
-		if(colon.type != "punctuation.colon") return `Expected a name, got ${colon.text} (${colon.type})`;
+		if(colon.type != "punctuation.colon") return `Expected a name, got "${colon.text}" (${colon.type})`;
 		if(!type) return `Missing type`;
-		if(type.type != "name") return `Expected a name, got ${type.text} (${type.type})`;
+		if(type.type != "name") return `Expected a name, got "${type.text}" (${type.type})`;
 		if(!comma) return `Missing comma`;
-		if(i == numArgs - 1 && comma.type == "parentheses.close") //Last argument and the 4th token is the closing paren
-			return `Expected closing parentheses, got ${comma.text} (${comma.type})`;
-		if(i != numArgs - 1 && comma.type == "punctuation.comma") //Not the last argument and the token is a comma
-			return `Expected a comma, got ${comma.text} (${comma.type})`;
+		if(i == numArgs - 1 && comma.type != "parentheses.close") //Last argument and the 4th token is the closing paren
+			return `Expected closing parentheses, got "${comma.text}" (${comma.type})`;
+		if(i != numArgs - 1 && comma.type != "punctuation.comma") //Not the last argument and the token is a comma
+			return `Expected a comma, got "${comma.text}" (${comma.type})`;
 		args.set(name.text, type.text.toUpperCase());
 	}
 	return args;
