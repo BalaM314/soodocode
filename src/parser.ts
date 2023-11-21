@@ -13,19 +13,37 @@ const statements = {
 	irregular: [] as (typeof Statement)[],
 };
 
-function statement<TClass extends typeof Statement>(...tokens: string[]):
-	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(irregular:"#", ...tokens:string[]):
-	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 
+function statement<TClass extends typeof Statement>(type:StatementType, ...tokens: (TokenType | "...")[]):
+	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+function statement<TClass extends typeof Statement>(type:StatementType, irregular:"#", ...tokens: (TokenType | "...")[]):
+	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+function statement<TClass extends typeof Statement>(type:StatementType, category:"block", ...tokens:(TokenType | "...")[]):
+	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+function statement<TClass extends typeof Statement>(type:StatementType, category:"block", endType:"auto", ...tokens:(TokenType | "...")[]):
+	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 
-function statement<TClass extends typeof Statement>(...tokens:string[]){
-	return function (input:TClass, context:ClassDecoratorContext<TClass>):TClass {
-		if(tokens.length < 1) throw new Error(`All statements must contain at least one token`);
-		if(tokens[0] == "#"){
+function statement<TClass extends typeof Statement>(type:StatementType, ...args:string[]){
+	return function (input:TClass):TClass {
+		input.type = type;
+		if(args[0] == "block"){
+			args.unshift();
+			input.category = "block";
+		} else {
+			input.category = "normal";
+		}
+		if(args[0] == "auto" && input.category == "block"){
+			args.unshift();
+			statement(type + ".end" as StatementType, args[0] + "_end" as TokenType)( //REFACTOR CHECK
+				class __endStatement extends Statement {}
+			);
+		}
+		if(args.length < 1) throw new Error(`All statements must contain at least one token`);
+		if(args[0] == "#"){
 			statements.irregular.push(input);
 		} else {
-			if(statements.startKeyword[tokens[0]]) throw new Error(`Statement starting with ${tokens[0]} already registered`); //TODO overloads, eg FOR STEP
+			if(statements.startKeyword[args[0]]) throw new Error(`Statement starting with ${args[0]} already registered`); //TODO overloads, eg FOR STEP
+			statements.startKeyword[args[0]] = input;
 		}
 		return input;
 	}
@@ -35,6 +53,8 @@ export class Statement {
 	type:typeof Statement;
 	stype:StatementType;
 	static type:StatementType;
+	category: StatementCategory;
+	static category: StatementCategory;
 	static tokens:(string | "#" | "...")[] = null!;
 	static check(input:Token[]):[message:string, priority:number] | true {
 		for(let i = this.tokens[0] == "#" ? 1 : 0, j = 0; i < this.tokens.length; i ++){
@@ -50,40 +70,54 @@ export class Statement {
 	constructor(public tokens:Token[]){
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
+		this.category = this.type.category;
 	}
 	toString(){
 		return this.tokens.map(t => t.text).join(" ");
 	}
 }
 
-@statement("keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name")
+@statement("assignment", "#", "name", "operator.assignment", "...")
+export class AssignmentStatement extends Statement {}
+@statement("output", "keyword.output", "...")
+export class OutputStatement extends Statement {}
+@statement("input", "keyword.input", "name")
+export class InputStatement extends Statement {}
+@statement("return", "keyword.return")
+export class ReturnStatement extends Statement {}
+
+
+@statement("if", "block", "auto", "keyword.if", "...", "keyword.then")
+export class IfStatement extends Statement {}
+@statement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal")
+export class ForStatement extends Statement {} //TODO fix endfor: should be `NEXT i`, not `NEXT`
+@statement("while", "block", "auto", "keyword.while", "...")
+export class WhileStatement extends Statement {}
+@statement("dowhile", "block", "auto", "keyword.dowhile")
+export class DoWhileStatement extends Statement {}
+
+@statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name")
 export class FunctionStatement extends Statement {
 	//FUNCTION Amogus ( amogus : type , sussy : type ) RETURNS BOOLEAN
 	/** Mapping between name and type */
 	args: Map<string, string>;
 	returnType: string;
-	static type:StatementType = "function";
 	constructor(tokens:Token[]){
 		super(tokens);
-		if(
-			tokens.length >= 6 &&
-			//tokens[0] is the keyword function, which was used to determine the statement type
-			tokens[1].type == "name" &&
-			tokens[2].type == "parentheses.open" &&
-			//variable number of arguments
-			tokens.at(-3)!.type == "parentheses.close" &&
-			tokens.at(-2)!.type == "keyword.returns" &&
-			tokens.at(-1)!.type == "name"
-		){
-			this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
-			this.returnType = tokens.at(-1)!.text.toUpperCase();
-		} else throw new Error("Invalid statement");
+		this.args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+		this.returnType = tokens.at(-1)!.text.toUpperCase();
 	}
 }
 
-@statement("#", "name", "operator.assignment", "...")
-class AssignmentStatement extends Statement {
-	static type:StatementType = "assignment";
+@statement("procedure", "block", "auto", "keyword.procedure", "name", "parentheses.open", "...", "parentheses.close")
+export class ProcedueStatement extends Statement {
+	//PROCEDURE Amogus ( amogus : type , sussy : type )
+	/** Mapping between name and type */
+	args: Map<string, string>;
+	constructor(tokens:Token[]){
+		super(tokens);
+		this.args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+	}
 }
 
 
@@ -108,6 +142,7 @@ export type StatementType =
 	"dowhile" | "dowhile.end" |
 	"function" | "function.end" |
 	"procedure" | "procedure.end";
+export type StatementCategory = "normal" | "block" | "block_end";
 
 /** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
 export function parseFunctionArguments(tokens:Token[], low:number, high:number):Map<string, string> {
@@ -152,29 +187,24 @@ export function parse(tokens:Token[]):ProgramAST {
 	}
 	const blockStack:ProgramASTTreeNode[] = [];
 	for(const statement of statements){
-		switch(statement.stype){
-			case "assignment": case "declaration": case "output": case "input": case "return":
-				getActiveBuffer().push(statement);
-				break;
-			case "if": case "for": case "while": case "dowhile": case "function": case "procedure":
-				const node:ProgramASTTreeNode = {
-					startStatement: statement,
-					endStatement: null!, //null! goes brr
-					type: statement.stype,
-					nodes: []
-				};
-				getActiveBuffer().push(node);
-				blockStack.push(node);
-				break;
-			case "if.end": case "for.end": case "while.end": case "dowhile.end": case "function.end": case "procedure.end":
-				const lastNode = blockStack.at(-1);
-				if(!lastNode) throw new Error(`Invalid statement ${stringifyStatement(statement)}: no open blocks`);
-				else if(lastNode.startStatement.stype == statement.stype.split(".")[0]){ //probably bad code
-					lastNode.endStatement = statement;
-					blockStack.pop();
-				} else throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
-				break;
-			default: statement.stype satisfies never; break;
+		if(statement.category == "normal"){
+			getActiveBuffer().push(statement);
+		} else if(statement.category == "block"){
+			const node:ProgramASTTreeNode = {
+				startStatement: statement,
+				endStatement: null!, //null! goes brr
+				type: statement.stype as ProgramASTTreeNodeType,
+				nodes: []
+			};
+			getActiveBuffer().push(node);
+			blockStack.push(node);
+		} else if(statement.category == "block_end"){
+			const lastNode = blockStack.at(-1);
+			if(!lastNode) throw new Error(`Invalid statement ${stringifyStatement(statement)}: no open blocks`);
+			else if(lastNode.startStatement.stype == statement.stype.split(".")[0]){ //probably bad code
+				lastNode.endStatement = statement;
+				blockStack.pop();
+			} else throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
 		}
 	}
 	if(blockStack.length) throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1)!.startStatement)}`);
@@ -213,34 +243,9 @@ export function stringifyStatement(statement:Statement):string {
 	return statement.tokens.map(t => t.text).join(" ");
 }
 
-const out:ExpressionASTTreeNode = {
-	token: {text: "+", type: "operator.add"},
-	nodes: [
-		{
-			token: {text: "-", type: "operator.subtract"},
-			nodes: [
-				{text: "5", type: "number.decimal"},
-				{text: "6", type: "number.decimal"},
-			]
-		},
-		{
-			token: {text: "*", type: "operator.multiply"},
-			nodes: [
-				{text: "1", type: "number.decimal"},
-				{
-					token: {text: "/", type: "operator.divide"},
-					nodes: [
-						{text: "2", type: "number.decimal"},
-						{text: "3", type: "number.decimal"},
-					]
-				},
-			]
-		}
-	]
-};
+
 
 const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
-
 export function parseExpression(input:Token[]):ExpressionASTNode {
 	//If there is only one token
 	if(input.length == 1){
@@ -293,14 +298,3 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 	//No operators found at all, something went wrong
 	throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }
-
-// const x:ProgramAST = {nodes: [
-// 	{nodes: ["DECLARE" , "Count", ":", "INTEGER"]},
-
-// 	Count <- 1
-// 	REPEAT
-// 		OUTPUT Count
-// 		OUTPUT "Sussy Baka"
-// 		Count <- Count + 1
-// 	UNTIL Count < 200
-// ]};
