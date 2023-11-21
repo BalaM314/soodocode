@@ -44,16 +44,16 @@ export const statements = {
 function statement(type, ...args) {
     return function (input) {
         input.type = type;
-        if (args[0] == "block") {
+        if (args[0] == "block" || args[0] == "block_end") {
+            input.category = args[0];
             args.shift();
-            input.category = "block";
         }
         else {
             input.category = "normal";
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(type + ".end", args[0] + "_end")(//REFACTOR CHECK
+            statement(type + ".end", "block_end", args[0] + "_end")(//REFACTOR CHECK
             class __endStatement extends Statement {
             });
         }
@@ -75,11 +75,21 @@ function statement(type, ...args) {
 export class Statement {
     static check(input) {
         for (let i = this.tokens[0] == "#" ? 1 : 0, j = 0; i < this.tokens.length; i++) {
-            if (this.tokens[i] == "...") {
+            if (this.tokens[i] == ".+" || this.tokens[i] == ".*") {
+                const allowEmpty = this.tokens[i] == ".*";
                 if (i == this.tokens.length - 1)
                     return true; //Last token is a wildcard
-                else
-                    throw new Error("todo");
+                else {
+                    let anyTokensSkipped = false;
+                    while (this.tokens[i + 1] != input[j].type) {
+                        j++;
+                        anyTokensSkipped = true;
+                        if (j == input.length)
+                            return [`Expected a ${this.tokens[i + 1]}, but none were found`, 4];
+                    }
+                    if (!anyTokensSkipped && !allowEmpty)
+                        return [`Expected one or more tokens, but found zero`, 6];
+                }
             }
             else if (this.tokens[i] == "#")
                 throw new Error(`absurd`);
@@ -121,7 +131,7 @@ let DeclarationStatement = (() => {
 })();
 export { DeclarationStatement };
 let AssignmentStatement = (() => {
-    let _classDecorators = [statement("assignment", "#", "name", "operator.assignment", "...")];
+    let _classDecorators = [statement("assignment", "#", "name", "operator.assignment", ".+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -140,7 +150,7 @@ let AssignmentStatement = (() => {
 })();
 export { AssignmentStatement };
 let OutputStatement = (() => {
-    let _classDecorators = [statement("output", "keyword.output", "...")];
+    let _classDecorators = [statement("output", "keyword.output", ".+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -197,7 +207,7 @@ let ReturnStatement = (() => {
 })();
 export { ReturnStatement };
 let IfStatement = (() => {
-    let _classDecorators = [statement("if", "block", "auto", "keyword.if", "...", "keyword.then")];
+    let _classDecorators = [statement("if", "block", "auto", "keyword.if", ".+", "keyword.then")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -235,7 +245,7 @@ let ForStatement = (() => {
 })(); //TODO fix endfor: should be `NEXT i`, not `NEXT`
 export { ForStatement };
 let WhileStatement = (() => {
-    let _classDecorators = [statement("while", "block", "auto", "keyword.while", "...")];
+    let _classDecorators = [statement("while", "block", "auto", "keyword.while", ".+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -273,7 +283,7 @@ let DoWhileStatement = (() => {
 })();
 export { DoWhileStatement };
 let FunctionStatement = (() => {
-    let _classDecorators = [statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", "...", "parentheses.close", "keyword.returns", "name")];
+    let _classDecorators = [statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -300,7 +310,7 @@ let FunctionStatement = (() => {
 })();
 export { FunctionStatement };
 let ProcedueStatement = (() => {
-    let _classDecorators = [statement("procedure", "block", "auto", "keyword.procedure", "name", "parentheses.open", "...", "parentheses.close")];
+    let _classDecorators = [statement("procedure", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -404,6 +414,8 @@ export function parse(tokens) {
             else
                 throw new Error(`Invalid statement ${stringifyStatement(statement)}: current block is of type ${lastNode.startStatement.type}`);
         }
+        else
+            throw new Error("impossible");
     }
     if (blockStack.length)
         throw new Error(`There were unclosed blocks: ${stringifyStatement(blockStack.at(-1).startStatement)}`);
