@@ -51,6 +51,8 @@ function statement<TClass extends typeof Statement>(type:StatementType, ...args:
 				throw new Error(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
 			statements.startKeyword[firstToken] = input;
 		}
+		if(statements.byType[type]) throw new Error(`Statement for type ${type} already registered`);
+		statements.byType[type] = input;
 		input.tokens = args as TokenMatcher[];
 		return input;
 	}
@@ -93,12 +95,21 @@ export class Statement {
 		return true;
 	}
 	constructor(public tokens:Token[]){
+		//TODO allow holding expressionASTs
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;
 	}
 	toString(){
 		return this.tokens.map(t => t.text).join(" ");
+	}
+	blockEndStatement(){
+		if(this.category != "block") throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);
+		return statements.byType[this.stype + ".end" as StatementType]; //REFACTOR CHECK
+	}
+	example(){
+		return `WIP example for statement ${this.stype}`;
+		//TODO
 	}
 }
 
