@@ -1,6 +1,7 @@
 import "jasmine";
-import { AssignmentStatement, DeclarationStatement, IfStatement, InputStatement, OutputStatement, ProgramAST, Statement, parse, parseFunctionArguments, parseStatement, statements } from "../src/parser.js";
 import type { Token } from "../src/lexer.js";
+import { ProgramAST, parse, parseFunctionArguments, parseStatement } from "../src/parser.js";
+import { AssignmentStatement, DeclarationStatement, IfStatement, InputStatement, OutputStatement, Statement, statements } from "../src/statements.js";
 
 const sampleStatements:[name:string, program:Token[], output:Statement | "error"][] = Object.entries<[program:Token[], output:Statement | "error"]>({
 	output: [

@@ -1,5 +1,6 @@
 import "jasmine";
-import { AssignmentStatement, DeclarationStatement, IfStatement, InputStatement, OutputStatement, parse, parseFunctionArguments, parseStatement, statements } from "../src/parser.js";
+import { parse, parseFunctionArguments, parseStatement } from "../src/parser.js";
+import { AssignmentStatement, DeclarationStatement, IfStatement, InputStatement, OutputStatement, statements } from "../src/statements.js";
 const sampleStatements = Object.entries({
     output: [
         [

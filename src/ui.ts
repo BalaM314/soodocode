@@ -1,6 +1,7 @@
 import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
-import type { ExpressionASTNode, ProgramAST, ProgramASTTreeNode, Statement } from "./parser.js";
+import type { ExpressionASTNode, ProgramAST } from "./parser.js";
+import type { Statement } from "./statements.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
