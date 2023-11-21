@@ -1,5 +1,5 @@
 import "jasmine";
-import { ProgramAST, Statement, parse, parseFunctionArguments, parseStatement } from "../src/parser.js";
+import { AssignmentStatement, DeclarationStatement, IfStatement, InputStatement, OutputStatement, ProgramAST, Statement, parse, parseFunctionArguments, parseStatement, statements } from "../src/parser.js";
 import type { Token } from "../src/lexer.js";
 
 const sampleStatements:[name:string, program:Token[], output:Statement | "error"][] = Object.entries<[program:Token[], output:Statement | "error"]>({
@@ -8,26 +8,20 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		],
-		{
-			type: "output",
-			tokens: [
-				{text: "OUTPUT", type: "keyword.output"},
-				{text: `"amogus"`, type: "string"},
-			]
-		}
+		new OutputStatement([
+			{text: "OUTPUT", type: "keyword.output"},
+			{text: `"amogus"`, type: "string"},
+		])
 	],
 	input: [
 		[
 			{text: "INPUT", type: "keyword.input"},
 			{text: `amogus`, type: "name"},
 		],
-		{
-			type: "input",
-			tokens: [
-				{text: "INPUT", type: "keyword.input"},
-				{text: `amogus`, type: "name"},
-			]
-		}
+		new InputStatement([
+			{text: "INPUT", type: "keyword.input"},
+			{text: `amogus`, type: "name"},
+		])
 	],
 	declare: [
 		[
@@ -36,15 +30,12 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: ":", type: "punctuation.colon"},
 			{text: "NUMBER", type: "name"},
 		],
-		{
-			type: "declaration",
-			tokens: [
-				{text: "DECLARE", type: "keyword.declare"},
-				{text: "amogus", type: "name"},
-				{text: ":", type: "punctuation.colon"},
-				{text: "NUMBER", type: "name"},
-			]
-		}
+		new DeclarationStatement([
+			{text: "DECLARE", type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: ":", type: "punctuation.colon"},
+			{text: "NUMBER", type: "name"},
+		])
 	],
 	assign: [
 		[
@@ -52,14 +43,11 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `<-`, type: "operator.assignment"},
 			{text: "31415", type: "number.decimal"},
 		],
-		{
-			type: "assignment",
-			tokens: [
-				{text: "amogus", type: "name"},
-				{text: `<-`, type: "operator.assignment"},
-				{text: "31415", type: "number.decimal"},
-			]
-		}
+		new AssignmentStatement([
+			{text: "amogus", type: "name"},
+			{text: `<-`, type: "operator.assignment"},
+			{text: "31415", type: "number.decimal"},
+		])
 	],
 	if: [
 		[
@@ -69,16 +57,13 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "x", type: "name"},
 			{text: "THEN", type: "keyword.then"},
 		],
-		{
-			type: "if",
-			tokens: [
-				{text: "IF", type: "keyword.if"},
-				{text: "5", type: "number.decimal"},
-				{text: `<`, type: "operator.less_than"},
-				{text: "x", type: "name"},
-				{text: "THEN", type: "keyword.then"},
-			]
-		}
+		new IfStatement([
+			{text: "IF", type: "keyword.if"},
+			{text: "5", type: "number.decimal"},
+			{text: `<`, type: "operator.less_than"},
+			{text: "x", type: "name"},
+			{text: "THEN", type: "keyword.then"},
+		])
 	],
 	empty: [
 		[
@@ -109,13 +94,10 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: `"amogus"`, type: "string"},
 			{text: "\n", type: "newline"},
 		],
-		[{
-			type: "output",
-			tokens: [
-				{text: "OUTPUT", type: "keyword.output"},
-				{text: `"amogus"`, type: "string"},
-			]
-		}]
+		[new OutputStatement([
+			{text: "OUTPUT", type: "keyword.output"},
+			{text: `"amogus"`, type: "string"},
+		])]
 	],
 	outputInputDeclareAssign: [
 		[
@@ -135,34 +117,25 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "31415", type: "number.decimal"},
 		],
 		[
-			{
-				type: "output",
-				tokens: [
-					{text: "OUTPUT", type: "keyword.output"},
-					{text: `"amogus"`, type: "string"},
-				]
-			},{
-				type: "input",
-				tokens: [
-					{text: "INPUT", type: "keyword.input"},
-					{text: `amogus`, type: "name"},
-				]
-			},{
-				type: "declaration",
-				tokens: [
-					{text: "DECLARE", type: "keyword.declare"},
-					{text: "amogus", type: "name"},
-					{text: ":", type: "punctuation.colon"},
-					{text: "NUMBER", type: "name"},
-				]
-			},{
-				type: "assignment",
-				tokens: [
-					{text: "amogus", type: "name"},
-					{text: `<-`, type: "operator.assignment"},
-					{text: "31415", type: "number.decimal"},
-				]
-			}
+			new OutputStatement([
+				{text: "OUTPUT", type: "keyword.output"},
+				{text: `"amogus"`, type: "string"},
+			]),
+			new InputStatement([
+				{text: "INPUT", type: "keyword.input"},
+				{text: `amogus`, type: "name"},
+			]),
+			new DeclarationStatement([
+				{text: "DECLARE", type: "keyword.declare"},
+				{text: "amogus", type: "name"},
+				{text: ":", type: "punctuation.colon"},
+				{text: "NUMBER", type: "name"},
+			]),
+			new AssignmentStatement([
+				{text: "amogus", type: "name"},
+				{text: `<-`, type: "operator.assignment"},
+				{text: "31415", type: "number.decimal"},
+			]),
 		]
 	],
 	if: [
@@ -182,39 +155,28 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "ENDIF", type: "keyword.if_end"},
 		],
 		[
+			new InputStatement([
+				{text: "INPUT", type: "keyword.input"},
+				{text: `x`, type: "name"},
+			]),
 			{
-				type: "input",
-				tokens: [
-					{text: "INPUT", type: "keyword.input"},
-					{text: `x`, type: "name"},
-				]
-			},{
 				type: "if",
-				startStatement: {
-					type: "if",
-					tokens: [
-						{text: "IF", type: "keyword.if"},
-						{text: "x", type: "name"},
-						{text: "<", type: "operator.less_than"},
-						{text: "5", type: "number.decimal"},
-						{text: "THEN", type: "keyword.then"},
-					]
-				},
+				startStatement: new IfStatement([
+					{text: "IF", type: "keyword.if"},
+					{text: "x", type: "name"},
+					{text: "<", type: "operator.less_than"},
+					{text: "5", type: "number.decimal"},
+					{text: "THEN", type: "keyword.then"},
+				]),
 				nodes: [
-					{
-						type: "output",
-						tokens: [
-							{text: "OUTPUT", type: "keyword.output"},
-							{text: `"amogus"`, type: "string"},
-						]
-					}
+					new OutputStatement([
+						{text: "OUTPUT", type: "keyword.output"},
+						{text: `"amogus"`, type: "string"},
+					]),
 				],
-				endStatement: {
-					type: "if.end",
-					tokens: [
-						{text: "ENDIF", type: "keyword.if_end"},
-					]
-				},
+				endStatement: new statements.startKeyword["keyword.if_end"]!([ //TODO bad
+					{text: "ENDIF", type: "keyword.if_end"}
+				]),
 			}
 		],
 	],
@@ -246,67 +208,47 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "ENDIF", type: "keyword.if_end"},
 		],
 		[
+			new InputStatement([
+				{text: "INPUT", type: "keyword.input"},
+				{text: `x`, type: "name"},
+			]),
 			{
-				type: "input",
-				tokens: [
-					{text: "INPUT", type: "keyword.input"},
-					{text: `x`, type: "name"},
-				]
-			},{
 				type: "if",
-				startStatement: {
-					type: "if",
-					tokens: [
-						{text: "IF", type: "keyword.if"},
-						{text: "x", type: "name"},
-						{text: "<", type: "operator.less_than"},
-						{text: "5", type: "number.decimal"},
-						{text: "THEN", type: "keyword.then"},
-					]
-				},
+				startStatement: new IfStatement([
+					{text: "IF", type: "keyword.if"},
+					{text: "x", type: "name"},
+					{text: "<", type: "operator.less_than"},
+					{text: "5", type: "number.decimal"},
+					{text: "THEN", type: "keyword.then"},
+				]),
 				nodes: [
-					{
-						type: "output",
-						tokens: [
-							{text: "OUTPUT", type: "keyword.output"},
-							{text: `"amogus"`, type: "string"},
-						]
-					},
+					new OutputStatement([
+						{text: "OUTPUT", type: "keyword.output"},
+						{text: `"X is less than 5"`, type: "string"},
+					]),
 					{
 						type: "if",
-						startStatement: {
-							type: "if",
-							tokens: [
-								{text: "IF", type: "keyword.if"},
-								{text: "x", type: "name"},
-								{text: "<", type: "operator.less_than"},
-								{text: "2", type: "number.decimal"},
-								{text: "THEN", type: "keyword.then"},
-							]
-						},
+						startStatement: new IfStatement([
+							{text: "IF", type: "keyword.if"},
+							{text: "x", type: "name"},
+							{text: "<", type: "operator.less_than"},
+							{text: "2", type: "number.decimal"},
+							{text: "THEN", type: "keyword.then"},
+						]),
 						nodes: [
-							{
-								type: "output",
-								tokens: [
-									{text: "OUTPUT", type: "keyword.output"},
-									{text: `"sussy"`, type: "string"},
-								]
-							}
+							new OutputStatement([
+								{text: "OUTPUT", type: "keyword.output"},
+								{text: `"X is also less than 2"`, type: "string"},
+							]),
 						],
-						endStatement: {
-							type: "if.end",
-							tokens: [
-								{text: "ENDIF", type: "keyword.if_end"},
-							]
-						},
+						endStatement: new statements.startKeyword["keyword.if_end"]!([ //TODO bad
+							{text: "ENDIF", type: "keyword.if_end"}
+						]),
 					}
 				],
-				endStatement: {
-					type: "if.end",
-					tokens: [
-						{text: "ENDIF", type: "keyword.if_end"},
-					]
-				},
+				endStatement: new statements.startKeyword["keyword.if_end"]!([ //TODO bad
+					{text: "ENDIF", type: "keyword.if_end"}
+				]),
 			}
 		],
 	]
@@ -314,17 +256,21 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 
 describe("parseFunctionArguments", () => {
 	it("should parse function arguments", () => {
-		expect(Object.fromEntries(parseFunctionArguments([
+		function process(input:string | Map<string, string>){
+			if(input instanceof Map) return Object.fromEntries(input.entries());
+			else throw new Error(input);
+		}
+		expect(process(parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
 			{ type: "parentheses.open", text: "(" },
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 2).entries())).toEqual({
+		], 3, 2))).toEqual({
 	
 		});
-		expect(Object.fromEntries(parseFunctionArguments([
+		expect(process(parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
 			{ type: "parentheses.open", text: "(" },
@@ -334,10 +280,10 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 5).entries())).toEqual({
+		], 3, 5))).toEqual({
 			arg: "INTEGER"
 		});
-		expect(Object.fromEntries(parseFunctionArguments([
+		expect(process(parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
 			{ type: "parentheses.open", text: "(" },
@@ -351,11 +297,11 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 9).entries())).toEqual({
+		], 3, 9))).toEqual({
 			arg: "INTEGER",
 			arg2: "BOOLEAN"
 		});
-		expect(Object.fromEntries(parseFunctionArguments([
+		expect(process(parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
 			{ type: "parentheses.open", text: "(" },
@@ -373,7 +319,7 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 9).entries())).toEqual({
+		], 3, 9))).toEqual({
 			arg: "INTEGER",
 			arg2: "BOOLEAN",
 			arg3: "UserSupplied",
@@ -389,7 +335,7 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 3)).toThrow();
+		], 3, 3)).toEqual(jasmine.any(String));
 		expect(() => parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
@@ -399,7 +345,7 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 4)).toThrow();
+		], 3, 4)).toEqual(jasmine.any(String));
 		expect(() => parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
@@ -411,7 +357,7 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 6)).toThrow();
+		], 3, 6)).toEqual(jasmine.any(String));
 		expect(() => parseFunctionArguments([
 			{ type: "keyword.function", text: "FUNCTION" },
 			{ type: "name", text: "Amogus" },
@@ -423,7 +369,7 @@ describe("parseFunctionArguments", () => {
 			{ type: "parentheses.close", text: ")" },
 			{ type: "keyword.returns", text: "RETURNS" },
 			{ type: "name", text: "INTEGER "}
-		], 3, 6)).toThrow();
+		], 3, 6)).toEqual(jasmine.any(String));
 	});
 });
 
