@@ -88,7 +88,7 @@ export function parse(tokens:Token[]):ProgramAST {
 			else if(lastNode.startStatement.stype == statement.stype.split(".")[0]){ //probably bad code
 				lastNode.endStatement = statement;
 				blockStack.pop();
-			} else throw new Error(`Invalid statement "${stringifyStatement(statement)}": current block is of type ${lastNode.startStatement.type}`);
+			} else throw new Error(`Invalid statement "${stringifyStatement(statement)}": current block is of type ${lastNode.startStatement.stype}`);
 		} else throw new Error("impossible");
 	}
 	if(blockStack.length) throw new Error(`There were unclosed blocks: "${stringifyStatement(blockStack.at(-1)!.startStatement)}" requires a matching "${blockStack.at(-1)!.startStatement.blockEndStatement().type}" statement`);

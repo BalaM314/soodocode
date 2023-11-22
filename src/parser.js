@@ -77,7 +77,7 @@ export function parse(tokens) {
                 blockStack.pop();
             }
             else
-                throw new Error(`Invalid statement "${stringifyStatement(statement)}": current block is of type ${lastNode.startStatement.type}`);
+                throw new Error(`Invalid statement "${stringifyStatement(statement)}": current block is of type ${lastNode.startStatement.stype}`);
         }
         else
             throw new Error("impossible");
