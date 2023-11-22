@@ -19,11 +19,11 @@ export function parseFunctionArguments(tokens, low, high) {
         if (!colon)
             return `Missing colon`;
         if (colon.type != "punctuation.colon")
-            return `Expected a name, got "${colon.text}" (${colon.type})`;
+            return `Expected a colon, got "${colon.text}" (${colon.type})`;
         if (!type)
             return `Missing type`;
         if (type.type != "name")
-            return `Expected a name, got "${type.text}" (${type.type})`;
+            return `Expected a type, got "${type.text}" (${type.type})`;
         if (!comma)
             return `Missing comma`;
         if (i == numArgs - 1 && comma.type != "parentheses.close") //Last argument and the 4th token is the closing paren
@@ -93,7 +93,7 @@ export function parse(tokens) {
 export function parseStatement(tokens) {
     const statement = getStatement(tokens);
     if (typeof statement == "string")
-        throw new Error(`Invalid line ${tokens.map(t => t.type).join(" ")}: ${statement}`);
+        throw new Error(`Invalid line ${tokens.map(t => t.text).join(" ")}: ${statement}`);
     return new statement(tokens);
 }
 export function getStatement(tokens) {

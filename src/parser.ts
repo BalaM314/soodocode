@@ -41,9 +41,9 @@ export function parseFunctionArguments(tokens:Token[], low:number, high:number):
 		if(!name) return `Missing name`;
 		if(name.type != "name") return `Expected a name, got "${name.text}" (${name.type})`;
 		if(!colon) return `Missing colon`;
-		if(colon.type != "punctuation.colon") return `Expected a name, got "${colon.text}" (${colon.type})`;
+		if(colon.type != "punctuation.colon") return `Expected a colon, got "${colon.text}" (${colon.type})`;
 		if(!type) return `Missing type`;
-		if(type.type != "name") return `Expected a name, got "${type.text}" (${type.type})`;
+		if(type.type != "name") return `Expected a type, got "${type.text}" (${type.type})`;
 		if(!comma) return `Missing comma`;
 		if(i == numArgs - 1 && comma.type != "parentheses.close") //Last argument and the 4th token is the closing paren
 			return `Expected closing parentheses, got "${comma.text}" (${comma.type})`;
@@ -101,7 +101,7 @@ export function parse(tokens:Token[]):ProgramAST {
  **/
 export function parseStatement(tokens:Token[]):Statement {
 	const statement = getStatement(tokens);
-	if(typeof statement == "string") throw new Error(`Invalid line ${tokens.map(t => t.type).join(" ")}: ${statement}`);
+	if(typeof statement == "string") throw new Error(`Invalid line ${tokens.map(t => t.text).join(" ")}: ${statement}`);
 	return new statement(tokens);
 }
 export function getStatement(tokens:Token[]):typeof Statement | string {
