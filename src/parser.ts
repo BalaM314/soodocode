@@ -9,7 +9,7 @@ export type ExpressionASTTreeNode = {
 	nodes: ExpressionASTNode[];
 }
 
-export type TokenMatcher = (TokenType | ".*" | ".+");
+export type TokenMatcher = (TokenType | ".*" | ".+" | "expr");
 
 export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;

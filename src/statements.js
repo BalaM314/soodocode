@@ -88,23 +88,29 @@ export class Statement {
                 if (i == this.tokens.length - 1)
                     return true; //Last token is a wildcard
                 else {
+                    if (j >= input.length && !allowEmpty)
+                        return [`Unexpected end of line`, 4];
                     let anyTokensSkipped = false;
                     while (this.tokens[i + 1] != input[j].type) {
                         j++;
                         anyTokensSkipped = true;
-                        if (j == input.length)
+                        if (j >= input.length)
                             return [`Expected a ${this.tokens[i + 1]}, but none were found`, 4];
                     }
                     if (!anyTokensSkipped && !allowEmpty)
                         return [`Expected one or more tokens, but found zero`, 6];
                 }
             }
-            else if (this.tokens[i] == "#")
-                throw new Error(`absurd`);
-            else if (this.tokens[i] == input[j].type)
-                j++; //Token matches, move to next one
-            else
-                return [`Expected a ${this.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+            else {
+                if (j >= input.length)
+                    return [`Unexpected end of line`, 4];
+                if (this.tokens[i] == "#")
+                    throw new Error(`absurd`);
+                else if (this.tokens[i] == input[j].type)
+                    j++; //Token matches, move to next one
+                else
+                    return [`Expected a ${this.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+            }
         }
         return true;
     }
@@ -129,13 +135,13 @@ export class Statement {
     }
 }
 Statement.tokens = null;
-makeStatement("declaration", "keyword.declare");
+makeStatement("declaration", "keyword.declare", "name", "punctuation.colon", "name");
 makeStatement("assignment", "#", "name", "operator.assignment", ".+");
 makeStatement("output", "keyword.output", ".+");
 makeStatement("input", "keyword.input", "name");
 makeStatement("return", "keyword.return");
 makeStatement("if", "block", "auto", "keyword.if", ".+", "keyword.then");
-makeStatement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT`
+makeStatement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
 makeStatement("while", "block", "auto", "keyword.while", ".+");
 makeStatement("dowhile", "block", "auto", "keyword.dowhile");
 let FunctionStatement = (() => {
