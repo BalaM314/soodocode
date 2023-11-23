@@ -1,5 +1,6 @@
 import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
+import * as statements from "./statements.js";
 import type { ExpressionASTNode, ProgramAST } from "./parser.js";
 import type { Statement } from "./statements.js";
 
@@ -209,7 +210,7 @@ ${displayProgram(program)}`
 });
 
 function dumpFunctionsToGlobalScope(){
-	Object.assign(window, lexer, parser);
+	Object.assign(window, lexer, parser, statements);
 }
 
 dumpFunctionsToGlobalScope();

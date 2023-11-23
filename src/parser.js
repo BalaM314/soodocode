@@ -108,7 +108,7 @@ export function getStatement(tokens) {
         return `No possible statements`;
     let errors = [];
     for (const possibleStatement of possibleStatements) {
-        const result = possibleStatement.check(tokens);
+        const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result))
             errors.push(result);
         else
@@ -120,6 +120,35 @@ export function getStatement(tokens) {
             maxError = error;
     }
     return maxError[0];
+}
+export function checkStatement(statement, input) {
+    for (let i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
+        if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*") {
+            const allowEmpty = statement.tokens[i] == ".*";
+            if (j >= input.length && !allowEmpty)
+                return [`Unexpected end of line`, 4];
+            let anyTokensSkipped = false;
+            while (statement.tokens[i + 1] != input[j].type) {
+                j++;
+                if (j >= input.length)
+                    return [`Expected a ${statement.tokens[i + 1]}, but none were found`, 4];
+                anyTokensSkipped = true;
+            }
+            if (!anyTokensSkipped && !allowEmpty)
+                return [`Expected one or more tokens, but found zero`, 6];
+        }
+        else {
+            if (j >= input.length)
+                return [`Unexpected end of line`, 4];
+            if (statement.tokens[i] == "#")
+                throw new Error(`absurd`);
+            else if (statement.tokens[i] == input[j].type)
+                j++; //Token matches, move to next one
+            else
+                return [`Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+        }
+    }
+    return true;
 }
 export function stringifyStatement(statement) {
     return statement.tokens.map(t => t.text).join(" ");

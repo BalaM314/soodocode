@@ -1,5 +1,6 @@
 import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
+import * as statements from "./statements.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
@@ -191,6 +192,6 @@ ${displayProgram(program)}`;
     }
 });
 function dumpFunctionsToGlobalScope() {
-    Object.assign(window, lexer, parser);
+    Object.assign(window, lexer, parser, statements);
 }
 dumpFunctionsToGlobalScope();

@@ -18,6 +18,32 @@ export const statements = {
 	irregular: [] as (typeof Statement)[],
 };
 
+export class Statement {
+	type:typeof Statement;
+	stype:StatementType;
+	static type:StatementType;
+	category: StatementCategory;
+	static category: StatementCategory;
+	static tokens:(TokenMatcher | "#")[] = null!;
+	constructor(public tokens:Token[]){
+		//TODO allow holding expressionASTs
+		this.type = this.constructor as typeof Statement;
+		this.stype = this.type.type;
+		this.category = this.type.category;
+	}
+	toString(){
+		return this.tokens.map(t => t.text).join(" ");
+	}
+	blockEndStatement(){
+		if(this.category != "block") throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);
+		return statements.byType[this.stype + ".end" as StatementType]; //REFACTOR CHECK
+	}
+	example(){
+		return `WIP example for statement ${this.stype}`;
+		//TODO
+	}
+}
+
 function statement<TClass extends typeof Statement>(type:StatementType, ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, irregular:"#", ...tokens:TokenMatcher[]):
@@ -65,53 +91,6 @@ function makeStatement(type:StatementType, category:"block" | "block_end", endTy
 
 function makeStatement(type:StatementType, ...args:any[]):typeof Statement {
 	return statement(type, ...args)(class __temp extends Statement {});
-}
-
-export class Statement {
-	type:typeof Statement;
-	stype:StatementType;
-	static type:StatementType;
-	category: StatementCategory;
-	static category: StatementCategory;
-	static tokens:(TokenMatcher | "#")[] = null!;
-	static check(input:Token[]):[message:string, priority:number] | true {
-		for(let i = this.tokens[0] == "#" ? 1 : 0, j = 0; i < this.tokens.length; i ++){
-			if(this.tokens[i] == ".+" || this.tokens[i] == ".*"){
-				const allowEmpty = this.tokens[i] == ".*";
-				if(j >= input.length && !allowEmpty) return [`Unexpected end of line`, 4];
-				let anyTokensSkipped = false;
-				while(this.tokens[i + 1] != input[j].type){
-					j ++;
-					if(j >= input.length) return [`Expected a ${this.tokens[i + 1]}, but none were found`, 4];
-					anyTokensSkipped = true;
-				}
-				if(!anyTokensSkipped && !allowEmpty) return [`Expected one or more tokens, but found zero`, 6];
-			} else {
-				if(j >= input.length) return [`Unexpected end of line`, 4];
-				if(this.tokens[i] == "#") throw new Error(`absurd`);
-				else if(this.tokens[i] == input[j].type) j++; //Token matches, move to next one
-				else return [`Expected a ${this.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
-			}
-		}
-		return true;
-	}
-	constructor(public tokens:Token[]){
-		//TODO allow holding expressionASTs
-		this.type = this.constructor as typeof Statement;
-		this.stype = this.type.type;
-		this.category = this.type.category;
-	}
-	toString(){
-		return this.tokens.map(t => t.text).join(" ");
-	}
-	blockEndStatement(){
-		if(this.category != "block") throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);
-		return statements.byType[this.stype + ".end" as StatementType]; //REFACTOR CHECK
-	}
-	example(){
-		return `WIP example for statement ${this.stype}`;
-		//TODO
-	}
 }
 
 makeStatement("declaration", "keyword.declare", "name", "punctuation.colon", "name");
