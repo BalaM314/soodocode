@@ -85,21 +85,17 @@ export class Statement {
         for (let i = this.tokens[0] == "#" ? 1 : 0, j = 0; i < this.tokens.length; i++) {
             if (this.tokens[i] == ".+" || this.tokens[i] == ".*") {
                 const allowEmpty = this.tokens[i] == ".*";
-                if (i == this.tokens.length - 1)
-                    return true; //Last token is a wildcard
-                else {
-                    if (j >= input.length && !allowEmpty)
-                        return [`Unexpected end of line`, 4];
-                    let anyTokensSkipped = false;
-                    while (this.tokens[i + 1] != input[j].type) {
-                        j++;
-                        anyTokensSkipped = true;
-                        if (j >= input.length)
-                            return [`Expected a ${this.tokens[i + 1]}, but none were found`, 4];
-                    }
-                    if (!anyTokensSkipped && !allowEmpty)
-                        return [`Expected one or more tokens, but found zero`, 6];
+                if (j >= input.length && !allowEmpty)
+                    return [`Unexpected end of line`, 4];
+                let anyTokensSkipped = false;
+                while (this.tokens[i + 1] != input[j].type) {
+                    j++;
+                    if (j >= input.length)
+                        return [`Expected a ${this.tokens[i + 1]}, but none were found`, 4];
+                    anyTokensSkipped = true;
                 }
+                if (!anyTokensSkipped && !allowEmpty)
+                    return [`Expected one or more tokens, but found zero`, 6];
             }
             else {
                 if (j >= input.length)
