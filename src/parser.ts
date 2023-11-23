@@ -130,7 +130,10 @@ export function checkStatement(statement:typeof Statement, input:Token[]):[messa
 			let anyTokensSkipped = false;
 			while(statement.tokens[i + 1] != input[j].type){
 				j ++;
-				if(j >= input.length) return [`Expected a ${statement.tokens[i + 1]}, but none were found`, 4];
+				if(j >= input.length){
+					if(i == statement.tokens.length - 1) return true; //Consumed all tokens 
+					return [`Expected a ${statement.tokens[i + 1]}, but none were found`, 4];
+				}
 				anyTokensSkipped = true;
 			}
 			if(!anyTokensSkipped && !allowEmpty) return [`Expected one or more tokens, but found zero`, 6];
