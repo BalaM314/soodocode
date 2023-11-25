@@ -104,7 +104,7 @@ export function parseStatement(tokens) {
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
-            return new possibleStatement(result.map(x => "start" in x ? tokens.slice(x.start, x.end + 1) : x).flat());
+            return new possibleStatement(result.map(x => "start" in x ? parseExpression(tokens.slice(x.start, x.end + 1)) : x));
         }
         else
             errors.push(result);
@@ -116,8 +116,13 @@ export function parseStatement(tokens) {
     }
     throw new Error(maxError.message);
 }
+/**
+ * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
+ * This is to avoid duplicating the expression parsing logic.
+ * @returns
+ */
 export function checkStatement(statement, input) {
-    //warning: I do not understand this code
+    //warning: despite writing it, I do not fully understand this code
     //but it works
     //TODO understand it
     const output = [];
@@ -140,7 +145,10 @@ export function checkStatement(statement, input) {
             const end = j - 1;
             if (!anyTokensSkipped && !allowEmpty)
                 return { message: `Expected one or more tokens, but found zero`, priority: 6 };
-            output.push({ start, end });
+            if (statement.tokens[i] == "expr+")
+                output.push({ start, end });
+            else
+                output.push(...input.slice(start, end + 1));
         }
         else {
             if (j >= input.length)

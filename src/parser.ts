@@ -109,7 +109,7 @@ export function parseStatement(tokens:Token[]):Statement {
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
-			return new possibleStatement(result.map(x => "start" in x ? tokens.slice(x.start, x.end + 1) : x).flat());
+			return new possibleStatement(result.map(x => "start" in x ? parseExpression(tokens.slice(x.start, x.end + 1)) : x));
 		} else errors.push(result);
 	}
 	let maxError:{message:string, priority:number} = errors[0];
@@ -118,8 +118,13 @@ export function parseStatement(tokens:Token[]):Statement {
 	}
 	throw new Error(maxError.message);
 }
+/**
+ * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
+ * This is to avoid duplicating the expression parsing logic.
+ * @returns 
+ */
 export function checkStatement(statement:typeof Statement, input:Token[]):{message:string; priority:number} | (Token | {start:number; end:number})[] {
-	//warning: I do not understand this code
+	//warning: despite writing it, I do not fully understand this code
 	//but it works
 	//TODO understand it
 
@@ -140,7 +145,10 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 			}
 			const end = j - 1;
 			if(!anyTokensSkipped && !allowEmpty) return {message: `Expected one or more tokens, but found zero`, priority: 6};
-			output.push({start, end});
+			if(statement.tokens[i] == "expr+")
+				output.push({start, end});
+			else
+				output.push(...input.slice(start, end + 1));
 		} else {
 			if(j >= input.length) return {message: `Unexpected end of line`, priority: 4};
 			if(statement.tokens[i] == "#") throw new Error(`absurd`);

@@ -94,15 +94,15 @@ function makeStatement(type:StatementType, ...args:any[]):typeof Statement {
 }
 
 makeStatement("declaration", "keyword.declare", "name", "punctuation.colon", "name");
-makeStatement("assignment", "#", "name", "operator.assignment", ".+");
+makeStatement("assignment", "#", "name", "operator.assignment", "expr+");
 makeStatement("output", "keyword.output", ".+");
 makeStatement("input", "keyword.input", "name");
 makeStatement("return", "keyword.return");
 
 
-makeStatement("if", "block", "auto", "keyword.if", ".+", "keyword.then");
+makeStatement("if", "block", "auto", "keyword.if", "expr+", "keyword.then");
 makeStatement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
-makeStatement("while", "block", "auto", "keyword.while", ".+");
+makeStatement("while", "block", "auto", "keyword.while", "expr+");
 makeStatement("dowhile", "block", "auto", "keyword.dowhile");
 
 @statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
