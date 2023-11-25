@@ -109,7 +109,7 @@ export function parseStatement(tokens:Token[]):Statement {
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
-			return new Statement(result.map(x => "start" in x ? parseExpression(tokens.slice(x.start, x.end)) : x));
+			return new possibleStatement(result.map(x => "start" in x ? tokens.slice(x.start, x.end + 1) : x).flat());
 		} else errors.push(result);
 	}
 	let maxError:{message:string, priority:number} = errors[0];
@@ -119,30 +119,35 @@ export function parseStatement(tokens:Token[]):Statement {
 	throw new Error(maxError.message);
 }
 export function checkStatement(statement:typeof Statement, input:Token[]):{message:string; priority:number} | (Token | {start:number; end:number})[] {
+	//warning: I do not understand this code
+	//but it works
+	//TODO understand it
+
 	const output: (Token | {start:number; end:number})[] = [];
 	for(let i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
 		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+"){
 			const allowEmpty = statement.tokens[i] == ".*";
 			const start = j;
-			if(j >= input.length && !allowEmpty) return {message:`Unexpected end of line`, priority: 4};
+			if(j >= input.length && !allowEmpty) return {message: `Unexpected end of line`, priority: 4};
 			let anyTokensSkipped = false;
-			while(statement.tokens[i + 1] != input[j].type){
-				if(j < input.length - 1){
-					j ++;
-				} else {
-					if(i == statement.tokens.length - 1) break; //Consumed all tokens
-					return {message:`Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4};
-				}
+			while(statement.tokens[i + 1] != input[j].type){ //Repeat until the current token in input is the next token
 				anyTokensSkipped = true;
+				j ++;
+				if(j >= input.length){ //end reached
+					if(i == statement.tokens.length - 1) break; //Consumed all tokens
+					return {message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4};
+				}
 			}
-			const end = j;
-			if(!anyTokensSkipped && !allowEmpty) return {message:`Expected one or more tokens, but found zero`, priority: 6};
+			const end = j - 1;
+			if(!anyTokensSkipped && !allowEmpty) return {message: `Expected one or more tokens, but found zero`, priority: 6};
 			output.push({start, end});
 		} else {
-			if(j >= input.length) return {message:`Unexpected end of line`, priority: 4};
+			if(j >= input.length) return {message: `Unexpected end of line`, priority: 4};
 			if(statement.tokens[i] == "#") throw new Error(`absurd`);
-			else if(statement.tokens[i] == input[j].type) j++; //Token matches, move to next one
-			else return {message:`Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};
+			else if(statement.tokens[i] == input[j].type){
+				output.push(input[j]);
+				j++; //Token matches, move to next one
+			} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};
 		}
 	}
 	return output;

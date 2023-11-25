@@ -42,13 +42,13 @@ export function displayProgram(program:ProgramAST):string {
 		if("startStatement" in node)
 			return (
 `<div class="program-display-block">
-${parser.stringifyStatement(node.startStatement)}
+${node.startStatement.toString()}
 ${displayProgram(node.nodes)}
-${parser.stringifyStatement(node.endStatement)}
+${node.endStatement.toString()}
 </div>`
 			);
 		else
-			return parser.stringifyStatement(node);
+			return node.toString();
 	}).join("\n");
 }
 
