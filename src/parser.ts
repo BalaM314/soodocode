@@ -9,7 +9,7 @@ export type ExpressionASTTreeNode = {
 	nodes: ExpressionASTNode[];
 }
 
-export type TokenMatcher = (TokenType | ".*" | ".+" | "expr");
+export type TokenMatcher = (TokenType | ".*" | ".+" | "expr+");
 
 export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;
@@ -84,14 +84,14 @@ export function parse(tokens:Token[]):ProgramAST {
 			blockStack.push(node);
 		} else if(statement.category == "block_end"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) throw new Error(`Invalid statement "${stringifyStatement(statement)}": no open blocks`);
+			if(!lastNode) throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
 			else if(lastNode.startStatement.stype == statement.stype.split(".")[0]){ //probably bad code
 				lastNode.endStatement = statement;
 				blockStack.pop();
-			} else throw new Error(`Invalid statement "${stringifyStatement(statement)}": current block is of type ${lastNode.startStatement.stype}`);
+			} else throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.startStatement.stype}`);
 		} else throw new Error("impossible");
 	}
-	if(blockStack.length) throw new Error(`There were unclosed blocks: "${stringifyStatement(blockStack.at(-1)!.startStatement)}" requires a matching "${blockStack.at(-1)!.startStatement.blockEndStatement().type}" statement`);
+	if(blockStack.length) throw new Error(`There were unclosed blocks: "${blockStack.at(-1)!.startStatement.toString()}" requires a matching "${blockStack.at(-1)!.startStatement.blockEndStatement().type}" statement`);
 	return program;
 }
 
@@ -100,57 +100,53 @@ export function parse(tokens:Token[]):ProgramAST {
  * @argument tokens must not contain any newlines.
  **/
 export function parseStatement(tokens:Token[]):Statement {
-	const statement = getStatement(tokens);
-	if(typeof statement == "string") throw new Error(`Invalid line ${tokens.map(t => t.text).join(" ")}: ${statement}`);
-	return new statement(tokens);
-}
-export function getStatement(tokens:Token[]):typeof Statement | string {
-	if(tokens.length < 1) return "Empty statement";
+	if(tokens.length < 1) throw new Error("Empty statement");
 	let possibleStatements:(typeof Statement)[];
 	if(tokens[0].type in statements.startKeyword) possibleStatements = [statements.startKeyword[tokens[0].type]!];
 	else possibleStatements = statements.irregular;
-	if(possibleStatements.length == 0) return `No possible statements`;
-	let errors:[message:string, priority:number][] = [];
+	if(possibleStatements.length == 0) throw new Error(`No possible statements`);
+	let errors:{message:string, priority:number}[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
-		if(Array.isArray(result)) errors.push(result);
-		else return possibleStatement;
+		if(Array.isArray(result)){
+			return new Statement(result);
+		} else errors.push(result);
 	}
-	let maxError:[message:string, priority:number] = errors[0];
+	let maxError:{message:string, priority:number} = errors[0];
 	for(const error of errors){
-		if(error[1] > maxError[1]) maxError = error;
+		if(error.priority > maxError.priority) maxError = error;
 	}
-	return maxError[0];
+	throw new Error(maxError.message);
 }
-export function checkStatement(statement:typeof Statement, input:Token[]):[message:string, priority:number] | true {
+export function checkStatement(statement:typeof Statement, input:Token[]):{message:string; priority:number} | (Token | {start:number; end:number})[] {
+	const output: (Token | {start:number; end:number})[] = [];
 	for(let i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
-		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*"){
+		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+"){
 			const allowEmpty = statement.tokens[i] == ".*";
-			if(j >= input.length && !allowEmpty) return [`Unexpected end of line`, 4];
+			const start = j;
+			if(j >= input.length && !allowEmpty) return {message:`Unexpected end of line`, priority: 4};
 			let anyTokensSkipped = false;
 			while(statement.tokens[i + 1] != input[j].type){
-				j ++;
-				if(j >= input.length){
-					if(i == statement.tokens.length - 1) return true; //Consumed all tokens 
-					return [`Expected a ${statement.tokens[i + 1]}, but none were found`, 4];
+				if(j < input.length - 1){
+					j ++;
+				} else {
+					if(i == statement.tokens.length - 1) break; //Consumed all tokens
+					return {message:`Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4};
 				}
 				anyTokensSkipped = true;
 			}
-			if(!anyTokensSkipped && !allowEmpty) return [`Expected one or more tokens, but found zero`, 6];
+			const end = j;
+			if(!anyTokensSkipped && !allowEmpty) return {message:`Expected one or more tokens, but found zero`, priority: 6};
+			output.push({start, end});
 		} else {
-			if(j >= input.length) return [`Unexpected end of line`, 4];
+			if(j >= input.length) return {message:`Unexpected end of line`, priority: 4};
 			if(statement.tokens[i] == "#") throw new Error(`absurd`);
 			else if(statement.tokens[i] == input[j].type) j++; //Token matches, move to next one
-			else return [`Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+			else return {message:`Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};
 		}
 	}
-	return true;
+	return output;
 }
-export function stringifyStatement(statement:Statement):string {
-	return statement.tokens.map(t => t.text).join(" ");
-}
-
-
 
 const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
 export function parseExpression(input:Token[]):ExpressionASTNode {

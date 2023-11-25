@@ -1,5 +1,5 @@
 import type { TokenType, Token } from "./lexer.js";
-import { TokenMatcher, parseFunctionArguments } from "./parser.js";
+import { ExpressionAST, TokenMatcher, parseFunctionArguments } from "./parser.js";
 
 
 export type StatementType =
@@ -25,14 +25,14 @@ export class Statement {
 	category: StatementCategory;
 	static category: StatementCategory;
 	static tokens:(TokenMatcher | "#")[] = null!;
-	constructor(public tokens:Token[]){
+	constructor(public tokens:(Token | ExpressionAST)[]){
 		//TODO allow holding expressionASTs
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;
 	}
 	toString(){
-		return this.tokens.map(t => t.text).join(" ");
+		return this.tokens.map(t => "token" in t ? "expression" : t.text).join(" "); //TODO display the expression
 	}
 	blockEndStatement(){
 		if(this.category != "block") throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);

@@ -1,5 +1,5 @@
 import { getText } from "./lexer.js";
-import { statements } from "./statements.js";
+import { Statement, statements } from "./statements.js";
 /** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
 export function parseFunctionArguments(tokens, low, high) {
     const size = high - low + 1;
@@ -71,19 +71,19 @@ export function parse(tokens) {
         else if (statement.category == "block_end") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                throw new Error(`Invalid statement "${stringifyStatement(statement)}": no open blocks`);
+                throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
             else if (lastNode.startStatement.stype == statement.stype.split(".")[0]) { //probably bad code
                 lastNode.endStatement = statement;
                 blockStack.pop();
             }
             else
-                throw new Error(`Invalid statement "${stringifyStatement(statement)}": current block is of type ${lastNode.startStatement.stype}`);
+                throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.startStatement.stype}`);
         }
         else
             throw new Error("impossible");
     }
     if (blockStack.length)
-        throw new Error(`There were unclosed blocks: "${stringifyStatement(blockStack.at(-1).startStatement)}" requires a matching "${blockStack.at(-1).startStatement.blockEndStatement().type}" statement`);
+        throw new Error(`There were unclosed blocks: "${blockStack.at(-1).startStatement.toString()}" requires a matching "${blockStack.at(-1).startStatement.blockEndStatement().type}" statement`);
     return program;
 }
 /**
@@ -91,70 +91,68 @@ export function parse(tokens) {
  * @argument tokens must not contain any newlines.
  **/
 export function parseStatement(tokens) {
-    const statement = getStatement(tokens);
-    if (typeof statement == "string")
-        throw new Error(`Invalid line ${tokens.map(t => t.text).join(" ")}: ${statement}`);
-    return new statement(tokens);
-}
-export function getStatement(tokens) {
     if (tokens.length < 1)
-        return "Empty statement";
+        throw new Error("Empty statement");
     let possibleStatements;
     if (tokens[0].type in statements.startKeyword)
         possibleStatements = [statements.startKeyword[tokens[0].type]];
     else
         possibleStatements = statements.irregular;
     if (possibleStatements.length == 0)
-        return `No possible statements`;
+        throw new Error(`No possible statements`);
     let errors = [];
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
-        if (Array.isArray(result))
-            errors.push(result);
+        if (Array.isArray(result)) {
+            return new Statement(result);
+        }
         else
-            return possibleStatement;
+            errors.push(result);
     }
     let maxError = errors[0];
     for (const error of errors) {
-        if (error[1] > maxError[1])
+        if (error.priority > maxError.priority)
             maxError = error;
     }
-    return maxError[0];
+    throw new Error(maxError.message);
 }
 export function checkStatement(statement, input) {
+    const output = [];
     for (let i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
-        if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*") {
+        if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+") {
             const allowEmpty = statement.tokens[i] == ".*";
+            const start = j;
             if (j >= input.length && !allowEmpty)
-                return [`Unexpected end of line`, 4];
+                return { message: `Unexpected end of line`, priority: 4 };
             let anyTokensSkipped = false;
             while (statement.tokens[i + 1] != input[j].type) {
-                j++;
-                if (j >= input.length) {
+                if (j < input.length - 1) {
+                    j++;
+                }
+                else {
                     if (i == statement.tokens.length - 1)
-                        return true; //Consumed all tokens 
-                    return [`Expected a ${statement.tokens[i + 1]}, but none were found`, 4];
+                        break; //Consumed all tokens
+                    return { message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4 };
                 }
                 anyTokensSkipped = true;
             }
+            const end = j;
             if (!anyTokensSkipped && !allowEmpty)
-                return [`Expected one or more tokens, but found zero`, 6];
+                return { message: `Expected one or more tokens, but found zero`, priority: 6 };
+            output.push({ start, end });
         }
         else {
             if (j >= input.length)
-                return [`Unexpected end of line`, 4];
+                return { message: `Unexpected end of line`, priority: 4 };
             if (statement.tokens[i] == "#")
                 throw new Error(`absurd`);
             else if (statement.tokens[i] == input[j].type)
                 j++; //Token matches, move to next one
             else
-                return [`Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, 5];
+                return { message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5 };
         }
     }
-    return true;
-}
-export function stringifyStatement(statement) {
-    return statement.tokens.map(t => t.text).join(" ");
+    return output;
 }
 const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
 export function parseExpression(input) {

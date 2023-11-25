@@ -51,7 +51,7 @@ export class Statement {
         this.category = this.type.category;
     }
     toString() {
-        return this.tokens.map(t => t.text).join(" ");
+        return this.tokens.map(t => "token" in t ? "expression" : t.text).join(" "); //TODO display the expression
     }
     blockEndStatement() {
         if (this.category != "block")
