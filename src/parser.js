@@ -104,7 +104,7 @@ export function parseStatement(tokens) {
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
-            return new Statement(result);
+            return new Statement(result.map(x => "start" in x ? parseExpression(tokens.slice(x.start, x.end)) : x));
         }
         else
             errors.push(result);
