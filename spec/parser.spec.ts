@@ -87,6 +87,95 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 		],
 		"error"
 	],
+	incompleteDeclare1: [
+		[
+			{text: `DECLARE`, type: "keyword.declare"},
+		],
+		"error"
+	],
+	incompleteDeclare2: [
+		[
+			{text: `DECLARE`, type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+		],
+		"error"
+	],
+	incompleteDeclare3: [
+		[
+			{text: `DECLARE`, type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: ":", type: "punctuation.colon"},
+		],
+		"error"
+	],
+	incompleteDeclare4: [
+		[
+			{text: `DECLARE`, type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: "INTEGER", type: "name"},
+		],
+		"error"
+	],
+	incompleteOutput: [
+		[
+			{text: `OUTPUT`, type: "keyword.output"},
+		],
+		"error"
+	],
+	incompleteIf1: [
+		[
+			{text: `IF`, type: "keyword.if"},
+		],
+		"error"
+	],
+	incompleteIf2: [
+		[
+			{text: `IF`, type: "keyword.if"},
+			{text: "amogus", type: "name"},
+		],
+		"error"
+	],
+	incompleteIf3: [
+		[
+			{text: `IF`, type: "keyword.if"},
+			{text: "amogus", type: "name"},
+			{text: "<", type: "operator.less_than"},
+		],
+		"error"
+	],
+	incompleteIf4: [
+		[
+			{text: `IF`, type: "keyword.if"},
+			{text: "amogus", type: "name"},
+			{text: "<", type: "operator.less_than"},
+			{text: "5", type: "number.decimal"},
+		],
+		"error"
+	],
+	incompleteIf5: [
+		[
+			{text: `IF`, type: "keyword.if"},
+			{text: `THEN`, type: "keyword.then"},
+		],
+		"error"
+	],
+	incompleteIf6: [
+		[
+			{text: `IF`, type: "keyword.if"},
+			{text: "<", type: "operator.less_than"},
+			{text: `THEN`, type: "keyword.then"},
+		],
+		"error"
+	],
+	incompleteIf7: [
+		[
+			{text: `IF`, type: "keyword.if"},
+			{text: "amogus", type: "name"},
+			{text: "<", type: "operator.less_than"},
+			{text: `THEN`, type: "keyword.then"},
+		],
+		"error"
+	],
 }).map(p => [p[0], p[1][0], p[1][1]]);
 const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"][] = Object.entries<[program:Token[], output:ProgramAST | "error"]>({
 	output: [
