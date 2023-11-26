@@ -1,6 +1,112 @@
 import "jasmine";
-import { parse, parseFunctionArguments, parseStatement, operators } from "../src/parser.js";
+import { parse, parseFunctionArguments, parseStatement, operators, parseExpression } from "../src/parser.js";
 import { statements } from "../src/statements.js";
+//copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
+const sampleExpressions = Object.entries({
+    number: [
+        [
+            { text: "5", type: "number.decimal" },
+        ],
+        { text: "5", type: "number.decimal" },
+    ],
+    variable: [
+        [
+            { text: "x", type: "name" },
+        ],
+        { text: "x", type: "name" },
+    ],
+    parens: [
+        [
+            { text: "(", type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        { text: "x", type: "name" },
+    ],
+    manyparens: [
+        [
+            { text: "(", type: "parentheses.open" },
+            { text: "(", type: "parentheses.open" },
+            { text: "(", type: "parentheses.open" },
+            { text: "(", type: "parentheses.open" },
+            { text: "(", type: "parentheses.open" },
+            { text: "(", type: "parentheses.open" },
+            { text: "(", type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        { text: "x", type: "name" },
+    ],
+    addition: [
+        [
+            { text: "x", type: "name" },
+            { text: "+", type: "operator.add" },
+            { text: "y", type: "name" },
+        ],
+        {
+            operator: operators.add,
+            operatorToken: { text: "+", type: "operator.add" },
+            nodes: [
+                { text: "x", type: "name" },
+                { text: "y", type: "name" },
+            ]
+        },
+    ],
+    precedence1: [
+        [
+            { text: "x", type: "name" },
+            { text: "-", type: "operator.subtract" },
+            { text: "y", type: "name" },
+            { text: "*", type: "operator.multiply" },
+            { text: "z", type: "name" },
+        ],
+        {
+            operator: operators.subtract,
+            operatorToken: { text: "-", type: "operator.subtract" },
+            nodes: [
+                { text: "x", type: "name" },
+                {
+                    operator: operators.multiply,
+                    operatorToken: { text: "*", type: "operator.multiply" },
+                    nodes: [
+                        { text: "y", type: "name" },
+                        { text: "z", type: "name" },
+                    ]
+                },
+            ]
+        },
+    ],
+    precedence2: [
+        [
+            { text: "x", type: "name" },
+            { text: "*", type: "operator.multiply" },
+            { text: "y", type: "name" },
+            { text: "-", type: "operator.subtract" },
+            { text: "z", type: "name" },
+        ],
+        {
+            operator: operators.subtract,
+            operatorToken: { text: "-", type: "operator.subtract" },
+            nodes: [
+                {
+                    operator: operators.multiply,
+                    operatorToken: { text: "*", type: "operator.multiply" },
+                    nodes: [
+                        { text: "x", type: "name" },
+                        { text: "y", type: "name" },
+                    ]
+                },
+                { text: "z", type: "name" },
+            ]
+        },
+    ],
+}).map(p => [p[0], p[1][0], p[1][1]]);
 const sampleStatements = Object.entries({
     output: [
         [
@@ -512,6 +618,20 @@ describe("parseFunctionArguments", () => {
             { type: "name", text: "INTEGER " }
         ], 3, 6)).toEqual(jasmine.any(String));
     });
+});
+describe("parseExpression", () => {
+    for (const [name, program, output] of sampleExpressions) {
+        if (output === "error") {
+            it(`should not parse ${name} into an expression`, () => {
+                expect(() => parseExpression(program)).toThrow();
+            });
+        }
+        else {
+            it(`should parse ${name} into an expression`, () => {
+                expect(parseExpression(program)).toEqual(output);
+            });
+        }
+    }
 });
 describe("parseStatement", () => {
     for (const [name, program, output] of sampleStatements) {
