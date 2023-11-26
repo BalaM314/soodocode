@@ -205,23 +205,6 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 	//If the whole expression is surrounded by parentheses, parse the inner expression
 	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
 		return parseExpression(input.slice(1, -1));
-	//Special case: function call
-	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
-		let parenNestLevel = 0; //Duped paren handling, unavoidable
-		return {
-			operatorToken: input[0],
-			operator: "function call",
-			nodes: (
-				input.length == 3 ? [] //If there are no arguments, don't generate a blank argument group
-				//Split the tokens between the parens on commas
-				: splitArray(input.slice(2, -1), t => {
-					if(t.type == "parentheses.open") parenNestLevel ++;
-					else if(t.type == "parentheses.close") parenNestLevel --;
-					return parenNestLevel == 0 && t.type == "punctuation.comma";
-				})
-			).map(parseExpression)
-		};
-	}
 
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
 	//TODO O(mn) unnecessarily, optimize
@@ -273,6 +256,24 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 			throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
 
 		//No operators of the current priority found, look for operator with the next level higher priority
+	}
+
+	//Special case: function call
+	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
+		let parenNestLevel = 0; //Duped paren handling, unavoidable
+		return {
+			operatorToken: input[0],
+			operator: "function call",
+			nodes: (
+				input.length == 3 ? [] //If there are no arguments, don't generate a blank argument group
+				//Split the tokens between the parens on commas
+				: splitArray(input.slice(2, -1), t => {
+					if(t.type == "parentheses.open") parenNestLevel ++;
+					else if(t.type == "parentheses.close") parenNestLevel --;
+					return parenNestLevel == 0 && t.type == "punctuation.comma";
+				})
+			).map(parseExpression)
+		};
 	}
 
 	//No operators found at all, something went wrong
