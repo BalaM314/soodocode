@@ -9,7 +9,7 @@ export function displayExpression(node, expand = false, html = false) {
     }
     else if (node.operator.unary && (!expand || ("type" in node.nodes[0]))) {
         //Is a unary operator and, argument says don't expand or all child nodes are leaf nodes.
-        const text = `(${node.operatorToken.text} ${displayExpression(node.nodes[1], expand, html)})`;
+        const text = `(${node.operatorToken.text} ${displayExpression(node.nodes[0], expand, html)})`;
         return html ? `<span class="expression-display-block">${text}</span>` : text;
     }
     else {

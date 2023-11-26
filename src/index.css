@@ -88,5 +88,8 @@ td, th {
 }
 
 .expression-display-block {
-	background-color: #0FF3;
+	background-color: #0FF2;
+}
+.expression-container {
+	border: 1px solid #0FF8;
 }
