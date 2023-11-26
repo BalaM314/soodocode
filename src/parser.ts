@@ -175,10 +175,10 @@ const operators = ([
 export function parseExpression(input:Token[]):ExpressionASTNode {
 	//If there is only one token
 	if(input.length == 1){
-		if(input[0].type == "number.decimal") //and it's a number
-			return input[0]; //nothing to parse, just return the number
+		if(input[0].type == "number.decimal" || input[0].type == "name" || input[0].type == "string") //and it's a valid expression leaf node TODO genericify
+			return input[0]; //nothing to parse, just return the token
 		else
-			throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a number`);
+			throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
 	}
 	//If the whole expression is surrounded by parentheses, parse the inner expression
 	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
@@ -188,10 +188,10 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 	for(const operatorsOfPriority of operators){
 		let parenNestLevel = 0;
 		//Find the index of the last (lowest priority) operator of the current priority
-		//Iterate through string backwards
+		//Iterate through token list backwards
 		for(let i = input.length - 1; i >= 0; i --){
 			//Handle parentheses
-			//The string is being iterated through backwards, so ) means go up a level and ( means go down a level
+			//The token list is being iterated through backwards, so ) means go up a level and ( means go down a level
 			if(input[i].type == "parentheses.close") parenNestLevel ++;
 			else if(input[i].type == "parentheses.open") parenNestLevel --;
 			if(parenNestLevel < 0)
@@ -206,6 +206,7 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 				const left = input.slice(0, i);
 				const right = input.slice(i + 1);
 				//Make sure there is something on left and right of the operator
+				//TODO unary handling
 				if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
 				if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
 				return {

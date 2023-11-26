@@ -60,9 +60,13 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 		],
 		new statements.byType["if"]([
 			{text: "IF", type: "keyword.if"},
-			{text: "5", type: "number.decimal"},
-			{text: `<`, type: "operator.less_than"},
-			{text: "x", type: "name"},
+			{
+				token: {text: `<`, type: "operator.less_than"},
+				nodes: [
+					{text: "5", type: "number.decimal"},
+					{text: "x", type: "name"},
+				]
+			},
 			{text: "THEN", type: "keyword.then"},
 		])
 	],
@@ -253,9 +257,13 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 				type: "if",
 				startStatement: new statements.byType["if"]([
 					{text: "IF", type: "keyword.if"},
-					{text: "x", type: "name"},
-					{text: "<", type: "operator.less_than"},
-					{text: "5", type: "number.decimal"},
+					{
+						token: {text: `<`, type: "operator.less_than"},
+						nodes: [
+							{text: "x", type: "name"},
+							{text: "5", type: "number.decimal"},
+						]
+					},
 					{text: "THEN", type: "keyword.then"},
 				]),
 				nodes: [
@@ -306,9 +314,13 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 				type: "if",
 				startStatement: new statements.byType["if"]([
 					{text: "IF", type: "keyword.if"},
-					{text: "x", type: "name"},
-					{text: "<", type: "operator.less_than"},
-					{text: "5", type: "number.decimal"},
+					{
+						token: {text: `<`, type: "operator.less_than"},
+						nodes: [
+							{text: "x", type: "name"},
+							{text: "5", type: "number.decimal"},
+						]
+					},
 					{text: "THEN", type: "keyword.then"},
 				]),
 				nodes: [
@@ -320,9 +332,13 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 						type: "if",
 						startStatement: new statements.byType["if"]([
 							{text: "IF", type: "keyword.if"},
-							{text: "x", type: "name"},
-							{text: "<", type: "operator.less_than"},
-							{text: "2", type: "number.decimal"},
+							{
+								token: {text: `<`, type: "operator.less_than"},
+								nodes: [
+									{text: "x", type: "name"},
+									{text: "2", type: "number.decimal"},
+								]
+							},
 							{text: "THEN", type: "keyword.then"},
 						]),
 						nodes: [
