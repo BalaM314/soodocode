@@ -126,7 +126,7 @@ export function checkStatement(statement, input) {
     //but it works
     //TODO understand it
     const output = [];
-    for (let i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
+    for (var i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
         if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+") {
             const allowEmpty = statement.tokens[i] == ".*";
             const start = j;
@@ -152,7 +152,7 @@ export function checkStatement(statement, input) {
         }
         else {
             if (j >= input.length)
-                return { message: `Unexpected end of line`, priority: 4 };
+                return { message: `Expected token ${statement.tokens[i]}, found end of line`, priority: 4 };
             if (statement.tokens[i] == "#")
                 throw new Error(`absurd`);
             else if (statement.tokens[i] == input[j].type) {
@@ -163,6 +163,8 @@ export function checkStatement(statement, input) {
                 return { message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5 };
         }
     }
+    if (j != input.length)
+        return { message: `Expected end of line, found token ${input[j]}`, priority: 7 };
     return output;
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
