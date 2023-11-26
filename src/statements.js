@@ -110,7 +110,8 @@ makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
 makeStatement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then");
 makeStatement("for", "FOR b <- 1 TO 10", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
 makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");
-makeStatement("dowhile", "REPEAT", "block", "auto", "keyword.dowhile");
+makeStatement("dowhile", "REPEAT", "block", "keyword.dowhile");
+makeStatement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+");
 let FunctionStatement = (() => {
     let _classDecorators = [statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
     let _classDescriptor;
