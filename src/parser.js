@@ -178,7 +178,7 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => Arr
     ["add", "subtract"],
     ["multiply", "divide", "integer_divide", "mod"],
     //no exponentiation operator?
-    ["not"],
+    [["not", "unary"]],
 ]);
 /** Indexed by OperatorType */
 export const operators = Object.fromEntries(operatorsByPriority.flat()
@@ -218,24 +218,33 @@ export function parseExpression(input) {
                 operatorsOfCurrentPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
             ) {
                 //this is the lowest priority operator in the expression and should become the root node
-                const left = input.slice(0, i);
-                const right = input.slice(i + 1);
-                //Make sure there is something on left and right of the operator
                 if (operator.unary) {
-                    if (left.length != 0)
+                    //Make sure there is only something on right side of the operator
+                    const right = input.slice(i + 1);
+                    if (i != 0)
                         throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+                    if (right.length == 0)
+                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                    return {
+                        operatorToken: input[i],
+                        operator,
+                        nodes: [parseExpression(right)]
+                    };
                 }
                 else {
+                    //Make sure there is something on left and right of the operator
+                    const left = input.slice(0, i);
+                    const right = input.slice(i + 1);
                     if (left.length == 0)
                         throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                    if (right.length == 0)
+                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                    return {
+                        operatorToken: input[i],
+                        operator,
+                        nodes: [parseExpression(left), parseExpression(right)]
+                    };
                 }
-                if (right.length == 0)
-                    throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
-                return {
-                    operatorToken: input[i],
-                    operator,
-                    nodes: [parseExpression(left), parseExpression(right)]
-                };
             }
         }
         //Nest level being above zero at the end of the string means too many )
