@@ -1,6 +1,7 @@
 import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
 import * as statements from "./statements.js";
+import { displayExpression } from "./utils.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
@@ -9,21 +10,6 @@ function getElement(id, type) {
         throw new Error(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
     else
         throw new Error(`Element with id ${id} does not exist`);
-}
-export function displayExpression(node, expand = false) {
-    if ("type" in node) {
-        return `${node.text}`;
-    }
-    else if (!expand || ("type" in node.nodes[0] && "type" in node.nodes[1])) {
-        return (`(${displayExpression(node.nodes[0])} ${node.token.text} ${displayExpression(node.nodes[1])})`);
-    }
-    else {
-        return (`(
-${displayExpression(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.token.text}
-${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
-)`);
-    }
 }
 export function flattenTree(program) {
     return program.map(s => {

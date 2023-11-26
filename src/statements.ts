@@ -1,6 +1,6 @@
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, TokenMatcher, parseFunctionArguments } from "./parser.js";
-import { displayExpression } from "./ui.js";
+import { displayExpression } from "./utils.js";
 
 
 export type StatementType =
@@ -65,7 +65,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		}
 		if(args[0] == "auto" && input.category == "block"){
 			args.shift();
-			statement(type + ".end" as StatementType, "block_end", args[0] + "_end" as TokenType)( //REFACTOR CHECK
+			statement(type + ".end" as StatementType, "[unknown]", "block_end", args[0] + "_end" as TokenType)( //REFACTOR CHECK //TODO very bad, caused bugs
 				class __endStatement extends Statement {}
 			);
 		}

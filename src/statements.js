@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { parseFunctionArguments } from "./parser.js";
-import { displayExpression } from "./ui.js";
+import { displayExpression } from "./utils.js";
 export const statements = {
     startKeyword: {},
     byType: {},
@@ -76,7 +76,7 @@ function statement(type, example, ...args) {
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(type + ".end", "block_end", args[0] + "_end")(//REFACTOR CHECK
+            statement(type + ".end", "[unknown]", "block_end", args[0] + "_end")(//REFACTOR CHECK //TODO very bad, caused bugs
             class __endStatement extends Statement {
             });
         }

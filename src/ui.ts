@@ -3,30 +3,13 @@ import * as parser from "./parser.js";
 import * as statements from "./statements.js";
 import type { ExpressionASTNode, ProgramAST } from "./parser.js";
 import type { Statement } from "./statements.js";
+import { displayExpression } from "./utils.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
 	if(element instanceof type) return element as T["prototype"];
 	else if(element instanceof HTMLElement) throw new Error(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
 	else throw new Error(`Element with id ${id} does not exist`);
-}
-
-export function displayExpression(node:ExpressionASTNode, expand = false):string {
-	if("type" in node){
-		return `${node.text}`;
-	} else if(!expand || ("type" in node.nodes[0] && "type" in node.nodes[1])){
-		return (
-		`(${displayExpression(node.nodes[0])} ${node.token.text} ${displayExpression(node.nodes[1])})`
-		);
-	} else {
-		return (
-`(
-${displayExpression(node.nodes[0], expand).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.token.text}
-${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
-)`
-		);
-	}
 }
 
 type FlattenTreeOutput = [depth:number, statement:Statement];
