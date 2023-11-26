@@ -50,8 +50,13 @@ export class Statement {
         this.stype = this.type.type;
         this.category = this.type.category;
     }
-    toString() {
-        return this.tokens.map(t => displayExpression(t, false)).join(" ");
+    toString(html = false) {
+        if (html) {
+            return this.tokens.map(t => "type" in t ? t.text : `<span style="border: 1px solid #0FF4;">${displayExpression(t, false, true)}</span>`).join(" ");
+        }
+        else {
+            return this.tokens.map(t => displayExpression(t, false)).join(" ");
+        }
     }
     blockEndStatement() {
         if (this.category != "block")

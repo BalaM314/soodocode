@@ -21,16 +21,10 @@ export function flattenTree(program) {
     }).flat(1);
 }
 export function displayProgram(program) {
-    return program.map(node => {
-        if ("startStatement" in node)
-            return (`<div class="program-display-block">
-${node.startStatement.toString()}
-${displayProgram(node.nodes)}
-${node.endStatement.toString()}
-</div>`);
-        else
-            return node.toString();
-    }).join("\n");
+    return program.map(node => "startStatement" in node ?
+        `<div class="program-display-block">${node.startStatement.toString(true)}
+${displayProgram(node.nodes)}${node.endStatement.toString(true)}</div>`
+        : node.toString(true) + "\n").join("");
 }
 export function evaluateExpressionDemo(node) {
     if ("type" in node) {
@@ -159,7 +153,7 @@ dumpTokensButton.addEventListener("click", e => {
 		<tr> <th>Text</th> <th>Type</th> </tr>
 	</thead>
 	<tbody>
-		${symbols.map(t => `<tr><td>"${t.text}"</td><td>${t.type}</td></tr>`).join("\n")}
+		${symbols.map(t => `<tr><td>${t.text.replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 	</tbody>
 </table>
 <h3>Tokens</h3>
@@ -168,7 +162,7 @@ dumpTokensButton.addEventListener("click", e => {
 		<tr> <th>Text</th> <th>Type</th> </tr>
 	</thead>
 	<tbody>
-		${tokens.map(t => `<tr><td>"${t.text}"</td><td>${t.type}</td></tr>`).join("\n")}
+		${tokens.map(t => `<tr><td>${t.text.replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 	</tbody>
 </table>
 <h3>Statements</h3>

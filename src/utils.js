@@ -1,14 +1,16 @@
-export function displayExpression(node, expand = false) {
+export function displayExpression(node, expand = false, html = false) {
     if ("type" in node) {
         return `${node.text}`;
     }
     else if (!node.operator.unary && (!expand || ("type" in node.nodes[0] && "type" in node.nodes[1]))) {
         //Not a unary operator and, argument says don't expand or all child nodes are leaf nodes.
-        return (`(${displayExpression(node.nodes[0])} ${node.operatorToken.text} ${displayExpression(node.nodes[1])})`);
+        const text = `(${displayExpression(node.nodes[0], expand, html)} ${node.operatorToken.text} ${displayExpression(node.nodes[1], expand, html)})`;
+        return html ? `<span class="expression-display-block">${text}</span>` : text;
     }
     else if (node.operator.unary && (!expand || ("type" in node.nodes[0]))) {
         //Is a unary operator and, argument says don't expand or all child nodes are leaf nodes.
-        return (`(${node.operatorToken.text} ${displayExpression(node.nodes[1])})`);
+        const text = `(${node.operatorToken.text} ${displayExpression(node.nodes[1], expand, html)})`;
+        return html ? `<span class="expression-display-block">${text}</span>` : text;
     }
     else {
         return (`(

@@ -81,6 +81,12 @@ td, th {
 }
 
 .program-display-block {
-	border: 5px solid cyan;
-	padding: 10px;
+	border-left: 15px solid #0FF6;
+	border-top: 2px solid #0FF6;
+	border-bottom: 2px solid #0FF6;
+	padding: 7px;
+}
+
+.expression-display-block {
+	background-color: #0FF3;
 }
