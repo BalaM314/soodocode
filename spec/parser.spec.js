@@ -1,5 +1,5 @@
 import "jasmine";
-import { parse, parseFunctionArguments, parseStatement } from "../src/parser.js";
+import { parse, parseFunctionArguments, parseStatement, operators } from "../src/parser.js";
 import { statements } from "../src/statements.js";
 const sampleStatements = Object.entries({
     output: [
@@ -59,13 +59,50 @@ const sampleStatements = Object.entries({
         new statements.byType["if"]([
             { text: "IF", type: "keyword.if" },
             {
-                token: { text: `<`, type: "operator.less_than" },
+                operatorToken: { text: `<`, type: "operator.less_than" },
+                operator: operators.less_than,
                 nodes: [
                     { text: "5", type: "number.decimal" },
                     { text: "x", type: "name" },
                 ]
             },
             { text: "THEN", type: "keyword.then" },
+        ])
+    ],
+    until1: [
+        [
+            { text: "UNTIL", type: "keyword.dowhile_end" },
+            { text: "5", type: "number.decimal" },
+            { text: `<`, type: "operator.less_than" },
+            { text: "x", type: "name" },
+        ],
+        new statements.byType["dowhile.end"]([
+            { text: "UNTIL", type: "keyword.dowhile_end" },
+            {
+                operatorToken: { text: `<`, type: "operator.less_than" },
+                operator: operators.less_than,
+                nodes: [
+                    { text: "5", type: "number.decimal" },
+                    { text: "x", type: "name" },
+                ]
+            },
+        ])
+    ],
+    until2: [
+        [
+            { text: "UNTIL", type: "keyword.dowhile_end" },
+            { text: `NOT`, type: "operator.not" },
+            { text: "x", type: "name" },
+        ],
+        new statements.byType["dowhile.end"]([
+            { text: "UNTIL", type: "keyword.dowhile_end" },
+            {
+                operatorToken: { text: `NOT`, type: "operator.not" },
+                operator: operators.not,
+                nodes: [
+                    { text: "x", type: "name" },
+                ]
+            },
         ])
     ],
     empty: [
@@ -255,7 +292,8 @@ const samplePrograms = Object.entries({
                 startStatement: new statements.byType["if"]([
                     { text: "IF", type: "keyword.if" },
                     {
-                        token: { text: `<`, type: "operator.less_than" },
+                        operatorToken: { text: `<`, type: "operator.less_than" },
+                        operator: operators.less_than,
                         nodes: [
                             { text: "x", type: "name" },
                             { text: "5", type: "number.decimal" },
@@ -312,7 +350,8 @@ const samplePrograms = Object.entries({
                 startStatement: new statements.byType["if"]([
                     { text: "IF", type: "keyword.if" },
                     {
-                        token: { text: `<`, type: "operator.less_than" },
+                        operatorToken: { text: `<`, type: "operator.less_than" },
+                        operator: operators.less_than,
                         nodes: [
                             { text: "x", type: "name" },
                             { text: "5", type: "number.decimal" },
@@ -330,7 +369,8 @@ const samplePrograms = Object.entries({
                         startStatement: new statements.byType["if"]([
                             { text: "IF", type: "keyword.if" },
                             {
-                                token: { text: `<`, type: "operator.less_than" },
+                                operatorToken: { text: `<`, type: "operator.less_than" },
+                                operator: operators.less_than,
                                 nodes: [
                                     { text: "x", type: "name" },
                                     { text: "2", type: "number.decimal" },
@@ -475,7 +515,7 @@ describe("parseFunctionArguments", () => {
 });
 describe("parseStatement", () => {
     for (const [name, program, output] of sampleStatements) {
-        if (output == "error") {
+        if (output === "error") {
             it(`should not parse ${name} into a statement`, () => {
                 expect(() => parseStatement(program)).toThrow();
             });
@@ -489,7 +529,7 @@ describe("parseStatement", () => {
 });
 describe("parse", () => {
     for (const [name, program, output] of samplePrograms) {
-        if (output == "error") {
+        if (output === "error") {
             it(`should not parse ${name} into a program`, () => {
                 expect(() => parse(program)).toThrow();
             });
