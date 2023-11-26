@@ -37,6 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { parseFunctionArguments } from "./parser.js";
+import { displayExpression } from "./ui.js";
 export const statements = {
     startKeyword: {},
     byType: {},
@@ -45,13 +46,12 @@ export const statements = {
 export class Statement {
     constructor(tokens) {
         this.tokens = tokens;
-        //TODO allow holding expressionASTs
         this.type = this.constructor;
         this.stype = this.type.type;
         this.category = this.type.category;
     }
     toString() {
-        return this.tokens.map(t => "token" in t ? "expression" : t.text).join(" "); //TODO display the expression
+        return this.tokens.map(t => displayExpression(t, false)).join(" ");
     }
     blockEndStatement() {
         if (this.category != "block")
@@ -59,14 +59,14 @@ export class Statement {
         return statements.byType[this.stype + ".end"]; //REFACTOR CHECK
     }
     example() {
-        return `WIP example for statement ${this.stype}`;
-        //TODO
+        return this.type.example;
     }
 }
 Statement.tokens = null;
-function statement(type, ...args) {
+function statement(type, example, ...args) {
     return function (input) {
         input.type = type;
+        input.example = example;
         if (args[0] == "block" || args[0] == "block_end") {
             input.category = args[0];
             args.shift();
@@ -98,21 +98,21 @@ function statement(type, ...args) {
         return input;
     };
 }
-function makeStatement(type, ...args) {
-    return statement(type, ...args)(class __temp extends Statement {
+function makeStatement(type, example, ...args) {
+    return statement(type, example, ...args)(class __temp extends Statement {
     });
 }
-makeStatement("declaration", "keyword.declare", "name", "punctuation.colon", "name");
-makeStatement("assignment", "#", "name", "operator.assignment", "expr+");
-makeStatement("output", "keyword.output", ".+");
-makeStatement("input", "keyword.input", "name");
-makeStatement("return", "keyword.return");
-makeStatement("if", "block", "auto", "keyword.if", "expr+", "keyword.then");
-makeStatement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
-makeStatement("while", "block", "auto", "keyword.while", "expr+");
-makeStatement("dowhile", "block", "auto", "keyword.dowhile");
+makeStatement("declaration", "DECLARE variable: TYPE", "keyword.declare", "name", "punctuation.colon", "name");
+makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
+makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
+makeStatement("input", "INPUT y", "keyword.input", "name");
+makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
+makeStatement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then");
+makeStatement("for", "FOR b <- 1 TO 10", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
+makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");
+makeStatement("dowhile", "REPEAT", "block", "auto", "keyword.dowhile");
 let FunctionStatement = (() => {
-    let _classDecorators = [statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
+    let _classDecorators = [statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -139,7 +139,7 @@ let FunctionStatement = (() => {
 })();
 export { FunctionStatement };
 let ProcedureStatement = (() => {
-    let _classDecorators = [statement("procedure", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")];
+    let _classDecorators = [statement("procedure", "PROCEDURE name(arg1: TYPE)", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;

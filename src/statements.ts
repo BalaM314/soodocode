@@ -1,5 +1,6 @@
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, TokenMatcher, parseFunctionArguments } from "./parser.js";
+import { displayExpression } from "./ui.js";
 
 
 export type StatementType =
@@ -24,38 +25,38 @@ export class Statement {
 	static type:StatementType;
 	category: StatementCategory;
 	static category: StatementCategory;
+	static example: string;
 	static tokens:(TokenMatcher | "#")[] = null!;
 	constructor(public tokens:(Token | ExpressionAST)[]){
-		//TODO allow holding expressionASTs
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;
 	}
 	toString(){
-		return this.tokens.map(t => "token" in t ? "expression" : t.text).join(" "); //TODO display the expression
+		return this.tokens.map(t => displayExpression(t, false)).join(" ");
 	}
 	blockEndStatement(){
 		if(this.category != "block") throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);
 		return statements.byType[this.stype + ".end" as StatementType]; //REFACTOR CHECK
 	}
 	example(){
-		return `WIP example for statement ${this.stype}`;
-		//TODO
+		return this.type.example;
 	}
 }
 
-function statement<TClass extends typeof Statement>(type:StatementType, ...tokens:TokenMatcher[]):
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(type:StatementType, irregular:"#", ...tokens:TokenMatcher[]):
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(type:StatementType, category:"block" | "block_end", ...tokens:TokenMatcher[]):
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(type:StatementType, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 
-function statement<TClass extends typeof Statement>(type:StatementType, ...args:string[]){
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...args:string[]){
 	return function (input:TClass):TClass {
 		input.type = type;
+		input.example = example;
 		if(args[0] == "block" || args[0] == "block_end"){
 			input.category = args[0];
 			args.shift();
@@ -84,30 +85,29 @@ function statement<TClass extends typeof Statement>(type:StatementType, ...args:
 	}
 }
 
-function makeStatement(type:StatementType, ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, irregular:"#", ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, category:"block" | "block_end", ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, example:string, ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, example:string, category:"block" | "block_end", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, example:string, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):typeof Statement;
 
-function makeStatement(type:StatementType, ...args:any[]):typeof Statement {
-	return statement(type, ...args)(class __temp extends Statement {});
+function makeStatement(type:StatementType, example:string, ...args:any[]):typeof Statement {
+	return statement(type, example, ...args)(class __temp extends Statement {});
 }
 
-makeStatement("declaration", "keyword.declare", "name", "punctuation.colon", "name");
-makeStatement("assignment", "#", "name", "operator.assignment", "expr+");
-makeStatement("output", "keyword.output", ".+");
-makeStatement("input", "keyword.input", "name");
-makeStatement("return", "keyword.return");
+makeStatement("declaration", "DECLARE variable: TYPE", "keyword.declare", "name", "punctuation.colon", "name");
+makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
+makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
+makeStatement("input", "INPUT y", "keyword.input", "name");
+makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
 
 
-makeStatement("if", "block", "auto", "keyword.if", "expr+", "keyword.then");
-makeStatement("for", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
-makeStatement("while", "block", "auto", "keyword.while", "expr+");
-makeStatement("dowhile", "block", "auto", "keyword.dowhile");
+makeStatement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then");
+makeStatement("for", "FOR b <- 1 TO 10", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
+makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");
+makeStatement("dowhile", "REPEAT", "block", "auto", "keyword.dowhile");
 
-@statement("function", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
+@statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class FunctionStatement extends Statement {
-	//FUNCTION Amogus ( amogus : type , sussy : type ) RETURNS BOOLEAN
 	/** Mapping between name and type */
 	args: Map<string, string>;
 	returnType: string;
@@ -120,9 +120,8 @@ export class FunctionStatement extends Statement {
 	}
 }
 
-@statement("procedure", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
+@statement("procedure", "PROCEDURE name(arg1: TYPE)", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ProcedureStatement extends Statement {
-	//PROCEDURE Amogus ( amogus : type , sussy : type )
 	/** Mapping between name and type */
 	args: Map<string, string>;
 	constructor(tokens:Token[]){
