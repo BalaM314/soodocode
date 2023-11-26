@@ -2,6 +2,9 @@ import { getText, type Token, type TokenType } from "./lexer.js";
 import { Statement, statements } from "./statements.js";
 import { splitArray } from "./utils.js";
 
+//TODO clean up error handling
+//throw new Error("is bad");
+
 export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTLeafNode = Token;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTTreeNode;
@@ -202,9 +205,6 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 		else
 			throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
 	}
-	//If the whole expression is surrounded by parentheses, parse the inner expression
-	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
-		return parseExpression(input.slice(1, -1));
 
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
 	//TODO O(mn) unnecessarily, optimize
@@ -257,6 +257,12 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 
 		//No operators of the current priority found, look for operator with the next level higher priority
 	}
+
+	//If the whole expression is surrounded by parentheses, parse the inner expression
+	//Must be after the main loop to avoid triggering on (2) + (2)
+	//Possible optimization: allow this to run before the loop if token length is <= 4
+	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
+		return parseExpression(input.slice(1, -1));
 
 	//Special case: function call
 	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
