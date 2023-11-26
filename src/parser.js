@@ -168,7 +168,7 @@ export function checkStatement(statement, input) {
     return output;
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-const operators = ((input) => input.map(row => row.map(o => Array.isArray(o) ? { type: `operator.${o[0]}`, unary: true } :
+export const operatorsByPriority = ((input) => input.map(row => row.map(o => Array.isArray(o) ? { type: `operator.${o[0]}`, unary: true } :
     typeof o == "string" ? { type: `operator.${o}`, unary: false } :
         o)))([
     ["or"],
@@ -180,6 +180,12 @@ const operators = ((input) => input.map(row => row.map(o => Array.isArray(o) ? {
     //no exponentiation operator?
     ["not"],
 ]);
+/** Indexed by OperatorType */
+export const operators = Object.fromEntries(operatorsByPriority.flat()
+    .map(o => [
+    o.type.startsWith("operator.") ? o.type.split("operator.")[1] : o.type,
+    o
+]));
 export function parseExpression(input) {
     //If there is only one token
     if (input.length == 1) {
@@ -192,7 +198,8 @@ export function parseExpression(input) {
     if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
         return parseExpression(input.slice(1, -1));
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
-    for (const operatorsOfPriority of operators) {
+    //TODO O(mn) unnecessarily, optimize
+    for (const operatorsOfCurrentPriority of operatorsByPriority) {
         let parenNestLevel = 0;
         //Find the index of the last (lowest priority) operator of the current priority
         //Iterate through token list backwards
@@ -208,7 +215,7 @@ export function parseExpression(input) {
                 throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
             let operator; //assignment assertion goes brrrrr
             if (parenNestLevel == 0 && //the operator is not inside parentheses and
-                operatorsOfPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
+                operatorsOfCurrentPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
             ) {
                 //this is the lowest priority operator in the expression and should become the root node
                 const left = input.slice(0, i);
