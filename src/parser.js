@@ -165,7 +165,17 @@ export function checkStatement(statement, input) {
     }
     return output;
 }
-const operators = [["multiply", "divide"], ["add", "subtract"]].reverse();
+/** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
+const operators = ([
+    ["or"],
+    ["and"],
+    ["equal_to", "not_equal_to"],
+    ["less_than", "less_than_equal", "greater_than", "greater_than_equal"],
+    ["add", "subtract"],
+    ["multiply", "divide", "integer_divide", "mod"],
+    //no exponentiation operator?
+    //TODO unary operator: not
+]);
 export function parseExpression(input) {
     //If there is only one token
     if (input.length == 1) {
