@@ -33,6 +33,9 @@ export function evaluateExpressionDemo(node) {
         else
             throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
     }
+    else if (node.operator == "function call") {
+        throw new Error(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
+    }
     else
         switch (node.operator.type) {
             case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);

@@ -1,5 +1,6 @@
 import { getText } from "./lexer.js";
 import { statements } from "./statements.js";
+import { splitArray } from "./utils.js";
 /** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
 export function parseFunctionArguments(tokens, low, high) {
     const size = high - low + 1;
@@ -197,6 +198,15 @@ export function parseExpression(input) {
     //If the whole expression is surrounded by parentheses, parse the inner expression
     if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
         return parseExpression(input.slice(1, -1));
+    //Special case: function call
+    if (input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
+        return {
+            operatorToken: input[0],
+            operator: "function call",
+            //Split the tokens between the parens on commas, then parse each group
+            //TODO do not accept commas inside parens... time for some very cursed code
+            nodes: splitArray(input.slice(2, -1), t => t.type == "punctuation.comma").map(parseExpression)
+        };
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     //TODO O(mn) unnecessarily, optimize
     for (const operatorsOfCurrentPriority of operatorsByPriority) {

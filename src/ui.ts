@@ -34,6 +34,8 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	if("type" in node){
 		if(node.type == "number.decimal") return Number(node.text);
 		else throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
+	} else if(node.operator == "function call"){
+		throw new Error(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
 	} else switch(node.operator.type){
 		case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
 		case "operator.subtract": return evaluateExpressionDemo(node.nodes[0]) - evaluateExpressionDemo(node.nodes[1]);
