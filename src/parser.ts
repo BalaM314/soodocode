@@ -5,7 +5,8 @@ export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTLeafNode = Token;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTTreeNode;
 export type ExpressionASTTreeNode = {
-	token: Token;
+	operatorToken: Token;
+	operator: Operator;
 	nodes: ExpressionASTNode[];
 }
 
@@ -162,8 +163,18 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 	return output;
 }
 type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N : never;
+type Operator = {
+	type: TokenType;
+	unary: boolean;
+}
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-const operators = ([
+const operators = ((input:(OperatorType | [type:OperatorType, "unary"] | Operator)[][]):Operator[][] =>
+	input.map(row => row.map(o => 
+		Array.isArray(o) ? {type: `operator.${o[0]}`, unary: true} :
+		typeof o == "string" ? {type: `operator.${o}`, unary: false} :
+		o
+	))
+)([
 	["or"],
 	["and"],
 	["equal_to", "not_equal_to"],
@@ -171,8 +182,8 @@ const operators = ([
 	["add", "subtract"],
 	["multiply", "divide", "integer_divide", "mod"],
 	//no exponentiation operator?
-	//TODO unary operator: not
-] satisfies OperatorType[][]);
+	["not"],
+]);
 export function parseExpression(input:Token[]):ExpressionASTNode {
 	//If there is only one token
 	if(input.length == 1){
@@ -199,19 +210,24 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 				//nest level going below 0 means too many (, so unclosed parens
 				throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
 
+			let operator!:Operator; //assignment assertion goes brrrrr
 			if(
 				parenNestLevel == 0 && //the operator is not inside parentheses and
-				operatorsOfPriority.map(o => `operator.${o}`).includes(input[i].type) //it is currently being searched for
+				operatorsOfPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
 			){
 				//this is the lowest priority operator in the expression and should become the root node
 				const left = input.slice(0, i);
 				const right = input.slice(i + 1);
 				//Make sure there is something on left and right of the operator
-				//TODO unary handling
-				if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+				if(operator.unary){
+					if(left.length != 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+				} else {
+					if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+				}
 				if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
 				return {
-					token: input[i],
+					operatorToken: input[i],
+					operator,
 					nodes: [parseExpression(left), parseExpression(right)]
 				};
 			}

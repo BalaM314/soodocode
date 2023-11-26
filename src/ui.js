@@ -1,6 +1,7 @@
 import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
 import * as statements from "./statements.js";
+import * as utils from "./utils.js";
 import { displayExpression } from "./utils.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
@@ -31,22 +32,22 @@ ${node.endStatement.toString()}
             return node.toString();
     }).join("\n");
 }
-export function evaluateExpression(node) {
+export function evaluateExpressionDemo(node) {
     if ("type" in node) {
         if (node.type == "number.decimal")
             return Number(node.text);
         else
             throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
     }
-    else if (node.token.type.startsWith("operator.")) {
-        switch (node.token.type.split("operator.")[1]) {
-            case "add": return evaluateExpression(node.nodes[0]) + evaluateExpression(node.nodes[1]);
-            case "subtract": return evaluateExpression(node.nodes[0]) - evaluateExpression(node.nodes[1]);
-            case "multiply": return evaluateExpression(node.nodes[0]) * evaluateExpression(node.nodes[1]);
-            case "divide": return evaluateExpression(node.nodes[0]) / evaluateExpression(node.nodes[1]);
+    else
+        switch (node.operator.type) {
+            case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
+            case "operator.subtract": return evaluateExpressionDemo(node.nodes[0]) - evaluateExpressionDemo(node.nodes[1]);
+            case "operator.multiply": return evaluateExpressionDemo(node.nodes[0]) * evaluateExpressionDemo(node.nodes[1]);
+            case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
+            //TODO rest of the operators
+            default: throw new Error(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.type}`);
         }
-    }
-    throw new Error(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator token type ${node.token.type}`);
 }
 const title = getElement("title", HTMLHeadingElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
@@ -60,7 +61,7 @@ const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTM
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 evaluateExpressionButton.addEventListener("click", e => {
     try {
-        expressionOutputDiv.innerText = evaluateExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
+        expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
         // |> operator when
         )))).toString();
         expressionOutputDiv.style.color = "white";
@@ -178,6 +179,6 @@ ${displayProgram(program)}`;
     }
 });
 function dumpFunctionsToGlobalScope() {
-    Object.assign(window, lexer, parser, statements);
+    Object.assign(window, lexer, parser, statements, utils);
 }
 dumpFunctionsToGlobalScope();

@@ -168,7 +168,9 @@ export function checkStatement(statement, input) {
     return output;
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-const operators = ([
+const operators = ((input) => input.map(row => row.map(o => Array.isArray(o) ? { type: `operator.${o[0]}`, unary: true } :
+    typeof o == "string" ? { type: `operator.${o}`, unary: false } :
+        o)))([
     ["or"],
     ["and"],
     ["equal_to", "not_equal_to"],
@@ -176,7 +178,7 @@ const operators = ([
     ["add", "subtract"],
     ["multiply", "divide", "integer_divide", "mod"],
     //no exponentiation operator?
-    //TODO unary operator: not
+    ["not"],
 ]);
 export function parseExpression(input) {
     //If there is only one token
@@ -204,20 +206,27 @@ export function parseExpression(input) {
             if (parenNestLevel < 0)
                 //nest level going below 0 means too many (, so unclosed parens
                 throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
+            let operator; //assignment assertion goes brrrrr
             if (parenNestLevel == 0 && //the operator is not inside parentheses and
-                operatorsOfPriority.map(o => `operator.${o}`).includes(input[i].type) //it is currently being searched for
+                operatorsOfPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
             ) {
                 //this is the lowest priority operator in the expression and should become the root node
                 const left = input.slice(0, i);
                 const right = input.slice(i + 1);
                 //Make sure there is something on left and right of the operator
-                //TODO unary handling
-                if (left.length == 0)
-                    throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                if (operator.unary) {
+                    if (left.length != 0)
+                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+                }
+                else {
+                    if (left.length == 0)
+                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                }
                 if (right.length == 0)
                     throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                 return {
-                    token: input[i],
+                    operatorToken: input[i],
+                    operator,
                     nodes: [parseExpression(left), parseExpression(right)]
                 };
             }
