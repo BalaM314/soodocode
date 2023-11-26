@@ -152,7 +152,7 @@ export function checkStatement(statement, input) {
         }
         else {
             if (j >= input.length)
-                return { message: `Expected token ${statement.tokens[i]}, found end of line`, priority: 4 };
+                return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4 };
             if (statement.tokens[i] == "#")
                 throw new Error(`absurd`);
             else if (statement.tokens[i] == input[j].type) {
@@ -164,7 +164,7 @@ export function checkStatement(statement, input) {
         }
     }
     if (j != input.length)
-        return { message: `Expected end of line, found token ${input[j]}`, priority: 7 };
+        return { message: `Expected end of line, found ${input[j].type}`, priority: 7 };
     return output;
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */

@@ -150,7 +150,7 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 			else
 				output.push(...input.slice(start, end + 1));
 		} else {
-			if(j >= input.length) return {message: `Expected token ${statement.tokens[i]}, found end of line`, priority: 4};
+			if(j >= input.length) return {message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4};
 			if(statement.tokens[i] == "#") throw new Error(`absurd`);
 			else if(statement.tokens[i] == input[j].type){
 				output.push(input[j]);
@@ -158,7 +158,7 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 			} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};
 		}
 	}
-	if(j != input.length) return {message: `Expected end of line, found token ${input[j]}`, priority: 7};
+	if(j != input.length) return {message: `Expected end of line, found ${input[j].type}`, priority: 7};
 	return output;
 }
 type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N : never;

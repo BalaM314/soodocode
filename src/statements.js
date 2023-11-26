@@ -108,7 +108,8 @@ makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
 makeStatement("input", "INPUT y", "keyword.input", "name");
 makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
 makeStatement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then");
-makeStatement("for", "FOR b <- 1 TO 10", "block", "auto", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO fix endfor: should be `NEXT i`, not `NEXT` //TODO "number": accept names also
+makeStatement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO "number": accept names also
+makeStatement("for.end", "NEXT i", "block_end", "keyword.for_end", "name");
 makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");
 makeStatement("dowhile", "REPEAT", "block", "keyword.dowhile");
 makeStatement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+");
