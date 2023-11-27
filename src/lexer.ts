@@ -234,7 +234,7 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "WRITEFILE": write("keyword.writefile"); break;
 				case "CASE": write("keyword.case"); break;
 				case "OF": write("keyword.of"); break;
-				case "ENDCASE": write("keyword.endcase"); break;
+				case "ENDCASE": write("keyword.case_end"); break;
 				case "OTHERWISE": write("keyword.otherwise"); break;
 				case "CALL": write("keyword.call"); break;
 				default: output.push({type: "name", text: symbol.text}); break;
