@@ -195,6 +195,9 @@ export function tokenize(input) {
                 case "THEN":
                     write("keyword.then");
                     break;
+                case "ELSE":
+                    write("keyword.else");
+                    break;
                 case "ENDIF":
                     write("keyword.if_end");
                     break;
