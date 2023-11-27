@@ -28,7 +28,7 @@ export type TokenType =
 	"comment" |
 	"name" |
 	"keyword.declare" | "keyword.constant" | "keyword.output" | "keyword.input" |
-	"keyword.if" | "keyword.then" | "keyword.else" | "keyword.if_end" | "keyword.for" | "keyword.to" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
+	"keyword.if" | "keyword.then" | "keyword.else" | "keyword.if_end" | "keyword.for" | "keyword.to" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.openfile" | "keyword.readfile" | "keyword.writefile" | "keyword.case" | "keyword.of" | "keyword.case_end" | "keyword.otherwise" | "keyword.call" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment";
 export type Token = {
@@ -232,6 +232,11 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "OPENFILE": write("keyword.openfile"); break;
 				case "READFILE": write("keyword.readfile"); break;
 				case "WRITEFILE": write("keyword.writefile"); break;
+				case "CASE": write("keyword.case"); break;
+				case "OF": write("keyword.of"); break;
+				case "ENDCASE": write("keyword.endcase"); break;
+				case "OTHERWISE": write("keyword.otherwise"); break;
+				case "CALL": write("keyword.call"); break;
 				default: output.push({type: "name", text: symbol.text}); break;
 			}
 		} else output.push(symbol as Token);
