@@ -277,61 +277,6 @@ export function tokenize(input) {
         output.push({ type, text: symbol.text });
     }
 }
-export function debugParse(input) {
-    console.log(`Parsing input: ${input}`);
-    try {
-        const symbols = symbolize(input);
-        console.log(symbols.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
-        console.log("----");
-        const tokens = tokenize(symbols);
-        console.log(tokens.map(t => `\t${`"${t.text}"`.padEnd(20, " ")}${t.type}`).join("\n"));
-    }
-    catch (err) {
-        console.log(`Error: ${err.message}`);
-    }
-}
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
-// const procedureCode = `\
-// PROCEDURE OutputRange()
-// DECLARE First, Last, Count, Index, ThisErr : INTEGER
-// DECLARE ThisMess : STRING
-// DECLARE PastLast: BOOLEAN
-// Count <- 0
-// Index <- 1
-// PastLast <- FALSE
-// OUTPUT "Please input first error number: "
-// INPUT First
-// OUTPUT "Please input last error number: "
-// INPUT Last
-// OUTPUT "List of error numbers from ", First, " to ",
-// Last
-// WHILE Index < 501 AND NOT PastLast
-// ThisErr <- ErrCode[Index]
-// IF ThisErr > Last THEN
-// PastLast <- TRUE
-// ELSE
-// IF ThisErr >= First THEN
-// ThisMess <- ErrText[Index]
-// IF ThisMess = "" THEN
-// ThisMess <- "Error Text Missing"
-// ENDIF
-// OUTPUT ThisErr, " : ", ThisMess
-// Count <- Count + 1
-// ENDIF
-// ENDIF
-// Index <- Index + 1
-// ENDWHILE
-// OUTPUT Count, " error numbers output"
-// ENDPROCEDURE`
-// ;
-const procedureCode = `\
-WHILE Index < 501 AND "sussy PROCEDURE"
-OUTPUT "sussy ", index
-ENDWHILE`;
-try {
-    if (process.argv.slice(2).includes("--debug"))
-        procedureCode.split("\n").forEach(line => debugParse(line));
-}
-catch (err) { }
