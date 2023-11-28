@@ -18,12 +18,11 @@ export type TokenMatcher = (TokenType | ".*" | ".+" | "expr+");
 
 export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;
-export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode;
+export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode | ProgramASTMultiTreeNode;
 export type ProgramASTTreeNode = {
-	startStatement: Statement;
-	endStatement: Statement;
 	type: ProgramASTTreeNodeType;
-	nodes: ProgramASTNode[];
+	controlStatements: Statement[];
+	nodeGroups: ProgramASTNode[][];
 }
 //not necessary
 //export type UnfinishedProgramASTTreeNode = Partial<ProgramASTTreeNode> & Omit<ProgramASTTreeNode, "endStatement">;
@@ -72,7 +71,8 @@ export function parse(tokens:Token[]):ProgramAST {
 	const statements = lines.map(parseStatement);
 	const program:ProgramAST = [];
 	function getActiveBuffer(){
-		if(blockStack.length == 0) return program; else return blockStack.at(-1)!.nodes;
+		if(blockStack.length == 0) return program;
+		else return blockStack.at(-1)!.nodeGroups.at(-1)!;
 	}
 	const blockStack:ProgramASTTreeNode[] = [];
 	for(const statement of statements){
@@ -80,10 +80,9 @@ export function parse(tokens:Token[]):ProgramAST {
 			getActiveBuffer().push(statement);
 		} else if(statement.category == "block"){
 			const node:ProgramASTTreeNode = {
-				startStatement: statement,
-				endStatement: null!, //null! goes brr
+				controlStatements: [statement],
 				type: statement.stype as ProgramASTTreeNodeType,
-				nodes: []
+				nodeGroups: [[]]
 			};
 			getActiveBuffer().push(node);
 			blockStack.push(node);
