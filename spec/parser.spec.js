@@ -301,6 +301,40 @@ const sampleStatements = Object.entries({
             },
         ])
     ],
+    procedure1: [
+        [
+            { text: "PROCEDURE", type: "keyword.procedure" },
+            { text: "func", type: "name" },
+            { text: `(`, type: "parentheses.open" },
+            { text: `)`, type: "parentheses.close" },
+        ],
+        new statements.byType["procedure"]([
+            { text: "PROCEDURE", type: "keyword.procedure" },
+            { text: "func", type: "name" },
+            { text: `(`, type: "parentheses.open" },
+            { text: `)`, type: "parentheses.close" },
+        ])
+    ],
+    procedure2: [
+        [
+            { text: "PROCEDURE", type: "keyword.procedure" },
+            { text: "func", type: "name" },
+            { text: `(`, type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { type: "punctuation.colon", text: ":" },
+            { text: "INTEGER", type: "name" },
+            { text: `)`, type: "parentheses.close" },
+        ],
+        new statements.byType["procedure"]([
+            { text: "PROCEDURE", type: "keyword.procedure" },
+            { text: "func", type: "name" },
+            { text: `(`, type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { type: "punctuation.colon", text: ":" },
+            { text: "INTEGER", type: "name" },
+            { text: `)`, type: "parentheses.close" },
+        ])
+    ],
     empty: [
         [],
         "error"

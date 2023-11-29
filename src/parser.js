@@ -164,8 +164,12 @@ export function checkStatement(statement, input) {
         if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+") {
             const allowEmpty = statement.tokens[i] == ".*";
             const start = j;
-            if (j >= input.length && !allowEmpty)
-                return { message: `Unexpected end of line`, priority: 4 };
+            if (j >= input.length) {
+                if (allowEmpty)
+                    continue; //Consumed all tokens
+                else
+                    return { message: `Unexpected end of line`, priority: 4 };
+            }
             let anyTokensSkipped = false;
             while (statement.tokens[i + 1] != input[j].type) { //Repeat until the current token in input is the next token
                 anyTokensSkipped = true;
