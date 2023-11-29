@@ -606,11 +606,11 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 }).map(p => [p[0], p[1][0], p[1][1]]);
 
 describe("parseFunctionArguments", () => {
+	function process(input:string | FunctionArguments){
+		if(input instanceof Map) return Object.fromEntries([...input.entries()].map(([k, v]) => [k, [v.type, v.passMode]] as const));
+		else return input;
+	}
 	it("should parse function arguments", () => {
-		function process(input:string | FunctionArguments){
-			if(input instanceof Map) return Object.fromEntries([...input.entries()].map(([k, v]) => [k, [v.type, v.passMode]] as const));
-			else return input;
-		}
 		expect(process(parseFunctionArguments([
 
 		]))).toEqual({
@@ -621,7 +621,7 @@ describe("parseFunctionArguments", () => {
 			{ type: "punctuation.colon", text: ":" },
 			{ type: "name", text: "INTEGER" },
 		]))).toEqual({
-			arg: ["INTEGER", "value"]
+			arg: ["INTEGER",jasmine.any(String)],
 		});
 		expect(process(parseFunctionArguments([
 			{ type: "name", text: "arg" },
@@ -632,7 +632,103 @@ describe("parseFunctionArguments", () => {
 			{ type: "punctuation.colon", text: ":" },
 			{ type: "name", text: "BOOLEAN" },
 		]))).toEqual({
+			arg: ["INTEGER", jasmine.any(String)],
+			arg2: ["BOOLEAN", jasmine.any(String)],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+			{ type: "punctuation.comma", text: "," },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "BOOLEAN" },
+			{ type: "punctuation.comma", text: "," },
+			{ type: "name", text: "arg3" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "USERSUPPLIED" },
+		]))).toEqual({
+			arg: ["INTEGER", jasmine.any(String)],
+			arg2: ["BOOLEAN", jasmine.any(String)],
+			arg3: ["USERSUPPLIED", jasmine.any(String)],
+		});
+	});
+	it("should correctly determine byref and byval for function arguments", () => {
+		expect(process(parseFunctionArguments([
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+		]))).toEqual({
 			arg: ["INTEGER", "value"],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "keyword.by-reference", text: "BYREF" },
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+		]))).toEqual({
+			arg: ["INTEGER", "reference"],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "keyword.by-value", text: "BYVAL" },
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+		]))).toEqual({
+			arg: ["INTEGER", "value"],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "keyword.by-reference", text: "BYREF" },
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+			{ type: "punctuation.comma", text: "," },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "BOOLEAN" },
+		]))).toEqual({
+			arg: ["INTEGER", "reference"],
+			arg2: ["BOOLEAN", "reference"],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "keyword.by-value", text: "BYVAL" },
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+			{ type: "punctuation.comma", text: "," },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "BOOLEAN" },
+		]))).toEqual({
+			arg: ["INTEGER", "value"],
+			arg2: ["BOOLEAN", "value"],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "keyword.by-value", text: "BYVAL" },
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+			{ type: "punctuation.comma", text: "," },
+			{ type: "keyword.by-value", text: "BYVAL" },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "BOOLEAN" },
+		]))).toEqual({
+			arg: ["INTEGER", "value"],
+			arg2: ["BOOLEAN", "value"],
+		});
+		expect(process(parseFunctionArguments([
+			{ type: "keyword.by-reference", text: "BYREF" },
+			{ type: "name", text: "arg" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "INTEGER" },
+			{ type: "punctuation.comma", text: "," },
+			{ type: "keyword.by-value", text: "BYVAL" },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "BOOLEAN" },
+		]))).toEqual({
+			arg: ["INTEGER", "reference"],
 			arg2: ["BOOLEAN", "value"],
 		});
 		expect(process(parseFunctionArguments([
@@ -648,12 +744,11 @@ describe("parseFunctionArguments", () => {
 			{ type: "punctuation.colon", text: ":" },
 			{ type: "name", text: "USERSUPPLIED" },
 		]))).toEqual({
-			arg: ["INTEGER", "value"],
-			arg2: ["BOOLEAN", "value"],
-			arg3: ["USERSUPPLIED", "value"],
+			arg: ["INTEGER", jasmine.any(String)],
+			arg2: ["BOOLEAN", jasmine.any(String)],
+			arg3: ["USERSUPPLIED", jasmine.any(String)],
 		});
-	});
-	//TODO byref byval tests
+	})
 
 	it("should throw on invalid function arguments", () => {
 		expect(parseFunctionArguments([
@@ -666,14 +761,37 @@ describe("parseFunctionArguments", () => {
 		expect(parseFunctionArguments([
 			{ type: "name", text: "arg2" },
 			{ type: "punctuation.colon", text: ":" },
-			{ type: "name", text: "INTEGER" },
+			{ type: "name", text: "DATE" },
 			{ type: "name", text: "arg2" },
+		])).toEqual(jasmine.any(String));
+		expect(parseFunctionArguments([
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "CHAR" },
+			{ type: "punctuation.comma", text: "," },
+		])).toEqual(jasmine.any(String));
+		expect(parseFunctionArguments([
+			{ type: "keyword.by-reference", text: "BYREF" },
 		])).toEqual(jasmine.any(String));
 		expect(parseFunctionArguments([
 			{ type: "name", text: "arg2" },
 			{ type: "punctuation.colon", text: ":" },
 			{ type: "name", text: "INTEGER" },
 			{ type: "punctuation.comma", text: "," },
+			{ type: "keyword.by-reference", text: "BYREF" },
+		])).toEqual(jasmine.any(String));
+		expect(parseFunctionArguments([
+			{ type: "keyword.by-reference", text: "BYREF" },
+			{ type: "keyword.by-value", text: "BYVAL" },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "BOOLEAN" },
+		])).toEqual(jasmine.any(String));
+		expect(parseFunctionArguments([
+			{ type: "keyword.case", text: "CASE" },
+			{ type: "name", text: "arg2" },
+			{ type: "punctuation.colon", text: ":" },
+			{ type: "name", text: "STRING" },
 		])).toEqual(jasmine.any(String));
 	});
 });
