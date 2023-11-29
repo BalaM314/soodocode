@@ -55,6 +55,7 @@ class SymbolizerIO {
         if (!this.has())
             return false;
         let code = this.at().charCodeAt(0);
+        //0-9, a-z, A-Z, _
         return (code >= 48 && code <= 57) ||
             (code >= 65 && code <= 90) ||
             (code >= 97 && code <= 122) || code === 95;
@@ -105,6 +106,7 @@ const symbolTypes = [
     ["*", "operator.multiply"],
     ["/", "operator.divide"],
     ["^", "operator.pointer"],
+    ["&", "operator.string_concatenate"],
     ["(", "parentheses.open"],
     [")", "parentheses.close"],
     ["[", "bracket.open"],
@@ -139,9 +141,11 @@ export function tokenize(input) {
                 output.push(symbol);
             }
         }
-        else if (state.mComment) {
-            if (symbol.type === "comment.multiline_close")
+        else if (symbol.type === "comment.multiline_close") {
+            if (state.mComment)
                 state.mComment = false;
+            else
+                throw new Error(`Cannot close multiline comment, no open multiline comment`);
         }
         else if (state.sString) {
             currentString += symbol.text;
@@ -176,7 +180,13 @@ export function tokenize(input) {
         else if (symbol.type === "unknown")
             throw new Error(`Invalid symbol ${symbol.text}`);
         else if (symbol.type === "word") {
-            switch (symbol.text) {
+            switch (symbol.text) { //TODO datastructify
+                case "TRUE":
+                    write("keyword.true");
+                    break;
+                case "FALSE":
+                    write("keyword.false");
+                    break;
                 case "DECLARE":
                     write("keyword.declare");
                     break;
@@ -188,6 +198,9 @@ export function tokenize(input) {
                     break;
                 case "INPUT":
                     write("keyword.input");
+                    break;
+                case "CALL":
+                    write("keyword.call");
                     break;
                 case "IF":
                     write("keyword.if");
@@ -225,6 +238,12 @@ export function tokenize(input) {
                 case "FUNCTION":
                     write("keyword.function");
                     break;
+                case "BYREF":
+                    write("keyword.by-reference");
+                    break;
+                case "BYVAL":
+                    write("keyword.by-value");
+                    break;
                 case "ENDFUNCTION":
                     write("keyword.function_end");
                     break;
@@ -261,16 +280,15 @@ export function tokenize(input) {
                 case "OTHERWISE":
                     write("keyword.otherwise");
                     break;
-                case "CALL":
-                    write("keyword.call");
-                    break;
                 default:
                     output.push({ type: "name", text: symbol.text });
                     break;
             }
         }
-        else
+        else {
+            symbol.type;
             output.push(symbol);
+        }
     }
     return output;
     function write(type) {
