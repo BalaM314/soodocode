@@ -14,16 +14,16 @@ function getElement(id, type) {
 }
 export function flattenTree(program) {
     return program.map(s => {
-        if ("startStatement" in s)
-            return flattenTree(s.nodes).map(([depth, statement]) => [depth + 1, statement]);
+        if ("nodeGroups" in s)
+            return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement]);
         else
             return [[0, s]];
     }).flat(1);
 }
 export function displayProgram(program) {
-    return program.map(node => "startStatement" in node ?
-        `<div class="program-display-block">${node.startStatement.toString(true)}
-${displayProgram(node.nodes)}${node.endStatement.toString(true)}</div>`
+    return program.map(node => "nodeGroups" in node ?
+        `<div class="program-display-block">${node.controlStatements[0].toString(true)}
+${displayProgram(node.nodeGroups.flat())}${node.controlStatements.at(-1).toString(true)}</div>` //TODO display properly
         : node.toString(true) + "\n").join("");
 }
 export function evaluateExpressionDemo(node) {

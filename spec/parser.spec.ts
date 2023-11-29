@@ -491,27 +491,29 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			]),
 			{
 				type: "if",
-				startStatement: new statements.byType["if"]([
-					{text: "IF", type: "keyword.if"},
-					{
-						operatorToken: {text: `<`, type: "operator.less_than"},
-						operator: operators.less_than,
-						nodes: [
-							{text: "x", type: "name"},
-							{text: "5", type: "number.decimal"},
-						]
-					},
-					{text: "THEN", type: "keyword.then"},
-				]),
-				nodes: [
+				controlStatements: [
+					new statements.byType["if"]([
+						{text: "IF", type: "keyword.if"},
+						{
+							operatorToken: {text: `<`, type: "operator.less_than"},
+							operator: operators.less_than,
+							nodes: [
+								{text: "x", type: "name"},
+								{text: "5", type: "number.decimal"},
+							]
+						},
+						{text: "THEN", type: "keyword.then"},
+					]),
+					new statements.byType["if.end"]([
+						{text: "ENDIF", type: "keyword.if_end"}
+					])
+				],
+				nodeGroups: [[
 					new statements.byType["output"]([
 						{text: "OUTPUT", type: "keyword.output"},
 						{text: `"amogus"`, type: "string"},
 					]),
-				],
-				endStatement: new statements.byType["if.end"]([
-					{text: "ENDIF", type: "keyword.if_end"}
-				]),
+				]],
 			}
 		],
 	],
@@ -549,51 +551,55 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			]),
 			{
 				type: "if",
-				startStatement: new statements.byType["if"]([
-					{text: "IF", type: "keyword.if"},
-					{
-						operatorToken: {text: `<`, type: "operator.less_than"},
-						operator: operators.less_than,
-						nodes: [
-							{text: "x", type: "name"},
-							{text: "5", type: "number.decimal"},
-						]
-					},
-					{text: "THEN", type: "keyword.then"},
-				]),
-				nodes: [
+				controlStatements: [
+					new statements.byType["if"]([
+						{text: "IF", type: "keyword.if"},
+						{
+							operatorToken: {text: `<`, type: "operator.less_than"},
+							operator: operators.less_than,
+							nodes: [
+								{text: "x", type: "name"},
+								{text: "5", type: "number.decimal"},
+							]
+						},
+						{text: "THEN", type: "keyword.then"},
+					]),
+					new statements.byType["if.end"]([
+						{text: "ENDIF", type: "keyword.if_end"}
+					]),
+				],
+				nodeGroups: [[
 					new statements.byType["output"]([
 						{text: "OUTPUT", type: "keyword.output"},
 						{text: `"X is less than 5"`, type: "string"},
 					]),
 					{
 						type: "if",
-						startStatement: new statements.byType["if"]([
-							{text: "IF", type: "keyword.if"},
-							{
-								operatorToken: {text: `<`, type: "operator.less_than"},
-								operator: operators.less_than,
-								nodes: [
-									{text: "x", type: "name"},
-									{text: "2", type: "number.decimal"},
-								]
-							},
-							{text: "THEN", type: "keyword.then"},
-						]),
-						nodes: [
+						controlStatements: [
+							new statements.byType["if"]([
+								{text: "IF", type: "keyword.if"},
+								{
+									operatorToken: {text: `<`, type: "operator.less_than"},
+									operator: operators.less_than,
+									nodes: [
+										{text: "x", type: "name"},
+										{text: "2", type: "number.decimal"},
+									]
+								},
+								{text: "THEN", type: "keyword.then"},
+							]),
+							new statements.byType["if.end"]([
+								{text: "ENDIF", type: "keyword.if_end"}
+							])
+						],
+						nodeGroups: [[
 							new statements.byType["output"]([
 								{text: "OUTPUT", type: "keyword.output"},
 								{text: `"X is also less than 2"`, type: "string"},
 							]),
-						],
-						endStatement: new statements.byType["if.end"]([
-							{text: "ENDIF", type: "keyword.if_end"}
-						]),
+						]],
 					}
-				],
-				endStatement: new statements.byType["if.end"]([
-					{text: "ENDIF", type: "keyword.if_end"}
-				]),
+				]],
 			}
 		],
 	]

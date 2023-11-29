@@ -18,7 +18,7 @@ export type TokenMatcher = (TokenType | ".*" | ".+" | "expr+");
 
 export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;
-export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode | ProgramASTMultiTreeNode;
+export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode;
 export type ProgramASTTreeNode = {
 	type: ProgramASTTreeNodeType;
 	controlStatements: Statement[];
@@ -89,13 +89,13 @@ export function parse(tokens:Token[]):ProgramAST {
 		} else if(statement.category == "block_end"){
 			const lastNode = blockStack.at(-1);
 			if(!lastNode) throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
-			else if(lastNode.startStatement.stype == statement.stype.split(".")[0]){ //probably bad code
-				lastNode.endStatement = statement;
+			else if(lastNode.controlStatements[0].stype == statement.stype.split(".")[0]){ //probably bad code
+				lastNode.controlStatements.push(statement);
 				blockStack.pop();
-			} else throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.startStatement.stype}`);
+			} else throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
 		} else throw new Error("impossible");
 	}
-	if(blockStack.length) throw new Error(`There were unclosed blocks: "${blockStack.at(-1)!.startStatement.toString()}" requires a matching "${blockStack.at(-1)!.startStatement.blockEndStatement().type}" statement`);
+	if(blockStack.length) throw new Error(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].blockEndStatement().type}" statement`);
 	return program;
 }
 

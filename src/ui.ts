@@ -17,15 +17,15 @@ type FlattenTreeOutput = [depth:number, statement:Statement];
 
 export function flattenTree(program:ProgramAST):FlattenTreeOutput[]{
 	return program.map(s => {
-		if("startStatement" in s) return flattenTree(s.nodes).map(([depth, statement]) => [depth + 1, statement] as FlattenTreeOutput);
+		if("nodeGroups" in s) return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement] as FlattenTreeOutput);
 		else return [[0, s] as FlattenTreeOutput];
 	}).flat(1);
 }
 export function displayProgram(program:ProgramAST):string {
 	return program.map(node =>
-		"startStatement" in node ?
-`<div class="program-display-block">${node.startStatement.toString(true)}
-${displayProgram(node.nodes)}${node.endStatement.toString(true)}</div>`
+		"nodeGroups" in node ?
+`<div class="program-display-block">${node.controlStatements[0].toString(true)}
+${displayProgram(node.nodeGroups.flat())}${node.controlStatements.at(-1)!.toString(true)}</div>` //TODO display properly
 			: node.toString(true) + "\n"
 	).join("");
 }
