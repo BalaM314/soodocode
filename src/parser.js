@@ -3,25 +3,25 @@ import { statements } from "./statements.js";
 import { splitArray } from "./utils.js";
 export function parseFunctionArguments(tokens) {
     const args = new Map();
-    let expected = "nameOrEnd";
+    let expected = "nameOrEndOrPassMode";
     let passMode = "value";
     let name = null;
     for (let i = 0; i < tokens.length + 1; i++) {
         //fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
         const token = tokens[i];
         const tokenName = token ? `"${token.text}" (${token.type})` : "nothing";
-        if (expected == "nameOrEnd" || expected == "name" || expected == "nameOrPassMode") {
+        if (expected == "nameOrEndOrPassMode" || expected == "name" || expected == "nameOrPassMode") {
             //weird combined if, necessary due to passMode
-            if (token?.type == "keyword.by-reference") {
+            if (token?.type == "keyword.by-reference" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")) {
                 passMode = "reference";
                 expected = "name";
             }
-            else if (token?.type == "keyword.by-value") {
+            else if (token?.type == "keyword.by-value" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")) {
                 passMode = "value";
                 expected = "name";
             }
             else {
-                if ((expected != "nameOrEnd" && !token) || //Expecting name and there is no token
+                if ((expected != "nameOrEndOrPassMode" && !token) || //Expecting name and there is no token
                     (token && token.type != "name") //or, there is a token and it's not a name
                 )
                     return `Expected a name, got ${tokenName}`;

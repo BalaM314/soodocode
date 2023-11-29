@@ -31,24 +31,24 @@ export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "funct
 
 export function parseFunctionArguments(tokens:Token[]):FunctionArguments | string {
 	const args = new Map<string, {type:string, passMode:"value" | "reference"}>();
-	let expected = "nameOrEnd" as "nameOrEnd" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd";
+	let expected = "nameOrEndOrPassMode" as "nameOrEndOrPassMode" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd";
 	let passMode:"value" | "reference" = "value";
 	let name:string | null = null;
 	for(let i = 0; i < tokens.length + 1; i ++){
 		//fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
 		const token = tokens[i] as Token | undefined;
 		const tokenName = token ? `"${token.text}" (${token.type})` : "nothing";
-		if(expected == "nameOrEnd" || expected == "name" || expected == "nameOrPassMode"){
+		if(expected == "nameOrEndOrPassMode" || expected == "name" || expected == "nameOrPassMode"){
 			//weird combined if, necessary due to passMode
-			if(token?.type == "keyword.by-reference"){
+			if(token?.type == "keyword.by-reference" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")){
 				passMode = "reference";
 				expected = "name";
-			} else if(token?.type == "keyword.by-value"){
+			} else if(token?.type == "keyword.by-value" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")){
 				passMode = "value";
 				expected = "name";
 			} else {
 				if(
-					(expected != "nameOrEnd" && !token) || //Expecting name and there is no token
+					(expected != "nameOrEndOrPassMode" && !token) || //Expecting name and there is no token
 					(token && token.type != "name") //or, there is a token and it's not a name
 				) return `Expected a name, got ${tokenName}`;
 				else {
