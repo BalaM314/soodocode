@@ -24,8 +24,24 @@ export function flattenTree(program:ProgramAST):FlattenTreeOutput[]{
 export function displayProgram(program:ProgramAST):string {
 	return program.map(node =>
 		"nodeGroups" in node ?
-`<div class="program-display-block">${node.controlStatements[0].toString(true)}
-${displayProgram(node.nodeGroups.flat())}${node.controlStatements.at(-1)!.toString(true)}</div>` //TODO display properly
+			node.nodeGroups.length > 1 ?
+`<div class="program-display-outer">\
+${node.controlStatements[0].toString(true)}
+<div class="program-display-inner">\
+${displayProgram(node.nodeGroups[0])}\
+</div>\
+${node.controlStatements[1].toString(true)}
+<div class="program-display-inner">\
+${displayProgram(node.nodeGroups[1])}\
+</div>${node.controlStatements[2].toString(true)}
+</div>` : //TODO do properly
+`<div class="program-display-outer">\
+${node.controlStatements[0].toString(true)}
+<div class="program-display-inner">\
+${displayProgram(node.nodeGroups[0])}\
+</div>\
+${node.controlStatements.at(-1)!.toString(true)}
+</div>`
 			: node.toString(true) + "\n"
 	).join("");
 }

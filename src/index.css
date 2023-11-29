@@ -80,11 +80,15 @@ td, th {
 	padding: 5px;
 }
 
-.program-display-block {
+.program-display-inner {
 	border-left: 15px solid #0FF6;
+	padding: 5px;
+}
+.program-display-outer {
+	border-left: 4px solid #0FF6;
 	border-top: 2px solid #0FF6;
 	border-bottom: 2px solid #0FF6;
-	padding: 7px;
+	padding: 3px;
 }
 
 .expression-display-block {
