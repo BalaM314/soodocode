@@ -1,3 +1,4 @@
+import { impossible } from "./utils.js";
 
 export type SymbolType =
 	"number.decimal" |
@@ -117,7 +118,7 @@ export function symbolize(input:string){
 				continue toNextCharacter;
 			}
 		}
-		throw new Error(`Invalid character "${str.at()}"`);
+		impossible();
 	}
 	return str.output;
 }
@@ -189,7 +190,7 @@ export function tokenize(input:Symbol[]):Token[] {
 			}
 		} else if(symbol.type === "comment.multiline_close"){
 			if(state.mComment) state.mComment = false;
-			else throw new Error(`Cannot close multiline comment, no open multiline comment`);
+			else fail(`Cannot close multiline comment, no open multiline comment`);
 		} else if(state.mComment){
 			//discard the symbol
 		} else if(state.sString){
@@ -215,7 +216,7 @@ export function tokenize(input:Symbol[]):Token[] {
 			state.dString = true;
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
-		else if(symbol.type === "unknown") throw new Error(`Invalid symbol ${symbol.text}`);
+		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`);
 		else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
 				case "TRUE": write("keyword.true"); break;

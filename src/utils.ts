@@ -1,4 +1,4 @@
-import type { ExpressionASTNode } from "./parser.js";
+import type { ExpressionASTNode } from "./parser";
 
 export function displayExpression(node:ExpressionASTNode, expand = false, html = false):string {
 	if("type" in node){
@@ -39,4 +39,16 @@ export function splitArray<T>(arr:T[], split:[T] | ((func:T, index:number) => bo
 		}
 	}
 	return output;
+}
+
+export class SoodocodeError extends Error {}
+
+export function fail(message:string):never {
+	throw new SoodocodeError(message);
+}
+export function crash(message:string):never {
+	throw new Error(message);
+}
+export function impossible():never {
+	throw new Error(`this shouldn't be possible...`);
 }

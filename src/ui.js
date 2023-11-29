@@ -2,15 +2,15 @@ import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
-import { displayExpression } from "./utils.js";
+import { displayExpression, fail, crash, SoodocodeError } from "./utils.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
         return element;
     else if (element instanceof HTMLElement)
-        throw new Error(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
+        crash(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
     else
-        throw new Error(`Element with id ${id} does not exist`);
+        crash(`Element with id ${id} does not exist`);
 }
 export function flattenTree(program) {
     return program.map(s => {
@@ -47,10 +47,10 @@ export function evaluateExpressionDemo(node) {
         if (node.type == "number.decimal")
             return Number(node.text);
         else
-            throw new Error(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
+            fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
     }
     else if (node.operator == "function call") {
-        throw new Error(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
+        fail(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
     }
     else
         switch (node.operator.type) {
@@ -59,7 +59,7 @@ export function evaluateExpressionDemo(node) {
             case "operator.multiply": return evaluateExpressionDemo(node.nodes[0]) * evaluateExpressionDemo(node.nodes[1]);
             case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
             //TODO rest of the operators
-            default: throw new Error(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.type}`);
+            default: fail(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.type}`);
         }
 }
 const title = getElement("title", HTMLHeadingElement);
@@ -81,7 +81,13 @@ evaluateExpressionButton.addEventListener("click", e => {
     }
     catch (err) {
         expressionOutputDiv.style.color = "red";
-        expressionOutputDiv.innerText = "Error: " + err.message;
+        if (err instanceof SoodocodeError) {
+            expressionOutputDiv.innerText = "Error: " + err.message;
+        }
+        else {
+            console.error(err);
+            expressionOutputDiv.innerText = "Soodocode crashed! " + err.message;
+        }
     }
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
@@ -118,7 +124,13 @@ dumpExpressionTreeButton.addEventListener("click", e => {
     }
     catch (err) {
         expressionOutputDiv.style.color = "red";
-        expressionOutputDiv.innerText = "Error: " + err.message;
+        if (err instanceof SoodocodeError) {
+            expressionOutputDiv.innerText = "Error: " + err.message;
+        }
+        else {
+            console.error(err);
+            expressionOutputDiv.innerText = "Soodocode crashed!" + err.message;
+        }
     }
 });
 soodocodeInput.onkeydown = e => {
@@ -186,9 +198,16 @@ dumpTokensButton.addEventListener("click", e => {
 </table>
 <h3>Statements</h3>
 ${displayProgram(program)}`;
+        outputDiv.style.color = "white";
     }
     catch (err) {
-        outputDiv.innerText = `Error: ${err.message}`;
+        outputDiv.style.color = "red";
+        if (err instanceof SoodocodeError) {
+            outputDiv.innerText = `Error: ${err.message}`;
+        }
+        else {
+            outputDiv.innerText = `Soodocode crashed! ${err.message}`;
+        }
     }
 });
 function dumpFunctionsToGlobalScope() {

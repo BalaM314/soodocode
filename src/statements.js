@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { parseFunctionArguments } from "./parser.js";
-import { displayExpression } from "./utils.js";
+import { displayExpression, fail, crash } from "./utils.js";
 export const statements = {
     startKeyword: {},
     byType: {},
@@ -60,7 +60,7 @@ export class Statement {
     }
     blockEndStatement() {
         if (this.category != "block")
-            throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);
+            crash(`Statement ${this.stype} has no block end statement because it is not a block statement`);
         return statements.byType[this.stype + ".end"]; //REFACTOR CHECK
     }
     example() {
@@ -90,18 +90,18 @@ function statement(type, example, ...args) {
             });
         }
         if (args.length < 1)
-            throw new Error(`All statements must contain at least one token`);
+            crash(`All statements must contain at least one token`);
         if (args[0] == "#") {
             statements.irregular.push(input);
         }
         else {
             const firstToken = args[0];
             if (statements.startKeyword[firstToken])
-                throw new Error(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
+                crash(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
             statements.startKeyword[firstToken] = input;
         }
         if (statements.byType[type])
-            throw new Error(`Statement for type ${type} already registered`);
+            crash(`Statement for type ${type} already registered`);
         statements.byType[type] = input;
         input.tokens = args;
         return input;
@@ -158,7 +158,7 @@ let FunctionStatement = (() => {
             super(tokens);
             const args = parseFunctionArguments(tokens.slice(3, -3));
             if (typeof args == "string")
-                throw new Error(`Invalid function arguments: ${args}`);
+                fail(`Invalid function arguments: ${args}`);
             this.args = args;
             this.returnType = tokens.at(-1).text.toUpperCase();
         }
@@ -185,7 +185,7 @@ let ProcedureStatement = (() => {
             super(tokens);
             const args = parseFunctionArguments(tokens.slice(3, -1));
             if (typeof args == "string")
-                throw new Error(`Invalid function arguments: ${args}`);
+                fail(`Invalid function arguments: ${args}`);
             this.args = args;
         }
     };

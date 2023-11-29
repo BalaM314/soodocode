@@ -1,9 +1,8 @@
 import { getText, type Token, type TokenType } from "./lexer.js";
 import { FunctionArguments, Statement, statements } from "./statements.js";
-import { splitArray } from "./utils.js";
+import { impossible, splitArray, fail } from "./utils.js";
 
-//TODO clean up error handling
-//throw new Error("is bad");
+//TODO improve error messages
 
 export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTLeafNode = Token;
@@ -64,7 +63,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 			if(!token || token.type != "name") return `Expected a type, got ${tokenName}`;
 			else {
 				expected = "commaOrEnd";
-				if(!name) throw new Error(`impossible`);
+				if(!name) impossible();
 				args.set(name, {type: token.text, passMode});
 			}
 		} else if(expected == "commaOrEnd"){
@@ -105,20 +104,20 @@ export function parse(tokens:Token[]):ProgramAST {
 			blockStack.push(node);
 		} else if(statement.category == "block_end"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
+			if(!lastNode) fail(`Invalid statement "${statement.toString()}": no open blocks`);
 			else if(lastNode.controlStatements[0].stype == statement.stype.split(".")[0]){ //probably bad code
 				lastNode.controlStatements.push(statement);
 				blockStack.pop();
-			} else throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
+			} else fail(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
 		} else if(statement.category == "block_multi_split"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
-			if(!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) throw new Error(`Invalid statement "${statement.toString()}": TODOERRORMESSAGE`);
+			if(!lastNode) fail(`Invalid statement "${statement.toString()}": no open blocks`);
+			if(!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) fail(`Invalid statement "${statement.toString()}": TODOERRORMESSAGE`);
 			lastNode.controlStatements.push(statement);
 			lastNode.nodeGroups.push([]);
 		} else statement.category satisfies never;
 	}
-	if(blockStack.length) throw new Error(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].blockEndStatement().type}" statement`);
+	if(blockStack.length) fail(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].blockEndStatement().type}" statement`);
 	return program;
 }
 
@@ -127,11 +126,11 @@ export function parse(tokens:Token[]):ProgramAST {
  * @argument tokens must not contain any newlines.
  **/
 export function parseStatement(tokens:Token[]):Statement {
-	if(tokens.length < 1) throw new Error("Empty statement");
+	if(tokens.length < 1) fail("Empty statement");
 	let possibleStatements:(typeof Statement)[];
 	if(tokens[0].type in statements.startKeyword) possibleStatements = [statements.startKeyword[tokens[0].type]!];
 	else possibleStatements = statements.irregular;
-	if(possibleStatements.length == 0) throw new Error(`No possible statements`);
+	if(possibleStatements.length == 0) fail(`No possible statements`);
 	let errors:{message:string, priority:number}[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
@@ -143,7 +142,7 @@ export function parseStatement(tokens:Token[]):Statement {
 	for(const error of errors){
 		if(error.priority > maxError.priority) maxError = error;
 	}
-	throw new Error(maxError.message);
+	fail(maxError.message);
 }
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
@@ -178,7 +177,7 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 				output.push(...input.slice(start, end + 1));
 		} else {
 			if(j >= input.length) return {message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4};
-			if(statement.tokens[i] == "#") throw new Error(`absurd`);
+			if(statement.tokens[i] == "#") impossible();
 			else if(statement.tokens[i] == input[j].type){
 				output.push(input[j]);
 				j++; //Token matches, move to next one
@@ -225,7 +224,7 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 		if(input[0].type == "number.decimal" || input[0].type == "name" || input[0].type == "string") //and it's a valid expression leaf node TODO genericify
 			return input[0]; //nothing to parse, just return the token
 		else
-			throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
+			fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
 	}
 
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
@@ -241,7 +240,7 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 			else if(input[i].type == "parentheses.open") parenNestLevel --;
 			if(parenNestLevel < 0)
 				//nest level going below 0 means too many (, so unclosed parens
-				throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
+				fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
 
 			let operator!:Operator; //assignment assertion goes brrrrr
 			if(
@@ -252,8 +251,8 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 				if(operator.unary){
 					//Make sure there is only something on right side of the operator
 					const right = input.slice(i + 1);
-					if(i != 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
-					if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+					if(i != 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+					if(right.length == 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
 					return {
 						operatorToken: input[i],
 						operator,
@@ -263,8 +262,8 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 					//Make sure there is something on left and right of the operator
 					const left = input.slice(0, i);
 					const right = input.slice(i + 1);
-					if(left.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
-					if(right.length == 0) throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+					if(left.length == 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+					if(right.length == 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
 					return {
 						operatorToken: input[i],
 						operator,
@@ -275,7 +274,7 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 		}
 		//Nest level being above zero at the end of the string means too many )
 		if(parenNestLevel != 0)
-			throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
+			fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
 
 		//No operators of the current priority found, look for operator with the next level higher priority
 	}
@@ -305,5 +304,5 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 	}
 
 	//No operators found at all, something went wrong
-	throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
+	fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }

@@ -1,6 +1,6 @@
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
-import { displayExpression } from "./utils.js";
+import { displayExpression, fail, crash } from "./utils.js";
 
 
 export type StatementType =
@@ -42,7 +42,7 @@ export class Statement {
 		}
 	}
 	blockEndStatement(){
-		if(this.category != "block") throw new Error(`Statement ${this.stype} has no block end statement because it is not a block statement`);
+		if(this.category != "block") crash(`Statement ${this.stype} has no block end statement because it is not a block statement`);
 		return statements.byType[this.stype + ".end" as StatementType]; //REFACTOR CHECK
 	}
 	example(){
@@ -79,16 +79,16 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 				class __endStatement extends Statement {}
 			);
 		}
-		if(args.length < 1) throw new Error(`All statements must contain at least one token`);
+		if(args.length < 1) crash(`All statements must contain at least one token`);
 		if(args[0] == "#"){
 			statements.irregular.push(input);
 		} else {
 			const firstToken = args[0] as TokenType;
 			if(statements.startKeyword[firstToken])
-				throw new Error(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
+				crash(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
 			statements.startKeyword[firstToken] = input;
 		}
-		if(statements.byType[type]) throw new Error(`Statement for type ${type} already registered`);
+		if(statements.byType[type]) crash(`Statement for type ${type} already registered`);
 		statements.byType[type] = input;
 		input.tokens = args as TokenMatcher[];
 		return input;
@@ -135,7 +135,7 @@ export class FunctionStatement extends Statement {
 	constructor(tokens:Token[]){
 		super(tokens);
 		const args = parseFunctionArguments(tokens.slice(3, -3));
-		if(typeof args == "string") throw new Error(`Invalid function arguments: ${args}`);
+		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
 		this.returnType = tokens.at(-1)!.text.toUpperCase();
 	}
@@ -148,7 +148,7 @@ export class ProcedureStatement extends Statement {
 	constructor(tokens:Token[]){
 		super(tokens);
 		const args = parseFunctionArguments(tokens.slice(3, -1));
-		if(typeof args == "string") throw new Error(`Invalid function arguments: ${args}`);
+		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
 	}
 }

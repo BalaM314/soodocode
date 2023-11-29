@@ -1,6 +1,6 @@
 import { getText } from "./lexer.js";
 import { statements } from "./statements.js";
-import { splitArray } from "./utils.js";
+import { impossible, splitArray, fail } from "./utils.js";
 export function parseFunctionArguments(tokens) {
     const args = new Map();
     let expected = "nameOrEndOrPassMode";
@@ -45,7 +45,7 @@ export function parseFunctionArguments(tokens) {
             else {
                 expected = "commaOrEnd";
                 if (!name)
-                    throw new Error(`impossible`);
+                    impossible();
                 args.set(name, { type: token.text, passMode });
             }
         }
@@ -96,20 +96,20 @@ export function parse(tokens) {
         else if (statement.category == "block_end") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
+                fail(`Invalid statement "${statement.toString()}": no open blocks`);
             else if (lastNode.controlStatements[0].stype == statement.stype.split(".")[0]) { //probably bad code
                 lastNode.controlStatements.push(statement);
                 blockStack.pop();
             }
             else
-                throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
+                fail(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
         }
         else if (statement.category == "block_multi_split") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
+                fail(`Invalid statement "${statement.toString()}": no open blocks`);
             if (!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement))
-                throw new Error(`Invalid statement "${statement.toString()}": TODOERRORMESSAGE`);
+                fail(`Invalid statement "${statement.toString()}": TODOERRORMESSAGE`);
             lastNode.controlStatements.push(statement);
             lastNode.nodeGroups.push([]);
         }
@@ -117,7 +117,7 @@ export function parse(tokens) {
             statement.category;
     }
     if (blockStack.length)
-        throw new Error(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`);
+        fail(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`);
     return program;
 }
 /**
@@ -126,14 +126,14 @@ export function parse(tokens) {
  **/
 export function parseStatement(tokens) {
     if (tokens.length < 1)
-        throw new Error("Empty statement");
+        fail("Empty statement");
     let possibleStatements;
     if (tokens[0].type in statements.startKeyword)
         possibleStatements = [statements.startKeyword[tokens[0].type]];
     else
         possibleStatements = statements.irregular;
     if (possibleStatements.length == 0)
-        throw new Error(`No possible statements`);
+        fail(`No possible statements`);
     let errors = [];
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
@@ -148,7 +148,7 @@ export function parseStatement(tokens) {
         if (error.priority > maxError.priority)
             maxError = error;
     }
-    throw new Error(maxError.message);
+    fail(maxError.message);
 }
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
@@ -188,7 +188,7 @@ export function checkStatement(statement, input) {
             if (j >= input.length)
                 return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4 };
             if (statement.tokens[i] == "#")
-                throw new Error(`absurd`);
+                impossible();
             else if (statement.tokens[i] == input[j].type) {
                 output.push(input[j]);
                 j++; //Token matches, move to next one
@@ -226,7 +226,7 @@ export function parseExpression(input) {
         if (input[0].type == "number.decimal" || input[0].type == "name" || input[0].type == "string") //and it's a valid expression leaf node TODO genericify
             return input[0]; //nothing to parse, just return the token
         else
-            throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
+            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
     }
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     //TODO O(mn) unnecessarily, optimize
@@ -243,7 +243,7 @@ export function parseExpression(input) {
                 parenNestLevel--;
             if (parenNestLevel < 0)
                 //nest level going below 0 means too many (, so unclosed parens
-                throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
+                fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
             let operator; //assignment assertion goes brrrrr
             if (parenNestLevel == 0 && //the operator is not inside parentheses and
                 operatorsOfCurrentPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
@@ -253,9 +253,9 @@ export function parseExpression(input) {
                     //Make sure there is only something on right side of the operator
                     const right = input.slice(i + 1);
                     if (i != 0)
-                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
                     if (right.length == 0)
-                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                     return {
                         operatorToken: input[i],
                         operator,
@@ -267,9 +267,9 @@ export function parseExpression(input) {
                     const left = input.slice(0, i);
                     const right = input.slice(i + 1);
                     if (left.length == 0)
-                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
                     if (right.length == 0)
-                        throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                     return {
                         operatorToken: input[i],
                         operator,
@@ -280,7 +280,7 @@ export function parseExpression(input) {
         }
         //Nest level being above zero at the end of the string means too many )
         if (parenNestLevel != 0)
-            throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
+            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
         //No operators of the current priority found, look for operator with the next level higher priority
     }
     //If the whole expression is surrounded by parentheses, parse the inner expression
@@ -306,5 +306,5 @@ export function parseExpression(input) {
         };
     }
     //No operators found at all, something went wrong
-    throw new Error(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
+    fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
 }

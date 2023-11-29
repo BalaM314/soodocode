@@ -1,3 +1,4 @@
+import { impossible } from "./utils.js";
 class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;
@@ -80,7 +81,7 @@ export function symbolize(input) {
                 continue toNextCharacter;
             }
         }
-        throw new Error(`Invalid character "${str.at()}"`);
+        impossible();
     }
     return str.output;
 }
@@ -145,7 +146,7 @@ export function tokenize(input) {
             if (state.mComment)
                 state.mComment = false;
             else
-                throw new Error(`Cannot close multiline comment, no open multiline comment`);
+                fail(`Cannot close multiline comment, no open multiline comment`);
         }
         else if (state.mComment) {
             //discard the symbol
@@ -181,7 +182,7 @@ export function tokenize(input) {
         else if (symbol.type === "space")
             void 0;
         else if (symbol.type === "unknown")
-            throw new Error(`Invalid symbol ${symbol.text}`);
+            fail(`Invalid symbol ${symbol.text}`);
         else if (symbol.type === "word") {
             switch (symbol.text) { //TODO datastructify
                 case "TRUE":

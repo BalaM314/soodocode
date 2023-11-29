@@ -44,3 +44,14 @@ export function splitArray(arr, split) {
     }
     return output;
 }
+export class SoodocodeError extends Error {
+}
+export function fail(message) {
+    throw new SoodocodeError(message);
+}
+export function crash(message) {
+    throw new Error(message);
+}
+export function impossible() {
+    throw new Error(`this shouldn't be possible...`);
+}
