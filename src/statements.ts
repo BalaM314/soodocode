@@ -104,7 +104,26 @@ function makeStatement(type:StatementType, example:string, ...args:any[]):typeof
 	return statement(type, example, ...args)(class __temp extends Statement {});
 }
 
-makeStatement("declaration", "DECLARE variable: TYPE", "keyword.declare", "name", "punctuation.colon", "name");
+@statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")
+export class DeclarationStatement extends Statement {
+	variables: string[] = [];
+	constructor(tokens:Token[]){
+		super(tokens);
+		let expected = "name" as "name" | "comma";
+		for(const token of tokens.slice(1, -2)){
+			if(expected == "name"){
+				if(token.type == "name"){
+					this.variables.push(token.text);
+					expected = "comma"
+				} else fail(`Expected name, got "${token.text}" (${token.type})`);
+			} else {
+				if(token.type == "punctuation.comma") expected = "name";
+				else fail(`Expected name, got "${token.text}" (${token.type})`);
+			}
+		}
+		if(expected == "name") fail(`Expected name, found ":" (punctuation.colon)`);
+	}
+}
 makeStatement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+"); //the equal_to operator is used in this statement, idk why
 makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
 makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");

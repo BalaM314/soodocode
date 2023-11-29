@@ -223,7 +223,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `amogus`, type: "name"},
 		])
 	],
-	declare: [
+	declare1: [
 		[
 			{text: "DECLARE", type: "keyword.declare"},
 			{text: "amogus", type: "name"},
@@ -236,6 +236,52 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: ":", type: "punctuation.colon"},
 			{text: "NUMBER", type: "name"},
 		])
+	],
+	declare2: [
+		[
+			{text: "DECLARE", type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: ",", type: "punctuation.comma"},
+			{text: "sussy", type: "name"},
+			{text: ":", type: "punctuation.colon"},
+			{text: "NUMBER", type: "name"},
+		],
+		new statements.byType["declaration"]([
+			{text: "DECLARE", type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: ",", type: "punctuation.comma"},
+			{text: "sussy", type: "name"},
+			{text: ":", type: "punctuation.colon"},
+			{text: "NUMBER", type: "name"},
+		])
+	],
+	declareBad1: [
+		[
+			{text: "DECLARE", type: "keyword.declare"},
+			{text: ":", type: "punctuation.colon"},
+			{text: "NUMBER", type: "name"},
+		],
+		"error"
+	],
+	declareBad2: [
+		[
+			{text: "DECLARE", type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: ",", type: "punctuation.comma"},
+			{text: ":", type: "punctuation.colon"},
+			{text: "NUMBER", type: "name"},
+		],
+		"error"
+	],
+	declareBad3: [
+		[
+			{text: "DECLARE", type: "keyword.declare"},
+			{text: "amogus", type: "name"},
+			{text: "sussy", type: "name"},
+			{text: ":", type: "punctuation.colon"},
+			{text: "NUMBER", type: "name"},
+		],
+		"error"
 	],
 	assign: [
 		[

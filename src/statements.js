@@ -111,7 +111,48 @@ function makeStatement(type, example, ...args) {
     return statement(type, example, ...args)(class __temp extends Statement {
     });
 }
-makeStatement("declaration", "DECLARE variable: TYPE", "keyword.declare", "name", "punctuation.colon", "name");
+let DeclarationStatement = (() => {
+    let _classDecorators = [statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var DeclarationStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.variables = [];
+            let expected = "name";
+            for (const token of tokens.slice(1, -2)) {
+                if (expected == "name") {
+                    if (token.type == "name") {
+                        this.variables.push(token.text);
+                        expected = "comma";
+                    }
+                    else
+                        fail(`Expected name, got "${token.text}" (${token.type})`);
+                }
+                else {
+                    if (token.type == "punctuation.comma")
+                        expected = "name";
+                    else
+                        fail(`Expected name, got "${token.text}" (${token.type})`);
+                }
+            }
+            if (expected == "name")
+                fail(`Expected name, found ":" (punctuation.colon)`);
+        }
+    };
+    __setFunctionName(_classThis, "DeclarationStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        DeclarationStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return DeclarationStatement = _classThis;
+})();
+export { DeclarationStatement };
 makeStatement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+"); //the equal_to operator is used in this statement, idk why
 makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
 makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
