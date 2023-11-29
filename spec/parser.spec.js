@@ -1,6 +1,7 @@
 import "jasmine";
 import { parse, parseFunctionArguments, parseStatement, operators, parseExpression } from "../src/parser.js";
 import { statements } from "../src/statements.js";
+import { SoodocodeError } from "../src/utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 const sampleExpressions = Object.entries({
     number: [
@@ -409,6 +410,14 @@ const sampleStatements = Object.entries({
         ],
         "error"
     ],
+    incompleteProcedure1: [
+        [
+            { text: `PROCEDURE`, type: "keyword.procedure" },
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+        ],
+        "error"
+    ],
 }).map(p => [p[0], p[1][0], p[1][1]]);
 const samplePrograms = Object.entries({
     output: [
@@ -788,7 +797,7 @@ describe("parseExpression", () => {
     for (const [name, program, output] of sampleExpressions) {
         if (output === "error") {
             it(`should not parse ${name} into an expression`, () => {
-                expect(() => parseExpression(program)).toThrow();
+                expect(() => parseExpression(program)).toThrowMatching(e => e instanceof SoodocodeError);
             });
         }
         else {
@@ -802,7 +811,7 @@ describe("parseStatement", () => {
     for (const [name, program, output] of sampleStatements) {
         if (output === "error") {
             it(`should not parse ${name} into a statement`, () => {
-                expect(() => parseStatement(program)).toThrow();
+                expect(() => parseStatement(program)).toThrowMatching(e => e instanceof SoodocodeError);
             });
         }
         else {
@@ -816,7 +825,7 @@ describe("parse", () => {
     for (const [name, program, output] of samplePrograms) {
         if (output === "error") {
             it(`should not parse ${name} into a program`, () => {
-                expect(() => parse(program)).toThrow();
+                expect(() => parse(program)).toThrowMatching(e => e instanceof SoodocodeError);
             });
         }
         else {

@@ -2,6 +2,7 @@ import "jasmine";
 import type { Token } from "../src/lexer.js";
 import { ProgramAST, parse, parseFunctionArguments, parseStatement, operators, ExpressionAST, parseExpression } from "../src/parser.js";
 import { FunctionArguments, Statement, statements } from "../src/statements.js";
+import { SoodocodeError } from "../src/utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 
@@ -415,6 +416,14 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 		],
 		"error"
 	],
+	incompleteProcedure1: [
+		[
+			{text: `PROCEDURE`, type: "keyword.procedure"},
+			{text: "amogus", type: "name"},
+			{text: "(", type: "parentheses.open"},
+		],
+		"error"
+	],
 }).map(p => [p[0], p[1][0], p[1][1]]);
 
 const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"][] = Object.entries<[program:Token[], output:ProgramAST | "error"]>({
@@ -800,7 +809,7 @@ describe("parseExpression", () => {
 	for(const [name, program, output] of sampleExpressions){
 		if(output === "error"){
 			it(`should not parse ${name} into an expression`, () => {
-				expect(() => parseExpression(program)).toThrow();
+				expect(() => parseExpression(program)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} into an expression`, () => {
@@ -814,7 +823,7 @@ describe("parseStatement", () => {
 	for(const [name, program, output] of sampleStatements){
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
-				expect(() => parseStatement(program)).toThrow();
+				expect(() => parseStatement(program)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} into a statement`, () => {
@@ -828,7 +837,7 @@ describe("parse", () => {
 	for(const [name, program, output] of samplePrograms){
 		if(output === "error"){
 			it(`should not parse ${name} into a program`, () => {
-				expect(() => parse(program)).toThrow();
+				expect(() => parse(program)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} into a program`, () => {
