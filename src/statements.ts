@@ -4,7 +4,7 @@ import { displayExpression } from "./utils.js";
 
 
 export type StatementType =
-	"declaration" | "assignment" | "output" | "input" | "return" |
+	"declaration" | "constant" | "assignment" | "output" | "input" | "return" |
 	"if" | "if.end" | "else" |
 	"for" | "for.end" |
 	"while" | "while.end" |
@@ -19,7 +19,7 @@ export const statements = {
 	irregular: [] as (typeof Statement)[],
 };
 
-export type FunctionArguments = Map<string, {name:string, passMode:"value" | "reference"}>
+export type FunctionArguments = Map<string, {type:string, passMode:"value" | "reference"}>
 
 export class Statement {
 	type:typeof Statement;
@@ -105,6 +105,7 @@ function makeStatement(type:StatementType, example:string, ...args:any[]):typeof
 }
 
 makeStatement("declaration", "DECLARE variable: TYPE", "keyword.declare", "name", "punctuation.colon", "name");
+makeStatement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+"); //the equal_to operator is used in this statement, idk why
 makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
 makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
 makeStatement("input", "INPUT y", "keyword.input", "name");

@@ -112,6 +112,7 @@ function makeStatement(type, example, ...args) {
     });
 }
 makeStatement("declaration", "DECLARE variable: TYPE", "keyword.declare", "name", "punctuation.colon", "name");
+makeStatement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+"); //the equal_to operator is used in this statement, idk why
 makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
 makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
 makeStatement("input", "INPUT y", "keyword.input", "name");
