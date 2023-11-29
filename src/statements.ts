@@ -19,6 +19,8 @@ export const statements = {
 	irregular: [] as (typeof Statement)[],
 };
 
+export type FunctionArguments = Map<string, {name:string, passMode:"value" | "reference"}>
+
 export class Statement {
 	type:typeof Statement;
 	stype:StatementType;
@@ -127,11 +129,11 @@ makeStatement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile
 @statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
-	args: Map<string, string>;
+	args:FunctionArguments;
 	returnType: string;
 	constructor(tokens:Token[]){
 		super(tokens);
-		const args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+		const args = parseFunctionArguments(tokens.slice(3, -3));
 		if(typeof args == "string") throw new Error(`Invalid function arguments: ${args}`);
 		this.args = args;
 		this.returnType = tokens.at(-1)!.text.toUpperCase();
@@ -141,10 +143,10 @@ export class FunctionStatement extends Statement {
 @statement("procedure", "PROCEDURE name(arg1: TYPE)", "block", "auto", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ProcedureStatement extends Statement {
 	/** Mapping between name and type */
-	args: Map<string, string>;
+	args:FunctionArguments;
 	constructor(tokens:Token[]){
 		super(tokens);
-		const args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+		const args = parseFunctionArguments(tokens.slice(3, -1));
 		if(typeof args == "string") throw new Error(`Invalid function arguments: ${args}`);
 		this.args = args;
 	}

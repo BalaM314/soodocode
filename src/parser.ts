@@ -1,5 +1,5 @@
 import { getText, type Token, type TokenType } from "./lexer.js";
-import { Statement, statements } from "./statements.js";
+import { FunctionArguments, Statement, statements } from "./statements.js";
 import { splitArray } from "./utils.js";
 
 //TODO clean up error handling
@@ -29,31 +29,48 @@ export type ProgramASTTreeNode = {
 
 export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
-/** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
-export function parseFunctionArguments(tokens:Token[], low:number, high:number):Map<string, string> | string {
-	const size = high - low + 1;
-	if(!(size != 0 || size % 4 != 3))
-		return `Incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`;
-	const numArgs = Math.ceil(size / 4);
-	const args = new Map<string, string>();
-
-	for(let i = 0; i < numArgs; i ++){
-		const name = tokens[low + 4 * i + 0];
-		const colon = tokens[low + 4 * i + 1];
-		const type = tokens[low + 4 * i + 2];
-		const comma = tokens[low + 4 * i + 3];
-		if(!name) return `Missing name`;
-		if(name.type != "name") return `Expected a name, got "${name.text}" (${name.type})`;
-		if(!colon) return `Missing colon`;
-		if(colon.type != "punctuation.colon") return `Expected a colon, got "${colon.text}" (${colon.type})`;
-		if(!type) return `Missing type`;
-		if(type.type != "name") return `Expected a type, got "${type.text}" (${type.type})`;
-		if(!comma) return `Missing comma`;
-		if(i == numArgs - 1 && comma.type != "parentheses.close") //Last argument and the 4th token is the closing paren
-			return `Expected closing parentheses, got "${comma.text}" (${comma.type})`;
-		if(i != numArgs - 1 && comma.type != "punctuation.comma") //Not the last argument and the token is a comma
-			return `Expected a comma, got "${comma.text}" (${comma.type})`;
-		args.set(name.text, type.text.toUpperCase());
+export function parseFunctionArguments(tokens:Token[]):FunctionArguments | string {
+	const args = new Map<string, {type:string, passMode:"value" | "reference"}>();
+	let expected = "nameOrEnd" as "nameOrEnd" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd";
+	let passMode:"value" | "reference" = "value";
+	let name:string | null = null;
+	for(let i = 0; i < tokens.length + 1; i ++){
+		//fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
+		const token = tokens[i] as Token | undefined;
+		const tokenName = token ? `"${token.text}" (${token.type})` : "nothing";
+		if(expected == "nameOrEnd" || expected == "name" || expected == "nameOrPassMode"){
+			//weird combined if, necessary due to passMode
+			if(token?.type == "keyword.by-reference"){
+				passMode = "reference";
+				expected = "name";
+			} else if(token?.type == "keyword.by-value"){
+				passMode = "value";
+				expected = "name";
+			} else {
+				if(
+					(expected != "nameOrEnd" && !token) || //Expecting name and there is no token
+					(token && token.type != "name") //or, there is a token and it's not a name
+				) return `Expected a name, got ${tokenName}`;
+				else {
+					if(token) name = token.text;
+					//If this is the last token, then the value of "expected" will never be checked again, no need for an extra check
+					expected = "colon";
+				}
+			}
+		} else if(expected == "colon"){
+			if(!token || token.type != "punctuation.colon") return `Expected a colon, got ${tokenName}`;
+			else expected = "type";
+		} else if(expected == "type"){
+			if(!token || token.type != "name") return `Expected a type, got ${tokenName}`;
+			else {
+				expected = "commaOrEnd";
+				if(!name) throw new Error(`impossible`);
+				args.set(name, {type: token.text, passMode});
+			}
+		} else if(expected == "commaOrEnd"){
+			if(token && token.type != "punctuation.comma") return `Expected a comma or end of arguments, got ${tokenName}`;
+			else expected = "nameOrPassMode";
+		} else expected satisfies never;
 	}
 	return args;
 }

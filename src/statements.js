@@ -155,7 +155,7 @@ let FunctionStatement = (() => {
     var FunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            const args = parseFunctionArguments(tokens, 3, tokens.length - 4);
+            const args = parseFunctionArguments(tokens.slice(3, -3));
             if (typeof args == "string")
                 throw new Error(`Invalid function arguments: ${args}`);
             this.args = args;
@@ -182,7 +182,7 @@ let ProcedureStatement = (() => {
     var ProcedureStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            const args = parseFunctionArguments(tokens, 3, tokens.length - 2);
+            const args = parseFunctionArguments(tokens.slice(3, -1));
             if (typeof args == "string")
                 throw new Error(`Invalid function arguments: ${args}`);
             this.args = args;

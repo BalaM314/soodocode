@@ -601,35 +601,19 @@ describe("parseFunctionArguments", () => {
     it("should parse function arguments", () => {
         function process(input) {
             if (input instanceof Map)
-                return Object.fromEntries(input.entries());
+                return Object.fromEntries([...input.entries()].map(([k, v]) => [k, [v.type, v.passMode]]));
             else
                 return input;
         }
+        expect(process(parseFunctionArguments([]))).toEqual({});
         expect(process(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 2))).toEqual({});
-        expect(process(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "INTEGER" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 5))).toEqual({
-            arg: "INTEGER"
+        ]))).toEqual({
+            arg: ["INTEGER", "value"]
         });
         expect(process(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "INTEGER" },
@@ -637,17 +621,11 @@ describe("parseFunctionArguments", () => {
             { type: "name", text: "arg2" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "BOOLEAN" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 9))).toEqual({
-            arg: "INTEGER",
-            arg2: "BOOLEAN"
+        ]))).toEqual({
+            arg: ["INTEGER", "value"],
+            arg2: ["BOOLEAN", "value"],
         });
         expect(process(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "INTEGER" },
@@ -659,59 +637,33 @@ describe("parseFunctionArguments", () => {
             { type: "name", text: "arg3" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "USERSUPPLIED" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 13))).toEqual({
-            arg: "INTEGER",
-            arg2: "BOOLEAN",
-            arg3: "USERSUPPLIED",
+        ]))).toEqual({
+            arg: ["INTEGER", "value"],
+            arg2: ["BOOLEAN", "value"],
+            arg3: ["USERSUPPLIED", "value"],
         });
     });
+    //TODO byref byval tests
     it("should throw on invalid function arguments", () => {
         expect(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg2" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 3)).toEqual(jasmine.any(String));
+        ])).toEqual(jasmine.any(String));
         expect(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg2" },
             { type: "punctuation.colon", text: ":" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 4)).toEqual(jasmine.any(String));
+        ])).toEqual(jasmine.any(String));
         expect(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg2" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "INTEGER" },
             { type: "name", text: "arg2" },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 6)).toEqual(jasmine.any(String));
+        ])).toEqual(jasmine.any(String));
         expect(parseFunctionArguments([
-            { type: "keyword.function", text: "FUNCTION" },
-            { type: "name", text: "Amogus" },
-            { type: "parentheses.open", text: "(" },
             { type: "name", text: "arg2" },
             { type: "punctuation.colon", text: ":" },
             { type: "name", text: "INTEGER" },
             { type: "punctuation.comma", text: "," },
-            { type: "parentheses.close", text: ")" },
-            { type: "keyword.returns", text: "RETURNS" },
-            { type: "name", text: "INTEGER " }
-        ], 3, 6)).toEqual(jasmine.any(String));
+        ])).toEqual(jasmine.any(String));
     });
 });
 describe("parseExpression", () => {

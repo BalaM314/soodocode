@@ -1,37 +1,62 @@
 import { getText } from "./lexer.js";
 import { statements } from "./statements.js";
 import { splitArray } from "./utils.js";
-/** `low` and `high` must correspond to the indexes of the lowest and highest elements in the function arguments. */
-export function parseFunctionArguments(tokens, low, high) {
-    const size = high - low + 1;
-    if (!(size != 0 || size % 4 != 3))
-        return `Incorrect number of tokens (${size}), must be 0 or 3 above a multiple of 4`;
-    const numArgs = Math.ceil(size / 4);
+export function parseFunctionArguments(tokens) {
     const args = new Map();
-    for (let i = 0; i < numArgs; i++) {
-        const name = tokens[low + 4 * i + 0];
-        const colon = tokens[low + 4 * i + 1];
-        const type = tokens[low + 4 * i + 2];
-        const comma = tokens[low + 4 * i + 3];
-        if (!name)
-            return `Missing name`;
-        if (name.type != "name")
-            return `Expected a name, got "${name.text}" (${name.type})`;
-        if (!colon)
-            return `Missing colon`;
-        if (colon.type != "punctuation.colon")
-            return `Expected a colon, got "${colon.text}" (${colon.type})`;
-        if (!type)
-            return `Missing type`;
-        if (type.type != "name")
-            return `Expected a type, got "${type.text}" (${type.type})`;
-        if (!comma)
-            return `Missing comma`;
-        if (i == numArgs - 1 && comma.type != "parentheses.close") //Last argument and the 4th token is the closing paren
-            return `Expected closing parentheses, got "${comma.text}" (${comma.type})`;
-        if (i != numArgs - 1 && comma.type != "punctuation.comma") //Not the last argument and the token is a comma
-            return `Expected a comma, got "${comma.text}" (${comma.type})`;
-        args.set(name.text, type.text.toUpperCase());
+    let expected = "nameOrEnd";
+    let passMode = "value";
+    let name = null;
+    for (let i = 0; i < tokens.length + 1; i++) {
+        //fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
+        const token = tokens[i];
+        const tokenName = token ? `"${token.text}" (${token.type})` : "nothing";
+        if (expected == "nameOrEnd" || expected == "name" || expected == "nameOrPassMode") {
+            //weird combined if, necessary due to passMode
+            if (token?.type == "keyword.by-reference") {
+                passMode = "reference";
+                expected = "name";
+            }
+            else if (token?.type == "keyword.by-value") {
+                passMode = "value";
+                expected = "name";
+            }
+            else {
+                if ((expected != "nameOrEnd" && !token) || //Expecting name and there is no token
+                    (token && token.type != "name") //or, there is a token and it's not a name
+                )
+                    return `Expected a name, got ${tokenName}`;
+                else {
+                    if (token)
+                        name = token.text;
+                    //If this is the last token, then the value of "expected" will never be checked again, no need for an extra check
+                    expected = "colon";
+                }
+            }
+        }
+        else if (expected == "colon") {
+            if (!token || token.type != "punctuation.colon")
+                return `Expected a colon, got ${tokenName}`;
+            else
+                expected = "type";
+        }
+        else if (expected == "type") {
+            if (!token || token.type != "name")
+                return `Expected a type, got ${tokenName}`;
+            else {
+                expected = "commaOrEnd";
+                if (!name)
+                    throw new Error(`impossible`);
+                args.set(name, { type: token.text, passMode });
+            }
+        }
+        else if (expected == "commaOrEnd") {
+            if (token && token.type != "punctuation.comma")
+                return `Expected a comma or end of arguments, got ${tokenName}`;
+            else
+                expected = "nameOrPassMode";
+        }
+        else
+            expected;
     }
     return args;
 }
