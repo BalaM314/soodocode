@@ -2,7 +2,7 @@ import type { ExpressionASTNode } from "./parser";
 
 export function displayExpression(node:ExpressionASTNode, expand = false, html = false):string {
 	if("type" in node){
-		return `${node.text}`;
+		return escapeHTML(node.text);
 	} else if(node.operator == "function call"){
 		const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html))})`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
@@ -51,4 +51,7 @@ export function crash(message:string):never {
 }
 export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
+}
+export function escapeHTML(input:string):string {
+	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }

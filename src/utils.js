@@ -1,6 +1,6 @@
 export function displayExpression(node, expand = false, html = false) {
     if ("type" in node) {
-        return `${node.text}`;
+        return escapeHTML(node.text);
     }
     else if (node.operator == "function call") {
         const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html))})`;
@@ -54,4 +54,7 @@ export function crash(message) {
 }
 export function impossible() {
     throw new Error(`this shouldn't be possible...`);
+}
+export function escapeHTML(input) {
+    return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }

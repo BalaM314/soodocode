@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { parseFunctionArguments } from "./parser.js";
-import { displayExpression, fail, crash } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
 export const statements = {
     startKeyword: {},
     byType: {},
@@ -52,7 +52,7 @@ export class Statement {
     }
     toString(html = false) {
         if (html) {
-            return this.tokens.map(t => "type" in t ? t.text : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
+            return this.tokens.map(t => "type" in t ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
         }
         else {
             return this.tokens.map(t => displayExpression(t, false)).join(" ");

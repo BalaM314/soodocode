@@ -4,7 +4,7 @@ import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import type { ExpressionASTNode, ProgramAST } from "./parser.js";
 import type { Statement } from "./statements.js";
-import { displayExpression, fail, crash, SoodocodeError } from "./utils.js";
+import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
@@ -194,7 +194,7 @@ dumpTokensButton.addEventListener("click", e => {
 		<tr> <th>Text</th> <th>Type</th> </tr>
 	</thead>
 	<tbody>
-		${symbols.map(t => `<tr><td>${t.text.replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+		${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 	</tbody>
 </table>
 <h3>Tokens</h3>
@@ -203,7 +203,7 @@ dumpTokensButton.addEventListener("click", e => {
 		<tr> <th>Text</th> <th>Type</th> </tr>
 	</thead>
 	<tbody>
-		${tokens.map(t => `<tr><td>${t.text.replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+		${tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 	</tbody>
 </table>
 <h3>Statements</h3>
