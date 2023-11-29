@@ -181,7 +181,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		dString: false,
 	}
 	let currentString = "";
-	for(var symbol of input){
+	for(var symbol of input){ //use of var is intentional
 		if(state.sComment){
 			if(symbol.type === "newline"){
 				state.sComment = false;
@@ -190,6 +190,8 @@ export function tokenize(input:Symbol[]):Token[] {
 		} else if(symbol.type === "comment.multiline_close"){
 			if(state.mComment) state.mComment = false;
 			else throw new Error(`Cannot close multiline comment, no open multiline comment`);
+		} else if(state.mComment){
+			//discard the symbol
 		} else if(state.sString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.single"){
