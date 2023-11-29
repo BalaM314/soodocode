@@ -66,13 +66,17 @@ export class Statement {
     example() {
         return this.type.example;
     }
+    /** Warning: block will not include the usual end statement. */
+    static supportsSplit(block, statement) {
+        return false;
+    }
 }
 Statement.tokens = null;
 function statement(type, example, ...args) {
     return function (input) {
         input.type = type;
         input.example = example;
-        if (args[0] == "block" || args[0] == "block_end") {
+        if (args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split") {
             input.category = args[0];
             args.shift();
         }
@@ -112,7 +116,31 @@ makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+
 makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
 makeStatement("input", "INPUT y", "keyword.input", "name");
 makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
-makeStatement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then");
+let IfStatement = (() => {
+    let _classDecorators = [statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var IfStatement = _classThis = class extends _classSuper {
+        /** Warning: block will not include the usual end statement. */
+        static supportsSplit(block, statement) {
+            return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
+            //If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
+        }
+    };
+    __setFunctionName(_classThis, "IfStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        IfStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return IfStatement = _classThis;
+})();
+export { IfStatement };
+makeStatement("else", "ELSE", "block_multi_split", "keyword.else");
 makeStatement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO "number": accept names also
 makeStatement("for.end", "NEXT i", "block_end", "keyword.for_end", "name");
 makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");

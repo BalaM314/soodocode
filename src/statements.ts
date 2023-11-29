@@ -1,17 +1,17 @@
 import type { TokenType, Token } from "./lexer.js";
-import { ExpressionAST, TokenMatcher, parseFunctionArguments } from "./parser.js";
+import { ExpressionAST, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
 import { displayExpression } from "./utils.js";
 
 
 export type StatementType =
 	"declaration" | "assignment" | "output" | "input" | "return" |
-	"if" | "if.end" |
+	"if" | "if.end" | "else" |
 	"for" | "for.end" |
 	"while" | "while.end" |
 	"dowhile" | "dowhile.end" |
 	"function" | "function.end" |
 	"procedure" | "procedure.end";
-export type StatementCategory = "normal" | "block" | "block_end";
+export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
 export const statements = {
 	startKeyword: {} as Partial<Record<TokenType, typeof Statement>>,
@@ -46,22 +46,26 @@ export class Statement {
 	example(){
 		return this.type.example;
 	}
+	/** Warning: block will not include the usual end statement. */
+	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
+		return false;
+	}
 }
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end", ...tokens:TokenMatcher[]):
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", endType:"auto", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...args:string[]){
 	return function (input:TClass):TClass {
 		input.type = type;
 		input.example = example;
-		if(args[0] == "block" || args[0] == "block_end"){
+		if(args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split"){
 			input.category = args[0];
 			args.shift();
 		} else {
@@ -91,8 +95,8 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 
 function makeStatement(type:StatementType, example:string, ...tokens:TokenMatcher[]):typeof Statement;
 function makeStatement(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, example:string, category:"block" | "block_end", ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, example:string, category:"block" | "block_end", endType:"auto", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", ...tokens:TokenMatcher[]):typeof Statement;
+function makeStatement(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", endType:"auto", ...tokens:TokenMatcher[]):typeof Statement;
 
 function makeStatement(type:StatementType, example:string, ...args:any[]):typeof Statement {
 	return statement(type, example, ...args)(class __temp extends Statement {});
@@ -105,7 +109,15 @@ makeStatement("input", "INPUT y", "keyword.input", "name");
 makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
 
 
-makeStatement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then");
+@statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
+export class IfStatement extends Statement {
+	/** Warning: block will not include the usual end statement. */
+	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
+		return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
+		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
+	}
+}
+makeStatement("else", "ELSE", "block_multi_split", "keyword.else");
 makeStatement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO "number": accept names also
 makeStatement("for.end", "NEXT i", "block_end", "keyword.for_end", "name");
 makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");

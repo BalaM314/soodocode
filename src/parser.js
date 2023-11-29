@@ -79,8 +79,17 @@ export function parse(tokens) {
             else
                 throw new Error(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
         }
+        else if (statement.category == "block_multi_split") {
+            const lastNode = blockStack.at(-1);
+            if (!lastNode)
+                throw new Error(`Invalid statement "${statement.toString()}": no open blocks`);
+            if (!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement))
+                throw new Error(`Invalid statement "${statement.toString()}": TODOERRORMESSAGE`);
+            lastNode.controlStatements.push(statement);
+            lastNode.nodeGroups.push([]);
+        }
         else
-            throw new Error("impossible");
+            statement.category;
     }
     if (blockStack.length)
         throw new Error(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`);
