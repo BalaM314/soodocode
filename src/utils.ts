@@ -4,7 +4,10 @@ export function displayExpression(node:ExpressionASTNode, expand = false, html =
 	if("type" in node){
 		return escapeHTML(node.text);
 	} else if(node.operator == "function call"){
-		const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html))})`;
+		const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")})`;
+		return html ? `<span class="expression-display-block">${text}</span>` : text;
+	} else if(node.operator == "array access"){
+		const text = `${node.operatorToken.text}[${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")}]`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
 	} else if(!node.operator.unary && (!expand || ("type" in node.nodes[0] && "type" in node.nodes[1]))){
 		//Not a unary operator and, argument says don't expand or all child nodes are leaf nodes.

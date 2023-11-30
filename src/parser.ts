@@ -9,7 +9,7 @@ export type ExpressionASTLeafNode = Token;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTTreeNode;
 export type ExpressionASTTreeNode = {
 	operatorToken: Token;
-	operator: Operator | "function call";
+	operator: Operator | "function call" | "array access";
 	nodes: ExpressionASTNode[];
 }
 
@@ -303,6 +303,21 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 					return parenNestLevel == 0 && t.type == "punctuation.comma";
 				})
 			).map(parseExpression)
+		};
+	}
+	
+	//Special case: array access
+	if(input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3){
+		let bracketNestLevel = 0; //Duped paren handling but [] this time, unavoidable
+		return {
+			operatorToken: input[0],
+			operator: "array access",
+			//Split the tokens between the parens on commas
+			nodes: splitArray(input.slice(2, -1), t => {
+				if(t.type == "bracket.open") bracketNestLevel ++;
+				else if(t.type == "bracket.close") bracketNestLevel --;
+				return bracketNestLevel == 0 && t.type == "punctuation.comma";
+			}).map(parseExpression)
 		};
 	}
 
