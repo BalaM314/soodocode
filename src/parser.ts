@@ -211,6 +211,8 @@ export const operatorsByPriority = ((input:(OperatorType | [type:OperatorType, "
 	["multiply", "divide", "integer_divide", "mod"],
 	//no exponentiation operator?
 	[["not", "unary"]],
+	//(function call)
+	//(array access)
 ]);
 /** Indexed by OperatorType */
 export const operators = Object.fromEntries(
@@ -297,7 +299,7 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 
 	//Special case: function call
 	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
-		let parenNestLevel = 0; //Duped paren handling, unavoidable
+		let parenNestLevel = 0, bracketNestLevel = 0; //Duped paren handling, unavoidable
 		return {
 			operatorToken: input[0],
 			operator: "function call",
@@ -307,7 +309,9 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 				: splitArray(input.slice(2, -1), t => {
 					if(t.type == "parentheses.open") parenNestLevel ++;
 					else if(t.type == "parentheses.close") parenNestLevel --;
-					return parenNestLevel == 0 && t.type == "punctuation.comma";
+					else if(t.type == "bracket.open") bracketNestLevel ++;
+					else if(t.type == "bracket.close") bracketNestLevel --;
+					return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
 				})
 			).map(parseExpression)
 		};
@@ -315,15 +319,17 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 	
 	//Special case: array access
 	if(input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3){
-		let bracketNestLevel = 0; //Duped paren handling but [] this time, unavoidable
+		let parenNestLevel = 0, bracketNestLevel = 0; //Duped paren handling but [] this time, unavoidable
 		return {
 			operatorToken: input[0],
 			operator: "array access",
 			//Split the tokens between the parens on commas
 			nodes: splitArray(input.slice(2, -1), t => {
-				if(t.type == "bracket.open") bracketNestLevel ++;
+				if(t.type == "parentheses.open") parenNestLevel ++;
+				else if(t.type == "parentheses.close") parenNestLevel --;
+				else if(t.type == "bracket.open") bracketNestLevel ++;
 				else if(t.type == "bracket.close") bracketNestLevel --;
-				return bracketNestLevel == 0 && t.type == "punctuation.comma";
+				return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
 			}).map(parseExpression)
 		};
 	}
