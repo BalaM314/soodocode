@@ -235,7 +235,7 @@ export function parseExpression(input) {
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     //TODO O(mn) unnecessarily, optimize
     for (const operatorsOfCurrentPriority of operatorsByPriority) {
-        let parenNestLevel = 0;
+        let parenNestLevel = 0, bracketNestLevel = 0;
         //Find the index of the last (lowest priority) operator of the current priority
         //Iterate through token list backwards
         for (let i = input.length - 1; i >= 0; i--) {
@@ -245,11 +245,18 @@ export function parseExpression(input) {
                 parenNestLevel++;
             else if (input[i].type == "parentheses.open")
                 parenNestLevel--;
+            else if (input[i].type == "bracket.close")
+                bracketNestLevel++;
+            else if (input[i].type == "bracket.open")
+                bracketNestLevel--;
             if (parenNestLevel < 0)
                 //nest level going below 0 means too many (, so unclosed parens
                 fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
+            if (bracketNestLevel < 0)
+                //nest level going below 0 means too many (, so unclosed parens
+                fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed square bracket`);
             let operator; //assignment assertion goes brrrrr
-            if (parenNestLevel == 0 && //the operator is not inside parentheses and
+            if (parenNestLevel == 0 && bracketNestLevel == 0 && //the operator is not inside parentheses and
                 operatorsOfCurrentPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
             ) {
                 //this is the lowest priority operator in the expression and should become the root node
@@ -282,13 +289,15 @@ export function parseExpression(input) {
                 }
             }
         }
-        //Nest level being above zero at the end of the string means too many )
+        //Nest level being above zero at the beginning of the string means too many )
         if (parenNestLevel != 0)
             fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
+        if (bracketNestLevel != 0)
+            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no bracket group to close`);
         //No operators of the current priority found, look for operator with the next level higher priority
     }
     //If the whole expression is surrounded by parentheses, parse the inner expression
-    //Must be after the main loop to avoid triggering on (2) + (2)
+    //Must be after the main loop to avoid triggering on ( 2)+(2 )
     //Possible optimization: allow this to run before the loop if token length is <= 4
     if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
         return parseExpression(input.slice(1, -1));
