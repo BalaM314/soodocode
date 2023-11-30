@@ -425,6 +425,211 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 		],
 		"error"
 	],
+	array1: [
+		[
+			{text: "amogus", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "1", type: "number.decimal"},
+			{text: "]", type: "bracket.close"},
+		],
+		{
+			operator: "array access",
+			operatorToken: {text: "amogus", type: "name"},
+			nodes: [
+				{text: "1", type: "number.decimal"},
+			]
+		}
+	],
+	array2: [
+		[
+			{text: "amogus", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "a", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "b", type: "name"},
+			{text: "]", type: "bracket.close"},
+		],
+		{
+			operator: "array access",
+			operatorToken: {text: "amogus", type: "name"},
+			nodes: [
+				{
+					operator: operators.add,
+					operatorToken: {text: "+", type: "operator.add"},
+					nodes: [
+						{text: "a", type: "name"},
+						{text: "b", type: "name"},
+					]
+				},
+			]
+		}
+	],
+	arraynested1: [
+		[
+			{text: "amogus", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "a", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "sussy", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "b", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "c", type: "name"},
+			{text: "]", type: "bracket.close"},
+			{text: "]", type: "bracket.close"},
+		],
+		{
+			operator: "array access",
+			operatorToken: {text: "amogus", type: "name"},
+			nodes: [
+				{
+					operator: operators.add,
+					operatorToken: {text: "+", type: "operator.add"},
+					nodes: [
+						{text: "a", type: "name"},
+						{
+							operator: "array access",
+							operatorToken: {text: "sussy", type: "name"},
+							nodes: [
+								{
+									operator: operators.add,
+									operatorToken: {text: "+", type: "operator.add"},
+									nodes: [
+										{text: "b", type: "name"},
+										{text: "c", type: "name"},
+									]
+								},
+							]
+						}
+					]
+				},
+			]
+		}
+	],
+	arrayfunction1: [
+		[
+			{text: "arr", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "a", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "amogus", type: "name"},
+			{text: "(", type: "parentheses.open"},
+			{text: "5", type: "number.decimal"},
+			{text: ",", type: "punctuation.comma"},
+			{text: "6", type: "number.decimal"},
+			{text: ")", type: "parentheses.close"},
+			{text: "]", type: "bracket.close"},
+		],
+		{
+			operator: "array access",
+			operatorToken: {text: "arr", type: "name"},
+			nodes: [
+				{
+					operator: operators.add,
+					operatorToken: {text: "+", type: "operator.add"},
+					nodes: [
+						{text: "a", type: "name"},
+						{
+							operator: "function call",
+							operatorToken: {text: "amogus", type: "name"},
+							nodes: [
+								{text: "5", type: "number.decimal"},
+								{text: "6", type: "number.decimal"},
+							]
+						}
+					]
+				},
+			]
+		}
+	],
+	arrayfunction2: [
+		[
+			{text: "amogus", type: "name"},
+			{text: "(", type: "parentheses.open"},
+			{text: "a", type: "name"},
+			{text: ",", type: "punctuation.comma"},
+			{text: "b", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "amogus", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "5", type: "number.decimal"},
+			{text: ",", type: "punctuation.comma"},
+			{text: "6", type: "number.decimal"},
+			{text: "]", type: "bracket.close"},
+			{text: ")", type: "parentheses.close"},
+		],
+		{
+			operator: "function call",
+			operatorToken: {text: "amogus", type: "name"},
+			nodes: [
+				{text: "a", type: "name"},
+				{
+					operator: operators.add,
+					operatorToken: {text: "+", type: "operator.add"},
+					nodes: [
+						{text: "b", type: "name"},
+						{
+							operator: "array access",
+							operatorToken: {text: "amogus", type: "name"},
+							nodes: [
+								{text: "5", type: "number.decimal"},
+								{text: "6", type: "number.decimal"},
+							]
+						}
+					]
+				},
+			]
+		}
+	],
+	arraybad1: [
+		[
+			{text: "amogus", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "]", type: "bracket.close"},
+		],
+		"error"
+	],
+	arraybad2: [
+		[
+			{text: "amogus", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "[", type: "bracket.open"},
+			{text: "]", type: "bracket.close"},
+			{text: "]", type: "bracket.close"},
+		],
+		"error"
+	],
+	arrayfunctionbad1: [
+		[
+			{text: "arr", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "a", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "amogus", type: "name"},
+			{text: "(", type: "parentheses.open"},
+			{text: "5", type: "number.decimal"},
+			{text: "6", type: "number.decimal"},
+			{text: ")", type: "parentheses.close"},
+			{text: "]", type: "bracket.close"},
+		],
+		"error"
+	],
+	arrayfunctionbad2: [
+		[
+			{text: "arr", type: "name"},
+			{text: "[", type: "bracket.open"},
+			{text: "a", type: "name"},
+			{text: "+", type: "operator.add"},
+			{text: "amogus", type: "name"},
+			{text: "(", type: "parentheses.open"},
+			{text: "5", type: "number.decimal"},
+			{text: ",", type: "punctuation.comma"},
+			{text: "6", type: "number.decimal"},
+			{text: "]", type: "bracket.close"},
+			{text: ")", type: "parentheses.close"},
+		],
+		"error"
+	],
 	SussyBaka: [
 		[	
 			{text: "(", type: "parentheses.open"},
