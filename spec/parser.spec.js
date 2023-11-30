@@ -107,6 +107,119 @@ const sampleExpressions = Object.entries({
             ]
         },
     ],
+    precedence3: [
+        [
+            { text: "(", type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { text: "*", type: "operator.multiply" },
+            { text: "y", type: "name" },
+            { text: ")", type: "parentheses.close" },
+            { text: "-", type: "operator.subtract" },
+            { text: "z", type: "name" },
+        ],
+        {
+            operator: operators.subtract,
+            operatorToken: { text: "-", type: "operator.subtract" },
+            nodes: [
+                {
+                    operator: operators.multiply,
+                    operatorToken: { text: "*", type: "operator.multiply" },
+                    nodes: [
+                        { text: "x", type: "name" },
+                        { text: "y", type: "name" },
+                    ]
+                },
+                { text: "z", type: "name" },
+            ]
+        },
+    ],
+    precedence4: [
+        [
+            { text: "x", type: "name" },
+            { text: "*", type: "operator.multiply" },
+            { text: "(", type: "parentheses.open" },
+            { text: "y", type: "name" },
+            { text: "-", type: "operator.subtract" },
+            { text: "z", type: "name" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        {
+            operator: operators.multiply,
+            operatorToken: { text: "*", type: "operator.multiply" },
+            nodes: [
+                { text: "x", type: "name" },
+                {
+                    operator: operators.subtract,
+                    operatorToken: { text: "-", type: "operator.subtract" },
+                    nodes: [
+                        { text: "y", type: "name" },
+                        { text: "z", type: "name" },
+                    ]
+                },
+            ]
+        },
+    ],
+    parenbug1: [
+        [
+            { text: "(", type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { text: ")", type: "parentheses.close" },
+            { text: "*", type: "operator.multiply" },
+            { text: "(", type: "parentheses.open" },
+            { text: "y", type: "name" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        {
+            operator: operators.multiply,
+            operatorToken: { text: "*", type: "operator.multiply" },
+            nodes: [
+                { text: "x", type: "name" },
+                { text: "y", type: "name" },
+            ]
+        },
+    ],
+    parenbad1: [
+        [
+            { text: "(", type: "parentheses.open" },
+        ],
+        "error"
+    ],
+    parenbad2: [
+        [
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
+    parenbad3: [
+        [
+            { text: "(", type: "parentheses.open" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
+    parenbad4: [
+        [
+            { text: ")", type: "parentheses.close" },
+            { text: "(", type: "parentheses.open" },
+        ],
+        "error"
+    ],
+    parenbad5: [
+        [
+            { text: "(", type: "parentheses.open" },
+            { text: "x", type: "name" },
+            { text: "*", type: "operator.multiply" },
+            { text: "(", type: "parentheses.open" },
+            { text: "y", type: "name" },
+            { text: ")", type: "parentheses.close" },
+            { text: "(", type: "parentheses.open" },
+            { text: "-", type: "operator.subtract" },
+            { text: "z", type: "name" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
     SussyBaka: [
         [
             { text: "(", type: "parentheses.open" },
