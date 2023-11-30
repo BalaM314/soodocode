@@ -227,7 +227,7 @@ export const operators = Object.fromEntries(operatorsByPriority.flat()
 export function parseExpression(input) {
     //If there is only one token
     if (input.length == 1) {
-        if (input[0].type == "number.decimal" || input[0].type == "name" || input[0].type == "string") //and it's a valid expression leaf node TODO genericify
+        if (input[0].type.startsWith("number.") || input[0].type == "name" || input[0].type == "string" || input[0].type.startsWith("boolean.")) //and it's a valid expression leaf node TODO genericify
             return input[0]; //nothing to parse, just return the token
         else
             fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);

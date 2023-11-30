@@ -28,7 +28,7 @@ export type TokenType =
 	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
 	"comment" |
 	"name" |
-	"keyword.true" | "keyword.false" |
+	"boolean.true" | "boolean.false" |
 	"keyword.declare" | "keyword.constant" | "keyword.output" | "keyword.input" | "keyword.call" |
 	"keyword.if" | "keyword.then" | "keyword.else" | "keyword.if_end" |
 	"keyword.for" | "keyword.to" | "keyword.for_end" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" |
@@ -219,8 +219,8 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`);
 		else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
-				case "TRUE": write("keyword.true"); break;
-				case "FALSE": write("keyword.false"); break;
+				case "TRUE": write("boolean.true"); break;
+				case "FALSE": write("boolean.false"); break;
 				case "DECLARE": write("keyword.declare"); break;
 				case "CONSTANT": write("keyword.constant"); break;
 				case "OUTPUT": write("keyword.output"); break;

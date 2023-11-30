@@ -186,10 +186,10 @@ export function tokenize(input) {
         else if (symbol.type === "word") {
             switch (symbol.text) { //TODO datastructify
                 case "TRUE":
-                    write("keyword.true");
+                    write("boolean.true");
                     break;
                 case "FALSE":
-                    write("keyword.false");
+                    write("boolean.false");
                     break;
                 case "DECLARE":
                     write("keyword.declare");
