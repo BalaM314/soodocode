@@ -220,6 +220,204 @@ const sampleExpressions = Object.entries({
         ],
         "error"
     ],
+    functioncall1: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        {
+            operator: "function call",
+            operatorToken: { text: "amogus", type: "name" },
+            nodes: []
+        }
+    ],
+    functioncall2: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "5", type: "number.decimal" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        {
+            operator: "function call",
+            operatorToken: { text: "amogus", type: "name" },
+            nodes: [
+                { text: "5", type: "number.decimal" },
+            ]
+        }
+    ],
+    functioncall3: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "5", type: "number.decimal" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "6", type: "number.decimal" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "TRUE", type: "boolean.true" },
+            { text: ",", type: "punctuation.comma" },
+            { text: `"sussy"`, type: "string" },
+            { text: "&", type: "operator.string_concatenate" },
+            { text: `"amogus"`, type: "string" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "0", type: "number.decimal" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        {
+            operator: "function call",
+            operatorToken: { text: "amogus", type: "name" },
+            nodes: [
+                { text: "5", type: "number.decimal" },
+                { text: "6", type: "number.decimal" },
+                { text: "TRUE", type: "boolean.true" },
+                {
+                    operator: operators.string_concatenate,
+                    operatorToken: { text: "&", type: "operator.string_concatenate" },
+                    nodes: [
+                        { text: `"sussy"`, type: "string" },
+                        { text: `"amogus"`, type: "string" },
+                    ]
+                },
+                { text: "0", type: "number.decimal" },
+            ]
+        }
+    ],
+    functioncallnested: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "5", type: "number.decimal" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "6", type: "number.decimal" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "sussy", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ")", type: "parentheses.close" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "baka", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "sussy", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ",", type: "punctuation.comma" },
+            { text: `"sussy"`, type: "string" },
+            { text: "&", type: "operator.string_concatenate" },
+            { text: `"amogus"`, type: "string" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "0", type: "number.decimal" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        {
+            operator: "function call",
+            operatorToken: { text: "amogus", type: "name" },
+            nodes: [
+                { text: "5", type: "number.decimal" },
+                { text: "6", type: "number.decimal" },
+                {
+                    operator: "function call",
+                    operatorToken: { text: "sussy", type: "name" },
+                    nodes: []
+                },
+                {
+                    operator: "function call",
+                    operatorToken: { text: "baka", type: "name" },
+                    nodes: [
+                        {
+                            operator: "function call",
+                            operatorToken: { text: "sussy", type: "name" },
+                            nodes: []
+                        },
+                    ]
+                },
+                {
+                    operator: operators.string_concatenate,
+                    operatorToken: { text: "&", type: "operator.string_concatenate" },
+                    nodes: [
+                        { text: `"sussy"`, type: "string" },
+                        { text: `"amogus"`, type: "string" },
+                    ]
+                },
+                { text: "0", type: "number.decimal" },
+            ]
+        }
+    ],
+    functioncallbad1: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+        ],
+        "error"
+    ],
+    functioncallbad2: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ",", type: "punctuation.comma" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
+    functioncallbad3: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "baka", type: "name" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
+    functioncallbad4: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "baka", type: "name" },
+            { text: "baka", type: "name" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
+    functioncallbad5: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "baka", type: "name" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "baka", type: "name" },
+            { text: ",", type: "punctuation.comma" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
+    functioncallbad6: [
+        [
+            { text: "amogus", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "5", type: "number.decimal" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "6", type: "number.decimal" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "sussy", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ")", type: "parentheses.close" },
+            { text: "baka", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: "sussy", type: "name" },
+            { text: "(", type: "parentheses.open" },
+            { text: ")", type: "parentheses.close" },
+            { text: ")", type: "parentheses.close" },
+            { text: ",", type: "punctuation.comma" },
+            { text: `"sussy"`, type: "string" },
+            { text: "&", type: "operator.string_concatenate" },
+            { text: `"amogus"`, type: "string" },
+            { text: ",", type: "punctuation.comma" },
+            { text: "0", type: "number.decimal" },
+            { text: ")", type: "parentheses.close" },
+        ],
+        "error"
+    ],
     SussyBaka: [
         [
             { text: "(", type: "parentheses.open" },

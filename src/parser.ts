@@ -207,7 +207,7 @@ export const operatorsByPriority = ((input:(OperatorType | [type:OperatorType, "
 	["and"],
 	["equal_to", "not_equal_to"],
 	["less_than", "less_than_equal", "greater_than", "greater_than_equal"],
-	["add", "subtract"],
+	["add", "subtract", "string_concatenate"],
 	["multiply", "divide", "integer_divide", "mod"],
 	//no exponentiation operator?
 	[["not", "unary"]],
