@@ -97,3 +97,11 @@ td, th {
 .expression-container {
 	border: 1px solid #0FF8;
 }
+
+.display-scroller {
+	max-height: 600px;
+	width: fit-content;
+	overflow-y: scroll;
+	border-top: 5px solid gray;
+	border-bottom: 5px solid gray;
+}

@@ -192,24 +192,28 @@ dumpTokensButton.addEventListener("click", e => {
 		const tokens = lexer.tokenize(symbols);
 		const program = parser.parse(tokens);
 		outputDiv.innerHTML = `\
-<h3>Symbols</h3>
+<h3>Symbols</h3>\
+<div class="display-scroller">
 <table>
-	<thead>
-		<tr> <th>Text</th> <th>Type</th> </tr>
-	</thead>
-	<tbody>
-		${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
-	</tbody>
+<thead>
+<tr> <th>Text</th> <th>Type</th> </tr>
+</thead>
+<tbody>
+${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+</tbody>
 </table>
-<h3>Tokens</h3>
+</div>
+<h3>Tokens</h3>\
+<div class="display-scroller">
 <table>
-	<thead>
-		<tr> <th>Text</th> <th>Type</th> </tr>
-	</thead>
-	<tbody>
-		${tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
-	</tbody>
+<thead>
+<tr> <th>Text</th> <th>Type</th> </tr>
+</thead>
+<tbody>
+${tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+</tbody>
 </table>
+</div>
 <h3>Statements</h3>
 ${displayProgram(program)}`
 		;
