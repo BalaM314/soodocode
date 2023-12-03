@@ -79,16 +79,21 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 				class __endStatement extends Statement {}
 			);
 		}
-		if(args.length < 1) crash(`All statements must contain at least one token`);
+		//validate args
+		if(args.length < 1) crash(`Invalid statement definitions! All statements must contain at least one token`);
+		if(args.find((v, i, args) => 
+			(v == "expr+" || v == ".+" || v == ".*") &&
+			(args[i+1] == "expr+" || args[i+1] == ".+" || args[i+1] == ".*")
+		)) crash(`Invalid statement definitions! Variadic fragment specifiers cannot be adjacent.`);
 		if(args[0] == "#"){
 			statements.irregular.push(input);
 		} else {
 			const firstToken = args[0] as TokenType;
 			if(statements.startKeyword[firstToken])
-				crash(`Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
+				crash(`Invalid statement definitions! Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
 			statements.startKeyword[firstToken] = input;
 		}
-		if(statements.byType[type]) crash(`Statement for type ${type} already registered`);
+		if(statements.byType[type]) crash(`Invalid statement definitions! Statement for type ${type} already registered`);
 		statements.byType[type] = input;
 		input.tokens = args as TokenMatcher[];
 		return input;
