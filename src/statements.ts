@@ -105,6 +105,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 @statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")
 export class DeclarationStatement extends Statement {
 	variables:string[] = [];
+	varType:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		let expected = "name" as "name" | "comma";
@@ -120,32 +121,75 @@ export class DeclarationStatement extends Statement {
 			}
 		}
 		if(expected == "name") fail(`Expected name, found ":" (punctuation.colon)`);
+		this.varType = tokens.at(-1)!.text;
+	}
+	run(runtime:Runtime){
+		for(const variable of this.variables){
+			if(variable in runtime.variables) fail(`Variable ${variable} is already defined`);
+			runtime.variables[variable] = {
+				type: this.varType,
+				value: null,
+				declaration: this,
+				mutable: true,
+			};
+		}
 	}
 }
-@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+") //the equal_to operator is used in this statement, idk why
+@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "expr+") //the equal_to operator is used in this statement, idk why
 export class ConstantStatement extends Statement {
-
+	name: string;
+	expr: ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		let [constant, name, equals, expr] = tokens as [Token, Token, Token, ExpressionAST];
+		this.name = name.text;
+		this.expr = expr;
+	}
 }
 @statement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
-	
+	name: string;
+	expr: ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		let [name, assign, expr] = tokens as [Token, Token, ExpressionAST];
+		this.name = name.text;
+		this.expr = expr;
+	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
-	
+	outMessage: (Token | ExpressionAST)[];
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.outMessage = tokens.slice(1);
+	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")
 export class InputStatement extends Statement {
-	
+	name:string;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.name = (tokens[1] as Token).text;
+	}
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
-	
+	expr:ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.expr = tokens[1];
+	}
 }
 
 
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
+	condition:ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.condition = tokens[1];
+	}
 	/** Warning: block will not include the usual end statement. */
 	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
 		return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
@@ -153,28 +197,44 @@ export class IfStatement extends Statement {
 	}
 }
 @statement("else", "ELSE", "block_multi_split", "keyword.else")
-export class ElseStatement extends Statement {
-	
-}
+export class ElseStatement extends Statement {}
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal") //TODO "number": accept names also
 export class ForStatement extends Statement {
-	
+	name:string;
+	lowerBound:ExpressionAST;
+	upperBound:ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.name = (tokens[1] as Token).text;
+		this.lowerBound = tokens[3];
+		this.upperBound = tokens[5];
+	}	
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
 export class ForEndStatement extends Statement {
-	
+	name:string;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.name = (tokens[1] as Token).text;
+	}
 }
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
-	
+	condition:ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.condition = tokens[1];
+	}	
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
-export class DoWhileStatement extends Statement {
-	
-}
+export class DoWhileStatement extends Statement {}
 @statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
 export class DoWhileEndStatement extends Statement {
-	
+	condition:ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.condition = tokens[1];
+	}
 }
 
 @statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")

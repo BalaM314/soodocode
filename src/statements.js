@@ -141,6 +141,19 @@ let DeclarationStatement = (() => {
             }
             if (expected == "name")
                 fail(`Expected name, found ":" (punctuation.colon)`);
+            this.varType = tokens.at(-1).text;
+        }
+        run(runtime) {
+            for (const variable of this.variables) {
+                if (variable in runtime.variables)
+                    fail(`Variable ${variable} is already defined`);
+                runtime.variables[variable] = {
+                    type: this.varType,
+                    value: null,
+                    declaration: this,
+                    mutable: true,
+                };
+            }
         }
     };
     __setFunctionName(_classThis, "DeclarationStatement");
@@ -155,12 +168,18 @@ let DeclarationStatement = (() => {
 })();
 export { DeclarationStatement };
 let ConstantStatement = (() => {
-    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+")];
+    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
     var ConstantStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            let [constant, name, equals, expr] = tokens;
+            this.name = name.text;
+            this.expr = expr;
+        }
     };
     __setFunctionName(_classThis, "ConstantStatement");
     (() => {
@@ -180,6 +199,12 @@ let AssignmentStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var AssignmentStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            let [name, assign, expr] = tokens;
+            this.name = name.text;
+            this.expr = expr;
+        }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
     (() => {
@@ -199,6 +224,10 @@ let OutputStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var OutputStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.outMessage = tokens.slice(1);
+        }
     };
     __setFunctionName(_classThis, "OutputStatement");
     (() => {
@@ -218,6 +247,10 @@ let InputStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var InputStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1].text;
+        }
     };
     __setFunctionName(_classThis, "InputStatement");
     (() => {
@@ -237,6 +270,10 @@ let ReturnStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ReturnStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.expr = tokens[1];
+        }
     };
     __setFunctionName(_classThis, "ReturnStatement");
     (() => {
@@ -256,6 +293,10 @@ let IfStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var IfStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.condition = tokens[1];
+        }
         /** Warning: block will not include the usual end statement. */
         static supportsSplit(block, statement) {
             return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
@@ -299,6 +340,12 @@ let ForStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ForStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1].text;
+            this.lowerBound = tokens[3];
+            this.upperBound = tokens[5];
+        }
     };
     __setFunctionName(_classThis, "ForStatement");
     (() => {
@@ -318,6 +365,10 @@ let ForEndStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ForEndStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1].text;
+        }
     };
     __setFunctionName(_classThis, "ForEndStatement");
     (() => {
@@ -337,6 +388,10 @@ let WhileStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var WhileStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.condition = tokens[1];
+        }
     };
     __setFunctionName(_classThis, "WhileStatement");
     (() => {
@@ -375,6 +430,10 @@ let DoWhileEndStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var DoWhileEndStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.condition = tokens[1];
+        }
     };
     __setFunctionName(_classThis, "DoWhileEndStatement");
     (() => {
