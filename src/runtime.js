@@ -1,3 +1,5 @@
+import { operators } from "./parser.js";
+import { ProcedureStatement } from "./statements.js";
 import { crash } from "./utils.js";
 import { fail } from "./utils.js";
 export class Runtime {
@@ -12,7 +14,14 @@ export class Runtime {
     evaluateExpr(expr) {
         if ("operator" in expr) {
             switch (expr.operator) {
-                default: crash("TODO parse expressions with operators");
+                case "array access": crash(`Arrays are not yet supported`);
+                case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true);
+                case operators.add: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") + this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+                case operators.subtract: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") - this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+                case operators.multiply: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") * this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+                case operators.divide: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") / this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+                case operators.mod: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") % this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+                default: crash("Not yet implemented"); //TODO
             }
         }
         else {
@@ -29,6 +38,35 @@ export class Runtime {
                     return this.variables[expr.text].value;
                 default: fail(`Cannot evaluate token of type ${expr.type}`);
             }
+        }
+    }
+    evaluateExprTyped(expr, type) {
+        const result = this.evaluateExpr(expr);
+        switch (type) {
+            //note: I am unable to think of a way to avoid using "as any" in this function impl
+            case "INTEGER":
+                if (typeof result == "number")
+                    return result;
+                else
+                    fail(`Cannot convert expression to number`);
+            default:
+                crash(`not yet implemented`); //TODO
+        }
+    }
+    callFunction(name, args, requireReturnValue = false) {
+        const func = this.functions[name];
+        if (!name)
+            fail(`Unknown function ${name}`);
+        if (func.controlStatements[0] instanceof ProcedureStatement) {
+            if (requireReturnValue)
+                fail(`Cannot use return value of ${name}() as it is a procedure`);
+            //TODO scope?
+            this.runBlock([func]);
+            return null;
+        }
+        else { //must be functionstatement
+            this.runBlock([func]);
+            return crash(`Executing functions is not yet implemented`);
         }
     }
     runBlock(code) {

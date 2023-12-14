@@ -1,4 +1,4 @@
-import type { Runtime } from "./runtime.js";
+import type { Runtime, VariableType } from "./runtime.js";
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
@@ -127,7 +127,7 @@ export class DeclarationStatement extends Statement {
 		for(const variable of this.variables){
 			if(variable in runtime.variables) fail(`Variable ${variable} was already declared`);
 			runtime.variables[variable] = {
-				type: this.varType,
+				type: this.varType as VariableType,
 				value: null,
 				declaration: this,
 				mutable: true,

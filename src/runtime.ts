@@ -1,5 +1,5 @@
-import type { ExpressionAST, ExpressionASTTreeNode, ProgramAST } from "./parser.js";
-import type { ConstantStatement, DeclarationStatement } from "./statements.js";
+import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode } from "./parser.js";
+import { ProcedureStatement, type ConstantStatement, type DeclarationStatement } from "./statements.js";
 import { crash } from "./utils.js";
 import { fail } from "./utils.js";
 
@@ -17,10 +17,8 @@ interface VariableData { //TODO mapped type
 	declaration: DeclarationStatement;
 	mutable: true;
 }
-interface FunctionData {
-	type: VariableType;
-	value: ExpressionASTTreeNode;
-}
+type FunctionData = /* Must be a function or procedure */ ProgramASTTreeNode;
+
 interface ConstantData {
 	type: VariableType;
 	value: VariableValueType;
@@ -40,7 +38,14 @@ export class Runtime {
 	evaluateExpr(expr:ExpressionAST):VariableValueType {
 		if("operator" in expr){
 			switch(expr.operator){
-				default: crash("TODO parse expressions with operators");
+				case "array access": crash(`Arrays are not yet supported`);
+				case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true);
+				case operators.add: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") + this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+				case operators.subtract: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") - this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+				case operators.multiply: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") * this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+				case operators.divide: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") / this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+				case operators.mod: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") % this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
+				default: crash("Not yet implemented"); //TODO
 			}
 		} else {
 			switch(expr.type){
@@ -56,6 +61,32 @@ export class Runtime {
 			}
 		}
 	}
+	evaluateExprTyped<T extends VariableType>(expr:ExpressionAST, type:T):VariableTypeMapping[T] {
+		const result = this.evaluateExpr(expr);
+		switch(type){
+			//note: I am unable to think of a way to avoid using "as any" in this function impl
+			case "INTEGER":
+				if(typeof result == "number") return result as any;
+				else fail(`Cannot convert expression to number`);
+			default:
+				crash(`not yet implemented`);//TODO
+		}
+	}
+	callFunction(name:string, args:ExpressionAST[]):VariableValueType | null;
+	callFunction(name:string, args:ExpressionAST[], requireReturnValue:true):VariableValueType;
+	callFunction(name:string, args:ExpressionAST[], requireReturnValue = false):VariableValueType | null {
+		const func = this.functions[name];
+		if(!name) fail(`Unknown function ${name}`);
+		if(func.controlStatements[0] instanceof ProcedureStatement){
+			if(requireReturnValue) fail(`Cannot use return value of ${name}() as it is a procedure`);
+			//TODO scope?
+			this.runBlock([func]);
+			return null;
+		} else { //must be functionstatement
+			this.runBlock([func]);
+			return crash(`Executing functions is not yet implemented`);
+		}
+	}
 	runBlock(code:ProgramAST){
 		for(const line of code){
 			if("nodeGroups" in line){
@@ -68,10 +99,9 @@ export class Runtime {
 }
 
 
-type VariableType = "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE" | string;
 
 /**Stores the JS type used for each pseudocode variable type */
-interface VariableTypeMapping {
+export type VariableTypeMapping = {
 	"INTEGER": number;
 	"REAL": number;
 	"STRING": string;
@@ -80,6 +110,7 @@ interface VariableTypeMapping {
 	"DATE": Date;
 }
 
+export type VariableType = keyof VariableTypeMapping /* | string*/;
 export type VariableValueType = VariableTypeMapping[keyof VariableTypeMapping];
 
 type FileMode = "READ" | "WRITE" | "APPEND";
