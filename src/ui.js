@@ -2,6 +2,7 @@ import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
+import * as runtime from "./runtime.js";
 import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
@@ -221,6 +222,6 @@ ${displayProgram(program)}`;
     }
 });
 function dumpFunctionsToGlobalScope() {
-    Object.assign(window, lexer, parser, statements, utils);
+    Object.assign(window, lexer, parser, statements, utils, runtime);
 }
 dumpFunctionsToGlobalScope();

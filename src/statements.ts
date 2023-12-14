@@ -197,8 +197,21 @@ export class InputStatement extends Statement {
 		this.name = (tokens[1] as Token).text;
 	}
 	run(runtime:Runtime){
-		if(!(this.name in runtime.variables)) fail(`Undeclared variable ${this.name}`);
-		runtime.variables[this.name].value = runtime._input(); //TODO type coerce
+		const variable = runtime.variables[this.name];
+		if(!variable) fail(`Undeclared variable ${this.name}`);
+		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`);
+		const input = runtime._input(); //TODO allow specifying the type, and make the _input() function handle coercion and invalid input
+		switch(variable.type){
+			case "BOOLEAN":
+				variable.value = input.toLowerCase() != "false"; break;
+			case "INTEGER": //TODO handle reals
+				const value = Number(input);
+				if(isNaN(value)) fail(`input was an invalid number`)
+				variable.value = value;
+				break;
+			default:
+				crash(`not yet implemented`); //TODO
+		}
 	}
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")

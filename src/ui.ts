@@ -2,6 +2,7 @@ import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
+import * as runtime from "./runtime.js";
 import type { ExpressionASTNode, ProgramAST } from "./parser.js";
 import type { Statement } from "./statements.js";
 import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
@@ -229,7 +230,8 @@ ${displayProgram(program)}`
 });
 
 function dumpFunctionsToGlobalScope(){
-	Object.assign(window, lexer, parser, statements, utils);
+	Object.assign(window,
+		lexer, parser, statements, utils, runtime);
 }
 
 dumpFunctionsToGlobalScope();
