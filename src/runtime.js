@@ -1,16 +1,24 @@
+import { crash } from "./utils.js";
 export class Runtime {
-    constructor(code, _input, _output) {
-        this.code = code;
+    constructor(_input, _output) {
         this._input = _input;
         this._output = _output;
         this.variables = {};
         this.functions = {};
         this.types = {};
         this.files = {};
-        /** program counter, points to the currently executing (or just executed) instruction */
-        this.pc = [];
     }
-    tick() {
-        //??????????????????
+    evaluateExpr(expr) {
+        crash(`TODO`);
+    }
+    runBlock(code) {
+        for (const line of code) {
+            if ("nodeGroups" in line) {
+                crash(`TODO`);
+            }
+            else {
+                line.run(this);
+            }
+        }
     }
 }

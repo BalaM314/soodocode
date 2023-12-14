@@ -1,5 +1,6 @@
-import type { ProgramAST } from "./parser.js";
+import type { ExpressionAST, ExpressionASTTreeNode, ProgramAST } from "./parser.js";
 import type { ConstantStatement, DeclarationStatement } from "./statements.js";
+import { crash } from "./utils.js";
 
 interface FileData {
 	name: string;
@@ -11,19 +12,17 @@ interface FileData {
 interface VariableData {
 	type: VariableType;
 	/** Null indicates that the variable has not been initialized */
-	value: VariableTypeMapping[keyof VariableTypeMapping] | null;
+	value: VariableValueType | null;
 	declaration: DeclarationStatement;
 	mutable: true;
 }
 interface FunctionData {
 	type: VariableType;
-	/** Null indicates that the variable has not been initialized */
-	value: VariableTypeMapping[keyof VariableTypeMapping] | null;
-	declaration: DeclarationStatement;
+	value: ExpressionASTTreeNode;
 }
 interface ConstantData {
 	type: VariableType;
-	value: VariableTypeMapping[keyof VariableTypeMapping];
+	value: VariableValueType;
 	declaration: ConstantStatement;
 	mutable: false;
 }
@@ -33,15 +32,21 @@ export class Runtime {
 	functions: Record<string, FunctionData> = {};
 	types: Record<string, VariableData> = {};
 	files: Record<string, FileData> = {};
-	/** program counter, points to the currently executing (or just executed) instruction */
-	pc:number[] = [];
 	constructor(
-		public code:ProgramAST,
 		public _input: () => string,
 		public _output: (message:string) => void,
 	){}
-	tick(){
-		//??????????????????
+	evaluateExpr(expr:ExpressionAST):VariableValueType {
+		crash(`TODO`);
+	}
+	runBlock(code:ProgramAST){
+		for(const line of code){
+			if("nodeGroups" in line){
+				crash(`TODO`);
+			} else {
+				line.run(this);
+			}
+		}
 	}
 }
 
@@ -57,5 +62,7 @@ interface VariableTypeMapping {
 	"BOOLEAN": boolean;
 	"DATE": Date;
 }
+
+export type VariableValueType = VariableTypeMapping[keyof VariableTypeMapping];
 
 type FileMode = "READ" | "WRITE" | "APPEND";
