@@ -1,7 +1,7 @@
 import "jasmine";
 import type { Token } from "../src/lexer.js";
 import { ProgramAST, parse, parseFunctionArguments, parseStatement, operators, ExpressionAST, parseExpression } from "../src/parser.js";
-import { FunctionArguments, Statement, statements } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, FunctionArguments, IfStatement, InputStatement, OutputStatement, ProcedureStatement, Statement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -816,7 +816,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		],
-		new statements.byType["output"]([
+		new OutputStatement([
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		])
@@ -826,7 +826,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "INPUT", type: "keyword.input"},
 			{text: `amogus`, type: "name"},
 		],
-		new statements.byType["input"]([
+		new InputStatement([
 			{text: "INPUT", type: "keyword.input"},
 			{text: `amogus`, type: "name"},
 		])
@@ -838,7 +838,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: ":", type: "punctuation.colon"},
 			{text: "NUMBER", type: "name"},
 		],
-		new statements.byType["declaration"]([
+		new DeclarationStatement([
 			{text: "DECLARE", type: "keyword.declare"},
 			{text: "amogus", type: "name"},
 			{text: ":", type: "punctuation.colon"},
@@ -854,7 +854,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: ":", type: "punctuation.colon"},
 			{text: "NUMBER", type: "name"},
 		],
-		new statements.byType["declaration"]([
+		new DeclarationStatement([
 			{text: "DECLARE", type: "keyword.declare"},
 			{text: "amogus", type: "name"},
 			{text: ",", type: "punctuation.comma"},
@@ -897,7 +897,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `<-`, type: "operator.assignment"},
 			{text: "31415", type: "number.decimal"},
 		],
-		new statements.byType["assignment"]([
+		new AssignmentStatement([
 			{text: "amogus", type: "name"},
 			{text: `<-`, type: "operator.assignment"},
 			{text: "31415", type: "number.decimal"},
@@ -911,7 +911,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "x", type: "name"},
 			{text: "THEN", type: "keyword.then"},
 		],
-		new statements.byType["if"]([
+		new IfStatement([
 			{text: "IF", type: "keyword.if"},
 			{
 				operatorToken: {text: `<`, type: "operator.less_than"},
@@ -931,7 +931,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `<`, type: "operator.less_than"},
 			{text: "x", type: "name"},
 		],
-		new statements.byType["dowhile.end"]([
+		new DoWhileEndStatement([
 			{text: "UNTIL", type: "keyword.dowhile_end"},
 			{
 				operatorToken: {text: `<`, type: "operator.less_than"},
@@ -949,7 +949,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `NOT`, type: "operator.not"},
 			{text: "x", type: "name"},
 		],
-		new statements.byType["dowhile.end"]([
+		new DoWhileEndStatement([
 			{text: "UNTIL", type: "keyword.dowhile_end"},
 			{
 				operatorToken: {text: `NOT`, type: "operator.not"},
@@ -967,7 +967,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: `(`, type: "parentheses.open"},
 			{text: `)`, type: "parentheses.close"},
 		],
-		new statements.byType["procedure"]([
+		new ProcedureStatement([
 			{text: "PROCEDURE", type: "keyword.procedure"},
 			{text: "func", type: "name"},
 			{text: `(`, type: "parentheses.open"},
@@ -984,7 +984,7 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			{text: "INTEGER", type: "name"},
 			{text: `)`, type: "parentheses.close"},
 		],
-		new statements.byType["procedure"]([
+		new ProcedureStatement([
 			{text: "PROCEDURE", type: "keyword.procedure"},
 			{text: "func", type: "name"},
 			{text: `(`, type: "parentheses.open"},
@@ -1121,7 +1121,7 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: `"amogus"`, type: "string"},
 			{text: "\n", type: "newline"},
 		],
-		[new statements.byType["output"]([
+		[new OutputStatement([
 			{text: "OUTPUT", type: "keyword.output"},
 			{text: `"amogus"`, type: "string"},
 		])]
@@ -1144,21 +1144,21 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "31415", type: "number.decimal"},
 		],
 		[
-			new statements.byType["output"]([
+			new OutputStatement([
 				{text: "OUTPUT", type: "keyword.output"},
 				{text: `"amogus"`, type: "string"},
 			]),
-			new statements.byType["input"]([
+			new InputStatement([
 				{text: "INPUT", type: "keyword.input"},
 				{text: `amogus`, type: "name"},
 			]),
-			new statements.byType["declaration"]([
+			new DeclarationStatement([
 				{text: "DECLARE", type: "keyword.declare"},
 				{text: "amogus", type: "name"},
 				{text: ":", type: "punctuation.colon"},
 				{text: "NUMBER", type: "name"},
 			]),
-			new statements.byType["assignment"]([
+			new AssignmentStatement([
 				{text: "amogus", type: "name"},
 				{text: `<-`, type: "operator.assignment"},
 				{text: "31415", type: "number.decimal"},
@@ -1182,14 +1182,14 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "ENDIF", type: "keyword.if_end"},
 		],
 		[
-			new statements.byType["input"]([
+			new InputStatement([
 				{text: "INPUT", type: "keyword.input"},
 				{text: `x`, type: "name"},
 			]),
 			{
 				type: "if",
 				controlStatements: [
-					new statements.byType["if"]([
+					new IfStatement([
 						{text: "IF", type: "keyword.if"},
 						{
 							operatorToken: {text: `<`, type: "operator.less_than"},
@@ -1206,7 +1206,7 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 					])
 				],
 				nodeGroups: [[
-					new statements.byType["output"]([
+					new OutputStatement([
 						{text: "OUTPUT", type: "keyword.output"},
 						{text: `"amogus"`, type: "string"},
 					]),
@@ -1242,14 +1242,14 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 			{text: "ENDIF", type: "keyword.if_end"},
 		],
 		[
-			new statements.byType["input"]([
+			new InputStatement([
 				{text: "INPUT", type: "keyword.input"},
 				{text: `x`, type: "name"},
 			]),
 			{
 				type: "if",
 				controlStatements: [
-					new statements.byType["if"]([
+					new IfStatement([
 						{text: "IF", type: "keyword.if"},
 						{
 							operatorToken: {text: `<`, type: "operator.less_than"},
@@ -1266,14 +1266,14 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 					]),
 				],
 				nodeGroups: [[
-					new statements.byType["output"]([
+					new OutputStatement([
 						{text: "OUTPUT", type: "keyword.output"},
 						{text: `"X is less than 5"`, type: "string"},
 					]),
 					{
 						type: "if",
 						controlStatements: [
-							new statements.byType["if"]([
+							new IfStatement([
 								{text: "IF", type: "keyword.if"},
 								{
 									operatorToken: {text: `<`, type: "operator.less_than"},
@@ -1290,7 +1290,7 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 							])
 						],
 						nodeGroups: [[
-							new statements.byType["output"]([
+							new OutputStatement([
 								{text: "OUTPUT", type: "keyword.output"},
 								{text: `"X is also less than 2"`, type: "string"},
 							]),
