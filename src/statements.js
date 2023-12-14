@@ -146,7 +146,7 @@ let DeclarationStatement = (() => {
         run(runtime) {
             for (const variable of this.variables) {
                 if (variable in runtime.variables)
-                    fail(`Variable ${variable} is already defined`);
+                    fail(`Variable ${variable} was already declared`);
                 runtime.variables[variable] = {
                     type: this.varType,
                     value: null,
@@ -180,6 +180,16 @@ let ConstantStatement = (() => {
             this.name = name.text;
             this.expr = expr;
         }
+        run(runtime) {
+            if (this.name in runtime.variables)
+                fail(`Constant ${this.name} was already declared`);
+            runtime.variables[this.name] = {
+                type: "INTEGER",
+                value: runtime.evaluateExpr(this.expr),
+                declaration: this,
+                mutable: false,
+            };
+        }
     };
     __setFunctionName(_classThis, "ConstantStatement");
     (() => {
@@ -205,6 +215,11 @@ let AssignmentStatement = (() => {
             this.name = name.text;
             this.expr = expr;
         }
+        run(runtime) {
+            if (!(this.name in runtime.variables))
+                fail(`Undeclared variable ${this.name}`);
+            runtime.variables[this.name].value = runtime.evaluateExpr(this.expr); //TODO typecheck
+        }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
     (() => {
@@ -227,6 +242,17 @@ let OutputStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.outMessage = tokens.slice(1);
+            //TODO:
+            //validate, must be (string | name | number)s separated by ,
+            //should not include the commas
+        }
+        run(runtime) {
+            let outStr = "";
+            for (const token of this.outMessage) {
+                const expr = runtime.evaluateExpr(token);
+                outStr += expr;
+            }
+            runtime._output(outStr);
         }
     };
     __setFunctionName(_classThis, "OutputStatement");
@@ -251,6 +277,11 @@ let InputStatement = (() => {
             super(tokens);
             this.name = tokens[1].text;
         }
+        run(runtime) {
+            if (!(this.name in runtime.variables))
+                fail(`Undeclared variable ${this.name}`);
+            runtime.variables[this.name].value = runtime._input(); //TODO type coerce
+        }
     };
     __setFunctionName(_classThis, "InputStatement");
     (() => {
@@ -273,6 +304,9 @@ let ReturnStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.expr = tokens[1];
+        }
+        run(runtime) {
+            crash(`TODO Not yet implemented`);
         }
     };
     __setFunctionName(_classThis, "ReturnStatement");

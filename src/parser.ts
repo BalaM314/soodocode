@@ -147,7 +147,6 @@ export function parseStatement(tokens:Token[]):Statement {
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
- * @returns 
  */
 export function checkStatement(statement:typeof Statement, input:Token[]):{message:string; priority:number} | (Token | {start:number; end:number})[] {
 	//warning: despite writing it, I do not fully understand this code
@@ -162,7 +161,7 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 			if(j >= input.length){
 				if(allowEmpty) continue; //Consumed all tokens
 				else return {message: `Unexpected end of line`, priority: 4};
-			} 
+			}
 			let anyTokensSkipped = false;
 			while(statement.tokens[i + 1] != input[j].type){ //Repeat until the current token in input is the next token
 				anyTokensSkipped = true;
@@ -197,7 +196,7 @@ type Operator = {
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export const operatorsByPriority = ((input:(OperatorType | [type:OperatorType, "unary"] | Operator)[][]):Operator[][] =>
-	input.map(row => row.map(o => 
+	input.map(row => row.map(o =>
 		Array.isArray(o) ? {type: `operator.${o[0]}`, unary: true} :
 		typeof o == "string" ? {type: `operator.${o}`, unary: false} :
 		o

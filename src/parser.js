@@ -153,7 +153,6 @@ export function parseStatement(tokens) {
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
- * @returns
  */
 export function checkStatement(statement, input) {
     //warning: despite writing it, I do not fully understand this code

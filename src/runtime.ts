@@ -9,7 +9,7 @@ interface FileData {
 	mode: FileMode | null;
 }
 
-interface VariableData {
+interface VariableData { //TODO mapped type
 	type: VariableType;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableValueType | null;

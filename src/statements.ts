@@ -83,7 +83,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		}
 		//validate args
 		if(args.length < 1) crash(`Invalid statement definitions! All statements must contain at least one token`);
-		if(args.find((v, i, args) => 
+		if(args.find((v, i, args) =>
 			(v == "expr+" || v == ".+" || v == ".*") &&
 			(args[i+1] == "expr+" || args[i+1] == ".+" || args[i+1] == ".*")
 		)) crash(`Invalid statement definitions! Variadic fragment specifiers cannot be adjacent.`);
@@ -125,7 +125,7 @@ export class DeclarationStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		for(const variable of this.variables){
-			if(variable in runtime.variables) fail(`Variable ${variable} is already defined`);
+			if(variable in runtime.variables) fail(`Variable ${variable} was already declared`);
 			runtime.variables[variable] = {
 				type: this.varType,
 				value: null,
@@ -145,6 +145,15 @@ export class ConstantStatement extends Statement {
 		this.name = name.text;
 		this.expr = expr;
 	}
+	run(runtime:Runtime){
+		if(this.name in runtime.variables) fail(`Constant ${this.name} was already declared`);
+		runtime.variables[this.name] = {
+			type: "INTEGER",
+			value: runtime.evaluateExpr(this.expr),
+			declaration: this,
+			mutable: false,
+		};
+	}
 }
 @statement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
@@ -156,6 +165,10 @@ export class AssignmentStatement extends Statement {
 		this.name = name.text;
 		this.expr = expr;
 	}
+	run(runtime:Runtime){
+		if(!(this.name in runtime.variables)) fail(`Undeclared variable ${this.name}`);
+		runtime.variables[this.name].value = runtime.evaluateExpr(this.expr); //TODO typecheck
+	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
@@ -163,6 +176,17 @@ export class OutputStatement extends Statement {
 	constructor(tokens:(Token | ExpressionAST)[]){
 		super(tokens);
 		this.outMessage = tokens.slice(1);
+		//TODO:
+		//validate, must be (string | name | number)s separated by ,
+		//should not include the commas
+	}
+	run(runtime:Runtime){
+		let outStr = "";
+		for(const token of this.outMessage){
+			const expr = runtime.evaluateExpr(token);
+			outStr += expr;
+		}
+		runtime._output(outStr);
 	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")
@@ -172,6 +196,10 @@ export class InputStatement extends Statement {
 		super(tokens);
 		this.name = (tokens[1] as Token).text;
 	}
+	run(runtime:Runtime){
+		if(!(this.name in runtime.variables)) fail(`Undeclared variable ${this.name}`);
+		runtime.variables[this.name].value = runtime._input(); //TODO type coerce
+	}
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
@@ -179,6 +207,9 @@ export class ReturnStatement extends Statement {
 	constructor(tokens:(Token | ExpressionAST)[]){
 		super(tokens);
 		this.expr = tokens[1];
+	}
+	run(runtime:Runtime){
+		crash(`TODO Not yet implemented`);
 	}
 }
 
@@ -208,7 +239,7 @@ export class ForStatement extends Statement {
 		this.name = (tokens[1] as Token).text;
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
-	}	
+	}
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
 export class ForEndStatement extends Statement {
