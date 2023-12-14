@@ -70,6 +70,7 @@ export class Statement {
     static supportsSplit(block, statement) {
         return false;
     }
+    run(runtime) { }
 }
 Statement.tokens = null;
 function statement(type, example, ...args) {
@@ -110,10 +111,6 @@ function statement(type, example, ...args) {
         input.tokens = args;
         return input;
     };
-}
-function makeStatement(type, example, ...args) {
-    return statement(type, example, ...args)(class __temp extends Statement {
-    });
 }
 let DeclarationStatement = (() => {
     let _classDecorators = [statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")];
@@ -157,11 +154,101 @@ let DeclarationStatement = (() => {
     return DeclarationStatement = _classThis;
 })();
 export { DeclarationStatement };
-makeStatement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+"); //the equal_to operator is used in this statement, idk why
-makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
-makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
-makeStatement("input", "INPUT y", "keyword.input", "name");
-makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
+let ConstantStatement = (() => {
+    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ConstantStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ConstantStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ConstantStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ConstantStatement = _classThis;
+})();
+export { ConstantStatement };
+let AssignmentStatement = (() => {
+    let _classDecorators = [statement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var AssignmentStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "AssignmentStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        AssignmentStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return AssignmentStatement = _classThis;
+})();
+export { AssignmentStatement };
+let OutputStatement = (() => {
+    let _classDecorators = [statement("output", `OUTPUT "message"`, "keyword.output", ".+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var OutputStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "OutputStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        OutputStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return OutputStatement = _classThis;
+})();
+export { OutputStatement };
+let InputStatement = (() => {
+    let _classDecorators = [statement("input", "INPUT y", "keyword.input", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var InputStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "InputStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        InputStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return InputStatement = _classThis;
+})();
+export { InputStatement };
+let ReturnStatement = (() => {
+    let _classDecorators = [statement("return", "RETURN z + 5", "keyword.return", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ReturnStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ReturnStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ReturnStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ReturnStatement = _classThis;
+})();
+export { ReturnStatement };
 let IfStatement = (() => {
     let _classDecorators = [statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")];
     let _classDescriptor;
@@ -186,12 +273,120 @@ let IfStatement = (() => {
     return IfStatement = _classThis;
 })();
 export { IfStatement };
-makeStatement("else", "ELSE", "block_multi_split", "keyword.else");
-makeStatement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO "number": accept names also
-makeStatement("for.end", "NEXT i", "block_end", "keyword.for_end", "name");
-makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");
-makeStatement("dowhile", "REPEAT", "block", "keyword.dowhile");
-makeStatement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+");
+let ElseStatement = (() => {
+    let _classDecorators = [statement("else", "ELSE", "block_multi_split", "keyword.else")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ElseStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ElseStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ElseStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ElseStatement = _classThis;
+})();
+export { ElseStatement };
+let ForStatement = (() => {
+    let _classDecorators = [statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ForStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ForStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ForStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ForStatement = _classThis;
+})();
+export { ForStatement };
+let ForEndStatement = (() => {
+    let _classDecorators = [statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ForEndStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ForEndStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ForEndStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ForEndStatement = _classThis;
+})();
+export { ForEndStatement };
+let WhileStatement = (() => {
+    let _classDecorators = [statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var WhileStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "WhileStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        WhileStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return WhileStatement = _classThis;
+})();
+export { WhileStatement };
+let DoWhileStatement = (() => {
+    let _classDecorators = [statement("dowhile", "REPEAT", "block", "keyword.dowhile")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var DoWhileStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "DoWhileStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        DoWhileStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return DoWhileStatement = _classThis;
+})();
+export { DoWhileStatement };
+let DoWhileEndStatement = (() => {
+    let _classDecorators = [statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var DoWhileEndStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "DoWhileEndStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        DoWhileEndStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return DoWhileEndStatement = _classThis;
+})();
+export { DoWhileEndStatement };
 let FunctionStatement = (() => {
     let _classDecorators = [statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
     let _classDescriptor;

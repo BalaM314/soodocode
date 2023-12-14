@@ -1,3 +1,4 @@
+import type { Runtime } from "./runtime.js";
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
@@ -25,9 +26,9 @@ export class Statement {
 	type:typeof Statement;
 	stype:StatementType;
 	static type:StatementType;
-	category: StatementCategory;
-	static category: StatementCategory;
-	static example: string;
+	category:StatementCategory;
+	static category:StatementCategory;
+	static example:string;
 	static tokens:(TokenMatcher | "#")[] = null!;
 	constructor(public tokens:(Token | ExpressionAST)[]){
 		this.type = this.constructor as typeof Statement;
@@ -52,6 +53,7 @@ export class Statement {
 	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
 		return false;
 	}
+	run(runtime:Runtime):void {}
 }
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):
@@ -100,18 +102,9 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 	}
 }
 
-function makeStatement(type:StatementType, example:string, ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", ...tokens:TokenMatcher[]):typeof Statement;
-function makeStatement(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", endType:"auto", ...tokens:TokenMatcher[]):typeof Statement;
-
-function makeStatement(type:StatementType, example:string, ...args:any[]):typeof Statement {
-	return statement(type, example, ...args)(class __temp extends Statement {});
-}
-
 @statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")
 export class DeclarationStatement extends Statement {
-	variables: string[] = [];
+	variables:string[] = [];
 	constructor(tokens:Token[]){
 		super(tokens);
 		let expected = "name" as "name" | "comma";
@@ -129,11 +122,26 @@ export class DeclarationStatement extends Statement {
 		if(expected == "name") fail(`Expected name, found ":" (punctuation.colon)`);
 	}
 }
-makeStatement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+"); //the equal_to operator is used in this statement, idk why
-makeStatement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+");
-makeStatement("output", `OUTPUT "message"`, "keyword.output", ".+");
-makeStatement("input", "INPUT y", "keyword.input", "name");
-makeStatement("return", "RETURN z + 5", "keyword.return", "expr+");
+@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "operator.equal_to", "expr+") //the equal_to operator is used in this statement, idk why
+export class ConstantStatement extends Statement {
+
+}
+@statement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+")
+export class AssignmentStatement extends Statement {
+	
+}
+@statement("output", `OUTPUT "message"`, "keyword.output", ".+")
+export class OutputStatement extends Statement {
+	
+}
+@statement("input", "INPUT y", "keyword.input", "name")
+export class InputStatement extends Statement {
+	
+}
+@statement("return", "RETURN z + 5", "keyword.return", "expr+")
+export class ReturnStatement extends Statement {
+	
+}
 
 
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
@@ -144,12 +152,30 @@ export class IfStatement extends Statement {
 		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
 	}
 }
-makeStatement("else", "ELSE", "block_multi_split", "keyword.else");
-makeStatement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal"); //TODO "number": accept names also
-makeStatement("for.end", "NEXT i", "block_end", "keyword.for_end", "name");
-makeStatement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+");
-makeStatement("dowhile", "REPEAT", "block", "keyword.dowhile");
-makeStatement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+");
+@statement("else", "ELSE", "block_multi_split", "keyword.else")
+export class ElseStatement extends Statement {
+	
+}
+@statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal") //TODO "number": accept names also
+export class ForStatement extends Statement {
+	
+}
+@statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
+export class ForEndStatement extends Statement {
+	
+}
+@statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
+export class WhileStatement extends Statement {
+	
+}
+@statement("dowhile", "REPEAT", "block", "keyword.dowhile")
+export class DoWhileStatement extends Statement {
+	
+}
+@statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
+export class DoWhileEndStatement extends Statement {
+	
+}
 
 @statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class FunctionStatement extends Statement {
