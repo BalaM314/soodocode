@@ -86,7 +86,7 @@ export class Runtime {
 				}
 				if(outType == "REAL" && type == "INTEGER")
 					fail(
-`Arithmetic operation evaluated to value of type REAL, cannot be cast to INTEGER\
+`Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
 help: try using DIV instead of / to produce an integer as the result`
 					);
 				else return value;
@@ -144,7 +144,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(from == "STRING" && to == "CHAR") return value as any;
 		if(from == "INTEGER" && to == "REAL") return value as any;
 		if(from == "REAL" && to == "INTEGER") return Math.trunc(value as any) as any;
-		if(to == "STRING" && "toString" in (value as any)) return value.toString() as any;
+		if(to == "STRING" && value.toString) return value.toString() as any;
 		fail(`Cannot coerce value of type ${from} to ${to}`);
 	}
 	callFunction(name:string, args:ExpressionAST[]):VariableValueType | null;

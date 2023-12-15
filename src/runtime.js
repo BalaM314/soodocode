@@ -66,7 +66,7 @@ export class Runtime {
                     default: crash(`impossible`);
                 }
                 if (outType == "REAL" && type == "INTEGER")
-                    fail(`Arithmetic operation evaluated to value of type REAL, cannot be cast to INTEGER\
+                    fail(`Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
 help: try using DIV instead of / to produce an integer as the result`);
                 else
                     return value;
@@ -142,7 +142,7 @@ help: try using DIV instead of / to produce an integer as the result`);
             return value;
         if (from == "REAL" && to == "INTEGER")
             return Math.trunc(value);
-        if (to == "STRING" && "toString" in value)
+        if (to == "STRING" && value.toString)
             return value.toString();
         fail(`Cannot coerce value of type ${from} to ${to}`);
     }
