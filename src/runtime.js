@@ -53,6 +53,20 @@ export class Runtime {
                 crash(`not yet implemented`); //TODO
         }
     }
+    coerceValue(value, from, to) {
+        //typescript really hates this function, beware
+        if (from == to)
+            return value;
+        if (from == "STRING" && to == "CHAR")
+            return value;
+        if (from == "INTEGER" && to == "REAL")
+            return value;
+        if (from == "REAL" && to == "INTEGER")
+            return Math.trunc(value);
+        if (to == "STRING" && "toString" in value)
+            return value.toString();
+        fail(`Cannot coerce value of type ${from} to ${to}`);
+    }
     callFunction(name, args, requireReturnValue = false) {
         const func = this.functions[name];
         if (!name)

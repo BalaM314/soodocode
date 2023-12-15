@@ -72,6 +72,15 @@ export class Runtime {
 				crash(`not yet implemented`);//TODO
 		}
 	}
+	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping[T], from:T, to:S):VariableTypeMapping[S] {
+		//typescript really hates this function, beware
+		if(from as any == to) return value as any;
+		if(from == "STRING" && to == "CHAR") return value as any;
+		if(from == "INTEGER" && to == "REAL") return value as any;
+		if(from == "REAL" && to == "INTEGER") return Math.trunc(value as any) as any;
+		if(to == "STRING" && "toString" in (value as any)) return value.toString() as any;
+		fail(`Cannot coerce value of type ${from} to ${to}`);
+	}
 	callFunction(name:string, args:ExpressionAST[]):VariableValueType | null;
 	callFunction(name:string, args:ExpressionAST[], requireReturnValue:true):VariableValueType;
 	callFunction(name:string, args:ExpressionAST[], requireReturnValue = false):VariableValueType | null {
