@@ -11,48 +11,126 @@ export class Runtime {
         this.types = {};
         this.files = {};
     }
-    evaluateExpr(expr) {
+    evaluateExpr(expr, type) {
         if ("operator" in expr) {
             switch (expr.operator) {
                 case "array access": crash(`Arrays are not yet supported`);
-                case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true);
-                case operators.add: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") + this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
-                case operators.subtract: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") - this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
-                case operators.multiply: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") * this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
-                case operators.divide: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") / this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
-                case operators.mod: return this.evaluateExprTyped(expr.nodes[0], "INTEGER") % this.evaluateExprTyped(expr.nodes[1], "INTEGER"); //TODO support REALs
-                default: crash("Not yet implemented"); //TODO
+                case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true); //TODO typecheck
             }
+            arithmetic: if (!type || type == "INTEGER" || type == "REAL") {
+                let guessedType = type ?? "REAL"; //Try to evaluate it as a real, we can cast it back later
+                //Note: do not allow coercing a normal division result to an integer, DIV should be used for that
+                let outType;
+                let value;
+                //if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
+                switch (expr.operator) {
+                    case operators.add:
+                        outType = "INTEGER";
+                        value = this.evaluateExpr(expr.nodes[0], guessedType) + this.evaluateExpr(expr.nodes[1], guessedType);
+                        break;
+                    case operators.subtract:
+                        outType = "INTEGER";
+                        value = this.evaluateExpr(expr.nodes[0], guessedType) - this.evaluateExpr(expr.nodes[1], guessedType);
+                        break;
+                    case operators.multiply:
+                        outType = "INTEGER";
+                        value = this.evaluateExpr(expr.nodes[0], guessedType) * this.evaluateExpr(expr.nodes[1], guessedType);
+                        break;
+                    case operators.divide:
+                        outType = "REAL";
+                        value = this.evaluateExpr(expr.nodes[0], guessedType) / this.evaluateExpr(expr.nodes[1], guessedType);
+                        break;
+                    case operators.integer_divide:
+                        outType = "INTEGER";
+                        value = Math.trunc(this.evaluateExpr(expr.nodes[0], guessedType) / this.evaluateExpr(expr.nodes[1], guessedType));
+                        break;
+                    case operators.mod:
+                        outType = "INTEGER";
+                        value = this.evaluateExpr(expr.nodes[0], guessedType) % this.evaluateExpr(expr.nodes[1], guessedType);
+                        break;
+                    case operators.and:
+                    case operators.or:
+                    case operators.equal_to:
+                    case operators.not_equal_to:
+                    case operators.not:
+                    case operators.greater_than:
+                    case operators.greater_than_equal:
+                    case operators.less_than:
+                    case operators.less_than_equal:
+                    case operators.string_concatenate:
+                        if (type)
+                            fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+                        else
+                            break arithmetic; //type is unknown but its not an arithmetic operator
+                    default: crash(`impossible`);
+                }
+                if (outType == "REAL" && type == "INTEGER")
+                    fail(`Arithmetic operation evaluated to value of type REAL, cannot be cast to INTEGER\
+help: try using DIV instead of / to produce an integer as the result`);
+                else
+                    return value;
+            }
+            crash(`Non arithmetic operations are not yet implemented`); //TODO
         }
         else {
             switch (expr.type) {
-                case "boolean.false": return false;
-                case "boolean.true": return false;
-                case "number.decimal": return Number(expr.text);
-                case "string": return expr.text.slice(1, -1); //remove the quotes
+                case "boolean.false":
+                    if (!type || type == "BOOLEAN")
+                        return false;
+                    else if (type == "STRING")
+                        return "FALSE";
+                    else
+                        fail(`Cannot convert value FALSE to ${type}`);
+                case "boolean.false":
+                    if (!type || type == "BOOLEAN")
+                        return true;
+                    else if (type == "STRING")
+                        return "TRUE";
+                    else
+                        fail(`Cannot convert value TRUE to ${type}`);
+                case "number.decimal":
+                    if (!type || type == "INTEGER" || type == "REAL" || type == "STRING") {
+                        const val = Number(expr.text);
+                        if (!Number.isFinite(val))
+                            fail(`Value ${expr.text} cannot be converted to a number: too large`);
+                        if (type == "INTEGER" && !Number.isInteger(val))
+                            fail(`Value ${expr.text} cannot be converted to an integer`);
+                        if (type == "INTEGER" && !Number.isSafeInteger(val))
+                            fail(`Value ${expr.text} cannot be converted to an integer: too large`);
+                        if (type == "STRING")
+                            return expr.text;
+                        else
+                            return val;
+                    }
+                    else
+                        fail(`Cannot convert number to type ${type}`);
+                case "string":
+                    return expr.text.slice(1, -1); //remove the quotes
                 case "name":
-                    if (!(expr.text in this.variables))
+                    const variable = this.variables[expr.text];
+                    if (!variable)
                         fail(`Undeclared variable ${expr.text}`);
-                    if (this.variables[expr.text].value == null)
+                    if (variable.value == null)
                         fail(`Cannot use the value of uninitialized variable ${expr.text}`);
-                    return this.variables[expr.text].value;
+                    if (type)
+                        return this.coerceValue(variable.value, variable.type, type);
+                    else
+                        return variable.value;
                 default: fail(`Cannot evaluate token of type ${expr.type}`);
             }
         }
     }
-    evaluateExprTyped(expr, type) {
-        const result = this.evaluateExpr(expr);
-        switch (type) {
-            //note: I am unable to think of a way to avoid using "as any" in this function impl
-            case "INTEGER":
-                if (typeof result == "number")
-                    return result;
-                else
-                    fail(`Cannot convert expression to number`);
-            default:
-                crash(`not yet implemented`); //TODO
-        }
-    }
+    // evaluateExprTyped<T extends VariableType>(expr:ExpressionAST, type:T):VariableTypeMapping[T] {
+    // 	const result = this.evaluateExpr(expr);
+    // 	switch(type){
+    // 		//note: I am unable to think of a way to avoid using "as any" in this function impl
+    // 		case "INTEGER":
+    // 			if(typeof result == "number") return result as any;
+    // 			else fail(`Cannot convert expression to number`);
+    // 		default:
+    // 			crash(`not yet implemented`);//TODO
+    // 	}
+    // }
     coerceValue(value, from, to) {
         //typescript really hates this function, beware
         if (from == to)
