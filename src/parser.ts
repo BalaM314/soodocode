@@ -219,7 +219,7 @@ export const operators = Object.fromEntries(
 	.map(o => [
 		o.type.startsWith("operator.") ? o.type.split("operator.")[1] : o.type
 	, o] as const)
-) as Record<OperatorType, Operator>;
+) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
 
 export function parseExpression(input:Token[]):ExpressionASTNode {

@@ -38,9 +38,10 @@ export class Runtime {
 	evaluateExpr(expr:ExpressionAST):VariableValueType;
 	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):VariableTypeMapping[T];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType):VariableValueType {
+		//TODO attempt coercion
 		if("operator" in expr){
 			switch(expr.operator){
-				case "array access": crash(`Arrays are not yet supported`);
+				case "array access": crash(`Arrays are not yet supported`); //TODO arrays
 				case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true); //TODO typecheck
 			}
 

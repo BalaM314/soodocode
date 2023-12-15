@@ -216,9 +216,12 @@ let AssignmentStatement = (() => {
             this.expr = expr;
         }
         run(runtime) {
-            if (!(this.name in runtime.variables))
+            const variable = runtime.variables[this.name];
+            if (!variable)
                 fail(`Undeclared variable ${this.name}`);
-            runtime.variables[this.name].value = runtime.evaluateExpr(this.expr); //TODO typecheck
+            if (!variable.mutable)
+                fail(`Cannot assign to constant ${this.name}`);
+            runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type);
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
@@ -249,7 +252,7 @@ let OutputStatement = (() => {
         run(runtime) {
             let outStr = "";
             for (const token of this.outMessage) {
-                const expr = runtime.evaluateExpr(token);
+                const expr = runtime.evaluateExpr(token, "STRING");
                 outStr += expr;
             }
             runtime._output(outStr);
@@ -288,12 +291,32 @@ let InputStatement = (() => {
                 case "BOOLEAN":
                     variable.value = input.toLowerCase() != "false";
                     break;
-                case "INTEGER": //TODO handle reals
+                case "INTEGER": {
                     const value = Number(input);
                     if (isNaN(value))
                         fail(`input was an invalid number`);
+                    if (!Number.isSafeInteger(value))
+                        fail(`input was an invalid integer`);
                     variable.value = value;
                     break;
+                }
+                case "REAL": {
+                    const value = Number(input);
+                    if (isNaN(value))
+                        fail(`input was an invalid number`);
+                    if (!Number.isSafeInteger(value))
+                        fail(`input was an invalid integer`);
+                    variable.value = value;
+                    break;
+                }
+                case "STRING":
+                    variable.value = input;
+                    break;
+                case "CHAR":
+                    if (input.length == 1)
+                        variable.value = input;
+                    else
+                        fail(`input was not a valid character: contained more than one character`);
                 default:
                     crash(`not yet implemented`); //TODO
             }

@@ -12,9 +12,10 @@ export class Runtime {
         this.files = {};
     }
     evaluateExpr(expr, type) {
+        //TODO attempt coercion
         if ("operator" in expr) {
             switch (expr.operator) {
-                case "array access": crash(`Arrays are not yet supported`);
+                case "array access": crash(`Arrays are not yet supported`); //TODO arrays
                 case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true); //TODO typecheck
             }
             arithmetic: if (!type || type == "INTEGER" || type == "REAL") {

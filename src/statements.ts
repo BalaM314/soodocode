@@ -148,8 +148,8 @@ export class ConstantStatement extends Statement {
 	run(runtime:Runtime){
 		if(this.name in runtime.variables) fail(`Constant ${this.name} was already declared`);
 		runtime.variables[this.name] = {
-			type: "INTEGER",
-			value: runtime.evaluateExpr(this.expr),
+			type: "INTEGER", //TODO guess type required
+			value: runtime.evaluateExpr(this.expr), //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
 			declaration: this,
 			mutable: false,
 		};
@@ -166,8 +166,10 @@ export class AssignmentStatement extends Statement {
 		this.expr = expr;
 	}
 	run(runtime:Runtime){
-		if(!(this.name in runtime.variables)) fail(`Undeclared variable ${this.name}`);
-		runtime.variables[this.name].value = runtime.evaluateExpr(this.expr); //TODO typecheck
+		const variable = runtime.variables[this.name];
+		if(!variable) fail(`Undeclared variable ${this.name}`);
+		if(!variable.mutable) fail(`Cannot assign to constant ${this.name}`);
+		runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type);
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
@@ -183,7 +185,7 @@ export class OutputStatement extends Statement {
 	run(runtime:Runtime){
 		let outStr = "";
 		for(const token of this.outMessage){
-			const expr = runtime.evaluateExpr(token);
+			const expr = runtime.evaluateExpr(token, "STRING");
 			outStr += expr;
 		}
 		runtime._output(outStr);
@@ -204,11 +206,24 @@ export class InputStatement extends Statement {
 		switch(variable.type){
 			case "BOOLEAN":
 				variable.value = input.toLowerCase() != "false"; break;
-			case "INTEGER": //TODO handle reals
+			case "INTEGER": {
 				const value = Number(input);
 				if(isNaN(value)) fail(`input was an invalid number`)
+				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`)
 				variable.value = value;
+				break; }
+			case "REAL": {
+				const value = Number(input);
+				if(isNaN(value)) fail(`input was an invalid number`)
+				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`)
+				variable.value = value;
+				break; }
+			case "STRING":
+				variable.value = input;
 				break;
+			case "CHAR":
+				if(input.length == 1) variable.value = input;
+				else fail(`input was not a valid character: contained more than one character`);
 			default:
 				crash(`not yet implemented`); //TODO
 		}
