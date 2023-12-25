@@ -26,7 +26,7 @@ export class Runtime {
                 let value;
                 //if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
                 const [leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType);
-                const [rightType, right] = this.evaluateExpr(expr.nodes[0], guessedType);
+                const [rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType);
                 switch (expr.operator) {
                     case operators.add:
                         value = left + right;
