@@ -262,6 +262,13 @@ export class IfStatement extends Statement {
 		return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
 		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
 	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+		if(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
+			runtime.runBlock(node.nodeGroups[0]);
+		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
+			runtime.runBlock(node.nodeGroups[1]);
+		}
+	}
 }
 @statement("else", "ELSE", "block_multi_split", "keyword.else")
 export class ElseStatement extends Statement {}
@@ -275,6 +282,23 @@ export class ForStatement extends Statement {
 		this.name = (tokens[1] as Token).text;
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
+	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+		//TODO scope, again
+		const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
+		const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
+		if(upper < lower) return;
+		const end = (node.controlStatements[1] as ForEndStatement);
+		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
+		for(let i = lower; i <= upper; i++){
+			runtime.variables[this.name] = {
+				declaration: this,
+				mutable: false,
+				type: "INTEGER",
+				value: i
+			};
+			runtime.runBlock(node.nodeGroups[0]);
+		}
 	}
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
@@ -291,7 +315,12 @@ export class WhileStatement extends Statement {
 	constructor(tokens:(Token | ExpressionAST)[]){
 		super(tokens);
 		this.condition = tokens[1];
-	}	
+	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+		while(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
+			runtime.runBlock(node.nodeGroups[0]);
+		}
+	}
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {}
@@ -301,6 +330,12 @@ export class DoWhileEndStatement extends Statement {
 	constructor(tokens:(Token | ExpressionAST)[]){
 		super(tokens);
 		this.condition = tokens[1];
+	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+		do {
+			runtime.runBlock(node.nodeGroups[0]);
+			//TODO prevent infinite loops
+		} while(!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
 	}
 }
 

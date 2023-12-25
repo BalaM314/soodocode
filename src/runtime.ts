@@ -1,7 +1,7 @@
 import { Token } from "./lexer.js";
 import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode } from "./parser.js";
 import { ProcedureStatement } from "./statements.js";
-import type { ConstantStatement, DeclarationStatement, FunctionStatement } from "./statements.js";
+import type { ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 
 interface FileData {
@@ -23,7 +23,7 @@ type FunctionData = /* Must be a function or procedure */ ProgramASTTreeNode;
 interface ConstantData {
 	type: VariableType;
 	value: VariableValueType;
-	declaration: ConstantStatement;
+	declaration: ConstantStatement | ForStatement;
 	mutable: false;
 }
 
@@ -152,10 +152,10 @@ help: try using DIV instead of / to produce an integer as the result`
 					if(!type || type == "BOOLEAN") return ["BOOLEAN", false];
 					else if(type == "STRING") return ["STRING", "FALSE"];
 					else fail(`Cannot convert value FALSE to ${type}`);
-					case "boolean.false":
-						if(!type || type == "BOOLEAN") return ["BOOLEAN", true];
-						else if(type == "STRING") return ["STRING", "TRUE"];
-						else fail(`Cannot convert value TRUE to ${type}`);
+				case "boolean.true":
+					if(!type || type == "BOOLEAN") return ["BOOLEAN", true];
+					else if(type == "STRING") return ["STRING", "TRUE"];
+					else fail(`Cannot convert value TRUE to ${type}`);
 				case "number.decimal":
 					if(!type || type == "INTEGER" || type == "REAL" || type == "STRING"){
 						const val = Number(expr.text);

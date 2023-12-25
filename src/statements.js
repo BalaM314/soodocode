@@ -383,6 +383,14 @@ let IfStatement = (() => {
             return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
             //If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
         }
+        runBlock(runtime, node) {
+            if (runtime.evaluateExpr(this.condition, "BOOLEAN")[1]) {
+                runtime.runBlock(node.nodeGroups[0]);
+            }
+            else if (node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]) {
+                runtime.runBlock(node.nodeGroups[1]);
+            }
+        }
     };
     __setFunctionName(_classThis, "IfStatement");
     (() => {
@@ -426,6 +434,25 @@ let ForStatement = (() => {
             this.name = tokens[1].text;
             this.lowerBound = tokens[3];
             this.upperBound = tokens[5];
+        }
+        runBlock(runtime, node) {
+            //TODO scope, again
+            const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
+            const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
+            if (upper < lower)
+                return;
+            const end = node.controlStatements[1];
+            if (end.name !== this.name)
+                fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
+            for (let i = lower; i <= upper; i++) {
+                runtime.variables[this.name] = {
+                    declaration: this,
+                    mutable: false,
+                    type: "INTEGER",
+                    value: i
+                };
+                runtime.runBlock(node.nodeGroups[0]);
+            }
         }
     };
     __setFunctionName(_classThis, "ForStatement");
@@ -473,6 +500,11 @@ let WhileStatement = (() => {
             super(tokens);
             this.condition = tokens[1];
         }
+        runBlock(runtime, node) {
+            while (runtime.evaluateExpr(this.condition, "BOOLEAN")[1]) {
+                runtime.runBlock(node.nodeGroups[0]);
+            }
+        }
     };
     __setFunctionName(_classThis, "WhileStatement");
     (() => {
@@ -514,6 +546,12 @@ let DoWhileEndStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.condition = tokens[1];
+        }
+        runBlock(runtime, node) {
+            do {
+                runtime.runBlock(node.nodeGroups[0]);
+                //TODO prevent infinite loops
+            } while (!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
         }
     };
     __setFunctionName(_classThis, "DoWhileEndStatement");

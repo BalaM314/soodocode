@@ -128,7 +128,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         return ["STRING", "FALSE"];
                     else
                         fail(`Cannot convert value FALSE to ${type}`);
-                case "boolean.false":
+                case "boolean.true":
                     if (!type || type == "BOOLEAN")
                         return ["BOOLEAN", true];
                     else if (type == "STRING")
