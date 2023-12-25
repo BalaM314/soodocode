@@ -96,20 +96,20 @@ export function parse(tokens) {
         else if (statement.category == "block_end") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Invalid statement "${statement.toString()}": no open blocks`);
+                fail(`Unexpected statement "${statement.toString()}": no open blocks`);
             else if (lastNode.controlStatements[0].stype == statement.stype.split(".")[0]) { //probably bad code
                 lastNode.controlStatements.push(statement);
                 blockStack.pop();
             }
             else
-                fail(`Invalid statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
+                fail(`Unexpected statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
         }
         else if (statement.category == "block_multi_split") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Invalid statement "${statement.toString()}": no open blocks`);
+                fail(`Unexpected statement "${statement.toString()}": no open blocks`);
             if (!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement))
-                fail(`Invalid statement "${statement.toString()}": TODOERRORMESSAGE`);
+                fail(`Unexpected statement "${statement.toString()}": current block cannot be split by "${statement.toString()}"`);
             lastNode.controlStatements.push(statement);
             lastNode.nodeGroups.push([]);
         }
@@ -284,14 +284,17 @@ export const operators = Object.fromEntries(operatorsByPriority.flat()
     o.type.startsWith("operator.") ? o.type.split("operator.")[1] : o.type,
     o
 ]));
+export function parseExpressionLeafNode(input) {
+    //Number, string, boolean, and variables can be parsed as-is
+    if (input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type.startsWith("boolean."))
+        return input;
+    else
+        fail(`Invalid syntax: cannot parse expression \`${getText([input])}\`: not a valid expression leaf node`);
+}
 export function parseExpression(input) {
     //If there is only one token
-    if (input.length == 1) {
-        if (input[0].type.startsWith("number.") || input[0].type == "name" || input[0].type == "string" || input[0].type.startsWith("boolean.")) //and it's a valid expression leaf node TODO genericify
-            return input[0]; //nothing to parse, just return the token
-        else
-            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: not a valid expression leaf node`);
-    }
+    if (input.length == 1)
+        return parseExpressionLeafNode(input[0]);
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     //TODO O(mn) unnecessarily, optimize
     for (const operatorsOfCurrentPriority of operatorsByPriority) {

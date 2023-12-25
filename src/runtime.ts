@@ -11,10 +11,10 @@ interface FileData {
 	mode: FileMode | null;
 }
 
-interface VariableData { //TODO mapped type
-	type: VariableType;
+type VariableData<T extends VariableType = VariableType> = {
+	type: T;
 	/** Null indicates that the variable has not been initialized */
-	value: VariableValueType | null;
+	value: VariableTypeMapping[T] | null;
 	declaration: DeclarationStatement;
 	mutable: true;
 }
@@ -169,7 +169,7 @@ help: try using DIV instead of / to produce an integer as the result`
 							return ["INTEGER", val];
 						} else if(type == "STRING") return ["STRING", expr.text];
 						else {
-							return ["REAL", val]; //if type is unspecified, use REAL by default TODO is this right?
+							return ["REAL", val];
 						}
 					} else fail(`Cannot convert number to type ${type}`);
 				case "string":
@@ -184,17 +184,6 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 		}
 	}
-	// evaluateExprTyped<T extends VariableType>(expr:ExpressionAST, type:T):VariableTypeMapping[T] {
-	// 	const result = this.evaluateExpr(expr);
-	// 	switch(type){
-	// 		//note: I am unable to think of a way to avoid using "as any" in this function impl
-	// 		case "INTEGER":
-	// 			if(typeof result == "number") return result as any;
-	// 			else fail(`Cannot convert expression to number`);
-	// 		default:
-	// 			crash(`not yet implemented`);//TODO
-	// 	}
-	// }
 	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping[T], from:T, to:S):VariableTypeMapping[S] {
 		//typescript really hates this function, beware
 		if(from as any == to) return value as any;

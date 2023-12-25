@@ -150,7 +150,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         else if (type == "STRING")
                             return ["STRING", expr.text];
                         else {
-                            return ["REAL", val]; //if type is unspecified, use REAL by default TODO is this right?
+                            return ["REAL", val];
                         }
                     }
                     else
@@ -171,17 +171,6 @@ help: try using DIV instead of / to produce an integer as the result`);
             }
         }
     }
-    // evaluateExprTyped<T extends VariableType>(expr:ExpressionAST, type:T):VariableTypeMapping[T] {
-    // 	const result = this.evaluateExpr(expr);
-    // 	switch(type){
-    // 		//note: I am unable to think of a way to avoid using "as any" in this function impl
-    // 		case "INTEGER":
-    // 			if(typeof result == "number") return result as any;
-    // 			else fail(`Cannot convert expression to number`);
-    // 		default:
-    // 			crash(`not yet implemented`);//TODO
-    // 	}
-    // }
     coerceValue(value, from, to) {
         //typescript really hates this function, beware
         if (from == to)
