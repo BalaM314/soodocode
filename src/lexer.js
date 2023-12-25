@@ -123,7 +123,7 @@ const symbolTypes = [
     [" ", "space"],
     ["\t", "space"],
     ["\n", "newline"],
-    [SymbolizerIO.prototype.isNumber, "number.decimal"],
+    [SymbolizerIO.prototype.isNumber, "numeric_fragment"],
     [SymbolizerIO.prototype.isAlphanumeric, "word"],
     [/^./, "unknown"],
 ];
@@ -180,7 +180,7 @@ export function tokenize(input) {
         //Decimals
         else if (state.decimalNumber == "requireNumber") {
             const num = output.at(-1) ?? crash(`impossible`);
-            if (symbol.type == "number.decimal") {
+            if (symbol.type == "numeric_fragment") {
                 num.text += "." + symbol.text;
                 state.decimalNumber = "none";
             }
@@ -204,9 +204,12 @@ export function tokenize(input) {
             fail(`Invalid symbol ${symbol.text}`);
         else if (symbol.type === "punctuation.period")
             fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
-        else if (symbol.type === "number.decimal") {
+        else if (symbol.type === "numeric_fragment") {
             state.decimalNumber = "allowDecimal";
-            output.push(symbol);
+            output.push({
+                text: symbol.text,
+                type: "number.decimal"
+            });
         }
         else if (symbol.type === "word") {
             switch (symbol.text) { //TODO datastructify

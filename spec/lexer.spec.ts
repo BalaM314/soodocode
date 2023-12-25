@@ -4,17 +4,17 @@ import { symbolize, tokenize } from "../src/lexer.js";
 
 describe("symbolizer", () => {
 	it("should parse numbers", () => {
-		expect(symbolize("5")).toEqual([{text: "5", type: "number.decimal"}]);
-		expect(symbolize("12345")).toEqual([{text: "12345", type: "number.decimal"}]);
+		expect(symbolize("5")).toEqual([{text: "5", type: "numeric_fragment"}]);
+		expect(symbolize("12345")).toEqual([{text: "12345", type: "numeric_fragment"}]);
 		expect(symbolize("12345 54321")).toEqual([
-			{text: "12345", type: "number.decimal"},
+			{text: "12345", type: "numeric_fragment"},
 			{text: " ", type: "space"},
-			{text: "54321", type: "number.decimal"},
+			{text: "54321", type: "numeric_fragment"},
 		]);
 		expect(symbolize("12345.54321")).toEqual([
-			{text: "12345", type: "number.decimal"},
+			{text: "12345", type: "numeric_fragment"},
 			{text: ".", type: "punctuation.period"},
-			{text: "54321", type: "number.decimal"},
+			{text: "54321", type: "numeric_fragment"},
 		]);
 	});
 	it("should parse words", () => {
@@ -28,7 +28,7 @@ describe("symbolizer", () => {
 			{text: " ", type: "space"},
 			{text: "<-", type: "operator.assignment"},
 			{text: " ", type: "space"},
-			{text: "5", type: "number.decimal"}
+			{text: "5", type: "numeric_fragment"}
 		]);
 		expect(symbolize("WHILE Index < 501 AND NOT PastLast")).toEqual([
 			{text: "WHILE", type: "word"},
@@ -37,7 +37,7 @@ describe("symbolizer", () => {
 			{text: " ", type: "space"},
 			{text: "<", type: "operator.less_than"},
 			{text: " ", type: "space"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: " ", type: "space"},
 			{text: "AND", type: "operator.and"},
 			{text: " ", type: "space"},
@@ -55,7 +55,7 @@ describe("tokenizer", () => {
 			{text: "\n", type: "newline"},
 			{text: "<", type: "operator.less_than"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "]", type: "bracket.close"},
 			{text: "(", type: "parentheses.open"},
 			{text: ")", type: "parentheses.close"},
@@ -77,7 +77,7 @@ describe("tokenizer", () => {
 			{text: "\n", type: "newline"},
 			{text: " ", type: "space"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: " ", type: "space"},
 			{text: " ", type: "space"},
 			{text: "(", type: "parentheses.open"},
@@ -98,12 +98,12 @@ describe("tokenizer", () => {
 			{text: "\n", type: "newline"},
 			{text: "<", type: "operator.less_than"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "]", type: "bracket.close"},
 			{text: "(", type: "parentheses.open"},
 			{text: "//", type: "comment.singleline"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "\n", type: "newline"},
 			{text: ")", type: "parentheses.close"},
 		])).toEqual([
@@ -125,12 +125,12 @@ describe("tokenizer", () => {
 			{text: "\n", type: "newline"},
 			{text: "<", type: "operator.less_than"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "]", type: "bracket.close"},
 			{text: "(", type: "parentheses.open"},
 			{text: "/*", type: "comment.multiline_open"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "*/", type: "comment.multiline_close"},
 			{text: ")", type: "parentheses.close"},
 		])).toEqual([
@@ -151,19 +151,19 @@ describe("tokenizer", () => {
 			{text: "\n", type: "newline"},
 			{text: "<", type: "operator.less_than"},
 			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "]", type: "bracket.close"},
 			{text: "(", type: "parentheses.open"},
 			{text: "'", type: "quote.single"},
 			{text: "AND", type: "operator.and"},
 			{text: " ", type: "space"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: "'", type: "quote.single"},
 			{text: "<>", type: "operator.not_equal_to"},
 			{text: `\"`, type: "quote.double"},
 			{text: "AND", type: "operator.and"},
 			{text: " ", type: "space"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: `\"`, type: "quote.double"},
 			{text: ")", type: "parentheses.close"},
 		])).toEqual([
@@ -189,7 +189,7 @@ describe("tokenizer", () => {
 			{text: " ", type: "space"},
 			{text: "<", type: "operator.less_than"},
 			{text: " ", type: "space"},
-			{text: "501", type: "number.decimal"},
+			{text: "501", type: "numeric_fragment"},
 			{text: " ", type: "space"},
 			{text: "AND", type: "operator.and"},
 			{text: " ", type: "space"},

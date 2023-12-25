@@ -1,7 +1,7 @@
 import { crash, impossible } from "./utils.js";
 
 export type SymbolType =
-	"number.decimal" | //TODO rename to "numeric_fragment"
+	"numeric_fragment" |
 	"quote.single" | "quote.double" |
 	"brace.open" | "brace.close" |
 	"bracket.open" | "bracket.close" |
@@ -169,7 +169,7 @@ const symbolTypes: [
 	[" ", "space"],
 	["\t", "space"],
 	["\n", "newline"],
-	[SymbolizerIO.prototype.isNumber, "number.decimal"],
+	[SymbolizerIO.prototype.isNumber, "numeric_fragment"],
 	[SymbolizerIO.prototype.isAlphanumeric, "word"],
 	[/^./, "unknown"],
 ];
@@ -219,7 +219,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
 			const num = output.at(-1) ?? crash(`impossible`);
-			if(symbol.type == "number.decimal"){
+			if(symbol.type == "numeric_fragment"){
 				num.text += "." + symbol.text;
 				state.decimalNumber = "none";
 			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`);
@@ -234,9 +234,12 @@ export function tokenize(input:Symbol[]):Token[] {
 		} else if(symbol.type === "space") void 0;
 		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`);
 		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
-		else if(symbol.type === "number.decimal"){
+		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
-			output.push(symbol as Token);
+			output.push({
+				text: symbol.text,
+				type: "number.decimal"
+			});
 		} else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
 				case "TRUE": write("boolean.true"); break;
