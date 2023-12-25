@@ -1,7 +1,8 @@
+import { Token } from "./lexer.js";
 import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode } from "./parser.js";
-import { ProcedureStatement, type ConstantStatement, type DeclarationStatement } from "./statements.js";
-import { crash } from "./utils.js";
-import { fail } from "./utils.js";
+import { ProcedureStatement } from "./statements.js";
+import type { ConstantStatement, DeclarationStatement, FunctionStatement } from "./statements.js";
+import { crash, fail } from "./utils.js";
 
 interface FileData {
 	name: string;
@@ -42,7 +43,13 @@ export class Runtime {
 		if("operator" in expr){
 			switch(expr.operator){
 				case "array access": crash(`Arrays are not yet supported`); //TODO arrays
-				case "function call": return ["INTEGER", this.callFunction(expr.operatorToken.text, expr.nodes, true)]; //TODO typecheck
+				case "function call":
+					const fn = this.functions[expr.operatorToken.text];
+					if(!fn) fail(`Function ${expr.operatorToken.text} is not defined.`);
+					if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
+					const statement = fn.controlStatements[0] as FunctionStatement; //TODO fix
+					if(type && statement.returnType != type) fail(`Expected a value of type ${type}, but the function ${expr.operatorToken.text} returns a value of type ${statement.returnType}`);
+					return ["INTEGER", this.callFunction(fn, expr.nodes, true)];
 			}
 
 			//arithmetic
@@ -197,19 +204,18 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(to == "STRING" && value.toString) return value.toString() as any;
 		fail(`Cannot coerce value of type ${from} to ${to}`);
 	}
-	callFunction(name:string, args:ExpressionAST[]):VariableValueType | null;
-	callFunction(name:string, args:ExpressionAST[], requireReturnValue:true):VariableValueType;
-	callFunction(name:string, args:ExpressionAST[], requireReturnValue = false):VariableValueType | null {
-		const func = this.functions[name];
-		if(!name) fail(`Unknown function ${name}`);
+	callFunction(func:FunctionData, args:ExpressionAST[]):VariableValueType | null;
+	callFunction(func:FunctionData, args:ExpressionAST[], requireReturnValue:true):VariableValueType;
+	callFunction(func:FunctionData, args:ExpressionAST[], requireReturnValue = false):VariableValueType | null {
 		if(func.controlStatements[0] instanceof ProcedureStatement){
-			if(requireReturnValue) fail(`Cannot use return value of ${name}() as it is a procedure`);
+			if(requireReturnValue) fail(`Cannot use return value of ${(func.controlStatements[0].tokens[1] as Token).text}() as it is a procedure`);
+			//TODO fix above line
 			//TODO scope?
 			this.runBlock([func]);
 			return null;
 		} else { //must be functionstatement
 			this.runBlock([func]);
-			return crash(`Executing functions is not yet implemented`);
+			return crash(`Obtaining the return value from functions is not yet implemented`);
 		}
 	}
 	runBlock(code:ProgramAST){

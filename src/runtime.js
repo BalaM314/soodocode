@@ -1,7 +1,6 @@
 import { operators } from "./parser.js";
 import { ProcedureStatement } from "./statements.js";
-import { crash } from "./utils.js";
-import { fail } from "./utils.js";
+import { crash, fail } from "./utils.js";
 export class Runtime {
     constructor(_input, _output) {
         this._input = _input;
@@ -16,7 +15,16 @@ export class Runtime {
         if ("operator" in expr) {
             switch (expr.operator) {
                 case "array access": crash(`Arrays are not yet supported`); //TODO arrays
-                case "function call": return ["INTEGER", this.callFunction(expr.operatorToken.text, expr.nodes, true)]; //TODO typecheck
+                case "function call":
+                    const fn = this.functions[expr.operatorToken.text];
+                    if (!fn)
+                        fail(`Function ${expr.operatorToken.text} is not defined.`);
+                    if (fn.type == "procedure")
+                        fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
+                    const statement = fn.controlStatements[0]; //TODO fix
+                    if (type && statement.returnType != type)
+                        fail(`Expected a value of type ${type}, but the function ${expr.operatorToken.text} returns a value of type ${statement.returnType}`);
+                    return ["INTEGER", this.callFunction(fn, expr.nodes, true)];
             }
             //arithmetic
             if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
@@ -188,20 +196,18 @@ help: try using DIV instead of / to produce an integer as the result`);
             return value.toString();
         fail(`Cannot coerce value of type ${from} to ${to}`);
     }
-    callFunction(name, args, requireReturnValue = false) {
-        const func = this.functions[name];
-        if (!name)
-            fail(`Unknown function ${name}`);
+    callFunction(func, args, requireReturnValue = false) {
         if (func.controlStatements[0] instanceof ProcedureStatement) {
             if (requireReturnValue)
-                fail(`Cannot use return value of ${name}() as it is a procedure`);
+                fail(`Cannot use return value of ${func.controlStatements[0].tokens[1].text}() as it is a procedure`);
+            //TODO fix above line
             //TODO scope?
             this.runBlock([func]);
             return null;
         }
         else { //must be functionstatement
             this.runBlock([func]);
-            return crash(`Executing functions is not yet implemented`);
+            return crash(`Obtaining the return value from functions is not yet implemented`);
         }
     }
     runBlock(code) {
