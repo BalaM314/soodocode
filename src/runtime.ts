@@ -35,94 +35,143 @@ export class Runtime {
 		public _input: () => string,
 		public _output: (message:string) => void,
 	){}
-	evaluateExpr(expr:ExpressionAST):VariableValueType;
-	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):VariableTypeMapping[T];
-	evaluateExpr(expr:ExpressionAST, type?:VariableType):VariableValueType {
+	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValueType];
+	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:VariableType, value:VariableTypeMapping[T]];
+	evaluateExpr(expr:ExpressionAST, type?:VariableType):[type:VariableType, value:VariableValueType] {
 		//TODO attempt coercion
 		if("operator" in expr){
 			switch(expr.operator){
 				case "array access": crash(`Arrays are not yet supported`); //TODO arrays
-				case "function call": return this.callFunction(expr.operatorToken.text, expr.nodes, true); //TODO typecheck
+				case "function call": return ["INTEGER", this.callFunction(expr.operatorToken.text, expr.nodes, true)]; //TODO typecheck
 			}
 
-			arithmetic:
-			if(!type || type == "INTEGER" || type == "REAL"){
-				let guessedType = type ?? "REAL"; //Try to evaluate it as a real, we can cast it back later
-				//Note: do not allow coercing a normal division result to an integer, DIV should be used for that
-				let outType:"INTEGER" | "REAL";
+			//arithmetic
+			if(type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic"){
+				if(type && !(type == "REAL" || type == "INTEGER"))
+					fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+				
+				const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
 				let value:number;
 				//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
+				const [leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType);
+				const [rightType, right] = this.evaluateExpr(expr.nodes[0], guessedType);
 				switch(expr.operator){
 					case operators.add:
-						outType = "INTEGER";
-						value = this.evaluateExpr(expr.nodes[0], guessedType) + this.evaluateExpr(expr.nodes[1], guessedType);
+						value = left + right;
 						break;
 					case operators.subtract:
-						outType = "INTEGER";
-						value = this.evaluateExpr(expr.nodes[0], guessedType) - this.evaluateExpr(expr.nodes[1], guessedType);
+						value = left - right;
 						break;
 					case operators.multiply:
-						outType = "INTEGER";
-						value = this.evaluateExpr(expr.nodes[0], guessedType) * this.evaluateExpr(expr.nodes[1], guessedType);
+						value = left * right;
 						break;
 					case operators.divide:
-						outType = "REAL";
-						value = this.evaluateExpr(expr.nodes[0], guessedType) / this.evaluateExpr(expr.nodes[1], guessedType);
-						break;
-					case operators.integer_divide:
-						outType = "INTEGER";
-						value = Math.trunc(this.evaluateExpr(expr.nodes[0], guessedType) / this.evaluateExpr(expr.nodes[1], guessedType));
-						break;
-					case operators.mod:
-						outType = "INTEGER";
-						value = this.evaluateExpr(expr.nodes[0], guessedType) % this.evaluateExpr(expr.nodes[1], guessedType);
-						break;
-					case operators.and: case operators.or: case operators.equal_to: case operators.not_equal_to: case operators.not:
-					case operators.greater_than: case operators.greater_than_equal: case operators.less_than: case operators.less_than_equal:
-					case operators.string_concatenate:
-						if(type) fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
-						else break arithmetic; //type is unknown but its not an arithmetic operator
-					default: crash(`impossible`);
-				}
-				if(outType == "REAL" && type == "INTEGER")
-					fail(
+						if(right == 0) fail(`Division by zero`);
+						value = left / right;
+						if(type == "INTEGER")
+							fail(
 `Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
 help: try using DIV instead of / to produce an integer as the result`
-					);
-				else return value;
+							);
+						break;
+					case operators.integer_divide:
+						if(right == 0) fail(`Division by zero`);
+						value = Math.trunc(left / right);
+						break;
+					case operators.mod:
+						value = left % right;
+						break;
+					default:
+						fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+				}
+				return [guessedType, value];
 			}
 
-			crash(`Non arithmetic operations are not yet implemented`); //TODO
+			//logical
+			if(type == "BOOLEAN" || expr.operator.category == "logical"){
+				if(type && !(type == "BOOLEAN"))
+					fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a boolean result`);
+
+				if(expr.operator.unary){
+					switch(expr.operator){
+						case operators.not:
+							return ["BOOLEAN", !this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1]];
+						default: crash("impossible");
+					}
+				}
+				switch(expr.operator){
+					case operators.and:
+						return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[0] && this.evaluateExpr(expr.nodes[1], "BOOLEAN")[0]];
+					case operators.or:
+						return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[0] || this.evaluateExpr(expr.nodes[1], "BOOLEAN")[0]];
+					case operators.equal_to:
+					case operators.not_equal_to:
+						//Type is unknown
+						const [leftType, left] = this.evaluateExpr(expr.nodes[0]);
+						const [rightType, right] = this.evaluateExpr(expr.nodes[0]);
+						const is_equal = (leftType == rightType) && (left == right);
+						if(expr.operator == operators.equal_to) return ["BOOLEAN", is_equal];
+						else return ["BOOLEAN", !is_equal];
+					case operators.greater_than:
+						return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] > this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					case operators.greater_than_equal:
+						return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] >= this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					case operators.less_than:
+						return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] < this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					case operators.less_than_equal:
+						return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] <= this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					default:
+						fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+				}
+			}
+
+			//string
+			if(type == "STRING" || expr.operator.category == "string"){
+				if(type && !(type == "STRING"))
+					fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a string result`);
+				switch(expr.operator){
+					case operators.string_concatenate:
+						return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING")[1] + this.evaluateExpr(expr.nodes[1], "STRING")[1]];
+					default:
+						fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+				}
+			}
+
+			crash(`This should not be possible`);
 		} else {
 			switch(expr.type){
 				case "boolean.false":
-					if(!type || type == "BOOLEAN") return false;
-					else if(type == "STRING") return "FALSE";
+					if(!type || type == "BOOLEAN") return ["BOOLEAN", false];
+					else if(type == "STRING") return ["STRING", "FALSE"];
 					else fail(`Cannot convert value FALSE to ${type}`);
 					case "boolean.false":
-						if(!type || type == "BOOLEAN") return true;
-						else if(type == "STRING") return "TRUE";
+						if(!type || type == "BOOLEAN") return ["BOOLEAN", true];
+						else if(type == "STRING") return ["STRING", "TRUE"];
 						else fail(`Cannot convert value TRUE to ${type}`);
 				case "number.decimal":
 					if(!type || type == "INTEGER" || type == "REAL" || type == "STRING"){
 						const val = Number(expr.text);
 						if(!Number.isFinite(val))
 							fail(`Value ${expr.text} cannot be converted to a number: too large`);
-						if(type == "INTEGER" && !Number.isInteger(val))
-							fail(`Value ${expr.text} cannot be converted to an integer`);
-						if(type == "INTEGER" && !Number.isSafeInteger(val))
-							fail(`Value ${expr.text} cannot be converted to an integer: too large`);
-						if(type == "STRING") return expr.text;
-						else return val;
+						if(type == "INTEGER"){
+							if(type == "INTEGER" && !Number.isInteger(val))
+								fail(`Value ${expr.text} cannot be converted to an integer`);
+							if(type == "INTEGER" && !Number.isSafeInteger(val))
+								fail(`Value ${expr.text} cannot be converted to an integer: too large`);
+							return ["INTEGER", val];
+						} else if(type == "STRING") return ["STRING", expr.text];
+						else {
+							return ["REAL", val]; //if type is unspecified, use REAL by default TODO is this right?
+						}
 					} else fail(`Cannot convert number to type ${type}`);
 				case "string":
-					return expr.text.slice(1, -1); //remove the quotes
+					return ["STRING", expr.text.slice(1, -1)]; //remove the quotes
 				case "name":
 					const variable = this.variables[expr.text];
 					if(!variable) fail(`Undeclared variable ${expr.text}`);
 					if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${expr.text}`);
-					if(type) return this.coerceValue(variable.value, variable.type, type);
-					else return variable.value;
+					if(type) return [type, this.coerceValue(variable.value, variable.type, type)];
+					else return [variable.type, variable.value];
 				default: fail(`Cannot evaluate token of type ${expr.type}`);
 			}
 		}

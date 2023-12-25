@@ -185,7 +185,7 @@ let ConstantStatement = (() => {
                 fail(`Constant ${this.name} was already declared`);
             runtime.variables[this.name] = {
                 type: "INTEGER",
-                value: runtime.evaluateExpr(this.expr),
+                value: runtime.evaluateExpr(this.expr, "INTEGER")[1],
                 declaration: this,
                 mutable: false,
             };
@@ -221,7 +221,7 @@ let AssignmentStatement = (() => {
                 fail(`Undeclared variable ${this.name}`);
             if (!variable.mutable)
                 fail(`Cannot assign to constant ${this.name}`);
-            runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type);
+            runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type)[1];
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
@@ -252,7 +252,7 @@ let OutputStatement = (() => {
         run(runtime) {
             let outStr = "";
             for (const token of this.outMessage) {
-                const expr = runtime.evaluateExpr(token, "STRING");
+                const expr = runtime.evaluateExpr(token, "STRING")[1];
                 outStr += expr;
             }
             runtime._output(outStr);

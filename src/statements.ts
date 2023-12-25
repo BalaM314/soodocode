@@ -149,7 +149,7 @@ export class ConstantStatement extends Statement {
 		if(this.name in runtime.variables) fail(`Constant ${this.name} was already declared`);
 		runtime.variables[this.name] = {
 			type: "INTEGER", //TODO guess type required
-			value: runtime.evaluateExpr(this.expr), //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
+			value: runtime.evaluateExpr(this.expr, "INTEGER")[1], //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
 			declaration: this,
 			mutable: false,
 		};
@@ -169,7 +169,7 @@ export class AssignmentStatement extends Statement {
 		const variable = runtime.variables[this.name];
 		if(!variable) fail(`Undeclared variable ${this.name}`);
 		if(!variable.mutable) fail(`Cannot assign to constant ${this.name}`);
-		runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type);
+		runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type)[1];
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
@@ -185,7 +185,7 @@ export class OutputStatement extends Statement {
 	run(runtime:Runtime){
 		let outStr = "";
 		for(const token of this.outMessage){
-			const expr = runtime.evaluateExpr(token, "STRING");
+			const expr = runtime.evaluateExpr(token, "STRING")[1];
 			outStr += expr;
 		}
 		runtime._output(outStr);
