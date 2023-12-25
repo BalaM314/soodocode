@@ -1,12 +1,12 @@
-import { impossible } from "./utils.js";
+import { crash, impossible } from "./utils.js";
 
 export type SymbolType =
-	"number.decimal" |
+	"number.decimal" | //TODO rename to "numeric_fragment"
 	"quote.single" | "quote.double" |
 	"brace.open" | "brace.close" |
 	"bracket.open" | "bracket.close" |
 	"parentheses.open" | "parentheses.close" |
-	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" |
+	"punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" | "punctuation.period" |
 	"comment.singleline" | "comment.multiline_open" | "comment.multiline_close" |
 	"word" |
 	"unknown" |
@@ -165,6 +165,7 @@ const symbolTypes: [
 	[":", "punctuation.colon"],
 	[";", "punctuation.semicolon"],
 	[",", "punctuation.comma"],
+	[".", "punctuation.period"],
 	[" ", "space"],
 	["\t", "space"],
 	["\n", "newline"],
@@ -180,9 +181,15 @@ export function tokenize(input:Symbol[]):Token[] {
 		mComment: false,
 		sString: false,
 		dString: false,
+		decimalNumber: "none" as "none" | "allowDecimal" | "requireNumber",
 	}
 	let currentString = "";
-	for(var symbol of input){ //use of var is intentional
+	let symbol:Symbol;
+	for(symbol of input){
+		if(state.decimalNumber == "allowDecimal" && symbol.type !== "punctuation.period")
+			state.decimalNumber = "none"; //Cursed state reset
+
+		//State checks and comments
 		if(state.sComment){
 			if(symbol.type === "newline"){
 				state.sComment = false;
@@ -209,7 +216,16 @@ export function tokenize(input:Symbol[]):Token[] {
 			}
 		} else if(symbol.type === "comment.singleline") state.sComment = true;
 		else if(symbol.type === "comment.multiline_open") state.mComment = true;
-		else if(symbol.type === "quote.single"){
+		//Decimals
+		else if(state.decimalNumber == "requireNumber"){
+			const num = output.at(-1) ?? crash(`impossible`);
+			if(symbol.type == "number.decimal"){
+				num.text += "." + symbol.text;
+				state.decimalNumber = "none";
+			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`);
+		} else if(state.decimalNumber == "allowDecimal" && symbol.type == "punctuation.period"){
+			state.decimalNumber = "requireNumber";
+		} else if(symbol.type === "quote.single"){
 			state.sString = true;
 			currentString += symbol.text;
 		} else if(symbol.type === "quote.double"){
@@ -217,7 +233,11 @@ export function tokenize(input:Symbol[]):Token[] {
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
 		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`);
-		else if(symbol.type === "word"){
+		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
+		else if(symbol.type === "number.decimal"){
+			state.decimalNumber = "allowDecimal";
+			output.push(symbol as Token);
+		} else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
 				case "TRUE": write("boolean.true"); break;
 				case "FALSE": write("boolean.false"); break;
@@ -259,6 +279,10 @@ export function tokenize(input:Symbol[]):Token[] {
 			output.push(symbol as Token);
 		}
 	}
+	if(state.mComment) fail(`Unclosed multiline comment`);
+	if(state.dString) fail(`Unclosed double-quoted string`);
+	if(state.sString) fail(`Unclosed single-quoted string`);
+	if(state.decimalNumber == "requireNumber") fail(`Expected a number to follow "${(output.at(-1) ?? crash(`impossible`)).text}.", but found end of input`);
 	return output;
 
 	function write(type:TokenType){
