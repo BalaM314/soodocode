@@ -6,7 +6,16 @@ describe("symbolizer", () => {
 	it("should parse numbers", () => {
 		expect(symbolize("5")).toEqual([{text: "5", type: "number.decimal"}]);
 		expect(symbolize("12345")).toEqual([{text: "12345", type: "number.decimal"}]);
-		expect(symbolize("12345 54321")[0]).toEqual({text: "12345", type: "number.decimal"});
+		expect(symbolize("12345 54321")).toEqual([
+			{text: "12345", type: "number.decimal"},
+			{text: " ", type: "space"},
+			{text: "54321", type: "number.decimal"},
+		]);
+		expect(symbolize("12345.54321")).toEqual([
+			{text: "12345", type: "number.decimal"},
+			{text: ".", type: "punctuation.period"},
+			{text: "54321", type: "number.decimal"},
+		]);
 	});
 	it("should parse words", () => {
 		expect(symbolize("a")).toEqual([{text: "a", type: "word"}]);
