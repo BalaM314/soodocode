@@ -53,7 +53,15 @@ export class Statement {
 	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
 		return false;
 	}
-	run(runtime:Runtime):void {}
+	run(runtime:Runtime):void {
+		crash(`Missing runtime implementation for statement ${this.stype}`);
+	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode):void {
+		if(this.category == "block")
+			crash(`Missing runtime implementation for block statement ${this.stype}`);
+		else
+			crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
+	}
 }
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):

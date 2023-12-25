@@ -200,12 +200,12 @@ help: try using DIV instead of / to produce an integer as the result`);
         }
     }
     runBlock(code) {
-        for (const line of code) {
-            if ("nodeGroups" in line) {
-                crash(`TODO`);
+        for (const node of code) {
+            if ("nodeGroups" in node) {
+                node.controlStatements[0].runBlock(this, node);
             }
             else {
-                line.run(this);
+                node.run(this);
             }
         }
     }

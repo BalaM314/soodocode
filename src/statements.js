@@ -70,7 +70,15 @@ export class Statement {
     static supportsSplit(block, statement) {
         return false;
     }
-    run(runtime) { }
+    run(runtime) {
+        crash(`Missing runtime implementation for statement ${this.stype}`);
+    }
+    runBlock(runtime, node) {
+        if (this.category == "block")
+            crash(`Missing runtime implementation for block statement ${this.stype}`);
+        else
+            crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
+    }
 }
 Statement.tokens = null;
 function statement(type, example, ...args) {
