@@ -51,6 +51,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                         value = Math.trunc(left / right);
                         break;
                     case operators.mod:
+                        if (right == 0)
+                            fail(`Division by zero`);
                         value = left % right;
                         break;
                     default:
