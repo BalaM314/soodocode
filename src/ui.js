@@ -222,6 +222,8 @@ ${displayProgram(program)}`;
     }
 });
 function dumpFunctionsToGlobalScope() {
-    Object.assign(window, lexer, parser, statements, utils, runtime);
+    Object.assign(window, lexer, parser, statements, utils, runtime, {
+        runtime: new runtime.Runtime(() => prompt("Enter the value for (unknown)") ?? crash("input was empty"), m => console.log(`[Runtime] ${m}`))
+    });
 }
 dumpFunctionsToGlobalScope();

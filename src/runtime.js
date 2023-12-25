@@ -73,14 +73,14 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 switch (expr.operator) {
                     case operators.and:
-                        return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[0] && this.evaluateExpr(expr.nodes[1], "BOOLEAN")[0]];
+                        return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1] && this.evaluateExpr(expr.nodes[1], "BOOLEAN")[1]];
                     case operators.or:
-                        return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[0] || this.evaluateExpr(expr.nodes[1], "BOOLEAN")[0]];
+                        return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1] || this.evaluateExpr(expr.nodes[1], "BOOLEAN")[1]];
                     case operators.equal_to:
                     case operators.not_equal_to:
                         //Type is unknown
                         const [leftType, left] = this.evaluateExpr(expr.nodes[0]);
-                        const [rightType, right] = this.evaluateExpr(expr.nodes[0]);
+                        const [rightType, right] = this.evaluateExpr(expr.nodes[1]);
                         const is_equal = (leftType == rightType) && (left == right);
                         if (expr.operator == operators.equal_to)
                             return ["BOOLEAN", is_equal];
