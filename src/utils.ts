@@ -58,3 +58,6 @@ export function impossible():never {
 export function escapeHTML(input:string):string {
 	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
+
+/** Makes the property K of T optional. */
+export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;

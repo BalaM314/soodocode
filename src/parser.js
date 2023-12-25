@@ -205,17 +205,76 @@ export function checkStatement(statement, input) {
     return output;
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-export const operatorsByPriority = ((input) => input.map(row => row.map(o => Array.isArray(o) ? { type: `operator.${o[0]}`, unary: true } :
-    typeof o == "string" ? { type: `operator.${o}`, unary: false } :
-        o)))([
-    ["or"],
-    ["and"],
-    ["equal_to", "not_equal_to"],
-    ["less_than", "less_than_equal", "greater_than", "greater_than_equal"],
-    ["add", "subtract", "string_concatenate"],
-    ["multiply", "divide", "integer_divide", "mod"],
+export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
+    ...o,
+    unary: o.unary ?? false
+}))))([
+    [
+        {
+            type: "operator.or",
+            category: "logical"
+        }
+    ], [
+        {
+            type: "operator.and",
+            category: "logical"
+        }
+    ], [
+        {
+            type: "operator.equal_to",
+            category: "logical"
+        }, {
+            type: "operator.not_equal_to",
+            category: "logical"
+        }
+    ], [
+        {
+            type: "operator.less_than",
+            category: "logical"
+        }, {
+            type: "operator.less_than_equal",
+            category: "logical"
+        }, {
+            type: "operator.greater_than",
+            category: "logical"
+        }, {
+            type: "operator.greater_than_equal",
+            category: "logical"
+        }
+    ], [
+        {
+            type: "operator.add",
+            category: "arithmetic"
+        }, {
+            type: "operator.subtract",
+            category: "arithmetic"
+        }, {
+            type: "operator.string_concatenate",
+            category: "string"
+        }
+    ], [
+        {
+            type: "operator.multiply",
+            category: "arithmetic"
+        }, {
+            type: "operator.divide",
+            category: "arithmetic"
+        }, {
+            type: "operator.integer_divide",
+            category: "arithmetic"
+        }, {
+            type: "operator.mod",
+            category: "arithmetic"
+        }
+    ],
     //no exponentiation operator?
-    [["not", "unary"]],
+    [
+        {
+            type: "operator.not",
+            category: "logical",
+            unary: true,
+        }
+    ],
     //(function call)
     //(array access)
 ]);
