@@ -133,9 +133,9 @@ export class DeclarationStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		for(const variable of this.variables){
-			if(variable in runtime.variables) fail(`Variable ${variable} was already declared`);
-			runtime.variables[variable] = {
-				type: this.varType as VariableType,
+			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
+			runtime.getCurrentScope()[variable] = {
+				type: this.varType as VariableType, //todo user defined types
 				value: null,
 				declaration: this,
 				mutable: true,
@@ -154,8 +154,8 @@ export class ConstantStatement extends Statement {
 		this.expr = expr;
 	}
 	run(runtime:Runtime){
-		if(this.name in runtime.variables) fail(`Constant ${this.name} was already declared`);
-		runtime.variables[this.name] = {
+		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`);
+		runtime.getCurrentScope()[this.name] = {
 			type: "INTEGER", //TODO guess type required
 			value: runtime.evaluateExpr(this.expr, "INTEGER")[1], //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
 			declaration: this,
@@ -174,10 +174,10 @@ export class AssignmentStatement extends Statement {
 		this.expr = expr;
 	}
 	run(runtime:Runtime){
-		const variable = runtime.variables[this.name];
+		const variable = runtime.getVariable(this.name);
 		if(!variable) fail(`Undeclared variable ${this.name}`);
 		if(!variable.mutable) fail(`Cannot assign to constant ${this.name}`);
-		runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type)[1];
+		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
@@ -207,7 +207,7 @@ export class InputStatement extends Statement {
 		this.name = (tokens[1] as Token).text;
 	}
 	run(runtime:Runtime){
-		const variable = runtime.variables[this.name];
+		const variable = runtime.getVariable(this.name);
 		if(!variable) fail(`Undeclared variable ${this.name}`);
 		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`);
 		const input = runtime._input(); //TODO allow specifying the type, and make the _input() function handle coercion and invalid input
@@ -291,13 +291,15 @@ export class ForStatement extends Statement {
 		const end = (node.controlStatements[1] as ForEndStatement);
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
 		for(let i = lower; i <= upper; i++){
-			runtime.variables[this.name] = {
-				declaration: this,
-				mutable: false,
-				type: "INTEGER",
-				value: i
-			};
-			runtime.runBlock(node.nodeGroups[0]);
+			runtime.runBlock(node.nodeGroups[0], {
+				//Set the loop variable in the loop scope
+				[this.name]: {
+					declaration: this,
+					mutable: false,
+					type: "INTEGER",
+					value: i
+				}
+			});
 		}
 	}
 }
@@ -343,13 +345,19 @@ export class DoWhileEndStatement extends Statement {
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
-	returnType: string;
+	returnType:string;
+	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		const args = parseFunctionArguments(tokens.slice(3, -3));
 		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
 		this.returnType = tokens.at(-1)!.text.toUpperCase();
+		this.name = tokens[1].text;
+	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+		//Don't actually run the block
+		runtime.functions[this.name] = node;
 	}
 }
 
@@ -357,11 +365,17 @@ export class FunctionStatement extends Statement {
 export class ProcedureStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
+	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		const args = parseFunctionArguments(tokens.slice(3, -1));
 		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
+		this.name = tokens[1].text;
+	}
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+		//Don't actually run the block
+		runtime.functions[this.name] = node;
 	}
 }
 

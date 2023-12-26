@@ -27,8 +27,10 @@ interface ConstantData {
 	mutable: false;
 }
 
+type VariableScope = Record<string, VariableData | ConstantData>;
+
 export class Runtime {
-	variables: Record<string, VariableData | ConstantData> = {};
+	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
 	types: Record<string, VariableData> = {};
 	files: Record<string, FileData> = {};
@@ -175,7 +177,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				case "string":
 					return ["STRING", expr.text.slice(1, -1)]; //remove the quotes
 				case "name":
-					const variable = this.variables[expr.text];
+					const variable = this.getVariable(expr.text);
 					if(!variable) fail(`Undeclared variable ${expr.text}`);
 					if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${expr.text}`);
 					if(type) return [type, this.coerceValue(variable.value, variable.type, type)];
@@ -183,6 +185,16 @@ help: try using DIV instead of / to produce an integer as the result`
 				default: fail(`Cannot evaluate token of type ${expr.type}`);
 			}
 		}
+	}
+	/** Returned variable may not be initialized */
+	getVariable(name:string):VariableData | ConstantData | null {
+		for(let i = this.scopes.length - 1; i >= 0; i--){
+			if(this.scopes[i][name]) return this.scopes[i][name];
+		}
+		return null;
+	}
+	getCurrentScope():VariableScope {
+		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
 	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping[T], from:T, to:S):VariableTypeMapping[S] {
 		//typescript really hates this function, beware
@@ -199,7 +211,6 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(func.controlStatements[0] instanceof ProcedureStatement){
 			if(requireReturnValue) fail(`Cannot use return value of ${(func.controlStatements[0].tokens[1] as Token).text}() as it is a procedure`);
 			//TODO fix above line
-			//TODO scope?
 			this.runBlock([func]);
 			return null;
 		} else { //must be functionstatement
@@ -207,7 +218,8 @@ help: try using DIV instead of / to produce an integer as the result`
 			return crash(`Obtaining the return value from functions is not yet implemented`);
 		}
 	}
-	runBlock(code:ProgramAST){
+	runBlock(code:ProgramAST, scope:VariableScope = {}){
+		this.scopes.push({});
 		for(const node of code){
 			if("nodeGroups" in node){
 				node.controlStatements[0].runBlock(this, node);
@@ -215,6 +227,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				node.run(this);
 			}
 		}
+		this.scopes.pop() ?? crash(`Scope somehow disappeared`);
 	}
 }
 

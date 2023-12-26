@@ -153,9 +153,9 @@ let DeclarationStatement = (() => {
         }
         run(runtime) {
             for (const variable of this.variables) {
-                if (variable in runtime.variables)
+                if (runtime.getVariable(variable))
                     fail(`Variable ${variable} was already declared`);
-                runtime.variables[variable] = {
+                runtime.getCurrentScope()[variable] = {
                     type: this.varType,
                     value: null,
                     declaration: this,
@@ -189,9 +189,9 @@ let ConstantStatement = (() => {
             this.expr = expr;
         }
         run(runtime) {
-            if (this.name in runtime.variables)
+            if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`);
-            runtime.variables[this.name] = {
+            runtime.getCurrentScope()[this.name] = {
                 type: "INTEGER",
                 value: runtime.evaluateExpr(this.expr, "INTEGER")[1],
                 declaration: this,
@@ -224,12 +224,12 @@ let AssignmentStatement = (() => {
             this.expr = expr;
         }
         run(runtime) {
-            const variable = runtime.variables[this.name];
+            const variable = runtime.getVariable(this.name);
             if (!variable)
                 fail(`Undeclared variable ${this.name}`);
             if (!variable.mutable)
                 fail(`Cannot assign to constant ${this.name}`);
-            runtime.variables[this.name].value = runtime.evaluateExpr(this.expr, variable.type)[1];
+            variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
@@ -289,7 +289,7 @@ let InputStatement = (() => {
             this.name = tokens[1].text;
         }
         run(runtime) {
-            const variable = runtime.variables[this.name];
+            const variable = runtime.getVariable(this.name);
             if (!variable)
                 fail(`Undeclared variable ${this.name}`);
             if (!variable.mutable)
@@ -445,13 +445,15 @@ let ForStatement = (() => {
             if (end.name !== this.name)
                 fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
             for (let i = lower; i <= upper; i++) {
-                runtime.variables[this.name] = {
-                    declaration: this,
-                    mutable: false,
-                    type: "INTEGER",
-                    value: i
-                };
-                runtime.runBlock(node.nodeGroups[0]);
+                runtime.runBlock(node.nodeGroups[0], {
+                    //Set the loop variable in the loop scope
+                    [this.name]: {
+                        declaration: this,
+                        mutable: false,
+                        type: "INTEGER",
+                        value: i
+                    }
+                });
             }
         }
     };
@@ -579,6 +581,11 @@ let FunctionStatement = (() => {
                 fail(`Invalid function arguments: ${args}`);
             this.args = args;
             this.returnType = tokens.at(-1).text.toUpperCase();
+            this.name = tokens[1].text;
+        }
+        runBlock(runtime, node) {
+            //Don't actually run the block
+            runtime.functions[this.name] = node;
         }
     };
     __setFunctionName(_classThis, "FunctionStatement");
@@ -605,6 +612,11 @@ let ProcedureStatement = (() => {
             if (typeof args == "string")
                 fail(`Invalid function arguments: ${args}`);
             this.args = args;
+            this.name = tokens[1].text;
+        }
+        runBlock(runtime, node) {
+            //Don't actually run the block
+            runtime.functions[this.name] = node;
         }
     };
     __setFunctionName(_classThis, "ProcedureStatement");
