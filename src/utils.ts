@@ -1,4 +1,5 @@
 import type { ExpressionASTNode } from "./parser";
+import { VariableType } from "./runtime";
 
 export function displayExpression(node:ExpressionASTNode, expand = false, html = false):string {
 	if("type" in node){
@@ -61,3 +62,8 @@ export function escapeHTML(input:string):string {
 
 /** Makes the property K of T optional. */
 export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
+
+//TODO move to runtime, user defined types
+export function isVarType(input:string):input is VariableType {
+	return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
+}

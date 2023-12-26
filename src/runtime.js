@@ -30,7 +30,7 @@ export class Runtime {
                     if (type)
                         return [type, this.coerceValue(output, statement.returnType, type)];
                     else
-                        return [statement.returnType, output]; //TODO remove the as VariableType
+                        return [statement.returnType, output];
             }
             //arithmetic
             if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
@@ -247,7 +247,7 @@ help: try using DIV instead of / to produce an integer as the result`);
             scope.variables[name] = {
                 declaration: func.controlStatements[0],
                 mutable: passMode == "reference",
-                type: type,
+                type,
                 value: this.evaluateExpr(args[i], type)[1]
             };
             i++;

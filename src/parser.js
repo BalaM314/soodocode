@@ -1,6 +1,6 @@
 import { getText } from "./lexer.js";
 import { statements } from "./statements.js";
-import { impossible, splitArray, fail } from "./utils.js";
+import { impossible, splitArray, fail, isVarType } from "./utils.js";
 export function parseFunctionArguments(tokens) {
     const args = new Map();
     let expected = "nameOrEndOrPassMode";
@@ -46,6 +46,8 @@ export function parseFunctionArguments(tokens) {
                 expected = "commaOrEnd";
                 if (!name)
                     impossible();
+                if (!isVarType(token.text))
+                    fail(`Invalid type "${token.text}"`);
                 args.set(name, { type: token.text, passMode });
             }
         }

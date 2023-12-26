@@ -1329,11 +1329,11 @@ describe("parseFunctionArguments", () => {
             { type: "punctuation.comma", text: "," },
             { type: "name", text: "arg3" },
             { type: "punctuation.colon", text: ":" },
-            { type: "name", text: "USERSUPPLIED" },
+            { type: "name", text: "STRING" },
         ]))).toEqual({
             arg: ["INTEGER", jasmine.any(String)],
             arg2: ["BOOLEAN", jasmine.any(String)],
-            arg3: ["USERSUPPLIED", jasmine.any(String)],
+            arg3: ["STRING", jasmine.any(String)],
         });
     });
     it("should correctly determine byref and byval for function arguments", () => {
@@ -1414,6 +1414,7 @@ describe("parseFunctionArguments", () => {
             arg: ["INTEGER", "reference"],
             arg2: ["BOOLEAN", "value"],
         });
+        //TODO unfinished test
         expect(process(parseFunctionArguments([
             { type: "name", text: "arg" },
             { type: "punctuation.colon", text: ":" },
@@ -1425,11 +1426,11 @@ describe("parseFunctionArguments", () => {
             { type: "punctuation.comma", text: "," },
             { type: "name", text: "arg3" },
             { type: "punctuation.colon", text: ":" },
-            { type: "name", text: "USERSUPPLIED" },
+            { type: "name", text: "STRING" },
         ]))).toEqual({
             arg: ["INTEGER", jasmine.any(String)],
             arg2: ["BOOLEAN", jasmine.any(String)],
-            arg3: ["USERSUPPLIED", jasmine.any(String)],
+            arg3: ["STRING", jasmine.any(String)],
         });
     });
     it("should throw on invalid function arguments", () => {

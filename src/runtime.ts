@@ -66,8 +66,8 @@ export class Runtime {
 					if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
 					const statement = fn.controlStatements[0];
 					const output = this.callFunction(fn, expr.nodes, true);
-					if(type) return [type, this.coerceValue(output, statement.returnType as VariableType, type)];
-					else return [statement.returnType as VariableType, output]; //TODO remove the as VariableType
+					if(type) return [type, this.coerceValue(output, statement.returnType, type)];
+					else return [statement.returnType, output];
 			}
 
 			//arithmetic
@@ -261,8 +261,8 @@ help: try using DIV instead of / to produce an integer as the result`
 			scope.variables[name] = {
 				declaration: func.controlStatements[0],
 				mutable: passMode == "reference",
-				type: type as VariableType,
-				value: this.evaluateExpr(args[i], type as VariableType)[1]
+				type,
+				value: this.evaluateExpr(args[i], type)[1]
 			}
 			i ++;
 		}

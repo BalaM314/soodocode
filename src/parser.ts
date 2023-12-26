@@ -1,6 +1,6 @@
 import { getText, type Token, type TokenType } from "./lexer.js";
 import { FunctionArguments, Statement, statements } from "./statements.js";
-import { impossible, splitArray, fail, PartialKey } from "./utils.js";
+import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
 //TODO improve error messages
 
@@ -29,7 +29,7 @@ export type ProgramASTTreeNode = {
 export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
 export function parseFunctionArguments(tokens:Token[]):FunctionArguments | string {
-	const args = new Map<string, {type:string, passMode:"value" | "reference"}>();
+	const args:FunctionArguments = new Map();
 	let expected = "nameOrEndOrPassMode" as "nameOrEndOrPassMode" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd";
 	let passMode:"value" | "reference" = "value";
 	let name:string | null = null;
@@ -64,6 +64,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 			else {
 				expected = "commaOrEnd";
 				if(!name) impossible();
+				if(!isVarType(token.text)) fail(`Invalid type "${token.text}"`);
 				args.set(name, {type: token.text, passMode});
 			}
 		} else if(expected == "commaOrEnd"){

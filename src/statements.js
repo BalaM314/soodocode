@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { parseExpression, parseFunctionArguments } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, splitArray } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 export const statements = {
     startKeyword: {},
     byType: {},
@@ -149,7 +149,11 @@ let DeclarationStatement = (() => {
             }
             if (expected == "name")
                 fail(`Expected name, found ":" (punctuation.colon)`);
-            this.varType = tokens.at(-1).text;
+            const varType = tokens.at(-1).text;
+            if (isVarType(varType))
+                this.varType = varType;
+            else
+                fail(`Invalid type "${varType}"`);
         }
         run(runtime) {
             for (const variable of this.variables) {
@@ -589,6 +593,18 @@ let DoWhileStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var DoWhileStatement = _classThis = class extends _classSuper {
+        runBlock(runtime, node) {
+            do {
+                const result = runtime.runBlock(node.nodeGroups[0], {
+                    statement: this,
+                    variables: {}
+                });
+                if (result)
+                    return result;
+                //TODO prevent infinite loops
+            } while (!runtime.evaluateExpr(node.controlStatements[1].condition, "BOOLEAN")[1]);
+            //Inverted, the pseudocode statement is "until"
+        }
     };
     __setFunctionName(_classThis, "DoWhileStatement");
     (() => {
@@ -611,17 +627,6 @@ let DoWhileEndStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.condition = tokens[1];
-        }
-        runBlock(runtime, node) {
-            do {
-                const result = runtime.runBlock(node.nodeGroups[0], {
-                    statement: this,
-                    variables: {}
-                });
-                if (result)
-                    return result;
-                //TODO prevent infinite loops
-            } while (!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
         }
     };
     __setFunctionName(_classThis, "DoWhileEndStatement");
@@ -648,7 +653,10 @@ let FunctionStatement = (() => {
             if (typeof args == "string")
                 fail(`Invalid function arguments: ${args}`);
             this.args = args;
-            this.returnType = tokens.at(-1).text.toUpperCase();
+            const returnType = tokens.at(-1).text;
+            if (!isVarType(returnType))
+                fail(`Invalid type ${returnType}`);
+            this.returnType = returnType;
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {

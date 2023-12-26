@@ -1,7 +1,7 @@
 import type { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, splitArray } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 
 
 export type StatementType =
@@ -20,7 +20,7 @@ export const statements = {
 	irregular: [] as (typeof Statement)[],
 };
 
-export type FunctionArguments = Map<string, {type:string, passMode:"value" | "reference"}>
+export type FunctionArguments = Map<string, {type:VariableType, passMode:"value" | "reference"}>
 
 export type StatementExecutionResult = {
 	type: "function_return";
@@ -118,7 +118,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 @statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")
 export class DeclarationStatement extends Statement {
 	variables:string[] = [];
-	varType:string;
+	varType:VariableType;
 	constructor(tokens:Token[]){
 		super(tokens);
 		let expected = "name" as "name" | "comma";
@@ -134,13 +134,16 @@ export class DeclarationStatement extends Statement {
 			}
 		}
 		if(expected == "name") fail(`Expected name, found ":" (punctuation.colon)`);
-		this.varType = tokens.at(-1)!.text;
+		const varType = tokens.at(-1)!.text;
+		if(isVarType(varType))
+			this.varType = varType;
+		else fail(`Invalid type "${varType}"`);
 	}
 	run(runtime:Runtime){
 		for(const variable of this.variables){
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
-				type: this.varType as VariableType, //todo user defined types
+				type: this.varType, //todo user defined types
 				value: null,
 				declaration: this,
 				mutable: true,
@@ -264,7 +267,7 @@ export class ReturnStatement extends Statement {
 		if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`);
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateExpr(this.expr, statement.returnType as VariableType)[1]
+			value: runtime.evaluateExpr(this.expr, statement.returnType)[1]
 		};
 	}
 }
@@ -369,15 +372,6 @@ export class WhileStatement extends Statement {
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
-	//TODO! impl runBlock here
-}
-@statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
-export class DoWhileEndStatement extends Statement {
-	condition:ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
-		super(tokens);
-		this.condition = tokens[1];
-	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
@@ -386,7 +380,16 @@ export class DoWhileEndStatement extends Statement {
 			});
 			if(result) return result;
 			//TODO prevent infinite loops
-		} while(!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
+		} while(!runtime.evaluateExpr((node.controlStatements[1] as DoWhileEndStatement).condition, "BOOLEAN")[1]);
+		//Inverted, the pseudocode statement is "until"
+	}
+}
+@statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
+export class DoWhileEndStatement extends Statement {
+	condition:ExpressionAST;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		this.condition = tokens[1];
 	}
 }
 
@@ -394,14 +397,16 @@ export class DoWhileEndStatement extends Statement {
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
-	returnType:string;
+	returnType:VariableType;
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		const args = parseFunctionArguments(tokens.slice(3, -3));
 		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
-		this.returnType = tokens.at(-1)!.text.toUpperCase();
+		const returnType = tokens.at(-1)!.text;
+		if(!isVarType(returnType)) fail(`Invalid type ${returnType}`);
+		this.returnType = returnType;
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
