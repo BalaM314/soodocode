@@ -1,49 +1,49 @@
 import "jasmine";
-import { symbolize, tokenize } from "../src/lexer.js";
+import { symbol, symbolize, token, tokenize } from "../src/lexer.js";
 
-
+//TODO datastructify
 describe("symbolizer", () => {
 	it("should parse numbers", () => {
-		expect(symbolize("5")).toEqual([{text: "5", type: "numeric_fragment"}]);
-		expect(symbolize("12345")).toEqual([{text: "12345", type: "numeric_fragment"}]);
+		expect(symbolize("5")).toEqual([symbol("numeric_fragment", "5")]);
+		expect(symbolize("12345")).toEqual([symbol("numeric_fragment", "12345")]);
 		expect(symbolize("12345 54321")).toEqual([
-			{text: "12345", type: "numeric_fragment"},
-			{text: " ", type: "space"},
-			{text: "54321", type: "numeric_fragment"},
+			symbol("numeric_fragment", "12345"),
+			symbol("space", " "),
+			symbol("numeric_fragment", "54321"),
 		]);
 		expect(symbolize("12345.54321")).toEqual([
-			{text: "12345", type: "numeric_fragment"},
-			{text: ".", type: "punctuation.period"},
-			{text: "54321", type: "numeric_fragment"},
+			symbol("numeric_fragment", "12345"),
+			symbol("punctuation.period", "."),
+			symbol("numeric_fragment", "54321"),
 		]);
 	});
 	it("should parse words", () => {
-		expect(symbolize("a")).toEqual([{text: "a", type: "word"}]);
-		expect(symbolize("amogus")).toEqual([{text: "amogus", type: "word"}]);
-		expect(symbolize("amogus sussy imposter")[0]).toEqual({text: "amogus", type: "word"});
+		expect(symbolize("a")).toEqual([symbol("word", "a")]);
+		expect(symbolize("amogus")).toEqual([symbol("word", "amogus")]);
+		expect(symbolize("amogus sussy imposter")[0]).toEqual(symbol("word", "amogus"));
 	});
 	it("should parse text and build a symbol table", () => {
 		expect(symbolize("X <- 5")).toEqual([
-			{text: "X", type: "word"},
-			{text: " ", type: "space"},
-			{text: "<-", type: "operator.assignment"},
-			{text: " ", type: "space"},
-			{text: "5", type: "numeric_fragment"}
+			symbol("word", "X"),
+			symbol("space", " "),
+			symbol("operator.assignment", "<-"),
+			symbol("space", " "),
+			symbol("numeric_fragment", "5")
 		]);
 		expect(symbolize("WHILE Index < 501 AND NOT PastLast")).toEqual([
-			{text: "WHILE", type: "word"},
-			{text: " ", type: "space"},
-			{text: "Index", type: "word"},
-			{text: " ", type: "space"},
-			{text: "<", type: "operator.less_than"},
-			{text: " ", type: "space"},
-			{text: "501", type: "numeric_fragment"},
-			{text: " ", type: "space"},
-			{text: "AND", type: "operator.and"},
-			{text: " ", type: "space"},
-			{text: "NOT", type: "operator.not"},
-			{text: " ", type: "space"},
-			{text: "PastLast", type: "word"},
+			symbol("word", "WHILE"),
+			symbol("space", " "),
+			symbol("word", "Index"),
+			symbol("space", " "),
+			symbol("operator.less_than", "<"),
+			symbol("space", " "),
+			symbol("numeric_fragment", "501"),
+			symbol("space", " "),
+			symbol("operator.and", "AND"),
+			symbol("space", " "),
+			symbol("operator.not", "NOT"),
+			symbol("space", " "),
+			symbol("word", "PastLast"),
 		]);
 	});
 });
@@ -51,160 +51,160 @@ describe("symbolizer", () => {
 describe("tokenizer", () => {
 	it("should leave most symbols untouched", () => {
 		expect(tokenize([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: ")", type: "parentheses.close"},
+			symbol("punctuation.semicolon", ";"),
+			symbol("newline", "\n"),
+			symbol("operator.less_than", "<"),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("bracket.close", "]"),
+			symbol("parentheses.open", "("),
+			symbol("parentheses.close", ")"),
 		])).toEqual([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: ")", type: "parentheses.close"},
+			token("punctuation.semicolon", ";"),
+			token("newline", "\n"),
+			token("operator.less_than", "<"),
+			token("operator.and", "AND"),
+			token("number.decimal", "501"),
+			token("bracket.close", "]"),
+			token("parentheses.open", "("),
+			token("parentheses.close", ")"),
 		])
 	});
 
 	it("should remove whitespace", () => {
 		expect(tokenize([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: " ", type: "space"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: " ", type: "space"},
-			{text: " ", type: "space"},
-			{text: "(", type: "parentheses.open"},
-			{text: ")", type: "parentheses.close"},
+			symbol("punctuation.semicolon", ";"),
+			symbol("newline", "\n"),
+			symbol("space", " "),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("space", " "),
+			symbol("space", " "),
+			symbol("parentheses.open", "("),
+			symbol("parentheses.close", ")"),
 		])).toEqual([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
-			{text: "(", type: "parentheses.open"},
-			{text: ")", type: "parentheses.close"},
+			token("punctuation.semicolon", ";"),
+			token("newline", "\n"),
+			token("operator.and", "AND"),
+			token("number.decimal", "501"),
+			token("parentheses.open", "("),
+			token("parentheses.close", ")"),
 		])
 	});
 
 	it("should remove single line comments", () => {
 		expect(tokenize([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: "//", type: "comment.singleline"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "\n", type: "newline"},
-			{text: ")", type: "parentheses.close"},
+			symbol("punctuation.semicolon", ";"),
+			symbol("newline", "\n"),
+			symbol("operator.less_than", "<"),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("bracket.close", "]"),
+			symbol("parentheses.open", "("),
+			symbol("comment.singleline", "//"),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("newline", "\n"),
+			symbol("parentheses.close", ")"),
 		])).toEqual([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: "\n", type: "newline"},
-			{text: ")", type: "parentheses.close"},
+			token("punctuation.semicolon", ";"),
+			token("newline", "\n"),
+			token("operator.less_than", "<"),
+			token("operator.and", "AND"),
+			token("number.decimal", "501"),
+			token("bracket.close", "]"),
+			token("parentheses.open", "("),
+			token("newline", "\n"),
+			token("parentheses.close", ")"),
 		])
 	});
 
 	it("should remove multiline comments", () => {
 		expect(tokenize([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: "/*", type: "comment.multiline_open"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "*/", type: "comment.multiline_close"},
-			{text: ")", type: "parentheses.close"},
+			symbol("punctuation.semicolon", ";"),
+			symbol("newline", "\n"),
+			symbol("operator.less_than", "<"),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("bracket.close", "]"),
+			symbol("parentheses.open", "("),
+			symbol("comment.multiline_open", "/*"),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("comment.multiline_close", "*/"),
+			symbol("parentheses.close", ")"),
 		])).toEqual([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: ")", type: "parentheses.close"},
+			token("punctuation.semicolon", ";"),
+			token("newline", "\n"),
+			token("operator.less_than", "<"),
+			token("operator.and", "AND"),
+			token("number.decimal", "501"),
+			token("bracket.close", "]"),
+			token("parentheses.open", "("),
+			token("parentheses.close", ")"),
 		])
 	});
 
 	it("should form strings", () => {
 		expect(tokenize([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: "'", type: "quote.single"},
-			{text: "AND", type: "operator.and"},
-			{text: " ", type: "space"},
-			{text: "501", type: "numeric_fragment"},
-			{text: "'", type: "quote.single"},
-			{text: "<>", type: "operator.not_equal_to"},
-			{text: `\"`, type: "quote.double"},
-			{text: "AND", type: "operator.and"},
-			{text: " ", type: "space"},
-			{text: "501", type: "numeric_fragment"},
-			{text: `\"`, type: "quote.double"},
-			{text: ")", type: "parentheses.close"},
+			symbol("punctuation.semicolon", ";"),
+			symbol("newline", "\n"),
+			symbol("operator.less_than", "<"),
+			symbol("operator.and", "AND"),
+			symbol("numeric_fragment", "501"),
+			symbol("bracket.close", "]"),
+			symbol("parentheses.open", "("),
+			symbol("quote.single", "'"),
+			symbol("operator.and", "AND"),
+			symbol("space", " "),
+			symbol("numeric_fragment", "501"),
+			symbol("quote.single", "'"),
+			symbol("operator.not_equal_to", "<>"),
+			symbol("quote.double", `\"`),
+			symbol("operator.and", "AND"),
+			symbol("space", " "),
+			symbol("numeric_fragment", "501"),
+			symbol("quote.double", `\"`),
+			symbol("parentheses.close", ")"),
 		])).toEqual([
-			{text: ";", type: "punctuation.semicolon"},
-			{text: "\n", type: "newline"},
-			{text: "<", type: "operator.less_than"},
-			{text: "AND", type: "operator.and"},
-			{text: "501", type: "number.decimal"},
-			{text: "]", type: "bracket.close"},
-			{text: "(", type: "parentheses.open"},
-			{text: "'AND 501'", type: "string"},
-			{text: "<>", type: "operator.not_equal_to"},
-			{text: `"AND 501"`, type: "string"},
-			{text: ")", type: "parentheses.close"},
+			token("punctuation.semicolon", ";"),
+			token("newline", "\n"),
+			token("operator.less_than", "<"),
+			token("operator.and", "AND"),
+			token("number.decimal", "501"),
+			token("bracket.close", "]"),
+			token("parentheses.open", "("),
+			token("string", "'AND 501'"),
+			token("operator.not_equal_to", "<>"),
+			token("string", `"AND 501"`),
+			token("parentheses.close", ")"),
 		])
 	});
 
 	it("should parse keywords", () => {
 		expect(tokenize([
-			{text: "WHILE", type: "word"},
-			{text: " ", type: "space"},
-			{text: "Index", type: "word"},
-			{text: " ", type: "space"},
-			{text: "<", type: "operator.less_than"},
-			{text: " ", type: "space"},
-			{text: "501", type: "numeric_fragment"},
-			{text: " ", type: "space"},
-			{text: "AND", type: "operator.and"},
-			{text: " ", type: "space"},
-			{text: `"`, type: "quote.double"},
-			{text: "sussy", type: "word"},
-			{text: " ", type: "space"},
-			{text: "PROCEDURE", type: "word"},
-			{text: `"`, type: "quote.double"},
+			symbol("word", "WHILE"),
+			symbol("space", " "),
+			symbol("word", "Index"),
+			symbol("space", " "),
+			symbol("operator.less_than", "<"),
+			symbol("space", " "),
+			symbol("numeric_fragment", "501"),
+			symbol("space", " "),
+			symbol("operator.and", "AND"),
+			symbol("space", " "),
+			symbol("quote.double", `"`),
+			symbol("word", "sussy"),
+			symbol("space", " "),
+			symbol("word", "PROCEDURE"),
+			symbol("quote.double", `"`),
 		])).toEqual([
-			{text: "WHILE", type: "keyword.while"},
-			{text: "Index", type: "name"},
-			{text: "<", type: "operator.less_than"},
-			{text: "501", type: "number.decimal"},
-			{text: "AND", type: "operator.and"},
-			{text: `"sussy PROCEDURE"`, type: "string"},
+			token("keyword.while", "WHILE"),
+			token("name", "Index"),
+			token("operator.less_than", "<"),
+			token("number.decimal", "501"),
+			token("operator.and", "AND"),
+			token("string", `"sussy PROCEDURE"`),
 		])
 	});
 	
