@@ -367,6 +367,40 @@ let ReturnStatement = (() => {
     return ReturnStatement = _classThis;
 })();
 export { ReturnStatement };
+let CallStatement = (() => {
+    let _classDecorators = [statement("call", "CALL Func(5)", "keyword.call", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var CallStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            if ("operator" in tokens[1] && tokens[1].operator == "function call") {
+                this.func = tokens[1];
+            }
+            else
+                crash(`CALL can only be used to call functions or procedures`);
+        }
+        run(runtime) {
+            const name = this.func.operatorToken.text;
+            const func = runtime.functions[name];
+            if (!func)
+                fail(`Function ${name} is not defined.`);
+            runtime.callFunction(func, this.func.nodes);
+        }
+    };
+    __setFunctionName(_classThis, "CallStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        CallStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return CallStatement = _classThis;
+})();
+export { CallStatement };
 let IfStatement = (() => {
     let _classDecorators = [statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")];
     let _classDescriptor;

@@ -1,11 +1,11 @@
 import type { Runtime, VariableType } from "./runtime.js";
 import type { TokenType, Token } from "./lexer.js";
-import { ExpressionAST, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
+import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
 
 
 export type StatementType =
-	"declaration" | "constant" | "assignment" | "output" | "input" | "return" |
+	"declaration" | "constant" | "assignment" | "output" | "input" | "return" | "call" |
 	"if" | "if.end" | "else" |
 	"for" | "for.end" |
 	"while" | "while.end" |
@@ -246,6 +246,22 @@ export class ReturnStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		crash(`TODO Not yet implemented`);
+	}
+}
+@statement("call", "CALL Func(5)", "keyword.call", "expr+")
+export class CallStatement extends Statement {
+	func:ExpressionASTTreeNode;
+	constructor(tokens:(Token | ExpressionAST)[]){
+		super(tokens);
+		if("operator" in tokens[1] && tokens[1].operator == "function call"){
+			this.func = tokens[1];
+		} else crash(`CALL can only be used to call functions or procedures`);
+	}
+	run(runtime:Runtime){
+		const name = this.func.operatorToken.text;
+		const func = runtime.functions[name];
+		if(!func) fail(`Function ${name} is not defined.`);
+		runtime.callFunction(func, this.func.nodes);
 	}
 }
 
