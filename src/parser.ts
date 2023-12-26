@@ -190,18 +190,22 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 	if(j != input.length) return {message: `Expected end of line, found ${input[j].type}`, priority: 7};
 	return output;
 }
-type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N : never;
+type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N | "negate" : never;
 type Operator = {
 	type: TokenType;
+	name: string;
 	unary: boolean;
+	overloadedUnary: boolean;
 	category: "arithmetic" | "logical" | "string";
 }
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-export const operatorsByPriority = ((input:(PartialKey<Operator, "unary">)[][]):Operator[][] =>
+export const operatorsByPriority = ((input:(PartialKey<Operator, "unary" | "name" | "overloadedUnary">)[][]):Operator[][] =>
 	input.map(row => row.map(o =>
 		({
 			...o,
-			unary: o.unary ?? false
+			unary: o.unary ?? false,
+			name: o.name ?? o.type,
+			overloadedUnary: o.overloadedUnary ?? false,
 		})
 	))
 )([
@@ -243,7 +247,8 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary">)[][]):
 			category: "arithmetic"
 		},{
 			type: "operator.subtract",
-			category: "arithmetic"
+			category: "arithmetic",
+			overloadedUnary: true,
 		},{
 			type: "operator.string_concatenate",
 			category: "string"
@@ -269,6 +274,12 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary">)[][]):
 			type: "operator.not",
 			category: "logical",
 			unary: true,
+		},
+		{
+			type: "operator.subtract",
+			name: "operator.negate",
+			category: "logical",
+			unary: true,
 		}
 	],
 	//(function call)
@@ -278,7 +289,7 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary">)[][]):
 export const operators = Object.fromEntries(
 	operatorsByPriority.flat()
 	.map(o => [
-		o.type.startsWith("operator.") ? o.type.split("operator.")[1] : o.type
+		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name
 	, o] as const)
 ) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
@@ -334,7 +345,10 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 					//Make sure there is something on left and right of the operator
 					const left = input.slice(0, i);
 					const right = input.slice(i + 1);
-					if(left.length == 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+					if(left.length == 0){
+						if(operator.overloadedUnary) break;
+						else fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+					}
 					if(right.length == 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
 					return {
 						operatorToken: input[i],

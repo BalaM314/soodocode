@@ -39,6 +39,14 @@ export class Runtime {
                 const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
                 let value;
                 //if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
+                if (expr.operator.unary) {
+                    const [operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType);
+                    switch (expr.operator) {
+                        case operators.negate:
+                            return ["INTEGER", -operand];
+                        default: crash("impossible");
+                    }
+                }
                 const [leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType);
                 const [rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType);
                 switch (expr.operator) {

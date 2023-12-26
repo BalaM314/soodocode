@@ -208,7 +208,9 @@ export function checkStatement(statement, input) {
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
     ...o,
-    unary: o.unary ?? false
+    unary: o.unary ?? false,
+    name: o.name ?? o.type,
+    overloadedUnary: o.overloadedUnary ?? false,
 }))))([
     [
         {
@@ -248,7 +250,8 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
             category: "arithmetic"
         }, {
             type: "operator.subtract",
-            category: "arithmetic"
+            category: "arithmetic",
+            overloadedUnary: true,
         }, {
             type: "operator.string_concatenate",
             category: "string"
@@ -274,6 +277,12 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
             type: "operator.not",
             category: "logical",
             unary: true,
+        },
+        {
+            type: "operator.subtract",
+            name: "operator.negate",
+            category: "logical",
+            unary: true,
         }
     ],
     //(function call)
@@ -282,7 +291,7 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
 /** Indexed by OperatorType */
 export const operators = Object.fromEntries(operatorsByPriority.flat()
     .map(o => [
-    o.type.startsWith("operator.") ? o.type.split("operator.")[1] : o.type,
+    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name,
     o
 ]));
 export function parseExpressionLeafNode(input) {
@@ -341,8 +350,12 @@ export function parseExpression(input) {
                     //Make sure there is something on left and right of the operator
                     const left = input.slice(0, i);
                     const right = input.slice(i + 1);
-                    if (left.length == 0)
-                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                    if (left.length == 0) {
+                        if (operator.overloadedUnary)
+                            break;
+                        else
+                            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                    }
                     if (right.length == 0)
                         fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                     return {
