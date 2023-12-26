@@ -41,8 +41,9 @@ export class Runtime {
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValueType];
 	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:VariableType, value:VariableTypeMapping[T]];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType):[type:VariableType, value:VariableValueType] {
-		//TODO attempt coercion
+		//TODO should we attempt coercion?
 		if("operator" in expr){
+			//Tree node
 			switch(expr.operator){
 				case "array access": crash(`Arrays are not yet supported`); //TODO arrays
 				case "function call":
@@ -149,6 +150,7 @@ help: try using DIV instead of / to produce an integer as the result`
 
 			crash(`This should not be possible`);
 		} else {
+			//Leaf node
 			switch(expr.type){
 				case "boolean.false":
 					if(!type || type == "BOOLEAN") return ["BOOLEAN", false];
@@ -175,7 +177,8 @@ help: try using DIV instead of / to produce an integer as the result`
 						}
 					} else fail(`Cannot convert number to type ${type}`);
 				case "string":
-					return ["STRING", expr.text.slice(1, -1)]; //remove the quotes
+					if(!type || type == "STRING") return ["STRING", expr.text.slice(1, -1)]; //remove the quotes
+					else fail(`Cannot convert value ${expr.text} to ${type}`);
 				case "name":
 					const variable = this.getVariable(expr.text);
 					if(!variable) fail(`Undeclared variable ${expr.text}`);
@@ -228,7 +231,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 			i ++;
 		}
-		this.runBlock([func], scope);
+		this.runBlock(func.nodeGroups[0], scope);
 		if(func.controlStatements[0] instanceof ProcedureStatement){
 			return null;
 		} else { //must be functionstatement
@@ -236,7 +239,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 	}
 	runBlock(code:ProgramAST, scope:VariableScope = {}){
-		this.scopes.push({});
+		this.scopes.push(scope);
 		for(const node of code){
 			if("nodeGroups" in node){
 				node.controlStatements[0].runBlock(this, node);
