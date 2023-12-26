@@ -36,8 +36,8 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { parseFunctionArguments } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
+import { parseExpression, parseFunctionArguments } from "./parser.js";
+import { displayExpression, fail, crash, escapeHTML, splitArray } from "./utils.js";
 export const statements = {
     startKeyword: {},
     byType: {},
@@ -252,18 +252,21 @@ let OutputStatement = (() => {
     var OutputStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            if (tokens.length % 2 != 0)
-                fail(`Invalid syntax for output statement. Fragments should be separated by commas.`);
-            this.outMessage = new Array(tokens.length / 2);
-            for (let i = 0; i < tokens.length / 2; i++) {
-                if (i > 0) {
-                    if ("operator" in tokens[2 * i])
-                        fail(`Expected punctuation.comma, got expression`);
-                    if (tokens[2 * i].type !== "punctuation.comma")
-                        fail(`Expected punctuation.comma, got ${tokens[2 * i].type}`);
-                }
-                this.outMessage[i] = tokens[2 * i + 1];
-            }
+            //TODO remove duplicated code, this is copied in parseExpression()
+            let parenNestLevel = 0, bracketNestLevel = 0;
+            this.outMessage = (
+            //Split the tokens between the parens on commas
+            splitArray(tokens.slice(1), t => {
+                if (t.type == "parentheses.open")
+                    parenNestLevel++;
+                else if (t.type == "parentheses.close")
+                    parenNestLevel--;
+                else if (t.type == "bracket.open")
+                    bracketNestLevel++;
+                else if (t.type == "bracket.close")
+                    bracketNestLevel--;
+                return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
+            })).map(parseExpression);
         }
         run(runtime) {
             let outStr = "";

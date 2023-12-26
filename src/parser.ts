@@ -76,6 +76,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 
 export function parse(tokens:Token[]):ProgramAST {
 	let lines:Token[][] = [[]];
+	//TODO duped, use splitArray()
 	for(let i = 0; i < tokens.length; i ++){
 		if(tokens[i].type == "newline"){
 			lines.push([]);

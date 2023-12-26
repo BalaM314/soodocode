@@ -186,19 +186,20 @@ export class AssignmentStatement extends Statement {
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
 	outMessage: (Token | ExpressionAST)[];
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:Token[]){
 		super(tokens);
-		if(tokens.length % 2 != 0) fail(`Invalid syntax for output statement. Fragments should be separated by commas.`);
-		this.outMessage = new Array(tokens.length / 2);
-		for(let i = 0; i < tokens.length / 2; i ++){
-			if(i > 0){
-				if("operator" in tokens[2 * i])
-					fail(`Expected punctuation.comma, got expression`);
-				if((tokens[2 * i] as Token).type !== "punctuation.comma")
-					fail(`Expected punctuation.comma, got ${(tokens[2 * i] as Token).type}`);
-			}
-			this.outMessage[i] = tokens[2 * i + 1];
-		}
+		//TODO remove duplicated code, this is copied in parseExpression()
+		let parenNestLevel = 0, bracketNestLevel = 0;
+		this.outMessage = (
+			//Split the tokens between the parens on commas
+			splitArray(tokens.slice(1), t => {
+				if(t.type == "parentheses.open") parenNestLevel ++;
+				else if(t.type == "parentheses.close") parenNestLevel --;
+				else if(t.type == "bracket.open") bracketNestLevel ++;
+				else if(t.type == "bracket.close") bracketNestLevel --;
+				return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
+			})
+		).map(parseExpression);
 	}
 	run(runtime:Runtime){
 		let outStr = "";
