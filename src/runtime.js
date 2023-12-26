@@ -95,7 +95,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                         //Type is unknown
                         const [leftType, left] = this.evaluateExpr(expr.nodes[0]);
                         const [rightType, right] = this.evaluateExpr(expr.nodes[1]);
-                        const is_equal = (leftType == rightType) && (left == right);
+                        const typesMatch = (leftType == rightType) ||
+                            (leftType == "INTEGER" && rightType == "REAL") ||
+                            (leftType == "REAL" && rightType == "INTEGER");
+                        const is_equal = typesMatch && (left == right);
                         if (expr.operator == operators.equal_to)
                             return ["BOOLEAN", is_equal];
                         else
@@ -272,7 +275,7 @@ help: try using DIV instead of / to produce an integer as the result`);
         }
         if (scope)
             this.scopes.pop() ?? crash(`Scope somehow disappeared`);
-        if (returned) {
+        if (returned !== null) {
             return {
                 type: "function_return",
                 value: returned
