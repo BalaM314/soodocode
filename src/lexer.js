@@ -312,6 +312,9 @@ export function tokenize(input) {
                 case "OTHERWISE":
                     write("keyword.otherwise");
                     break;
+                case "ARRAY":
+                    fail(`Arrays are not yet supported.`);
+                    break;
                 default:
                     output.push({ type: "name", text: symbol.text });
                     break;

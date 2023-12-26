@@ -35,6 +35,7 @@ export type TokenType =
 	"keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.by-reference" | "keyword.by-value" |
 	"keyword.openfile" | "keyword.readfile" | "keyword.writefile" |
 	"keyword.case" | "keyword.of" | "keyword.case_end" | "keyword.otherwise" |
+	"keyword.array" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer" | "operator.string_concatenate";
 export type Token = {
@@ -275,6 +276,7 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "OF": write("keyword.of"); break;
 				case "ENDCASE": write("keyword.case_end"); break;
 				case "OTHERWISE": write("keyword.otherwise"); break;
+				case "ARRAY": fail(`Arrays are not yet supported.`); break;
 				default: output.push({type: "name", text: symbol.text}); break;
 			}
 		} else {

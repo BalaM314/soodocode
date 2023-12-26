@@ -1,4 +1,4 @@
-import type { Runtime, VariableType } from "./runtime.js";
+import type { FunctionData, Runtime, VariableType } from "./runtime.js";
 import type { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
@@ -185,10 +185,17 @@ export class OutputStatement extends Statement {
 	outMessage: (Token | ExpressionAST)[];
 	constructor(tokens:(Token | ExpressionAST)[]){
 		super(tokens);
-		this.outMessage = tokens.slice(1);
-		//TODO:
-		//validate, must be (string | name | number)s separated by ,
-		//should not include the commas
+		if(tokens.length % 2 != 0) fail(`Invalid syntax for output statement. Fragments should be separated by commas.`);
+		this.outMessage = new Array(tokens.length / 2);
+		for(let i = 0; i < tokens.length / 2; i ++){
+			if(i > 0){
+				if("operator" in tokens[2 * i])
+					fail(`Expected punctuation.comma, got expression`);
+				if((tokens[2 * i] as Token).type !== "punctuation.comma")
+					fail(`Expected punctuation.comma, got ${(tokens[2 * i] as Token).type}`);
+			}
+			this.outMessage[i] = tokens[2 * i + 1];
+		}
 	}
 	run(runtime:Runtime){
 		let outStr = "";
@@ -233,7 +240,7 @@ export class InputStatement extends Statement {
 				if(input.length == 1) variable.value = input;
 				else fail(`input was not a valid character: contained more than one character`);
 			default:
-				crash(`not yet implemented`); //TODO
+				fail(`Cannot INPUT variable of type ${variable.type}`);
 		}
 	}
 }
@@ -300,7 +307,6 @@ export class ForStatement extends Statement {
 		this.upperBound = tokens[5];
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
-		//TODO scope, again
 		const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
 		const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
 		if(upper < lower) return;
@@ -371,7 +377,7 @@ export class FunctionStatement extends Statement {
 		this.returnType = tokens.at(-1)!.text.toUpperCase();
 		this.name = tokens[1].text;
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+	runBlock(runtime:Runtime, node:FunctionData){
 		//Don't actually run the block
 		runtime.functions[this.name] = node;
 	}
@@ -389,7 +395,7 @@ export class ProcedureStatement extends Statement {
 		this.args = args;
 		this.name = tokens[1].text;
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+	runBlock(runtime:Runtime, node:FunctionData){
 		//Don't actually run the block
 		runtime.functions[this.name] = node;
 	}

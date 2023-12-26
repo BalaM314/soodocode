@@ -252,10 +252,18 @@ let OutputStatement = (() => {
     var OutputStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            this.outMessage = tokens.slice(1);
-            //TODO:
-            //validate, must be (string | name | number)s separated by ,
-            //should not include the commas
+            if (tokens.length % 2 != 0)
+                fail(`Invalid syntax for output statement. Fragments should be separated by commas.`);
+            this.outMessage = new Array(tokens.length / 2);
+            for (let i = 0; i < tokens.length / 2; i++) {
+                if (i > 0) {
+                    if ("operator" in tokens[2 * i])
+                        fail(`Expected punctuation.comma, got expression`);
+                    if (tokens[2 * i].type !== "punctuation.comma")
+                        fail(`Expected punctuation.comma, got ${tokens[2 * i].type}`);
+                }
+                this.outMessage[i] = tokens[2 * i + 1];
+            }
         }
         run(runtime) {
             let outStr = "";
@@ -326,7 +334,7 @@ let InputStatement = (() => {
                     else
                         fail(`input was not a valid character: contained more than one character`);
                 default:
-                    crash(`not yet implemented`); //TODO
+                    fail(`Cannot INPUT variable of type ${variable.type}`);
             }
         }
     };
@@ -470,7 +478,6 @@ let ForStatement = (() => {
             this.upperBound = tokens[5];
         }
         runBlock(runtime, node) {
-            //TODO scope, again
             const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
             const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
             if (upper < lower)

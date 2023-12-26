@@ -1,7 +1,6 @@
 import { Token } from "./lexer.js";
-import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode } from "./parser.js";
-import { ProcedureStatement } from "./statements.js";
-import { ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
+import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType } from "./parser.js";
+import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 
 interface FileData {
@@ -11,14 +10,23 @@ interface FileData {
 	mode: FileMode | null;
 }
 
-type VariableData<T extends VariableType = VariableType> = {
+export type VariableData<T extends VariableType = VariableType> = {
 	type: T;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping[T] | null;
 	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement;
 	mutable: true;
 }
-type FunctionData = /* Must be a function or procedure */ ProgramASTTreeNode;
+/** Either a function or a procedure TODO cleanup */
+export type FunctionData = ProgramASTTreeNode & {
+	nodeGroups: [body:ProgramASTNode[]];
+} & ({
+	type: "function";
+	controlStatements: [start:FunctionStatement, end:Statement];
+} | {
+	type: "procedure";
+	controlStatements: [start:ProcedureStatement, end:Statement];
+});
 
 interface ConstantData {
 	type: VariableType;
@@ -27,7 +35,7 @@ interface ConstantData {
 	mutable: false;
 }
 
-type VariableScope = Record<string, VariableData | ConstantData>;
+export type VariableScope = Record<string, VariableData | ConstantData>;
 
 export class Runtime {
 	scopes: VariableScope[] = [];
@@ -50,7 +58,7 @@ export class Runtime {
 					const fn = this.functions[expr.operatorToken.text];
 					if(!fn) fail(`Function ${expr.operatorToken.text} is not defined.`);
 					if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
-					const statement = fn.controlStatements[0] as FunctionStatement; //TODO fix
+					const statement = fn.controlStatements[0];
 					if(type && statement.returnType != type) fail(`Expected a value of type ${type}, but the function ${expr.operatorToken.text} returns a value of type ${statement.returnType}`);
 					return ["INTEGER", this.callFunction(fn, expr.nodes, true)];
 			}
@@ -212,11 +220,10 @@ help: try using DIV instead of / to produce an integer as the result`
 	callFunction(func:FunctionData, args:ExpressionAST[], requireReturnValue:true):VariableValueType;
 	callFunction(func:FunctionData, args:ExpressionAST[], requireReturnValue = false):VariableValueType | null {
 		if(func.controlStatements[0] instanceof ProcedureStatement){
-			if(requireReturnValue) fail(`Cannot use return value of ${(func.controlStatements[0].tokens[1] as Token).text}() as it is a procedure`);
-			//TODO fix above line
+			if(requireReturnValue) fail(`Cannot use return value of ${func.controlStatements[0].name}() as it is a procedure`);
 		} else if(func.controlStatements[0] instanceof FunctionStatement){
 			//all good
-		} else crash(`Invalid function ${func.controlStatements[0].stype}`);
+		} else crash(`Invalid function ${(func.controlStatements as Statement[])[0].stype}`); //unreachable
 
 		//Assemble scope
 		if(func.controlStatements[0].args.size != args.length) fail(`Incorrect number of arguments for function ${func.controlStatements[0].name}`);

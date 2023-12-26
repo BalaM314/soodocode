@@ -61,16 +61,16 @@ export function parseFunctionArguments(tokens) {
     return args;
 }
 export function parse(tokens) {
-    const lines = [[]];
+    let lines = [[]];
     for (let i = 0; i < tokens.length; i++) {
         if (tokens[i].type == "newline") {
-            if (i != (tokens.length - 1) && lines.at(-1).length != 0)
-                lines.push([]);
+            lines.push([]);
         }
         else {
             lines.at(-1).push(tokens[i]);
         }
     }
+    lines = lines.filter(l => l.length != 0); //remove blank lines
     const statements = lines.map(parseStatement);
     const program = [];
     function getActiveBuffer() {

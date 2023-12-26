@@ -1,6 +1,5 @@
 import { operators } from "./parser.js";
-import { ProcedureStatement } from "./statements.js";
-import { FunctionStatement } from "./statements.js";
+import { ProcedureStatement, FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 export class Runtime {
     constructor(_input, _output) {
@@ -23,7 +22,7 @@ export class Runtime {
                         fail(`Function ${expr.operatorToken.text} is not defined.`);
                     if (fn.type == "procedure")
                         fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
-                    const statement = fn.controlStatements[0]; //TODO fix
+                    const statement = fn.controlStatements[0];
                     if (type && statement.returnType != type)
                         fail(`Expected a value of type ${type}, but the function ${expr.operatorToken.text} returns a value of type ${statement.returnType}`);
                     return ["INTEGER", this.callFunction(fn, expr.nodes, true)];
@@ -205,14 +204,13 @@ help: try using DIV instead of / to produce an integer as the result`);
     callFunction(func, args, requireReturnValue = false) {
         if (func.controlStatements[0] instanceof ProcedureStatement) {
             if (requireReturnValue)
-                fail(`Cannot use return value of ${func.controlStatements[0].tokens[1].text}() as it is a procedure`);
-            //TODO fix above line
+                fail(`Cannot use return value of ${func.controlStatements[0].name}() as it is a procedure`);
         }
         else if (func.controlStatements[0] instanceof FunctionStatement) {
             //all good
         }
         else
-            crash(`Invalid function ${func.controlStatements[0].stype}`);
+            crash(`Invalid function ${func.controlStatements[0].stype}`); //unreachable
         //Assemble scope
         if (func.controlStatements[0].args.size != args.length)
             fail(`Incorrect number of arguments for function ${func.controlStatements[0].name}`);

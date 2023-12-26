@@ -35,7 +35,7 @@ ${node.controlStatements[1].toString(true)}
 <div class="program-display-inner">\
 ${displayProgram(node.nodeGroups[1])}\
 </div>${node.controlStatements[2].toString(true)}
-</div>` : //TODO do properly
+</div>` : //TODO what the heck is this?
 `<div class="program-display-outer">\
 ${node.controlStatements[0].toString(true)}
 <div class="program-display-inner">\

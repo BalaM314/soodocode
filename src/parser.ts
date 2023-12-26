@@ -75,15 +75,15 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 }
 
 export function parse(tokens:Token[]):ProgramAST {
-	const lines:Token[][] = [[]];
+	let lines:Token[][] = [[]];
 	for(let i = 0; i < tokens.length; i ++){
 		if(tokens[i].type == "newline"){
-			if(i != (tokens.length - 1) && lines.at(-1)!.length != 0)
-				lines.push([]);
+			lines.push([]);
 		} else {
 			lines.at(-1)!.push(tokens[i]);
 		}
 	}
+	lines = lines.filter(l => l.length != 0); //remove blank lines
 	const statements = lines.map(parseStatement);
 	const program:ProgramAST = [];
 	function getActiveBuffer(){
