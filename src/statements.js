@@ -439,10 +439,10 @@ let IfStatement = (() => {
         }
         runBlock(runtime, node) {
             if (runtime.evaluateExpr(this.condition, "BOOLEAN")[1]) {
-                runtime.runBlock(node.nodeGroups[0]);
+                return runtime.runBlock(node.nodeGroups[0]);
             }
             else if (node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]) {
-                runtime.runBlock(node.nodeGroups[1]);
+                return runtime.runBlock(node.nodeGroups[1]);
             }
         }
     };
@@ -498,7 +498,7 @@ let ForStatement = (() => {
             if (end.name !== this.name)
                 fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
             for (let i = lower; i <= upper; i++) {
-                runtime.runBlock(node.nodeGroups[0], {
+                const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     variables: {
                         //Set the loop variable in the loop scope
@@ -510,6 +510,8 @@ let ForStatement = (() => {
                         }
                     }
                 });
+                if (result)
+                    return result;
             }
         }
     };
@@ -560,10 +562,12 @@ let WhileStatement = (() => {
         }
         runBlock(runtime, node) {
             while (runtime.evaluateExpr(this.condition, "BOOLEAN")[1]) {
-                runtime.runBlock(node.nodeGroups[0], {
+                const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     variables: {}
                 });
+                if (result)
+                    return result;
             }
         }
     };
@@ -610,10 +614,12 @@ let DoWhileEndStatement = (() => {
         }
         runBlock(runtime, node) {
             do {
-                runtime.runBlock(node.nodeGroups[0], {
+                const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     variables: {}
                 });
+                if (result)
+                    return result;
                 //TODO prevent infinite loops
             } while (!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
         }

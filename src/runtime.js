@@ -256,16 +256,17 @@ help: try using DIV instead of / to produce an integer as the result`);
             this.scopes.push(scope);
         let returned = null;
         for (const node of code) {
+            let result;
             if ("nodeGroups" in node) {
-                node.controlStatements[0].runBlock(this, node);
+                result = node.controlStatements[0].runBlock(this, node);
             }
             else {
-                const result = node.run(this);
-                if (result) {
-                    if (result.type == "function_return") {
-                        returned = result.value;
-                        break;
-                    }
+                result = node.run(this);
+            }
+            if (result) {
+                if (result.type == "function_return") {
+                    returned = result.value;
+                    break;
                 }
             }
         }

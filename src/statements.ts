@@ -22,6 +22,11 @@ export const statements = {
 
 export type FunctionArguments = Map<string, {type:string, passMode:"value" | "reference"}>
 
+export type StatementExecutionResult = {
+	type: "function_return";
+	value: VariableValueType;
+};
+
 export class Statement {
 	type:typeof Statement;
 	stype:StatementType;
@@ -53,13 +58,10 @@ export class Statement {
 	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
 		return false;
 	}
-	run(runtime:Runtime):void | {
-		type: "function_return";
-		value: VariableValueType;
-	} {
+	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode):void {
+	runBlock(runtime:Runtime, node:ProgramASTTreeNode):void | StatementExecutionResult {
 		if(this.category == "block")
 			crash(`Missing runtime implementation for block statement ${this.stype}`);
 		else
@@ -298,9 +300,9 @@ export class IfStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
 		if(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
-			runtime.runBlock(node.nodeGroups[0]);
+			return runtime.runBlock(node.nodeGroups[0]);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
-			runtime.runBlock(node.nodeGroups[1]);
+			return runtime.runBlock(node.nodeGroups[1]);
 		}
 	}
 }
@@ -324,7 +326,7 @@ export class ForStatement extends Statement {
 		const end = (node.controlStatements[1] as ForEndStatement);
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
 		for(let i = lower; i <= upper; i++){
-			runtime.runBlock(node.nodeGroups[0], {
+			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				variables: {
 					//Set the loop variable in the loop scope
@@ -336,6 +338,7 @@ export class ForStatement extends Statement {
 					}
 				}
 			});
+			if(result) return result;
 		}
 	}
 }
@@ -356,10 +359,11 @@ export class WhileStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
 		while(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
-			runtime.runBlock(node.nodeGroups[0], {
+			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				variables: {}
 			});
+			if(result) return result;
 		}
 	}
 }
@@ -376,10 +380,11 @@ export class DoWhileEndStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
 		do {
-			runtime.runBlock(node.nodeGroups[0], {
+			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				variables: {}
 			});
+			if(result) return result;
 			//TODO prevent infinite loops
 		} while(!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
 	}
