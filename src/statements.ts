@@ -1,7 +1,7 @@
-import type { FunctionData, Runtime, VariableType } from "./runtime.js";
+import type { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
 import type { TokenType, Token } from "./lexer.js";
-import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseFunctionArguments } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML } from "./utils.js";
+import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments } from "./parser.js";
+import { displayExpression, fail, crash, escapeHTML, splitArray } from "./utils.js";
 
 
 export type StatementType =
@@ -53,7 +53,10 @@ export class Statement {
 	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
 		return false;
 	}
-	run(runtime:Runtime):void {
+	run(runtime:Runtime):void | {
+		type: "function_return";
+		value: VariableValueType;
+	} {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode):void {
@@ -252,7 +255,14 @@ export class ReturnStatement extends Statement {
 		this.expr = tokens[1];
 	}
 	run(runtime:Runtime){
-		runtime.evaluateExpr(this.expr);
+		const fn = runtime.getCurrentFunction();
+		if(!fn) fail(`RETURN is only valid within a function.`);
+		const statement = fn.controlStatements[0];
+		if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`);
+		return {
+			type: "function_return" as const,
+			value: runtime.evaluateExpr(this.expr, statement.returnType as VariableType)[1]
+		};
 	}
 }
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")

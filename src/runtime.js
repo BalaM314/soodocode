@@ -26,9 +26,11 @@ export class Runtime {
                     if (fn.type == "procedure")
                         fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
                     const statement = fn.controlStatements[0];
-                    if (type && statement.returnType != type)
-                        fail(`Expected a value of type ${type}, but the function ${expr.operatorToken.text} returns a value of type ${statement.returnType}`);
-                    return ["INTEGER", this.callFunction(fn, expr.nodes, true)];
+                    const output = this.callFunction(fn, expr.nodes, true);
+                    if (type)
+                        return [type, this.coerceValue(output, statement.returnType, type)];
+                    else
+                        return [statement.returnType, output]; //TODO remove the as VariableType
             }
             //arithmetic
             if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
@@ -190,6 +192,14 @@ help: try using DIV instead of / to produce an integer as the result`);
     getCurrentScope() {
         return this.scopes.at(-1) ?? crash(`No scope?`);
     }
+    getCurrentFunction() {
+        const scope = this.scopes.findLast(s => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);
+        if (!scope)
+            return null;
+        if (scope.statement == "global")
+            crash(`impossible`);
+        return this.functions[scope.statement.name] ?? crash(`impossible`);
+    }
     coerceValue(value, from, to) {
         //typescript really hates this function, beware
         if (from == to)
@@ -231,26 +241,41 @@ help: try using DIV instead of / to produce an integer as the result`);
             };
             i++;
         }
-        this.runBlock(func.nodeGroups[0], scope);
+        const output = this.runBlock(func.nodeGroups[0], scope);
         if (func.controlStatements[0] instanceof ProcedureStatement) {
             return null;
         }
         else { //must be functionstatement
-            return crash(`Obtaining the return value from functions is not yet implemented`); //TODO return
+            if (!output)
+                fail(`Function ${func.controlStatements[0].name} did not return a value`);
+            return output.value;
         }
     }
     runBlock(code, scope) {
         if (scope)
             this.scopes.push(scope);
+        let returned = null;
         for (const node of code) {
             if ("nodeGroups" in node) {
                 node.controlStatements[0].runBlock(this, node);
             }
             else {
-                node.run(this);
+                const result = node.run(this);
+                if (result) {
+                    if (result.type == "function_return") {
+                        returned = result.value;
+                        break;
+                    }
+                }
             }
         }
         if (scope)
             this.scopes.pop() ?? crash(`Scope somehow disappeared`);
+        if (returned) {
+            return {
+                type: "function_return",
+                value: returned
+            };
+        }
     }
 }

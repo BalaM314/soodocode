@@ -361,7 +361,16 @@ let ReturnStatement = (() => {
             this.expr = tokens[1];
         }
         run(runtime) {
-            runtime.evaluateExpr(this.expr);
+            const fn = runtime.getCurrentFunction();
+            if (!fn)
+                fail(`RETURN is only valid within a function.`);
+            const statement = fn.controlStatements[0];
+            if (statement instanceof ProcedureStatement)
+                fail(`Procedures cannot return a value.`);
+            return {
+                type: "function_return",
+                value: runtime.evaluateExpr(this.expr, statement.returnType)[1]
+            };
         }
     };
     __setFunctionName(_classThis, "ReturnStatement");

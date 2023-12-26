@@ -65,8 +65,9 @@ export class Runtime {
 					if(!fn) fail(`Function ${expr.operatorToken.text} is not defined.`);
 					if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
 					const statement = fn.controlStatements[0];
-					if(type && statement.returnType != type) fail(`Expected a value of type ${type}, but the function ${expr.operatorToken.text} returns a value of type ${statement.returnType}`);
-					return ["INTEGER", this.callFunction(fn, expr.nodes, true)];
+					const output = this.callFunction(fn, expr.nodes, true);
+					if(type) return [type, this.coerceValue(output, statement.returnType as VariableType, type)];
+					else return [statement.returnType as VariableType, output]; //TODO remove the as VariableType
 			}
 
 			//arithmetic
@@ -213,6 +214,12 @@ help: try using DIV instead of / to produce an integer as the result`
 	getCurrentScope():VariableScope {
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
+	getCurrentFunction():FunctionData | null {
+		const scope = this.scopes.findLast(s => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);
+		if(!scope) return null;
+		if(scope.statement == "global") crash(`impossible`);
+		return this.functions[(scope.statement as FunctionStatement | ProcedureStatement).name] ?? crash(`impossible`);
+	}
 	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping[T], from:T, to:S):VariableTypeMapping[S] {
 		//typescript really hates this function, beware
 		if(from as any == to) return value as any;
@@ -247,25 +254,42 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 			i ++;
 		}
-		this.runBlock(func.nodeGroups[0], scope);
+		const output = this.runBlock(func.nodeGroups[0], scope);
 		if(func.controlStatements[0] instanceof ProcedureStatement){
 			return null;
 		} else { //must be functionstatement
-			return crash(`Obtaining the return value from functions is not yet implemented`); //TODO return
+			if(!output) fail(`Function ${func.controlStatements[0].name} did not return a value`);
+			return output.value;
 		}
 	}
-	runBlock(code:ProgramAST, scope?:VariableScope){
+	runBlock(code:ProgramAST, scope?:VariableScope):void | {
+		type: "function_return";
+		value: VariableValueType;
+	}{
 		if(scope)
 			this.scopes.push(scope);
+		let returned:null | VariableValueType = null;
 		for(const node of code){
 			if("nodeGroups" in node){
 				node.controlStatements[0].runBlock(this, node);
 			} else {
-				node.run(this);
+				const result = node.run(this);
+				if(result){
+					if(result.type == "function_return"){
+						returned = result.value;
+						break;
+					}
+				}
 			}
 		}
 		if(scope)
 			this.scopes.pop() ?? crash(`Scope somehow disappeared`);
+		if(returned){
+			return {
+				type: "function_return",
+				value: returned
+			};
+		}
 	}
 }
 
