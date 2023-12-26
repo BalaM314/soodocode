@@ -39,7 +39,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { parseExpression, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 export const statements = {
-    startKeyword: {},
+    byStartKeyword: {},
     byType: {},
     irregular: [],
 };
@@ -109,9 +109,9 @@ function statement(type, example, ...args) {
         }
         else {
             const firstToken = args[0];
-            if (statements.startKeyword[firstToken])
+            if (statements.byStartKeyword[firstToken])
                 crash(`Invalid statement definitions! Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
-            statements.startKeyword[firstToken] = input;
+            statements.byStartKeyword[firstToken] = input;
         }
         if (statements.byType[type])
             crash(`Invalid statement definitions! Statement for type ${type} already registered`);

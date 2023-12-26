@@ -14,9 +14,15 @@ export type SymbolType =
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer" | "operator.string_concatenate";
 
-export type Symbol = {
-	type: SymbolType;
-	text: string;
+export class Symbol {
+	constructor(
+		public type: SymbolType,
+		public text: string,
+	){}
+	_(){};
+}
+export function symbol(type:SymbolType, text:string){
+	return new Symbol(type, text);
 }
 
 export type TokenType =
@@ -38,9 +44,15 @@ export type TokenType =
 	"keyword.array" |
 	"newline" |
 	"operator.add" | "operator.subtract" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer" | "operator.string_concatenate";
-export type Token = {
-	type: TokenType;
-	text: string;
+export class Token {
+	constructor(
+		public type: TokenType,
+		public text: string,
+	){}
+	_(){};
+}
+export function token(type:TokenType, text:string){
+	return new Token(type, text);
 }
 
 
@@ -79,10 +91,10 @@ class SymbolizerIO {
 		return this.string.length;
 	}
 	writeText(type:SymbolType, text:string){
-		this.output.push({type, text});
+		this.output.push(symbol(type, text));
 	}
 	write(type:SymbolType){
-		this.output.push({type, text: this.lastMatched});
+		this.output.push(symbol(type, this.lastMatched));
 	}
 	isNumber(){
 		if(!this.has()) return false;
@@ -205,14 +217,14 @@ export function tokenize(input:Symbol[]):Token[] {
 			currentString += symbol.text;
 			if(symbol.type === "quote.single"){
 				state.sString = false;
-				output.push({text: currentString, type: "string"});
+				output.push(token("string", currentString));
 				currentString = "";
 			}
 		} else if(state.dString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.double"){
 				state.dString = false;
-				output.push({text: currentString, type: "string"});
+				output.push(token("string", currentString));
 				currentString = "";
 			}
 		} else if(symbol.type === "comment.singleline") state.sComment = true;
@@ -237,10 +249,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
-			output.push({
-				text: symbol.text,
-				type: "number.decimal"
-			});
+			output.push(token("number.decimal", symbol.text));
 		} else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
 				case "TRUE": write("boolean.true"); break;
@@ -277,7 +286,7 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "ENDCASE": write("keyword.case_end"); break;
 				case "OTHERWISE": write("keyword.otherwise"); break;
 				case "ARRAY": fail(`Arrays are not yet supported.`); break;
-				default: output.push({type: "name", text: symbol.text}); break;
+				default: output.push(token("name", symbol.text)); break;
 			}
 		} else {
 			symbol.type satisfies TokenType;
@@ -291,7 +300,7 @@ export function tokenize(input:Symbol[]):Token[] {
 	return output;
 
 	function write(type:TokenType){
-		output.push({type, text: symbol.text});
+		output.push(token(type, symbol.text));
 	}
 }
 

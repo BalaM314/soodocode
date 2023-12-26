@@ -131,8 +131,8 @@ export function parseStatement(tokens) {
     if (tokens.length < 1)
         fail("Empty statement");
     let possibleStatements;
-    if (tokens[0].type in statements.startKeyword)
-        possibleStatements = [statements.startKeyword[tokens[0].type]];
+    if (tokens[0].type in statements.byStartKeyword)
+        possibleStatements = [statements.byStartKeyword[tokens[0].type]];
     else
         possibleStatements = statements.irregular;
     if (possibleStatements.length == 0)

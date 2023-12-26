@@ -130,7 +130,7 @@ export function parse(tokens:Token[]):ProgramAST {
 export function parseStatement(tokens:Token[]):Statement {
 	if(tokens.length < 1) fail("Empty statement");
 	let possibleStatements:(typeof Statement)[];
-	if(tokens[0].type in statements.startKeyword) possibleStatements = [statements.startKeyword[tokens[0].type]!];
+	if(tokens[0].type in statements.byStartKeyword) possibleStatements = [statements.byStartKeyword[tokens[0].type]!];
 	else possibleStatements = statements.irregular;
 	if(possibleStatements.length == 0) fail(`No possible statements`);
 	let errors:{message:string, priority:number}[] = [];
@@ -191,8 +191,8 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 	if(j != input.length) return {message: `Expected end of line, found ${input[j].type}`, priority: 7};
 	return output;
 }
-type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N | "negate" : never;
-type Operator = {
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N | "negate" : never;
+export type Operator = {
 	type: TokenType;
 	name: string;
 	unary: boolean;

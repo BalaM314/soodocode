@@ -1,4 +1,26 @@
 import { crash, impossible } from "./utils.js";
+export class Symbol {
+    constructor(type, text) {
+        this.type = type;
+        this.text = text;
+    }
+    _() { }
+    ;
+}
+export function symbol(type, text) {
+    return new Symbol(type, text);
+}
+export class Token {
+    constructor(type, text) {
+        this.type = type;
+        this.text = text;
+    }
+    _() { }
+    ;
+}
+export function token(type, text) {
+    return new Token(type, text);
+}
 class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;
@@ -41,10 +63,10 @@ class SymbolizerIO {
         return this.string.length;
     }
     writeText(type, text) {
-        this.output.push({ type, text });
+        this.output.push(symbol(type, text));
     }
     write(type) {
-        this.output.push({ type, text: this.lastMatched });
+        this.output.push(symbol(type, this.lastMatched));
     }
     isNumber() {
         if (!this.has())
@@ -161,7 +183,7 @@ export function tokenize(input) {
             currentString += symbol.text;
             if (symbol.type === "quote.single") {
                 state.sString = false;
-                output.push({ text: currentString, type: "string" });
+                output.push(token("string", currentString));
                 currentString = "";
             }
         }
@@ -169,7 +191,7 @@ export function tokenize(input) {
             currentString += symbol.text;
             if (symbol.type === "quote.double") {
                 state.dString = false;
-                output.push({ text: currentString, type: "string" });
+                output.push(token("string", currentString));
                 currentString = "";
             }
         }
@@ -206,10 +228,7 @@ export function tokenize(input) {
             fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
         else if (symbol.type === "numeric_fragment") {
             state.decimalNumber = "allowDecimal";
-            output.push({
-                text: symbol.text,
-                type: "number.decimal"
-            });
+            output.push(token("number.decimal", symbol.text));
         }
         else if (symbol.type === "word") {
             switch (symbol.text) { //TODO datastructify
@@ -316,7 +335,7 @@ export function tokenize(input) {
                     fail(`Arrays are not yet supported.`);
                     break;
                 default:
-                    output.push({ type: "name", text: symbol.text });
+                    output.push(token("name", symbol.text));
                     break;
             }
         }
@@ -335,7 +354,7 @@ export function tokenize(input) {
         fail(`Expected a number to follow "${(output.at(-1) ?? crash(`impossible`)).text}.", but found end of input`);
     return output;
     function write(type) {
-        output.push({ type, text: symbol.text });
+        output.push(token(type, symbol.text));
     }
 }
 export function getText(tokens) {
