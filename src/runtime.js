@@ -1,5 +1,6 @@
 import { operators } from "./parser.js";
 import { ProcedureStatement } from "./statements.js";
+import { FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 export class Runtime {
     constructor(_input, _output) {
@@ -201,12 +202,32 @@ help: try using DIV instead of / to produce an integer as the result`);
             if (requireReturnValue)
                 fail(`Cannot use return value of ${func.controlStatements[0].tokens[1].text}() as it is a procedure`);
             //TODO fix above line
-            this.runBlock([func]);
+        }
+        else if (func.controlStatements[0] instanceof FunctionStatement) {
+            //all good
+        }
+        else
+            crash(`Invalid function ${func.controlStatements[0].stype}`);
+        //Assemble scope
+        if (func.controlStatements[0].args.size != args.length)
+            fail(`Incorrect number of arguments for function ${func.controlStatements[0].name}`);
+        const scope = {};
+        let i = 0;
+        for (const [name, { type, passMode }] of func.controlStatements[0].args) {
+            scope[name] = {
+                declaration: func.controlStatements[0],
+                mutable: passMode == "reference",
+                type: type,
+                value: this.evaluateExpr(args[i], type)[1]
+            };
+            i++;
+        }
+        this.runBlock([func], scope);
+        if (func.controlStatements[0] instanceof ProcedureStatement) {
             return null;
         }
         else { //must be functionstatement
-            this.runBlock([func]);
-            return crash(`Obtaining the return value from functions is not yet implemented`);
+            return crash(`Obtaining the return value from functions is not yet implemented`); //TODO return
         }
     }
     runBlock(code, scope = {}) {

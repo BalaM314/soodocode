@@ -1,7 +1,7 @@
 import { Token } from "./lexer.js";
 import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode } from "./parser.js";
 import { ProcedureStatement } from "./statements.js";
-import type { ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
+import { ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 
 interface FileData {
@@ -15,7 +15,7 @@ type VariableData<T extends VariableType = VariableType> = {
 	type: T;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping[T] | null;
-	declaration: DeclarationStatement;
+	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement;
 	mutable: true;
 }
 type FunctionData = /* Must be a function or procedure */ ProgramASTTreeNode;
@@ -23,7 +23,7 @@ type FunctionData = /* Must be a function or procedure */ ProgramASTTreeNode;
 interface ConstantData {
 	type: VariableType;
 	value: VariableValueType;
-	declaration: ConstantStatement | ForStatement;
+	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement; //TODO is this the best solution?
 	mutable: false;
 }
 
@@ -211,11 +211,28 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(func.controlStatements[0] instanceof ProcedureStatement){
 			if(requireReturnValue) fail(`Cannot use return value of ${(func.controlStatements[0].tokens[1] as Token).text}() as it is a procedure`);
 			//TODO fix above line
-			this.runBlock([func]);
+		} else if(func.controlStatements[0] instanceof FunctionStatement){
+			//all good
+		} else crash(`Invalid function ${func.controlStatements[0].stype}`);
+
+		//Assemble scope
+		if(func.controlStatements[0].args.size != args.length) fail(`Incorrect number of arguments for function ${func.controlStatements[0].name}`);
+		const scope:VariableScope = {};
+		let i = 0;
+		for(const [name, {type, passMode}] of func.controlStatements[0].args){
+			scope[name] = {
+				declaration: func.controlStatements[0],
+				mutable: passMode == "reference",
+				type: type as VariableType,
+				value: this.evaluateExpr(args[i], type as VariableType)[1]
+			}
+			i ++;
+		}
+		this.runBlock([func], scope);
+		if(func.controlStatements[0] instanceof ProcedureStatement){
 			return null;
 		} else { //must be functionstatement
-			this.runBlock([func]);
-			return crash(`Obtaining the return value from functions is not yet implemented`);
+			return crash(`Obtaining the return value from functions is not yet implemented`); //TODO return
 		}
 	}
 	runBlock(code:ProgramAST, scope:VariableScope = {}){
