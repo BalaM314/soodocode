@@ -5,7 +5,10 @@ export class Runtime {
     constructor(_input, _output) {
         this._input = _input;
         this._output = _output;
-        this.scopes = [];
+        this.scopes = [{
+                statement: "global",
+                variables: {}
+            }];
         this.functions = {};
         this.types = {};
         this.files = {};
@@ -179,8 +182,8 @@ help: try using DIV instead of / to produce an integer as the result`);
     /** Returned variable may not be initialized */
     getVariable(name) {
         for (let i = this.scopes.length - 1; i >= 0; i--) {
-            if (this.scopes[i][name])
-                return this.scopes[i][name];
+            if (this.scopes[i].variables[name])
+                return this.scopes[i].variables[name];
         }
         return null;
     }
@@ -214,10 +217,13 @@ help: try using DIV instead of / to produce an integer as the result`);
         //Assemble scope
         if (func.controlStatements[0].args.size != args.length)
             fail(`Incorrect number of arguments for function ${func.controlStatements[0].name}`);
-        const scope = {};
+        const scope = {
+            statement: func.controlStatements[0],
+            variables: {}
+        };
         let i = 0;
         for (const [name, { type, passMode }] of func.controlStatements[0].args) {
-            scope[name] = {
+            scope.variables[name] = {
                 declaration: func.controlStatements[0],
                 mutable: passMode == "reference",
                 type: type,
@@ -233,8 +239,9 @@ help: try using DIV instead of / to produce an integer as the result`);
             return crash(`Obtaining the return value from functions is not yet implemented`); //TODO return
         }
     }
-    runBlock(code, scope = {}) {
-        this.scopes.push(scope);
+    runBlock(code, scope) {
+        if (scope)
+            this.scopes.push(scope);
         for (const node of code) {
             if ("nodeGroups" in node) {
                 node.controlStatements[0].runBlock(this, node);
@@ -243,6 +250,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 node.run(this);
             }
         }
-        this.scopes.pop() ?? crash(`Scope somehow disappeared`);
+        if (scope)
+            this.scopes.pop() ?? crash(`Scope somehow disappeared`);
     }
 }

@@ -155,7 +155,7 @@ let DeclarationStatement = (() => {
             for (const variable of this.variables) {
                 if (runtime.getVariable(variable))
                     fail(`Variable ${variable} was already declared`);
-                runtime.getCurrentScope()[variable] = {
+                runtime.getCurrentScope().variables[variable] = {
                     type: this.varType,
                     value: null,
                     declaration: this,
@@ -191,7 +191,7 @@ let ConstantStatement = (() => {
         run(runtime) {
             if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`);
-            runtime.getCurrentScope()[this.name] = {
+            runtime.getCurrentScope().variables[this.name] = {
                 type: "INTEGER",
                 value: runtime.evaluateExpr(this.expr, "INTEGER")[1],
                 declaration: this,
@@ -361,7 +361,7 @@ let ReturnStatement = (() => {
             this.expr = tokens[1];
         }
         run(runtime) {
-            crash(`TODO Not yet implemented`);
+            runtime.evaluateExpr(this.expr);
         }
     };
     __setFunctionName(_classThis, "ReturnStatement");
@@ -487,12 +487,15 @@ let ForStatement = (() => {
                 fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
             for (let i = lower; i <= upper; i++) {
                 runtime.runBlock(node.nodeGroups[0], {
-                    //Set the loop variable in the loop scope
-                    [this.name]: {
-                        declaration: this,
-                        mutable: false,
-                        type: "INTEGER",
-                        value: i
+                    statement: this,
+                    variables: {
+                        //Set the loop variable in the loop scope
+                        [this.name]: {
+                            declaration: this,
+                            mutable: false,
+                            type: "INTEGER",
+                            value: i
+                        }
                     }
                 });
             }
@@ -545,7 +548,10 @@ let WhileStatement = (() => {
         }
         runBlock(runtime, node) {
             while (runtime.evaluateExpr(this.condition, "BOOLEAN")[1]) {
-                runtime.runBlock(node.nodeGroups[0]);
+                runtime.runBlock(node.nodeGroups[0], {
+                    statement: this,
+                    variables: {}
+                });
             }
         }
     };
@@ -592,7 +598,10 @@ let DoWhileEndStatement = (() => {
         }
         runBlock(runtime, node) {
             do {
-                runtime.runBlock(node.nodeGroups[0]);
+                runtime.runBlock(node.nodeGroups[0], {
+                    statement: this,
+                    variables: {}
+                });
                 //TODO prevent infinite loops
             } while (!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
         }

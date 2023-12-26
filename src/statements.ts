@@ -134,7 +134,7 @@ export class DeclarationStatement extends Statement {
 	run(runtime:Runtime){
 		for(const variable of this.variables){
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
-			runtime.getCurrentScope()[variable] = {
+			runtime.getCurrentScope().variables[variable] = {
 				type: this.varType as VariableType, //todo user defined types
 				value: null,
 				declaration: this,
@@ -155,7 +155,7 @@ export class ConstantStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`);
-		runtime.getCurrentScope()[this.name] = {
+		runtime.getCurrentScope().variables[this.name] = {
 			type: "INTEGER", //TODO guess type required
 			value: runtime.evaluateExpr(this.expr, "INTEGER")[1], //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
 			declaration: this,
@@ -252,7 +252,7 @@ export class ReturnStatement extends Statement {
 		this.expr = tokens[1];
 	}
 	run(runtime:Runtime){
-		crash(`TODO Not yet implemented`);
+		runtime.evaluateExpr(this.expr);
 	}
 }
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
@@ -314,12 +314,15 @@ export class ForStatement extends Statement {
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
 		for(let i = lower; i <= upper; i++){
 			runtime.runBlock(node.nodeGroups[0], {
-				//Set the loop variable in the loop scope
-				[this.name]: {
-					declaration: this,
-					mutable: false,
-					type: "INTEGER",
-					value: i
+				statement: this,
+				variables: {
+					//Set the loop variable in the loop scope
+					[this.name]: {
+						declaration: this,
+						mutable: false,
+						type: "INTEGER",
+						value: i
+					}
 				}
 			});
 		}
@@ -342,12 +345,17 @@ export class WhileStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
 		while(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
-			runtime.runBlock(node.nodeGroups[0]);
+			runtime.runBlock(node.nodeGroups[0], {
+				statement: this,
+				variables: {}
+			});
 		}
 	}
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
-export class DoWhileStatement extends Statement {}
+export class DoWhileStatement extends Statement {
+	//TODO! impl runBlock here
+}
 @statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
 export class DoWhileEndStatement extends Statement {
 	condition:ExpressionAST;
@@ -357,7 +365,10 @@ export class DoWhileEndStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
 		do {
-			runtime.runBlock(node.nodeGroups[0]);
+			runtime.runBlock(node.nodeGroups[0], {
+				statement: this,
+				variables: {}
+			});
 			//TODO prevent infinite loops
 		} while(!runtime.evaluateExpr(this.condition, "BOOLEAN")[1]); //Inverted, the statement is "until"
 	}

@@ -35,10 +35,16 @@ interface ConstantData {
 	mutable: false;
 }
 
-export type VariableScope = Record<string, VariableData | ConstantData>;
+export type VariableScope = {
+	statement: Statement | "global";
+	variables: Record<string, VariableData | ConstantData>;
+};
 
 export class Runtime {
-	scopes: VariableScope[] = [];
+	scopes: VariableScope[] = [{
+		statement: "global",
+		variables: {}
+	}];
 	functions: Record<string, FunctionData> = {};
 	types: Record<string, VariableData> = {};
 	files: Record<string, FileData> = {};
@@ -200,7 +206,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	/** Returned variable may not be initialized */
 	getVariable(name:string):VariableData | ConstantData | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
-			if(this.scopes[i][name]) return this.scopes[i][name];
+			if(this.scopes[i].variables[name]) return this.scopes[i].variables[name];
 		}
 		return null;
 	}
@@ -227,10 +233,13 @@ help: try using DIV instead of / to produce an integer as the result`
 
 		//Assemble scope
 		if(func.controlStatements[0].args.size != args.length) fail(`Incorrect number of arguments for function ${func.controlStatements[0].name}`);
-		const scope:VariableScope = {};
+		const scope:VariableScope = {
+			statement: func.controlStatements[0],
+			variables: {}
+		};
 		let i = 0;
 		for(const [name, {type, passMode}] of func.controlStatements[0].args){
-			scope[name] = {
+			scope.variables[name] = {
 				declaration: func.controlStatements[0],
 				mutable: passMode == "reference",
 				type: type as VariableType,
@@ -245,8 +254,9 @@ help: try using DIV instead of / to produce an integer as the result`
 			return crash(`Obtaining the return value from functions is not yet implemented`); //TODO return
 		}
 	}
-	runBlock(code:ProgramAST, scope:VariableScope = {}){
-		this.scopes.push(scope);
+	runBlock(code:ProgramAST, scope?:VariableScope){
+		if(scope)
+			this.scopes.push(scope);
 		for(const node of code){
 			if("nodeGroups" in node){
 				node.controlStatements[0].runBlock(this, node);
@@ -254,7 +264,8 @@ help: try using DIV instead of / to produce an integer as the result`
 				node.run(this);
 			}
 		}
-		this.scopes.pop() ?? crash(`Scope somehow disappeared`);
+		if(scope)
+			this.scopes.pop() ?? crash(`Scope somehow disappeared`);
 	}
 }
 
