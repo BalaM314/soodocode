@@ -49,7 +49,7 @@ export class Runtime {
 	types: Record<string, VariableData> = {};
 	files: Record<string, FileData> = {};
 	constructor(
-		public _input: () => string,
+		public _input: (message:string) => string,
 		public _output: (message:string) => void,
 	){}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValueType];

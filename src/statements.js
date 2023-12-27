@@ -309,7 +309,7 @@ let InputStatement = (() => {
                 fail(`Undeclared variable ${this.name}`);
             if (!variable.mutable)
                 fail(`Cannot INPUT ${this.name} because it is a constant`);
-            const input = runtime._input(); //TODO allow specifying the type, and make the _input() function handle coercion and invalid input
+            const input = runtime._input(`Enter the value for variable ${this.name} (type: ${variable.type})`);
             switch (variable.type) {
                 case "BOOLEAN":
                     variable.value = input.toLowerCase() != "false";

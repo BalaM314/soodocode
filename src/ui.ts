@@ -218,7 +218,7 @@ executeSoodocodeButton.addEventListener("click", e => {
 		const program = parser.parse(tokens);
 		let output:string[] = [];
 		const rtm = new runtime.Runtime(
-			() => prompt("Enter the value for (unknown)") ?? crash("input was empty"), m => output.push(m)
+			(msg) => prompt(msg) ?? fail("input was empty"), m => output.push(m)
 		);
 		outputDiv.style.color = "white";
 		rtm.runBlock(program);
@@ -238,7 +238,7 @@ function dumpFunctionsToGlobalScope(){
 	Object.assign(window,
 		lexer, parser, statements, utils, runtime,
 		{
-			runtime: new runtime.Runtime(() => prompt("Enter the value for (unknown)") ?? crash("input was empty"), m => console.log(`[Runtime] ${m}`))
+			runtime: new runtime.Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`))
 		}
 	);
 }
