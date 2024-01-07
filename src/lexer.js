@@ -4,8 +4,10 @@ export class Symbol {
         this.type = type;
         this.text = text;
     }
-    _() { }
-    ;
+    /** type must be a valid token type */
+    toToken() {
+        return new Token(this.type, this.text);
+    }
 }
 export function symbol(type, text) {
     return new Symbol(type, text);
@@ -167,7 +169,7 @@ export function tokenize(input) {
         if (state.sComment) {
             if (symbol.type === "newline") {
                 state.sComment = false;
-                output.push(symbol);
+                output.push(symbol.toToken());
             }
         }
         else if (symbol.type === "comment.multiline_close") {
@@ -341,7 +343,7 @@ export function tokenize(input) {
         }
         else {
             symbol.type;
-            output.push(symbol);
+            output.push(symbol.toToken());
         }
     }
     if (state.mComment)

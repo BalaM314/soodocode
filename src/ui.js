@@ -4,6 +4,9 @@ import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
 import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
+import { Token } from "./lexer.js";
+import { Runtime } from "./runtime.js";
+import { Statement } from "./statements.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
@@ -15,14 +18,15 @@ function getElement(id, type) {
 }
 export function flattenTree(program) {
     return program.map(s => {
-        if ("nodeGroups" in s)
-            return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement]);
-        else
+        if (s instanceof Statement)
             return [[0, s]];
+        else
+            return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement]);
     }).flat(1);
 }
 export function displayProgram(program) {
-    return program.map(node => "nodeGroups" in node ?
+    return program.map(node => node instanceof Statement ?
+        node.toString(true) + "\n" :
         node.nodeGroups.length > 1 ?
             `<div class="program-display-outer">\
 ${node.controlStatements[0].toString(true)}
@@ -40,11 +44,10 @@ ${node.controlStatements[0].toString(true)}
 ${displayProgram(node.nodeGroups[0])}\
 </div>\
 ${node.controlStatements.at(-1).toString(true)}
-</div>`
-        : node.toString(true) + "\n").join("");
+</div>`).join("");
 }
 export function evaluateExpressionDemo(node) {
-    if ("type" in node) {
+    if (node instanceof Token) {
         if (node.type == "number.decimal")
             return Number(node.text);
         else if (node.type == "name")
@@ -93,7 +96,7 @@ evaluateExpressionButton.addEventListener("click", e => {
         }
         else {
             console.error(err);
-            expressionOutputDiv.innerText = "Soodocode crashed! " + err.message;
+            expressionOutputDiv.innerText = "Soodocode crashed! " + utils.parseError(err);
         }
     }
 });
@@ -136,7 +139,7 @@ dumpExpressionTreeButton.addEventListener("click", e => {
         }
         else {
             console.error(err);
-            expressionOutputDiv.innerText = "Soodocode crashed!" + err.message;
+            expressionOutputDiv.innerText = "Soodocode crashed!" + utils.parseError(err);
         }
     }
 });
@@ -198,7 +201,7 @@ ${displayProgram(program)}`;
             outputDiv.innerText = `Error: ${err.message}`;
         }
         else {
-            outputDiv.innerText = `Soodocode crashed! ${err.message}`;
+            outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
         }
     }
 });
@@ -208,7 +211,7 @@ executeSoodocodeButton.addEventListener("click", e => {
         const tokens = lexer.tokenize(symbols);
         const program = parser.parse(tokens);
         let output = [];
-        const rtm = new runtime.Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => output.push(m));
+        const rtm = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => output.push(m));
         outputDiv.style.color = "white";
         rtm.runBlock(program);
         console.log(output);
@@ -220,13 +223,13 @@ executeSoodocodeButton.addEventListener("click", e => {
             outputDiv.innerText = `Error: ${err.message}`;
         }
         else {
-            outputDiv.innerText = `Soodocode crashed! ${err.message}`;
+            outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
         }
     }
 });
 function dumpFunctionsToGlobalScope() {
     Object.assign(window, lexer, parser, statements, utils, runtime, {
-        runtime: new runtime.Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`))
+        runtime: new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`))
     });
 }
 dumpFunctionsToGlobalScope();

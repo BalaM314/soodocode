@@ -1,4 +1,4 @@
-import { getText } from "./lexer.js";
+import { getText, Token } from "./lexer.js";
 import { statements } from "./statements.js";
 import { impossible, splitArray, fail, isVarType } from "./utils.js";
 export function parseFunctionArguments(tokens) {
@@ -141,7 +141,7 @@ export function parseStatement(tokens) {
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
-            return new possibleStatement(result.map(x => "start" in x ? parseExpression(tokens.slice(x.start, x.end + 1)) : x));
+            return new possibleStatement(result.map(x => x instanceof Token ? x : parseExpression(tokens.slice(x.start, x.end + 1))));
         }
         else
             errors.push(result);

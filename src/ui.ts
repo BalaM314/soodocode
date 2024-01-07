@@ -3,9 +3,11 @@ import * as parser from "./parser.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
-import type { ExpressionASTNode, ProgramAST } from "./parser.js";
-import type { Statement } from "./statements.js";
 import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
+import { Token } from "./lexer.js";
+import { ExpressionASTNode, ProgramAST } from "./parser.js";
+import { Runtime } from "./runtime.js";
+import { Statement } from "./statements.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
@@ -18,13 +20,14 @@ type FlattenTreeOutput = [depth:number, statement:Statement];
 
 export function flattenTree(program:ProgramAST):FlattenTreeOutput[]{
 	return program.map(s => {
-		if("nodeGroups" in s) return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement] as FlattenTreeOutput);
-		else return [[0, s] as FlattenTreeOutput];
+		if(s instanceof Statement) return [[0, s] satisfies FlattenTreeOutput];
+		else return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement] satisfies FlattenTreeOutput);
 	}).flat(1);
 }
 export function displayProgram(program:ProgramAST):string {
 	return program.map(node =>
-		"nodeGroups" in node ?
+		node instanceof Statement ?
+			node.toString(true) + "\n" :
 			node.nodeGroups.length > 1 ?
 `<div class="program-display-outer">\
 ${node.controlStatements[0].toString(true)}
@@ -43,12 +46,11 @@ ${displayProgram(node.nodeGroups[0])}\
 </div>\
 ${node.controlStatements.at(-1)!.toString(true)}
 </div>`
-			: node.toString(true) + "\n"
 	).join("");
 }
 
 export function evaluateExpressionDemo(node:ExpressionASTNode):number {
-	if("type" in node){
+	if(node instanceof Token){
 		if(node.type == "number.decimal") return Number(node.text);
 		else if(node.type == "name") fail(`Cannot evaluate expression: variable content unknown`);
 		else fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
@@ -94,10 +96,10 @@ evaluateExpressionButton.addEventListener("click", e => {
 	} catch(err){
 		expressionOutputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){
-			expressionOutputDiv.innerText = "Error: " + (err as Error).message;
+			expressionOutputDiv.innerText = "Error: " + err.message;
 		} else {
 			console.error(err);
-			expressionOutputDiv.innerText = "Soodocode crashed! " + (err as Error).message;
+			expressionOutputDiv.innerText = "Soodocode crashed! " + utils.parseError(err);
 		}
 	}
 });
@@ -140,10 +142,10 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 	} catch(err){
 		expressionOutputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){
-			expressionOutputDiv.innerText = "Error: " + (err as Error).message;
+			expressionOutputDiv.innerText = "Error: " + err.message;
 		} else {
 			console.error(err);
-			expressionOutputDiv.innerText = "Soodocode crashed!" + (err as Error).message;
+			expressionOutputDiv.innerText = "Soodocode crashed!" + utils.parseError(err);
 		}
 	}
 });
@@ -204,9 +206,9 @@ ${displayProgram(program)}`
 	} catch(err){
 		outputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){
-			outputDiv.innerText = `Error: ${(err as any).message}`;
+			outputDiv.innerText = `Error: ${err.message}`;
 		} else {
-			outputDiv.innerText = `Soodocode crashed! ${(err as any).message}`;
+			outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
 		}
 	}
 });
@@ -217,7 +219,7 @@ executeSoodocodeButton.addEventListener("click", e => {
 		const tokens = lexer.tokenize(symbols);
 		const program = parser.parse(tokens);
 		let output:string[] = [];
-		const rtm = new runtime.Runtime(
+		const rtm = new Runtime(
 			(msg) => prompt(msg) ?? fail("input was empty"), m => output.push(m)
 		);
 		outputDiv.style.color = "white";
@@ -227,9 +229,9 @@ executeSoodocodeButton.addEventListener("click", e => {
 	} catch(err){
 		outputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){
-			outputDiv.innerText = `Error: ${(err as any).message}`;
+			outputDiv.innerText = `Error: ${err.message}`;
 		} else {
-			outputDiv.innerText = `Soodocode crashed! ${(err as any).message}`;
+			outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
 		}
 	}
 });
@@ -238,7 +240,7 @@ function dumpFunctionsToGlobalScope(){
 	Object.assign(window,
 		lexer, parser, statements, utils, runtime,
 		{
-			runtime: new runtime.Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`))
+			runtime: new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`))
 		}
 	);
 }

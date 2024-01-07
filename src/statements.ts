@@ -1,5 +1,5 @@
 import type { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
-import type { TokenType, Token } from "./lexer.js";
+import { TokenType, Token } from "./lexer.js";
 import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 
@@ -42,7 +42,7 @@ export class Statement {
 	}
 	toString(html = false){
 		if(html){
-			return this.tokens.map(t => "type" in t ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
+			return this.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
 		} else {
 			return this.tokens.map(t => displayExpression(t, false)).join(" ");
 		}
@@ -121,7 +121,7 @@ export class DeclarationStatement extends Statement {
 	varType:VariableType;
 	constructor(tokens:Token[]){
 		super(tokens);
-		let expected = "name" as "name" | "comma";
+		let expected:"name" | "comma" = "name";
 		for(const token of tokens.slice(1, -2)){
 			if(expected == "name"){
 				if(token.type == "name"){
@@ -155,9 +155,9 @@ export class DeclarationStatement extends Statement {
 export class ConstantStatement extends Statement {
 	name: string;
 	expr: ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, Token, Token, ExpressionAST]){
 		super(tokens);
-		let [constant, name, equals, expr] = tokens as [Token, Token, Token, ExpressionAST];
+		let [constant, name, equals, expr] = tokens;
 		this.name = name.text;
 		this.expr = expr;
 	}
@@ -175,9 +175,9 @@ export class ConstantStatement extends Statement {
 export class AssignmentStatement extends Statement {
 	name: string;
 	expr: ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, Token, ExpressionAST]){
 		super(tokens);
-		let [name, assign, expr] = tokens as [Token, Token, ExpressionAST];
+		let [name, assign, expr] = tokens;
 		this.name = name.text;
 		this.expr = expr;
 	}
@@ -218,9 +218,9 @@ export class OutputStatement extends Statement {
 @statement("input", "INPUT y", "keyword.input", "name")
 export class InputStatement extends Statement {
 	name:string;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, Token]){
 		super(tokens);
-		this.name = (tokens[1] as Token).text;
+		this.name = tokens[1].text;
 	}
 	run(runtime:Runtime){
 		const variable = runtime.getVariable(this.name);
@@ -232,14 +232,14 @@ export class InputStatement extends Statement {
 				variable.value = input.toLowerCase() != "false"; break;
 			case "INTEGER": {
 				const value = Number(input);
-				if(isNaN(value)) fail(`input was an invalid number`)
-				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`)
+				if(isNaN(value)) fail(`input was an invalid number`);
+				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`);
 				variable.value = value;
 				break; }
 			case "REAL": {
 				const value = Number(input);
-				if(isNaN(value)) fail(`input was an invalid number`)
-				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`)
+				if(isNaN(value)) fail(`input was an invalid number`);
+				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`);
 				variable.value = value;
 				break; }
 			case "STRING":
@@ -256,7 +256,7 @@ export class InputStatement extends Statement {
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
 	expr:ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
 		this.expr = tokens[1];
 	}
@@ -274,9 +274,9 @@ export class ReturnStatement extends Statement {
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
 export class CallStatement extends Statement {
 	func:ExpressionASTTreeNode;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
-		if("operator" in tokens[1] && tokens[1].operator == "function call"){
+		if(!(tokens[1] instanceof Token) && tokens[1].operator == "function call"){
 			this.func = tokens[1];
 		} else crash(`CALL can only be used to call functions or procedures`);
 	}
@@ -292,7 +292,7 @@ export class CallStatement extends Statement {
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
 	condition:ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, ExpressionAST, Token]){
 		super(tokens);
 		this.condition = tokens[1];
 	}
@@ -316,9 +316,9 @@ export class ForStatement extends Statement {
 	name:string;
 	lowerBound:ExpressionAST;
 	upperBound:ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, Token, Token, ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
-		this.name = (tokens[1] as Token).text;
+		this.name = tokens[1].text;
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
 	}
@@ -326,7 +326,7 @@ export class ForStatement extends Statement {
 		const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
 		const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
 		if(upper < lower) return;
-		const end = (node.controlStatements[1] as ForEndStatement);
+		const end = node.controlStatements[1] as ForEndStatement;
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
 		for(let i = lower; i <= upper; i++){
 			const result = runtime.runBlock(node.nodeGroups[0], {
@@ -348,15 +348,15 @@ export class ForStatement extends Statement {
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
 export class ForEndStatement extends Statement {
 	name:string;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, Token]){
 		super(tokens);
-		this.name = (tokens[1] as Token).text;
+		this.name = tokens[1].text;
 	}
 }
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
 	condition:ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
 		this.condition = tokens[1];
 	}
@@ -387,7 +387,7 @@ export class DoWhileStatement extends Statement {
 @statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
 export class DoWhileEndStatement extends Statement {
 	condition:ExpressionAST;
-	constructor(tokens:(Token | ExpressionAST)[]){
+	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
 		this.condition = tokens[1];
 	}

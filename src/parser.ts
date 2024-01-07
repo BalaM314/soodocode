@@ -1,4 +1,4 @@
-import { getText, type Token, type TokenType } from "./lexer.js";
+import { getText, Token, type TokenType } from "./lexer.js";
 import { FunctionArguments, Statement, statements } from "./statements.js";
 import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
@@ -30,8 +30,8 @@ export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "funct
 
 export function parseFunctionArguments(tokens:Token[]):FunctionArguments | string {
 	const args:FunctionArguments = new Map();
-	let expected = "nameOrEndOrPassMode" as "nameOrEndOrPassMode" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd";
-	let passMode:"value" | "reference" = "value";
+	let expected: "nameOrEndOrPassMode" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd" = "nameOrEndOrPassMode";
+	let passMode: "value" | "reference" = "value";
 	let name:string | null = null;
 	for(let i = 0; i < tokens.length + 1; i ++){
 		//fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
@@ -137,7 +137,7 @@ export function parseStatement(tokens:Token[]):Statement {
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
-			return new possibleStatement(result.map(x => "start" in x ? parseExpression(tokens.slice(x.start, x.end + 1)) : x));
+			return new possibleStatement(result.map(x => x instanceof Token ? x : parseExpression(tokens.slice(x.start, x.end + 1))));
 		} else errors.push(result);
 	}
 	let maxError:{message:string, priority:number} = errors[0];

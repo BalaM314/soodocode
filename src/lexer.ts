@@ -19,7 +19,10 @@ export class Symbol {
 		public type: SymbolType,
 		public text: string,
 	){}
-	_(){};
+	/** type must be a valid token type */
+	toToken(){
+		return new Token(this.type as TokenType, this.text);
+	}
 }
 export function symbol(type:SymbolType, text:string){
 	return new Symbol(type, text);
@@ -206,7 +209,8 @@ export function tokenize(input:Symbol[]):Token[] {
 		if(state.sComment){
 			if(symbol.type === "newline"){
 				state.sComment = false;
-				output.push(symbol as Token);
+				symbol.type satisfies TokenType;
+				output.push(symbol.toToken());
 			}
 		} else if(symbol.type === "comment.multiline_close"){
 			if(state.mComment) state.mComment = false;
@@ -290,7 +294,7 @@ export function tokenize(input:Symbol[]):Token[] {
 			}
 		} else {
 			symbol.type satisfies TokenType;
-			output.push(symbol as Token);
+			output.push(symbol.toToken());
 		}
 	}
 	if(state.mComment) fail(`Unclosed multiline comment`);

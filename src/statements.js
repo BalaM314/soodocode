@@ -36,6 +36,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
+import { Token } from "./lexer.js";
 import { parseExpression, parseFunctionArguments } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 export const statements = {
@@ -52,7 +53,7 @@ export class Statement {
     }
     toString(html = false) {
         if (html) {
-            return this.tokens.map(t => "type" in t ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
+            return this.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
         }
         else {
             return this.tokens.map(t => displayExpression(t, false)).join(" ");
@@ -400,7 +401,7 @@ let CallStatement = (() => {
     var CallStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            if ("operator" in tokens[1] && tokens[1].operator == "function call") {
+            if (!(tokens[1] instanceof Token) && tokens[1].operator == "function call") {
                 this.func = tokens[1];
             }
             else
