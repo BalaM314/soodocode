@@ -1297,6 +1297,19 @@ describe("parseFunctionArguments", () => {
 			arg2: ["BOOLEAN", jasmine.any(String)],
 			arg3: ["STRING", jasmine.any(String)],
 		});
+		expect(process(parseFunctionArguments([
+			token("name", "arg"),
+			token("punctuation.comma", ","),
+			token("name", "arg2"),
+			token("punctuation.comma", ","),
+			token("name", "arg3"),
+			token("punctuation.colon", ":"),
+			token("name", "STRING"),
+		]))).toEqual({
+			arg: ["STRING", jasmine.any(String)],
+			arg2: ["STRING", jasmine.any(String)],
+			arg3: ["STRING", jasmine.any(String)],
+		});
 	});
 	it("should correctly determine byref and byval for function arguments", () => {
 		expect(process(parseFunctionArguments([
@@ -1432,6 +1445,14 @@ describe("parseFunctionArguments", () => {
 			token("name", "arg2"),
 			token("punctuation.colon", ":"),
 			token("name", "BOOLEAN"),
+		])).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => parseFunctionArguments([
+			token("keyword.by-reference", "BYREF"),
+			token("name", "arg1"),
+			token("punctuation.comma", ","),
+			token("name", "arg2"),
+			token("punctuation.comma", ","),
+			token("name", "arg3"),
 		])).toThrowMatching(t => t instanceof SoodocodeError);
 		expect(() => parseFunctionArguments([
 			token("keyword.case", "CASE"),

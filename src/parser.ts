@@ -1,6 +1,6 @@
 import { getText, Token, type TokenType } from "./lexer.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
-import { FunctionArguments, Statement, statements } from "./statements.js";
+import { FunctionArgumentData, FunctionArgumentDataPartial, FunctionArguments, Statement, statements } from "./statements.js";
 import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
 //TODO improve error messages
@@ -55,7 +55,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	if(tokens.length == 0) return new Map();
 
 	let passMode: "value" | "reference" = "value";
-	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map(section => {
+	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
 		let offset = 0;
 		if(section[0]?.type == "keyword.by-reference"){
 			offset = 1;
@@ -64,13 +64,25 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 			offset = 1;
 			passMode = "value";
 		}
-		if(section[offset + 0]?.type != "name") fail(`Expected a type, got ${section[offset + 0]}`);
-		if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1]}`);
-		return [section[offset + 0].text, {
-			passMode,
-			type: processTypeData(parseType(section.slice(offset + 2))),
-		}]
-	}));
+		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? ","}`);
+		if(section.length == offset + 1){
+			return [section[offset + 0].text, {
+				passMode,
+				type: null,
+			}];
+		} else {
+			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? ","}`);
+			return [section[offset + 0].text, {
+				passMode,
+				type: processTypeData(parseType(section.slice(offset + 2))),
+			}];
+		}
+	}).map<FunctionArgumentData>((arg, i, arr) => [arg[0], {
+		passMode: arg[1].passMode,
+		type: arg[1].type === null
+			? (arr.find((value, j):value is FunctionArgumentData => j > i && value[1].type != null) ?? fail(`Type not specified for function argument ${arg[0]}`))[1].type
+			: arg[1].type
+	}]));
 }
 
 export function processTypeData(ast:Token | ExpressionASTArrayTypeNode):VariableType {
@@ -330,8 +342,8 @@ export const operators = Object.fromEntries(
 ) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
 export function parseExpressionLeafNode(input:Token):ExpressionASTLeafNode {
-	//Number, string, boolean, and variables can be parsed as-is
-	if(input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type.startsWith("boolean."))
+	//Number, string, char, boolean, and variables can be parsed as-is
+	if(input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
 		return input;
 	else
 		fail(`Invalid syntax: cannot parse expression \`${getText([input])}\`: not a valid expression leaf node`);

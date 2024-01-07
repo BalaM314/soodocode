@@ -21,6 +21,8 @@ export const statements = {
 };
 
 export type FunctionArguments = Map<string, {type:VariableType, passMode:"value" | "reference"}>
+export type FunctionArgumentData = [string, {type:VariableType, passMode:"value" | "reference"}];
+export type FunctionArgumentDataPartial = [string, {type:VariableType | null, passMode:"value" | "reference"}];
 
 export type StatementExecutionResult = {
 	type: "function_return";
