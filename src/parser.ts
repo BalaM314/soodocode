@@ -32,7 +32,7 @@ export type ProgramASTTreeNode = {
 
 export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
-export function parseFunctionArguments(tokens:Token[]):FunctionArguments | string {
+export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	const args:FunctionArguments = new Map();
 	let expected: "nameOrEndOrPassMode" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd" = "nameOrEndOrPassMode";
 	let passMode: "value" | "reference" = "value";
@@ -40,7 +40,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 	for(let i = 0; i < tokens.length + 1; i ++){
 		//fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
 		const token = tokens[i] as Token | undefined;
-		const tokenName = token ? `"${token.text}" (${token.type})` : "nothing";
+		const tokenName = token?.toString() ?? "nothing";
 		if(expected == "nameOrEndOrPassMode" || expected == "name" || expected == "nameOrPassMode"){
 			//weird combined if, necessary due to passMode
 			if(token?.type == "keyword.by-reference" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")){
@@ -53,7 +53,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 				if(
 					(expected != "nameOrEndOrPassMode" && !token) || //Expecting name and there is no token
 					(token && token.type != "name") //or, there is a token and it's not a name
-				) return `Expected a name, got ${tokenName}`;
+				) fail(`Expected a name, got ${tokenName}`);
 				else {
 					if(token) name = token.text;
 					//If this is the last token, then the value of "expected" will never be checked again, no need for an extra check
@@ -61,10 +61,10 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 				}
 			}
 		} else if(expected == "colon"){
-			if(!token || token.type != "punctuation.colon") return `Expected a colon, got ${tokenName}`;
+			if(!token || token.type != "punctuation.colon") fail(`Expected a colon, got ${tokenName}`);
 			else expected = "type";
 		} else if(expected == "type"){
-			if(!token || token.type != "name") return `Expected a type, got ${tokenName}`;
+			if(!token || token.type != "name") fail(`Expected a type, got ${tokenName}`);
 			else {
 				expected = "commaOrEnd";
 				if(!name) impossible();
@@ -72,7 +72,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments | strin
 				args.set(name, {type: token.text, passMode});
 			}
 		} else if(expected == "commaOrEnd"){
-			if(token && token.type != "punctuation.comma") return `Expected a comma or end of arguments, got ${tokenName}`;
+			if(token && token.type != "punctuation.comma") fail(`Expected a comma or end of arguments, got ${tokenName}`);
 			else expected = "nameOrPassMode";
 		} else expected satisfies never;
 	}

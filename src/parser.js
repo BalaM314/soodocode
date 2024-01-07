@@ -9,7 +9,7 @@ export function parseFunctionArguments(tokens) {
     for (let i = 0; i < tokens.length + 1; i++) {
         //fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
         const token = tokens[i];
-        const tokenName = token ? `"${token.text}" (${token.type})` : "nothing";
+        const tokenName = token?.toString() ?? "nothing";
         if (expected == "nameOrEndOrPassMode" || expected == "name" || expected == "nameOrPassMode") {
             //weird combined if, necessary due to passMode
             if (token?.type == "keyword.by-reference" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")) {
@@ -24,7 +24,7 @@ export function parseFunctionArguments(tokens) {
                 if ((expected != "nameOrEndOrPassMode" && !token) || //Expecting name and there is no token
                     (token && token.type != "name") //or, there is a token and it's not a name
                 )
-                    return `Expected a name, got ${tokenName}`;
+                    fail(`Expected a name, got ${tokenName}`);
                 else {
                     if (token)
                         name = token.text;
@@ -35,13 +35,13 @@ export function parseFunctionArguments(tokens) {
         }
         else if (expected == "colon") {
             if (!token || token.type != "punctuation.colon")
-                return `Expected a colon, got ${tokenName}`;
+                fail(`Expected a colon, got ${tokenName}`);
             else
                 expected = "type";
         }
         else if (expected == "type") {
             if (!token || token.type != "name")
-                return `Expected a type, got ${tokenName}`;
+                fail(`Expected a type, got ${tokenName}`);
             else {
                 expected = "commaOrEnd";
                 if (!name)
@@ -53,7 +53,7 @@ export function parseFunctionArguments(tokens) {
         }
         else if (expected == "commaOrEnd") {
             if (token && token.type != "punctuation.comma")
-                return `Expected a comma or end of arguments, got ${tokenName}`;
+                fail(`Expected a comma or end of arguments, got ${tokenName}`);
             else
                 expected = "nameOrPassMode";
         }
