@@ -14,36 +14,43 @@ export class Runtime {
         this.types = {};
         this.files = {};
     }
+    processArrayAccess(expr, operation, arg2) {
+        const variable = this.getVariable(expr.operatorToken.text);
+        if (!variable)
+            fail(`Undeclared variable ${expr.operatorToken.text}`);
+        if (!(variable.type instanceof ArrayTypeData))
+            fail(`Cannot convert variable of type ${variable.type} to an array`);
+        const varTypeData = variable.type;
+        if (arg2 instanceof ArrayTypeData)
+            fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${variable.type.type}`);
+        if (expr.nodes.length != variable.type.lengthInformation.length)
+            fail(`Cannot evaluate expression starting with "array access": incorrect number of indices for n-dimensional array`);
+        const indexes = expr.nodes.map(e => this.evaluateExpr(e, "INTEGER")[1]);
+        let invalidIndexIndex;
+        if ((invalidIndexIndex = indexes.findIndex((value, index) => value > varTypeData.lengthInformation[index][1] || value < varTypeData.lengthInformation[index][0])) != -1)
+            fail(`Array index out of bounds: value ${indexes[invalidIndexIndex]} was not in range ${varTypeData.lengthInformation[invalidIndexIndex]}`);
+        const index = indexes.reduce((acc, value, index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.lengthInformation_[index]), 0);
+        if (operation == "get") {
+            const output = variable.value[index];
+            if (output == null)
+                fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`);
+            if (arg2)
+                return [arg2, this.coerceValue(output, variable.type.type, arg2)];
+            else
+                return [variable.type.type, output];
+        }
+        else {
+            variable.value[index] = this.evaluateExpr(arg2, varTypeData.type)[1];
+        }
+    }
     evaluateExpr(expr, type) {
         if (expr instanceof Token)
             return this.evaluateToken(expr, type);
         //Tree node
         switch (expr.operator) {
             case "array access":
-                const variable = this.getVariable(expr.operatorToken.text);
-                if (!variable)
-                    fail(`Undeclared variable ${expr.operatorToken.text}`);
-                if (!(variable.type instanceof ArrayTypeData))
-                    fail(`Cannot convert variable of type ${variable.type} to an array`);
-                const varTypeData = variable.type;
-                if (type instanceof ArrayTypeData)
-                    fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${type}, but the operator produces a result of type ${variable.type.type}`);
-                if (expr.nodes.length != variable.type.lengthInformation.length)
-                    fail(`Cannot evaluate expression starting with "array access": incorrect number of indices for n-dimensional array`);
-                //TODO extract this logic
-                const indexes = expr.nodes.map(e => this.evaluateExpr(e, "INTEGER")[1]);
-                let invalidIndexIndex;
-                if ((invalidIndexIndex = indexes.findIndex((value, index) => value > varTypeData.lengthInformation[index][1] || value < varTypeData.lengthInformation[index][0])) != -1)
-                    fail(`Array index out of bounds: value ${indexes[invalidIndexIndex]} was not in range ${varTypeData.lengthInformation[invalidIndexIndex]}`);
-                const index = indexes.reduce((acc, value, index) => index == indexes.length - 1 ? acc + value : (acc + value) * varTypeData.lengthInformation_[index], 0);
-                const output = variable.value[index];
-                if (output == null)
-                    fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`);
-                if (type)
-                    return [type, this.coerceValue(output, variable.type.type, type)];
-                else
-                    return [variable.type.type, output];
-            case "function call": {
+                return this.processArrayAccess(expr, "get", type);
+            case "function call":
                 const fn = this.functions[expr.operatorToken.text];
                 if (!fn)
                     fail(`Function ${expr.operatorToken.text} is not defined.`);
@@ -55,7 +62,6 @@ export class Runtime {
                     return [type, this.coerceValue(output, statement.returnType, type)];
                 else
                     return [statement.returnType, output];
-            }
         }
         //arithmetic
         if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {

@@ -1,4 +1,4 @@
-import type { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
+import type { FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType } from "./runtime.js";
 import { TokenType, Token } from "./lexer.js";
 import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
@@ -171,21 +171,27 @@ export class ConstantStatement extends Statement {
 		};
 	}
 }
-@statement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+")
+@statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
-	name: string;
+	/** Can be a normal variable name, like [name x], or an array access expression */
+	name: ExpressionAST;
 	expr: ExpressionAST;
-	constructor(tokens:[Token, Token, ExpressionAST]){
+	constructor(tokens:[ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
-		let [name, assign, expr] = tokens;
-		this.name = name.text;
-		this.expr = expr;
+		[this.name, , this.expr] = tokens;
+		if("operator" in this.name){
+			if(this.name.operator != "array access") fail(`Expression ${displayExpression(this.name)} cannot be assigned to`);
+		}
 	}
 	run(runtime:Runtime){
-		const variable = runtime.getVariable(this.name);
-		if(!variable) fail(`Undeclared variable ${this.name}`);
-		if(!variable.mutable) fail(`Cannot assign to constant ${this.name}`);
-		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+		if("operator" in this.name){
+			runtime.processArrayAccess(this.name, "set", this.expr);
+		} else {
+			const variable = runtime.getVariable(this.name.text);
+			if(!variable) fail(`Undeclared variable ${this.name.text}`);
+			if(!variable.mutable) fail(`Cannot assign to constant ${this.name.text}`);
+			variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+		}
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")

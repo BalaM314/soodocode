@@ -213,7 +213,7 @@ let ConstantStatement = (() => {
 })();
 export { ConstantStatement };
 let AssignmentStatement = (() => {
-    let _classDecorators = [statement("assignment", "x <- 5", "#", "name", "operator.assignment", "expr+")];
+    let _classDecorators = [statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -221,17 +221,24 @@ let AssignmentStatement = (() => {
     var AssignmentStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            let [name, assign, expr] = tokens;
-            this.name = name.text;
-            this.expr = expr;
+            [this.name, , this.expr] = tokens;
+            if ("operator" in this.name) {
+                if (this.name.operator != "array access")
+                    fail(`Expression ${displayExpression(this.name)} cannot be assigned to`);
+            }
         }
         run(runtime) {
-            const variable = runtime.getVariable(this.name);
-            if (!variable)
-                fail(`Undeclared variable ${this.name}`);
-            if (!variable.mutable)
-                fail(`Cannot assign to constant ${this.name}`);
-            variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+            if ("operator" in this.name) {
+                runtime.processArrayAccess(this.name, "set", this.expr);
+            }
+            else {
+                const variable = runtime.getVariable(this.name.text);
+                if (!variable)
+                    fail(`Undeclared variable ${this.name.text}`);
+                if (!variable.mutable)
+                    fail(`Cannot assign to constant ${this.name.text}`);
+                variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+            }
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");

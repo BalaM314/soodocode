@@ -27,7 +27,7 @@ export class ArrayTypeData {
 	){
 		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
 		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
-		this.totalLength = this.lengthInformation.map(b => b[1] - b[0] + 1).reduce((a, b) => a * b, 0);
+		this.totalLength = this.lengthInformation.map(b => b[1] - b[0] + 1).reduce((a, b) => a * b, 1);
 		this.lengthInformation_ = this.lengthInformation.map(b => b[1] - b[0] + 1);
 	}
 	toString(){

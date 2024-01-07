@@ -205,16 +205,24 @@ ${displayProgram(program)}`;
         }
     }
 });
+let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", e => {
     try {
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
         const program = parser.parse(tokens);
         let output = [];
-        const rtm = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => output.push(m));
+        const runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => {
+            output.push(m);
+            console.log(`[Runtime] ${m}`);
+        });
+        if (shouldDump) {
+            Object.assign(window, {
+                symbols, tokens, program, runtime
+            });
+        }
         outputDiv.style.color = "white";
-        rtm.runBlock(program);
-        console.log(output);
+        runtime.runBlock(program);
         outputDiv.innerText = output.join("\n");
     }
     catch (err) {
@@ -228,8 +236,8 @@ executeSoodocodeButton.addEventListener("click", e => {
     }
 });
 function dumpFunctionsToGlobalScope() {
-    Object.assign(window, lexer, parser, statements, utils, runtime, {
-        runtime: new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`))
-    });
+    shouldDump = true;
+    window.runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`));
+    Object.assign(window, lexer, parser, statements, utils, runtime);
 }
 dumpFunctionsToGlobalScope();
