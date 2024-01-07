@@ -1,4 +1,18 @@
 import { crash, impossible } from "./utils.js";
+export const symbolTypes = [
+    "numeric_fragment",
+    "quote.single", "quote.double",
+    "brace.open", "brace.close",
+    "bracket.open", "bracket.close",
+    "parentheses.open", "parentheses.close",
+    "punctuation.colon", "punctuation.semicolon", "punctuation.comma", "punctuation.period",
+    "comment.singleline", "comment.multiline_open", "comment.multiline_close",
+    "word",
+    "unknown",
+    "space",
+    "newline",
+    "operator.add", "operator.subtract", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
+];
 export class Symbol {
     constructor(type, text) {
         this.type = type;
@@ -6,19 +20,48 @@ export class Symbol {
     }
     /** type must be a valid token type */
     toToken() {
-        return new Token(this.type, this.text);
+        if (tokenTypes.includes(this.type)) //typescript being dumb
+            return new Token(this.type, this.text);
+        else
+            crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
+    }
+    toString() {
+        return `<${this.type}|${this.text}>`;
     }
 }
 export function symbol(type, text) {
     return new Symbol(type, text);
 }
+export const tokenTypes = [
+    "number.decimal",
+    "string",
+    "brace.open", "brace.close",
+    "bracket.open", "bracket.close",
+    "parentheses.open", "parentheses.close",
+    "punctuation.colon", "punctuation.semicolon", "punctuation.comma",
+    "comment",
+    "name",
+    "boolean.true", "boolean.false",
+    "keyword.declare", "keyword.constant", "keyword.output", "keyword.input", "keyword.call",
+    "keyword.if", "keyword.then", "keyword.else", "keyword.if_end",
+    "keyword.for", "keyword.to", "keyword.for_end", "keyword.while", "keyword.while_end", "keyword.dowhile", "keyword.dowhile_end",
+    "keyword.function", "keyword.function_end", "keyword.procedure", "keyword.procedure_end", "keyword.return", "keyword.returns", "keyword.by-reference", "keyword.by-value",
+    "keyword.openfile", "keyword.readfile", "keyword.writefile",
+    "keyword.case", "keyword.of", "keyword.case_end", "keyword.otherwise",
+    "keyword.array",
+    "newline",
+    "operator.add", "operator.subtract", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
+];
 export class Token {
     constructor(type, text) {
         this.type = type;
         this.text = text;
     }
-    _() { }
+    __token__() { }
     ;
+    toString() {
+        return `[${this.type}|${this.text}]`;
+    }
 }
 export function token(type, text) {
     return new Token(type, text);
@@ -89,7 +132,7 @@ class SymbolizerIO {
 export function symbolize(input) {
     const str = new SymbolizerIO(input);
     toNextCharacter: while (str.has()) {
-        for (const [identifier, symbolType] of symbolTypes) {
+        for (const [identifier, symbolType] of symbolTypeData) {
             if (typeof identifier == "string" || identifier instanceof RegExp) {
                 if (str.cons(identifier)) {
                     str.write(symbolType);
@@ -109,7 +152,7 @@ export function symbolize(input) {
     }
     return str.output;
 }
-const symbolTypes = [
+const symbolTypeData = [
     ["MOD", "operator.mod"],
     ["AND", "operator.and"],
     ["OR", "operator.or"],
@@ -169,6 +212,7 @@ export function tokenize(input) {
         if (state.sComment) {
             if (symbol.type === "newline") {
                 state.sComment = false;
+                symbol.type;
                 output.push(symbol.toToken());
             }
         }
