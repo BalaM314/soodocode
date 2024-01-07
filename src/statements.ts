@@ -121,19 +121,22 @@ export class DeclarationStatement extends Statement {
 	varType:VariableType;
 	constructor(tokens:Token[]){
 		super(tokens);
-		let expected:"name" | "comma" = "name";
+
+		//parse the variable list
+		let expected:"name" | "commaOrColon" = "name";
 		for(const token of tokens.slice(1, -2)){
 			if(expected == "name"){
 				if(token.type == "name"){
 					this.variables.push(token.text);
-					expected = "comma"
-				} else fail(`Expected name, got "${token.text}" (${token.type})`);
+					expected = "commaOrColon";
+				} else fail(`Expected name, got ${token}`);
 			} else {
 				if(token.type == "punctuation.comma") expected = "name";
-				else fail(`Expected name, got "${token.text}" (${token.type})`);
+				else fail(`Expected comma, got ${token}`);
 			}
 		}
-		if(expected == "name") fail(`Expected name, found ":" (punctuation.colon)`);
+		if(expected == "name") fail(`Expected name, found ${tokens.at(-2)}`);
+
 		const varType = tokens.at(-1)!.text;
 		if(isVarType(varType))
 			this.varType = varType;

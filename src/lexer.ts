@@ -29,7 +29,7 @@ export class Symbol {
 		else crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
 	}
 	toString(){
-		return `<${this.type}|${this.text}>`;
+		return `<${this.type} ${this.text}>`;
 	}
 }
 export function symbol(type:SymbolType, text:string){
@@ -65,7 +65,7 @@ export class Token {
 	){}
 	__token__(){};
 	toString(){
-		return `[${this.type}|${this.text}]`;
+		return `[${this.type} ${this.text}]`;
 	}
 }
 export function token(type:TokenType, text:string){
@@ -303,7 +303,7 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "OF": write("keyword.of"); break;
 				case "ENDCASE": write("keyword.case_end"); break;
 				case "OTHERWISE": write("keyword.otherwise"); break;
-				case "ARRAY": fail(`Arrays are not yet supported.`); break;
+				case "ARRAY": write("keyword.array"); break;
 				default: output.push(token("name", symbol.text)); break;
 			}
 		} else {

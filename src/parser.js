@@ -62,6 +62,31 @@ export function parseFunctionArguments(tokens) {
     }
     return args;
 }
+export function parseType(tokens) {
+    if (tokens.length == 1)
+        return tokens[0];
+    if (!(tokens[0]?.type == "keyword.array" &&
+        tokens[1]?.type == "bracket.open" &&
+        tokens.at(-2)?.type == "keyword.of" &&
+        tokens.at(-1)?.type == "name"))
+        fail(`Cannot parse type from "${tokens.join(" ")}"`);
+    //ARRAY[1:10, 1:10] OF STRING
+    return {
+        lengthInformation: splitArray(tokens.slice(2, -3), t => t.type == "punctuation.comma")
+            .map(section => {
+            if (section.length != 3)
+                fail(`Invalid array range specifier "${section.join(" ")}"`);
+            if (section[0].type != "number.decimal")
+                fail(`Expected a number, got ${section[0]}`);
+            if (section[1].type != "punctuation.colon")
+                fail(`Expected a colon, got ${section[1]}`);
+            if (section[2].type != "number.decimal")
+                fail(`Expected a number, got ${section[2]}`);
+            return [section[0], section[1]];
+        }),
+        type: tokens.at(-1),
+    };
+}
 export function parse(tokens) {
     let lines = [[]];
     //TODO duped, use splitArray()

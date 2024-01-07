@@ -26,7 +26,7 @@ export class Symbol {
             crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
     }
     toString() {
-        return `<${this.type}|${this.text}>`;
+        return `<${this.type} ${this.text}>`;
     }
 }
 export function symbol(type, text) {
@@ -60,7 +60,7 @@ export class Token {
     __token__() { }
     ;
     toString() {
-        return `[${this.type}|${this.text}]`;
+        return `[${this.type} ${this.text}]`;
     }
 }
 export function token(type, text) {
@@ -378,7 +378,7 @@ export function tokenize(input) {
                     write("keyword.otherwise");
                     break;
                 case "ARRAY":
-                    fail(`Arrays are not yet supported.`);
+                    write("keyword.array");
                     break;
                 default:
                     output.push(token("name", symbol.text));

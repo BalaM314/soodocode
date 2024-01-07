@@ -30,6 +30,7 @@ ${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "
 	}
 }
 
+//TODO refactor for token specific
 export function splitArray<T>(arr:T[], split:[T] | ((func:T, index:number) => boolean)):T[][]{
 	const output:T[][] = [[]];
 	if(typeof split == "function"){

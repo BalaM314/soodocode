@@ -29,6 +29,7 @@ ${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "
 )`);
     }
 }
+//TODO refactor for token specific
 export function splitArray(arr, split) {
     const output = [[]];
     if (typeof split == "function") {

@@ -131,25 +131,26 @@ let DeclarationStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.variables = [];
+            //parse the variable list
             let expected = "name";
             for (const token of tokens.slice(1, -2)) {
                 if (expected == "name") {
                     if (token.type == "name") {
                         this.variables.push(token.text);
-                        expected = "comma";
+                        expected = "commaOrColon";
                     }
                     else
-                        fail(`Expected name, got "${token.text}" (${token.type})`);
+                        fail(`Expected name, got ${token}`);
                 }
                 else {
                     if (token.type == "punctuation.comma")
                         expected = "name";
                     else
-                        fail(`Expected name, got "${token.text}" (${token.type})`);
+                        fail(`Expected comma, got ${token}`);
                 }
             }
             if (expected == "name")
-                fail(`Expected name, found ":" (punctuation.colon)`);
+                fail(`Expected name, found ${tokens.at(-2)}`);
             const varType = tokens.at(-1).text;
             if (isVarType(varType))
                 this.varType = varType;
