@@ -1,7 +1,7 @@
 import { Token, TokenType } from "./lexer.js";
 import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType, ExpressionASTArrayTypeNode, ArrayTypeData } from "./parser.js";
 import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
-import { crash, fail } from "./utils.js";
+import { crash, fail, forceType } from "./utils.js";
 
 interface FileData {
 	name: string;
@@ -61,8 +61,24 @@ export class Runtime {
 
 		//Tree node
 		switch(expr.operator){
-			case "array access": crash(`Arrays are not yet supported`); //TODO arrays
-			case "function call":
+			case "array access":
+				const variable = this.getVariable(expr.operatorToken.text);
+				if(!variable) fail(`Undeclared variable ${expr.operatorToken.text}`);
+				if(!(variable.type instanceof ArrayTypeData)) fail(`Cannot convert variable of type ${variable.type} to an array`);
+				const varTypeData = variable.type;
+				if(type instanceof ArrayTypeData) fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${type}, but the operator produces a result of type ${variable.type.type}`);
+				if(expr.nodes.length != variable.type.lengthInformation.length) fail(`Cannot evaluate expression starting with "array access": incorrect number of indices for n-dimensional array`);
+				//TODO extract this logic
+				const indexes = expr.nodes.map(e => this.evaluateExpr(e, "INTEGER")[1]);
+				let invalidIndexIndex;
+				if((invalidIndexIndex = indexes.findIndex((value, index) => value > varTypeData.lengthInformation[index][1] || value < varTypeData.lengthInformation[index][0])) != -1)
+					fail(`Array index out of bounds: value ${indexes[invalidIndexIndex]} was not in range ${varTypeData.lengthInformation[invalidIndexIndex]}`);
+				const index = indexes.reduce((acc, value, index) => index == indexes.length - 1 ? acc + value : (acc + value) * varTypeData.lengthInformation_[index], 0);
+				const output = (variable.value as Array<StringVariableTypeValue>)[index];
+				if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`);
+				if(type) return [type, this.coerceValue(output, variable.type.type, type)];
+				else return [variable.type.type, output];
+			case "function call":{
 				const fn = this.functions[expr.operatorToken.text];
 				if(!fn) fail(`Function ${expr.operatorToken.text} is not defined.`);
 				if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
@@ -70,6 +86,7 @@ export class Runtime {
 				const output = this.callFunction(fn, expr.nodes, true);
 				if(type) return [type, this.coerceValue(output, statement.returnType, type)];
 				else return [statement.returnType, output];
+			}
 		}
 
 		//arithmetic
@@ -337,5 +354,6 @@ export type StringVariableType =
 //TODO wrong file
 export type VariableType = StringVariableType | ArrayTypeData;
 export type VariableValueType = VariableTypeMapping<VariableType>;
+export type StringVariableTypeValue = VariableTypeMapping<StringVariableType>;
 
 type FileMode = "READ" | "WRITE" | "APPEND";

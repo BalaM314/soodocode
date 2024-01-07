@@ -10,6 +10,7 @@ export class ArrayTypeData {
         if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
             fail(`Invalid length information: bound was not an integer`);
         this.totalLength = this.lengthInformation.map(b => b[1] - b[0] + 1).reduce((a, b) => a * b, 0);
+        this.lengthInformation_ = this.lengthInformation.map(b => b[1] - b[0] + 1);
     }
     toString() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;

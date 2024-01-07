@@ -90,3 +90,4 @@ export function parseError(thing) {
         return "Unable to parse error object";
     }
 }
+export function forceType(input) { }

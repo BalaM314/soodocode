@@ -89,3 +89,5 @@ export function parseError(thing:unknown):string {
 		return "Unable to parse error object";
 	}
 }
+
+export function forceType<T>(input:unknown):asserts input is T {}
