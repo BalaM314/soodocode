@@ -1,6 +1,6 @@
 import type { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
 import { TokenType, Token } from "./lexer.js";
-import { ExpressionAST, ExpressionASTTreeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments } from "./parser.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 
 
@@ -35,7 +35,7 @@ export class Statement {
 	static category:StatementCategory;
 	static example:string;
 	static tokens:(TokenMatcher | "#")[] = null!;
-	constructor(public tokens:(Token | ExpressionAST)[]){
+	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;
@@ -98,7 +98,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		if(args.length < 1) crash(`Invalid statement definitions! All statements must contain at least one token`);
 		if(args.find((v, i, args) =>
 			(v == "expr+" || v == ".+" || v == ".*") &&
-			(args[i+1] == "expr+" || args[i+1] == ".+" || args[i+1] == ".*")
+			(args[i+1] == "expr+" || args[i+1] == ".+" || args[i+1] == ".*" || args[i+1] == "type+")
 		)) crash(`Invalid statement definitions! Variadic fragment specifiers cannot be adjacent.`);
 		if(args[0] == "#"){
 			statements.irregular.push(input);
@@ -115,11 +115,11 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 	}
 }
 
-@statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")
+@statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclarationStatement extends Statement {
 	variables:string[] = [];
 	varType:VariableType;
-	constructor(tokens:Token[]){
+	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
 		super(tokens);
 
 		//parse the variable list
@@ -137,10 +137,7 @@ export class DeclarationStatement extends Statement {
 		}
 		if(expected == "name") fail(`Expected name, found ${tokens.at(-2)}`);
 
-		const varType = tokens.at(-1)!.text;
-		if(isVarType(varType))
-			this.varType = varType;
-		else fail(`Invalid type "${varType}"`);
+		this.varType = processTypeData(tokens.at(-1)!);
 	}
 	run(runtime:Runtime){
 		for(const variable of this.variables){

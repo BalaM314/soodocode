@@ -1,7 +1,13 @@
 import { Token } from "./lexer.js";
+export function stringifyExpressionASTArrayTypeNode(input) {
+    return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;
+}
 export function displayExpression(node, expand = false, html = false) {
     if (node instanceof Token) {
         return escapeHTML(node.text);
+    }
+    else if ("lengthInformation" in node) { //TODO rm in check
+        return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
     }
     else if (node.operator == "function call") {
         const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")})`;

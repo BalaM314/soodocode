@@ -135,6 +135,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
             }
         }
+        //TODO array literals
         crash(`This should not be possible`);
     }
     evaluateToken(token, type) {

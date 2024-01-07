@@ -1,6 +1,15 @@
 import { getText, Token } from "./lexer.js";
 import { statements } from "./statements.js";
 import { impossible, splitArray, fail, isVarType } from "./utils.js";
+export class ArrayTypeData {
+    constructor(lengthInformation, type) {
+        this.lengthInformation = lengthInformation;
+        this.type = type;
+    }
+    toString() {
+        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+    }
+}
 export function parseFunctionArguments(tokens) {
     //special case: blank
     if (tokens.length == 0)
@@ -56,7 +65,7 @@ export function parseType(tokens) {
                 fail(`Expected a colon, got ${section[1]}`);
             if (section[2].type != "number.decimal")
                 fail(`Expected a number, got ${section[2]}`);
-            return [section[0], section[1]];
+            return [section[0], section[2]];
         }),
         type: tokens.at(-1),
     };
@@ -140,7 +149,7 @@ export function parseStatement(tokens) {
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
-            return new possibleStatement(result.map(x => x instanceof Token ? x : parseExpression(tokens.slice(x.start, x.end + 1))));
+            return new possibleStatement(result.map(x => x instanceof Token ? x : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
         }
         else
             errors.push(result);
@@ -161,8 +170,9 @@ export function checkStatement(statement, input) {
     //but it works
     //TODO understand it
     const output = [];
+    //todo check use of var
     for (var i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
-        if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+") {
+        if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+") {
             const allowEmpty = statement.tokens[i] == ".*";
             const start = j;
             if (j >= input.length) {
@@ -185,7 +195,9 @@ export function checkStatement(statement, input) {
             if (!anyTokensSkipped && !allowEmpty)
                 return { message: `Expected one or more tokens, but found zero`, priority: 6 };
             if (statement.tokens[i] == "expr+")
-                output.push({ start, end });
+                output.push({ type: "expression", start, end });
+            else if (statement.tokens[i] == "type+")
+                output.push({ type: "type", start, end });
             else
                 output.push(...input.slice(start, end + 1));
         }

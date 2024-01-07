@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { Token } from "./lexer.js";
-import { parseExpression, parseFunctionArguments } from "./parser.js";
+import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 export const statements = {
     byStartKeyword: {},
@@ -103,7 +103,7 @@ function statement(type, example, ...args) {
         if (args.length < 1)
             crash(`Invalid statement definitions! All statements must contain at least one token`);
         if (args.find((v, i, args) => (v == "expr+" || v == ".+" || v == ".*") &&
-            (args[i + 1] == "expr+" || args[i + 1] == ".+" || args[i + 1] == ".*")))
+            (args[i + 1] == "expr+" || args[i + 1] == ".+" || args[i + 1] == ".*" || args[i + 1] == "type+")))
             crash(`Invalid statement definitions! Variadic fragment specifiers cannot be adjacent.`);
         if (args[0] == "#") {
             statements.irregular.push(input);
@@ -122,7 +122,7 @@ function statement(type, example, ...args) {
     };
 }
 let DeclarationStatement = (() => {
-    let _classDecorators = [statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "name")];
+    let _classDecorators = [statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -151,11 +151,7 @@ let DeclarationStatement = (() => {
             }
             if (expected == "name")
                 fail(`Expected name, found ${tokens.at(-2)}`);
-            const varType = tokens.at(-1).text;
-            if (isVarType(varType))
-                this.varType = varType;
-            else
-                fail(`Invalid type "${varType}"`);
+            this.varType = processTypeData(tokens.at(-1));
         }
         run(runtime) {
             for (const variable of this.variables) {

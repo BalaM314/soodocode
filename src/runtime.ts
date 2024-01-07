@@ -1,5 +1,5 @@
 import { Token, TokenType } from "./lexer.js";
-import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType } from "./parser.js";
+import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType, ExpressionASTArrayTypeNode, ArrayTypeData } from "./parser.js";
 import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 
@@ -13,7 +13,7 @@ interface FileData {
 export type VariableData<T extends VariableType = VariableType> = {
 	type: T;
 	/** Null indicates that the variable has not been initialized */
-	value: VariableTypeMapping[T] | null;
+	value: VariableTypeMapping<T> | null;
 	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement;
 	mutable: true;
 }
@@ -53,7 +53,7 @@ export class Runtime {
 		public _output: (message:string) => void,
 	){}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValueType];
-	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:VariableType, value:VariableTypeMapping[T]];
+	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:VariableType, value:VariableTypeMapping<T>];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType):[type:VariableType, value:VariableValueType] {
 
 		if(expr instanceof Token)
@@ -177,6 +177,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 		}
 
+		//TODO array literals
 		crash(`This should not be possible`);
 	}
 	evaluateToken(token:Token, type?:VariableType):[type:VariableType, value:VariableValueType] {
@@ -235,7 +236,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(!scope) return null;
 		return this.functions[scope.statement.name] ?? crash(`impossible`);
 	}
-	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping[T], from:T, to:S):VariableTypeMapping[S] {
+	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S):VariableTypeMapping<S> {
 		//typescript really hates this function, beware
 		if(from as any == to) return value as any;
 		if(from == "STRING" && to == "CHAR") return value as any;
@@ -313,16 +314,28 @@ help: try using DIV instead of / to produce an integer as the result`
 
 
 /**Stores the JS type used for each pseudocode variable type */
-export type VariableTypeMapping = {
-	"INTEGER": number;
-	"REAL": number;
-	"STRING": string;
-	"CHAR": string;
-	"BOOLEAN": boolean;
-	"DATE": Date;
-}
+export type VariableTypeMapping<T> = 
+	T extends "INTEGER" ? number :
+	T extends "REAL" ? number :
+	T extends "STRING" ? string :
+	T extends "CHAR" ? string :
+	T extends "BOOLEAN" ? boolean :
+	T extends "DATE" ? Date :
+	T extends ArrayTypeData ? Array<VariableTypeMapping<T["type"]> | null> //Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
+	: never
+;
 
-export type VariableType = keyof VariableTypeMapping /* | string*/;
-export type VariableValueType = VariableTypeMapping[keyof VariableTypeMapping];
+
+export type StringVariableType =
+	| "INTEGER"
+	| "REAL"
+	| "STRING"
+	| "CHAR"
+	| "BOOLEAN"
+	| "DATE"
+;
+//TODO wrong file
+export type VariableType = StringVariableType | ArrayTypeData;
+export type VariableValueType = VariableTypeMapping<VariableType>;
 
 type FileMode = "READ" | "WRITE" | "APPEND";

@@ -1,10 +1,16 @@
 import { Token } from "./lexer.js";
-import type { ExpressionASTNode } from "./parser.js";
-import type { VariableType } from "./runtime.js";
+import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser.js";
+import type { StringVariableType, VariableType } from "./runtime.js";
 
-export function displayExpression(node:ExpressionASTNode, expand = false, html = false):string {
+export function stringifyExpressionASTArrayTypeNode(input:ExpressionASTArrayTypeNode){
+	return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;
+}
+
+export function displayExpression(node:ExpressionASTNode | ExpressionASTArrayTypeNode, expand = false, html = false):string {
 	if(node instanceof Token){
 		return escapeHTML(node.text);
+	} else if("lengthInformation" in node){ //TODO rm in check
+		return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
 	} else if(node.operator == "function call"){
 		const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")})`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
@@ -66,7 +72,7 @@ export function escapeHTML(input:string):string {
 export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
 
 //TODO move to runtime, user defined types
-export function isVarType(input:string):input is VariableType {
+export function isVarType(input:string):input is StringVariableType {
 	return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }
 

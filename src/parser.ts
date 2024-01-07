@@ -17,12 +17,18 @@ export type ExpressionASTArrayTypeNode = {
 	lengthInformation: [low:Token, high:Token][];
 	type: Token;
 }
-export type ArrayTypeData = {
-	lengthInformation: [low:number, high:number][];
-	type: StringVariableType;
+export type ExpressionASTTypeNode = ExpressionASTLeafNode | ExpressionASTArrayTypeNode;
+export class ArrayTypeData {
+	constructor(
+		public lengthInformation: [low:number, high:number][],
+		public type: StringVariableType,
+	){}
+	toString(){
+		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+	}
 }
 
-export type TokenMatcher = (TokenType | ".*" | ".+" | "expr+");
+export type TokenMatcher = TokenType | ".*" | ".+" | "expr+" | "type+";
 
 export type ProgramAST = ProgramASTNode[];
 export type ProgramASTLeafNode = Statement;
@@ -86,7 +92,7 @@ export function parseType(tokens:Token[]):ExpressionASTLeafNode | ExpressionASTA
 			if(section[0].type != "number.decimal") fail(`Expected a number, got ${section[0]}`);
 			if(section[1].type != "punctuation.colon") fail(`Expected a colon, got ${section[1]}`);
 			if(section[2].type != "number.decimal") fail(`Expected a number, got ${section[2]}`);
-			return [section[0], section[1]];
+			return [section[0], section[2]];
 		}),
 		type: tokens.at(-1)!,
 	};
@@ -154,7 +160,7 @@ export function parseStatement(tokens:Token[]):Statement {
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
-			return new possibleStatement(result.map(x => x instanceof Token ? x : parseExpression(tokens.slice(x.start, x.end + 1))));
+			return new possibleStatement(result.map(x => x instanceof Token ? x : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
 		} else errors.push(result);
 	}
 	let maxError:{message:string, priority:number} = errors[0];
@@ -163,18 +169,21 @@ export function parseStatement(tokens:Token[]):Statement {
 	}
 	fail(maxError.message);
 }
+
+type StatementCheckSuccessResult = (Token | {type:"expression" | "type"; start:number; end:number})[];
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
  */
-export function checkStatement(statement:typeof Statement, input:Token[]):{message:string; priority:number} | (Token | {start:number; end:number})[] {
+export function checkStatement(statement:typeof Statement, input:Token[]):{message:string; priority:number} | StatementCheckSuccessResult {
 	//warning: despite writing it, I do not fully understand this code
 	//but it works
 	//TODO understand it
 
-	const output: (Token | {start:number; end:number})[] = [];
+	const output:StatementCheckSuccessResult = [];
+	//todo check use of var
 	for(var i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
-		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+"){
+		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+"){
 			const allowEmpty = statement.tokens[i] == ".*";
 			const start = j;
 			if(j >= input.length){
@@ -193,7 +202,9 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 			const end = j - 1;
 			if(!anyTokensSkipped && !allowEmpty) return {message: `Expected one or more tokens, but found zero`, priority: 6};
 			if(statement.tokens[i] == "expr+")
-				output.push({start, end});
+				output.push({type: "expression", start, end});
+			else if(statement.tokens[i] == "type+")
+				output.push({type: "type", start, end});
 			else
 				output.push(...input.slice(start, end + 1));
 		} else {
