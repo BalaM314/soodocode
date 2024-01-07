@@ -486,7 +486,7 @@ let ElseStatement = (() => {
 })();
 export { ElseStatement };
 let ForStatement = (() => {
-    let _classDecorators = [statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal")];
+    let _classDecorators = [statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;

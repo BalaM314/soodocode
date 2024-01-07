@@ -319,7 +319,7 @@ export class IfStatement extends Statement {
 }
 @statement("else", "ELSE", "block_multi_split", "keyword.else")
 export class ElseStatement extends Statement {}
-@statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "number.decimal", "keyword.to", "number.decimal") //TODO "number": accept names also
+@statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
 export class ForStatement extends Statement {
 	name:string;
 	lowerBound:ExpressionAST;
