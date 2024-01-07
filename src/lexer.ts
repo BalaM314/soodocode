@@ -252,6 +252,7 @@ export function tokenize(input:Symbol[]):Token[] {
 			const num = output.at(-1) ?? crash(`impossible`);
 			if(symbol.type == "numeric_fragment"){
 				num.text += "." + symbol.text;
+				if(isNaN(Number(num.text))) crash(`Invalid parsed number ${symbol.text}`);
 				state.decimalNumber = "none";
 			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`);
 		} else if(state.decimalNumber == "allowDecimal" && symbol.type == "punctuation.period"){
@@ -267,6 +268,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
+			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
 			output.push(token("number.decimal", symbol.text));
 		} else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify

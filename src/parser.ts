@@ -1,4 +1,5 @@
 import { getText, Token, type TokenType } from "./lexer.js";
+import type { StringVariableType, VariableType } from "./runtime.js";
 import { FunctionArguments, Statement, statements } from "./statements.js";
 import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
@@ -15,6 +16,10 @@ export type ExpressionASTTreeNode = {
 export type ExpressionASTArrayTypeNode = {
 	lengthInformation: [low:Token, high:Token][];
 	type: Token;
+}
+export type ArrayTypeData = {
+	lengthInformation: [low:number, high:number][];
+	type: StringVariableType;
 }
 
 export type TokenMatcher = (TokenType | ".*" | ".+" | "expr+");
@@ -33,50 +38,35 @@ export type ProgramASTTreeNode = {
 export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
 export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
-	const args:FunctionArguments = new Map();
-	let expected: "nameOrEndOrPassMode" | "nameOrPassMode" | "name" | "colon" | "type" | "commaOrEnd" = "nameOrEndOrPassMode";
-	let passMode: "value" | "reference" = "value";
-	let name:string | null = null;
-	for(let i = 0; i < tokens.length + 1; i ++){
-		//fancy processing trick, loop through all the tokens and also undefined at the end, to avoid duplicating logic
-		const token = tokens[i] as Token | undefined;
-		const tokenName = token?.toString() ?? "nothing";
-		if(expected == "nameOrEndOrPassMode" || expected == "name" || expected == "nameOrPassMode"){
-			//weird combined if, necessary due to passMode
-			if(token?.type == "keyword.by-reference" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")){
-				passMode = "reference";
-				expected = "name";
-			} else if(token?.type == "keyword.by-value" && (expected == "nameOrPassMode" || expected == "nameOrEndOrPassMode")){
-				passMode = "value";
-				expected = "name";
-			} else {
-				if(
-					(expected != "nameOrEndOrPassMode" && !token) || //Expecting name and there is no token
-					(token && token.type != "name") //or, there is a token and it's not a name
-				) fail(`Expected a name, got ${tokenName}`);
-				else {
-					if(token) name = token.text;
-					//If this is the last token, then the value of "expected" will never be checked again, no need for an extra check
-					expected = "colon";
-				}
-			}
-		} else if(expected == "colon"){
-			if(!token || token.type != "punctuation.colon") fail(`Expected a colon, got ${tokenName}`);
-			else expected = "type";
-		} else if(expected == "type"){
-			if(!token || token.type != "name") fail(`Expected a type, got ${tokenName}`);
-			else {
-				expected = "commaOrEnd";
-				if(!name) impossible();
-				if(!isVarType(token.text)) fail(`Invalid type "${token.text}"`);
-				args.set(name, {type: token.text, passMode});
-			}
-		} else if(expected == "commaOrEnd"){
-			if(token && token.type != "punctuation.comma") fail(`Expected a comma or end of arguments, got ${tokenName}`);
-			else expected = "nameOrPassMode";
-		} else expected satisfies never;
-	}
-	return args;
+	//special case: blank
+	if(tokens.length == 0) return new Map();
+
+	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map(section => {
+		let passMode: "value" | "reference" = "value";
+		let offset = 0;
+		if(section[0]?.type == "keyword.by-reference"){
+			offset = 1;
+			passMode = "reference";
+		} else if(section[0]?.type == "keyword.by-value"){
+			offset = 1;
+			passMode = "value";
+		}
+		if(section[offset + 0]?.type != "name") fail(`Expected a type, got ${section[offset + 0]}`);
+		if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1]}`);
+		return [section[offset + 0].text, {
+			passMode,
+			type: processTypeData(parseType(section.slice(2))),
+		}]
+	}));
+}
+
+export function processTypeData(ast:Token | ExpressionASTArrayTypeNode):VariableType {
+	if(ast instanceof Token) return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`);
+	else return {
+		lengthInformation: ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
+		//todo fix this insanity of "type" "text"
+		type: isVarType(ast.type.text) ? ast.type.text : fail(`Invalid variable type ${ast.type}`)
+	};
 }
 
 export function parseType(tokens:Token[]):ExpressionASTLeafNode | ExpressionASTArrayTypeNode {
