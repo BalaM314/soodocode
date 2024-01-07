@@ -5,6 +5,11 @@ export class ArrayTypeData {
     constructor(lengthInformation, type) {
         this.lengthInformation = lengthInformation;
         this.type = type;
+        if (this.lengthInformation.some(b => b[1] < b[0]))
+            fail(`Invalid length information: upper bound cannot be less than lower bound`);
+        if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
+            fail(`Invalid length information: bound was not an integer`);
+        this.totalLength = this.lengthInformation.map(b => b[1] - b[0] + 1).reduce((a, b) => a * b, 0);
     }
     toString() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
@@ -39,11 +44,9 @@ export function processTypeData(ast) {
     if (ast instanceof Token)
         return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`);
     else
-        return {
-            lengthInformation: ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text))),
-            //todo fix this insanity of "type" "text"
-            type: isVarType(ast.type.text) ? ast.type.text : fail(`Invalid variable type ${ast.type}`)
-        };
+        return new ArrayTypeData(ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), 
+        //todo fix this insanity of "type" "text"
+        isVarType(ast.type.text) ? ast.type.text : fail(`Invalid variable type ${ast.type}`));
 }
 export function parseType(tokens) {
     if (tokens.length == 1)

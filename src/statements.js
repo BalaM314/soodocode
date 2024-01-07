@@ -37,7 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { Token } from "./lexer.js";
-import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { ArrayTypeData, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 export const statements = {
     byStartKeyword: {},
@@ -159,7 +159,7 @@ let DeclarationStatement = (() => {
                     fail(`Variable ${variable} was already declared`);
                 runtime.getCurrentScope().variables[variable] = {
                     type: this.varType,
-                    value: null,
+                    value: this.varType instanceof ArrayTypeData ? Array(this.varType.totalLength).fill(null) : null,
                     declaration: this,
                     mutable: true,
                 };

@@ -1,6 +1,6 @@
 import type { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
 import { TokenType, Token } from "./lexer.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 
 
@@ -144,7 +144,7 @@ export class DeclarationStatement extends Statement {
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
 				type: this.varType, //todo user defined types
-				value: null,
+				value: this.varType instanceof ArrayTypeData ? Array(this.varType.totalLength).fill(null) : null,
 				declaration: this,
 				mutable: true,
 			};
