@@ -34,7 +34,7 @@ export function symbol(type, text) {
 }
 export const tokenTypes = [
     "number.decimal",
-    "string",
+    "string", "char",
     "brace.open", "brace.close",
     "bracket.open", "bracket.close",
     "parentheses.open", "parentheses.close",
@@ -229,7 +229,9 @@ export function tokenize(input) {
             currentString += symbol.text;
             if (symbol.type === "quote.single") {
                 state.sString = false;
-                output.push(token("string", currentString));
+                if (currentString.length != 3)
+                    fail(`Character ${currentString} has an invalid length: expected one character`);
+                output.push(token("char", currentString));
                 currentString = "";
             }
         }

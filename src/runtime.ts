@@ -201,7 +201,6 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 		}
 
-		//TODO array literals
 		crash(`This should not be possible`);
 	}
 	evaluateToken(token:Token, type?:VariableType):[type:VariableType, value:VariableValueType] {
@@ -232,6 +231,9 @@ help: try using DIV instead of / to produce an integer as the result`
 				} else fail(`Cannot convert number to type ${type}`);
 			case "string":
 				if(!type || type == "STRING") return ["STRING", token.text.slice(1, -1)]; //remove the quotes
+				else fail(`Cannot convert value ${token.text} to ${type}`);
+			case "char":
+				if(!type || type == "CHAR") return ["CHAR", token.text.slice(1, -1)]; //remove the quotes
 				else fail(`Cannot convert value ${token.text} to ${type}`);
 			case "name":
 				const variable = this.getVariable(token.text);

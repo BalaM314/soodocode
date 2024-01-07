@@ -165,7 +165,6 @@ help: try using DIV instead of / to produce an integer as the result`);
                     fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
             }
         }
-        //TODO array literals
         crash(`This should not be possible`);
     }
     evaluateToken(token, type) {
@@ -207,6 +206,11 @@ help: try using DIV instead of / to produce an integer as the result`);
             case "string":
                 if (!type || type == "STRING")
                     return ["STRING", token.text.slice(1, -1)]; //remove the quotes
+                else
+                    fail(`Cannot convert value ${token.text} to ${type}`);
+            case "char":
+                if (!type || type == "CHAR")
+                    return ["CHAR", token.text.slice(1, -1)]; //remove the quotes
                 else
                     fail(`Cannot convert value ${token.text} to ${type}`);
             case "name":
