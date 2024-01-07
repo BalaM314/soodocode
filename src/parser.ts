@@ -52,8 +52,8 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
+	let passMode: "value" | "reference" = "value";
 	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map(section => {
-		let passMode: "value" | "reference" = "value";
 		let offset = 0;
 		if(section[0]?.type == "keyword.by-reference"){
 			offset = 1;
@@ -66,7 +66,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 		if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1]}`);
 		return [section[offset + 0].text, {
 			passMode,
-			type: processTypeData(parseType(section.slice(2))),
+			type: processTypeData(parseType(section.slice(offset + 2))),
 		}]
 	}));
 }

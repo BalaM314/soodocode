@@ -1349,48 +1349,48 @@ describe("parseFunctionArguments", () => {
         });
     });
     it("should throw on invalid function arguments", () => {
-        expect(parseFunctionArguments([
+        expect(() => parseFunctionArguments([
             token("name", "arg2"),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("name", "arg2"),
             token("punctuation.colon", ":"),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("name", "arg2"),
             token("punctuation.colon", ":"),
             token("name", "DATE"),
             token("name", "arg2"),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("name", "arg2"),
             token("punctuation.colon", ":"),
             token("name", "CHAR"),
             token("punctuation.comma", ","),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("keyword.by-reference", "BYREF"),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("name", "arg2"),
             token("punctuation.colon", ":"),
             token("name", "INTEGER"),
             token("punctuation.comma", ","),
             token("keyword.by-reference", "BYREF"),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("keyword.by-reference", "BYREF"),
             token("keyword.by-value", "BYVAL"),
             token("name", "arg2"),
             token("punctuation.colon", ":"),
             token("name", "BOOLEAN"),
-        ])).toEqual(jasmine.any(String));
-        expect(parseFunctionArguments([
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseFunctionArguments([
             token("keyword.case", "CASE"),
             token("name", "arg2"),
             token("punctuation.colon", ":"),
             token("name", "STRING"),
-        ])).toEqual(jasmine.any(String));
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
     });
 });
 describe("parseExpression", () => {
