@@ -51,17 +51,24 @@ export class Runtime {
             case "array access":
                 return this.processArrayAccess(expr, "get", type);
             case "function call":
-                const fn = this.functions[expr.operatorToken.text];
-                if (!fn)
-                    fail(`Function ${expr.operatorToken.text} is not defined.`);
-                if (fn.type == "procedure")
-                    fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
-                const statement = fn.controlStatements[0];
-                const output = this.callFunction(fn, expr.nodes, true);
-                if (type)
-                    return [type, this.coerceValue(output, statement.returnType, type)];
-                else
-                    return [statement.returnType, output];
+                const fn = this.getFunction(expr.operatorToken.text);
+                if ("name" in fn) {
+                    const output = this.callBuiltinFunction(fn, expr.nodes);
+                    if (type)
+                        return [type, this.coerceValue(output[1], output[0], type)];
+                    else
+                        return output;
+                }
+                else {
+                    if (fn.type == "procedure")
+                        fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
+                    const statement = fn.controlStatements[0];
+                    const output = this.callFunction(fn, expr.nodes, true);
+                    if (type)
+                        return [type, this.coerceValue(output, statement.returnType, type)];
+                    else
+                        return [statement.returnType, output];
+                }
         }
         //arithmetic
         if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
@@ -237,6 +244,9 @@ help: try using DIV instead of / to produce an integer as the result`);
     getCurrentScope() {
         return this.scopes.at(-1) ?? crash(`No scope?`);
     }
+    getFunction(name) {
+        return this.functions[name] ?? fail(`Function "${name}" is not defined.`);
+    }
     getCurrentFunction() {
         const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);
         if (!scope)
@@ -294,6 +304,18 @@ help: try using DIV instead of / to produce an integer as the result`);
                 fail(`Function ${func.name} did not return a value`);
             return output.value;
         }
+    }
+    callBuiltinFunction(fn, args, returnType) {
+        if (fn.args.size != args.length)
+            fail(`Incorrect number of arguments for function ${fn.name}`);
+        if (!fn.returnType)
+            fail(`Builtin function ${fn.name} did not return a value`);
+        const processedArgs = [];
+        let i = 0;
+        for (const [name, { type, passMode }] of fn.args) {
+            processedArgs.push(this.evaluateExpr(args[i], type)[1]);
+        }
+        return [fn.returnType, fn.impl(...processedArgs)];
     }
     runBlock(code, scope) {
         if (scope)

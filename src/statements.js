@@ -39,6 +39,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { Token } from "./lexer.js";
 import { ArrayTypeData, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
+import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
     byType: {},
@@ -665,6 +666,10 @@ let FunctionStatement = (() => {
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
+            if (this.name in runtime.functions)
+                fail(`Duplicate function definition for ${this.name}`);
+            else if (this.name in builtinFunctions)
+                fail(`Function ${this.name} is already defined as a builtin function`);
             //Don't actually run the block
             runtime.functions[this.name] = node;
         }

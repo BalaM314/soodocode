@@ -1,6 +1,6 @@
 import { Token, TokenType } from "./lexer.js";
 import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType, ExpressionASTArrayTypeNode, ArrayTypeData, ExpressionASTTreeNode } from "./parser.js";
-import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement } from "./statements.js";
+import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement, FunctionArguments } from "./statements.js";
 import { crash, fail, forceType } from "./utils.js";
 
 interface FileData {
@@ -27,6 +27,12 @@ export type FunctionData = ProgramASTTreeNode & {
 	type: "procedure";
 	controlStatements: [start:ProcedureStatement, end:Statement];
 });
+export type BuiltinFunctionData = {
+	args:FunctionArguments;
+	returnType:VariableType | null;
+	name:string;
+	impl: (...args:VariableValueType[]) => VariableValueType;
+};
 
 interface ConstantData {
 	type: VariableType;
@@ -87,13 +93,18 @@ export class Runtime {
 			case "array access":
 				return this.processArrayAccess(expr, "get", type);
 			case "function call":
-				const fn = this.functions[expr.operatorToken.text];
-				if(!fn) fail(`Function ${expr.operatorToken.text} is not defined.`);
-				if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
-				const statement = fn.controlStatements[0];
-				const output = this.callFunction(fn, expr.nodes, true);
-				if(type) return [type, this.coerceValue(output, statement.returnType, type)];
-				else return [statement.returnType, output];
+				const fn = this.getFunction(expr.operatorToken.text);
+				if("name" in fn){
+					const output = this.callBuiltinFunction(fn, expr.nodes);
+					if(type) return [type, this.coerceValue(output[1], output[0], type)];
+					else return output;
+				} else {
+					if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
+					const statement = fn.controlStatements[0];
+					const output = this.callFunction(fn, expr.nodes, true);
+					if(type) return [type, this.coerceValue(output, statement.returnType, type)];
+					else return [statement.returnType, output];
+				}
 		}
 
 		//arithmetic
@@ -254,6 +265,9 @@ help: try using DIV instead of / to produce an integer as the result`
 	getCurrentScope():VariableScope {
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
+	getFunction(name:string):FunctionData | BuiltinFunctionData {
+		return this.functions[name] ?? fail(`Function "${name}" is not defined.`);
+	}
 	getCurrentFunction():FunctionData | null {
 		const scope = this.scopes.findLast(
 			(s):s is VariableScope & { statement: FunctionStatement | ProcedureStatement } =>
@@ -304,6 +318,16 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(!output) fail(`Function ${func.name} did not return a value`);
 			return output.value;
 		}
+	}
+	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValueType] {
+		if(fn.args.size != args.length) fail(`Incorrect number of arguments for function ${fn.name}`);
+		if(!fn.returnType) fail(`Builtin function ${fn.name} did not return a value`);
+		const processedArgs:VariableValueType[] = [];
+		let i = 0;
+		for(const [name, {type, passMode}] of fn.args){
+			processedArgs.push(this.evaluateExpr(args[i], type)[1]);
+		}
+		return [fn.returnType, fn.impl(...processedArgs) as VariableValueType];
 	}
 	runBlock(code:ProgramAST, scope?:VariableScope):void | {
 		type: "function_return";

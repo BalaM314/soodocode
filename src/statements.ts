@@ -2,6 +2,7 @@ import type { FunctionData, Runtime, StringVariableTypeValue, VariableType, Vari
 import { TokenType, Token } from "./lexer.js";
 import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
+import { builtinFunctions } from "./builtin_functions.js";
 
 
 export type StatementType =
@@ -418,6 +419,8 @@ export class FunctionStatement extends Statement {
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
+		if(this.name in runtime.functions) fail(`Duplicate function definition for ${this.name}`);
+		else if(this.name in builtinFunctions) fail(`Function ${this.name} is already defined as a builtin function`);
 		//Don't actually run the block
 		runtime.functions[this.name] = node;
 	}
