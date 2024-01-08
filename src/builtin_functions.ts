@@ -1,5 +1,4 @@
 import type { BuiltinFunctionData, VariableType, VariableValueType } from "./runtime.js";
-import type { FunctionArguments } from "./statements.js";
 
 
 
@@ -9,14 +8,14 @@ type PreprocesssedBuiltinFunctionData = {
 	impl(...args:VariableValueType[]):VariableValueType;
 };
 export const builtinFunctions = (
-	<T extends PropertyKey>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> =>
-		Object.fromEntries(Object.entries<PreprocesssedBuiltinFunctionData>(d).map(([name, data]) => 
+	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> =>
+		Object.fromEntries(Object.entries(d).map(([name, data]) => 
 			[name, {
-				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: a[1]}])) satisfies FunctionArguments,
-				impl: data.impl,//todo
+				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: a[1]}])),
 				name,
+				impl: data.impl,
 				returnType: data.returnType
-			} satisfies BuiltinFunctionData]
+			}]
 		))
 )({
 	LEFT: {
@@ -29,4 +28,4 @@ export const builtinFunctions = (
 			return "";
 		},
 	}
-}) satisfies ;
+});
