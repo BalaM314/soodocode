@@ -291,8 +291,8 @@ export class CallStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = this.func.operatorToken.text;
-		const func = runtime.functions[name];
-		if(!func) fail(`Function ${name} is not defined.`);
+		const func = runtime.getFunction(name);
+		if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
 		runtime.callFunction(func, this.func.nodes);
 	}
 }

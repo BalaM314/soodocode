@@ -8,7 +8,7 @@ type PreprocesssedBuiltinFunctionData = {
 	impl(...args:VariableValueType[]):VariableValueType;
 };
 export const builtinFunctions = (
-	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> =>
+	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
 		Object.fromEntries(Object.entries(d).map(([name, data]) => 
 			[name, {
 				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: a[1]}])),
@@ -27,7 +27,7 @@ export const builtinFunctions = (
 		returnType: "STRING",
 		impl(str:string, num:number){
 			if(num < 0) fail(`Number ${num} is negative`);
-			if(num < str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
+			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
 			return str.slice(0, num);
 		},
 	},
@@ -39,7 +39,7 @@ export const builtinFunctions = (
 		returnType: "STRING",
 		impl(str:string, num:number){
 			if(num < 0) fail(`Number ${num} is negative`);
-			if(num < str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
+			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
 			return str.slice(-num);
 		},
 	},

@@ -1,3 +1,4 @@
+import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer.js";
 import { operators, ArrayTypeData } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
@@ -245,7 +246,7 @@ help: try using DIV instead of / to produce an integer as the result`);
         return this.scopes.at(-1) ?? crash(`No scope?`);
     }
     getFunction(name) {
-        return this.functions[name] ?? fail(`Function "${name}" is not defined.`);
+        return this.functions[name] ?? builtinFunctions[name] ?? fail(`Function "${name}" is not defined.`);
     }
     getCurrentFunction() {
         const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);
@@ -312,8 +313,9 @@ help: try using DIV instead of / to produce an integer as the result`);
             fail(`Builtin function ${fn.name} did not return a value`);
         const processedArgs = [];
         let i = 0;
-        for (const [name, { type, passMode }] of fn.args) {
+        for (const { type } of fn.args.values()) {
             processedArgs.push(this.evaluateExpr(args[i], type)[1]);
+            i++;
         }
         return [fn.returnType, fn.impl(...processedArgs)];
     }

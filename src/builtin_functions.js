@@ -14,7 +14,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
         impl(str, num) {
             if (num < 0)
                 fail(`Number ${num} is negative`);
-            if (num < str.length)
+            if (num > str.length)
                 fail(`Number ${num} is greater than the length of the string (${str.length})`);
             return str.slice(0, num);
         },
@@ -28,7 +28,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
         impl(str, num) {
             if (num < 0)
                 fail(`Number ${num} is negative`);
-            if (num < str.length)
+            if (num > str.length)
                 fail(`Number ${num} is greater than the length of the string (${str.length})`);
             return str.slice(-num);
         },

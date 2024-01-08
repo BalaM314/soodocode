@@ -1,3 +1,4 @@
+import { builtinFunctions } from "./builtin_functions.js";
 import { Token, TokenType } from "./lexer.js";
 import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType, ExpressionASTArrayTypeNode, ArrayTypeData, ExpressionASTTreeNode } from "./parser.js";
 import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement, FunctionArguments } from "./statements.js";
@@ -266,7 +267,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
 	getFunction(name:string):FunctionData | BuiltinFunctionData {
-		return this.functions[name] ?? fail(`Function "${name}" is not defined.`);
+		return this.functions[name] ?? builtinFunctions[name] ?? fail(`Function "${name}" is not defined.`);
 	}
 	getCurrentFunction():FunctionData | null {
 		const scope = this.scopes.findLast(
@@ -324,8 +325,9 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(!fn.returnType) fail(`Builtin function ${fn.name} did not return a value`);
 		const processedArgs:VariableValueType[] = [];
 		let i = 0;
-		for(const [name, {type, passMode}] of fn.args){
+		for(const {type} of fn.args.values()){
 			processedArgs.push(this.evaluateExpr(args[i], type)[1]);
+			i ++;
 		}
 		return [fn.returnType, fn.impl(...processedArgs) as VariableValueType];
 	}
