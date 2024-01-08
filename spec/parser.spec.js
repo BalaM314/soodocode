@@ -1,6 +1,6 @@
 import "jasmine";
 import { Token } from "../src/lexer.js";
-import { parse, parseFunctionArguments, parseStatement, operators, parseExpression } from "../src/parser.js";
+import { parse, parseFunctionArguments, parseStatement, operators, parseExpression, ArrayTypeData, parseType } from "../src/parser.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 const operatorTokens = {
@@ -1263,6 +1263,19 @@ describe("parseFunctionArguments", () => {
             arg2: ["STRING", jasmine.any(String)],
             arg3: ["STRING", jasmine.any(String)],
         });
+        expect(process(parseFunctionArguments([
+            token("name", "arg1"),
+            token("punctuation.comma", ","),
+            token("name", "arg2"),
+            token("punctuation.comma", ","),
+            token("name", "arg3"),
+            token("punctuation.colon", ":"),
+            token("name", "BOOLEAN"),
+        ]))).toEqual({
+            arg1: ["BOOLEAN", jasmine.any(String)],
+            arg2: ["BOOLEAN", jasmine.any(String)],
+            arg3: ["BOOLEAN", jasmine.any(String)],
+        });
     });
     it("should correctly determine byref and byval for function arguments", () => {
         expect(process(parseFunctionArguments([
@@ -1342,12 +1355,13 @@ describe("parseFunctionArguments", () => {
             arg: ["INTEGER", "reference"],
             arg2: ["BOOLEAN", "value"],
         });
-        //TODO unfinished test
         expect(process(parseFunctionArguments([
+            token("keyword.by-reference", "BYREF"),
             token("name", "arg"),
             token("punctuation.colon", ":"),
             token("name", "INTEGER"),
             token("punctuation.comma", ","),
+            token("keyword.by-value", "BYVAL"),
             token("name", "arg2"),
             token("punctuation.colon", ":"),
             token("name", "BOOLEAN"),
@@ -1356,9 +1370,26 @@ describe("parseFunctionArguments", () => {
             token("punctuation.colon", ":"),
             token("name", "STRING"),
         ]))).toEqual({
-            arg: ["INTEGER", jasmine.any(String)],
-            arg2: ["BOOLEAN", jasmine.any(String)],
-            arg3: ["STRING", jasmine.any(String)],
+            arg: ["INTEGER", "reference"],
+            arg2: ["BOOLEAN", "value"],
+            arg3: ["STRING", "value"],
+        });
+        expect(process(parseFunctionArguments([
+            token("keyword.by-reference", "BYREF"),
+            token("name", "arg"),
+            token("punctuation.comma", ","),
+            token("keyword.by-value", "BYVAL"),
+            token("name", "arg2"),
+            token("punctuation.colon", ":"),
+            token("name", "BOOLEAN"),
+            token("punctuation.comma", ","),
+            token("name", "arg3"),
+            token("punctuation.colon", ":"),
+            token("name", "STRING"),
+        ]))).toEqual({
+            arg: ["BOOLEAN", "reference"],
+            arg2: ["BOOLEAN", "value"],
+            arg3: ["STRING", "value"],
         });
     });
     it("should throw on invalid function arguments", () => {
@@ -1455,4 +1486,127 @@ describe("parse", () => {
             });
         }
     }
+});
+describe("ArrayTypeData", () => {
+    it(`should generate correct data`, () => {
+        const data1 = new ArrayTypeData([[0, 9]], "BOOLEAN");
+        expect(data1.lengthInformation_).toEqual([10]);
+        expect(data1.totalLength).toEqual(10);
+        const data2 = new ArrayTypeData([[1, 15]], "STRING");
+        expect(data2.lengthInformation_).toEqual([15]);
+        expect(data2.totalLength).toEqual(15);
+        const data3 = new ArrayTypeData([[0, 9], [0, 19]], "BOOLEAN");
+        expect(data3.lengthInformation_).toEqual([10, 20]);
+        expect(data3.totalLength).toEqual(200);
+        const data4 = new ArrayTypeData([[1, 10], [1, 15]], "DATE");
+        expect(data4.lengthInformation_).toEqual([10, 15]);
+        expect(data4.totalLength).toEqual(150);
+        const data5 = new ArrayTypeData([[0, 9], [1, 15], [0, 20]], "INTEGER");
+        expect(data5.lengthInformation_).toEqual([10, 15, 21]);
+        expect(data5.totalLength).toEqual(3150);
+    });
+    it(`should handle correct inputs`, () => {
+        expect(() => new ArrayTypeData([[0, 0]], "CHAR")).not.toThrow();
+        expect(() => new ArrayTypeData([[5, 5]], "CHAR")).not.toThrow();
+    });
+    it(`should handle incorrect inputs`, () => {
+        expect(() => new ArrayTypeData([[0, -1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => new ArrayTypeData([[2, 1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => new ArrayTypeData([[0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => new ArrayTypeData([[0, 1], [0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+    });
+});
+describe("parseType", () => {
+    it("should parse single tokens", () => {
+        expect(parseType([
+            token("name", "INTEGER")
+        ])).toEqual(token("name", "INTEGER"));
+        expect(parseType([
+            token("name", "BOOLEAN")
+        ])).toEqual(token("name", "BOOLEAN"));
+    });
+    it('should parse array types', () => {
+        expect(parseType([
+            token("keyword.array", "ARRAY"),
+            token("bracket.open", "["),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "10"),
+            token("bracket.close", "]"),
+            token("keyword.of", "OF"),
+            token("name", "INTEGER"),
+        ])).toEqual({
+            lengthInformation: [
+                [token("number.decimal", "1"), token("number.decimal", "10")]
+            ],
+            type: token("name", "INTEGER"),
+        });
+        expect(parseType([
+            token("keyword.array", "ARRAY"),
+            token("bracket.open", "["),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "10"),
+            token("punctuation.comma", ","),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "20"),
+            token("bracket.close", "]"),
+            token("keyword.of", "OF"),
+            token("name", "INTEGER"),
+        ])).toEqual({
+            lengthInformation: [
+                [token("number.decimal", "1"), token("number.decimal", "10")],
+                [token("number.decimal", "1"), token("number.decimal", "20")],
+            ],
+            type: token("name", "INTEGER"),
+        });
+    });
+    it("should throw on invalid array types", () => {
+        expect(() => parseType([
+            token("keyword.array", "ARRAY"),
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseType([
+            token("keyword.array", "ARRAY"),
+            token("brace.open", "{"),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "10"),
+            token("punctuation.comma", ","),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "20"),
+            token("brace.close", "}"),
+            token("keyword.of", "OF"),
+            token("name", "INTEGER"),
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseType([
+            token("keyword.array", "ARRAY"),
+            token("bracket.open", "["),
+            token("number.decimal", "10"),
+            token("bracket.close", "]"),
+            token("keyword.of", "OF"),
+            token("name", "INTEGER"),
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseType([
+            token("keyword.array", "ARRAY"),
+            token("bracket.open", "["),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "10"),
+            token("bracket.close", "]"),
+            token("name", "INTEGER"),
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+        expect(() => parseType([
+            token("keyword.array", "ARRAY"),
+            token("bracket.open", "["),
+            token("number.decimal", "1"),
+            token("punctuation.colon", ":"),
+            token("number.decimal", "10"),
+            token("punctuation.comma", ","),
+            token("bracket.close", "]"),
+            token("keyword.of", "OF"),
+            token("name", "INTEGER"),
+        ])).toThrowMatching(t => t instanceof SoodocodeError);
+    });
 });
