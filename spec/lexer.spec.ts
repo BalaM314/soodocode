@@ -1,5 +1,6 @@
 import "jasmine";
 import { symbol, symbolize, token, tokenize } from "../src/lexer.js";
+import { SoodocodeError } from "../src/utils.js";
 
 //TODO datastructify
 describe("symbolizer", () => {
@@ -13,6 +14,14 @@ describe("symbolizer", () => {
 		]);
 		expect(symbolize("12345.54321")).toEqual([
 			symbol("numeric_fragment", "12345"),
+			symbol("punctuation.period", "."),
+			symbol("numeric_fragment", "54321"),
+		]);
+		expect(symbolize("12345.")).toEqual([
+			symbol("numeric_fragment", "12345"),
+			symbol("punctuation.period", "."),
+		]);
+		expect(symbolize(".54321")).toEqual([
 			symbol("punctuation.period", "."),
 			symbol("numeric_fragment", "54321"),
 		]);
@@ -176,7 +185,36 @@ describe("tokenizer", () => {
 			token("operator.not_equal_to", "<>"),
 			token("string", `"AND 501"`),
 			token("parentheses.close", ")"),
-		])
+		]);
+	});
+
+	it("should form numbers", () => {
+		expect(tokenize([
+			symbol("numeric_fragment", "12345"),
+			symbol("punctuation.period", "."),
+			symbol("numeric_fragment", "54321"),
+		])).toEqual([
+			token("number.decimal", "12345.54321")
+		]);
+		expect(tokenize([
+			symbol("numeric_fragment", "12345"),
+		])).toEqual([
+			token("number.decimal", "12345")
+		]);
+		expect(() => tokenize([
+			symbol("numeric_fragment", "12345"),
+			symbol("punctuation.period", "."),
+		])).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => tokenize([
+			symbol("numeric_fragment", "12345"),
+			symbol("numeric_fragment", "12345"),
+			symbol("punctuation.period", "."),
+		])).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => tokenize([
+			symbol("punctuation.period", "."),
+			symbol("numeric_fragment", "12345"),
+			symbol("numeric_fragment", "12345"),
+		])).toThrowMatching(t => t instanceof SoodocodeError);
 	});
 
 	it("should parse keywords", () => {
