@@ -27,8 +27,8 @@ export class ArrayTypeData {
 	){
 		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
 		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
-		this.totalLength = this.lengthInformation.map(b => b[1] - b[0] + 1).reduce((a, b) => a * b, 1);
 		this.lengthInformation_ = this.lengthInformation.map(b => b[1] - b[0] + 1);
+		this.totalLength = this.lengthInformation_.reduce((a, b) => a * b, 1);
 	}
 	toString(){
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
@@ -95,7 +95,10 @@ export function processTypeData(ast:Token | ExpressionASTArrayTypeNode):Variable
 }
 
 export function parseType(tokens:Token[]):ExpressionASTLeafNode | ExpressionASTArrayTypeNode {
-	if(tokens.length == 1) return tokens[0];
+	if(tokens.length == 1){
+		if(tokens[0].type == "name") return tokens[0];
+		else fail(`Token ${tokens[0]} is not a valid type`);
+	}
 	if(!(
 		tokens[0]?.type == "keyword.array" &&
 		tokens[1]?.type == "bracket.open" &&

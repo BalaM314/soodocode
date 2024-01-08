@@ -1,4 +1,4 @@
-import { crash, impossible } from "./utils.js";
+import { crash, fail, impossible } from "./utils.js";
 export const symbolTypes = [
     "numeric_fragment",
     "quote.single", "quote.double",
