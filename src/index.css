@@ -1,3 +1,10 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains CSS styles for the webpage.
+*/
+
 
 body {
 	margin: 0px;
@@ -104,4 +111,8 @@ td, th {
 	overflow-y: scroll;
 	border-top: 5px solid gray;
 	border-bottom: 5px solid gray;
+}
+
+h2 {
+	margin: 0;
 }

@@ -1,3 +1,9 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the runtime, which executes the program AST.
+*/
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer.js";
 import { operators, ArrayTypeData } from "./parser.js";

@@ -1,3 +1,11 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the definitions for every statement type supported by Soodocode.
+*/
+
+
 import type { FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType } from "./runtime.js";
 import { TokenType, Token } from "./lexer.js";
 import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";

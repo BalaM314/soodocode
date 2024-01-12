@@ -1,3 +1,9 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains utility functions.
+*/
 import { Token } from "./lexer.js";
 export function stringifyExpressionASTArrayTypeNode(input) {
     return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;

@@ -1,3 +1,11 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the lexer, which takes the raw user input and processes it;
+first into a list of symbols, such as "operator.add", "numeric_fragment", and "quote.double",
+second into a list of tokens, such as "operator.add", "number.decimal", "keyword.reafile", and "string".
+*/
 import { crash, fail, impossible } from "./utils.js";
 export const symbolTypes = [
     "numeric_fragment",

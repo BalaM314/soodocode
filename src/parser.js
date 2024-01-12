@@ -1,3 +1,11 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the parser, which takes a list of tokens
+and processes it into an abstract syntax tree (AST),
+which is the preferred representation of the program.
+*/
 import { getText, Token } from "./lexer.js";
 import { statements } from "./statements.js";
 import { impossible, splitArray, fail, isVarType } from "./utils.js";

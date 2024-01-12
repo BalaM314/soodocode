@@ -1,3 +1,9 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains all builtin functions defined in the insert.
+*/
 export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
         args: new Map(data.args.map(a => [a[0], { passMode: "reference", type: a[1] }])),
         name,

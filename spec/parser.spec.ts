@@ -1,3 +1,11 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains unit tests for the parser.
+*/
+
+
 import "jasmine";
 import { Token, TokenType } from "../src/lexer.js";
 import { ProgramAST, parse, parseFunctionArguments, parseStatement, operators, ExpressionAST, parseExpression, OperatorType, ExpressionASTTreeNode, Operator, ProgramASTTreeNodeType, ArrayTypeData, parseType } from "../src/parser.js";
