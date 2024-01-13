@@ -76,7 +76,7 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	}
 }
 
-const title = getElement("title", HTMLHeadingElement);
+const headerText = getElement("header-text", HTMLSpanElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);

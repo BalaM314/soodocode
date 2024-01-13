@@ -78,7 +78,7 @@ export function evaluateExpressionDemo(node) {
             default: fail(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.type}`);
         }
 }
-const title = getElement("title", HTMLHeadingElement);
+const headerText = getElement("header-text", HTMLSpanElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);

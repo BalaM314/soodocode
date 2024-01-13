@@ -5,10 +5,26 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains CSS styles for the webpage.
 */
 
+:root {
+	/* variables */
+	--header-color: #EA0;
+	--background-image-url: url("https://balam314.github.io/starfield.png");
+	--header-icon-size: 3em;
+	--header-text-min-width: 200px;
+	--outer-border-color: #008000;
+	--container-background-color: #0048;
+	--text-input-background-color: #051505;
+	--program-block-accent-color: #0FF6;
+	--program-expression-outline-color: #0FF8;
+	--program-expression-background-color: #0FF2;
+
+	/* settings */
+	font-family: sans-serif;
+}
 
 body {
 	margin: 0px;
-	background-image: url("https://balam314.github.io/starfield.png");
+	background-image: var(--background-image-url);
 	background-repeat: no-repeat;
 	background-color: #000;
 	height: 100%;
@@ -18,19 +34,67 @@ html {
 	height: 100%;
 	overflow: hidden;
 }
+
+#header {
+	display: grid;
+	width: 100%;
+	grid-template-columns: var(--header-icon-size) minmax(var(--header-text-min-width), 1fr) var(--header-icon-size);
+	margin-bottom: 30px;
+}
+
+/* TODO theme */
+#theme-button {
+	margin-left: auto;
+	width: var(--header-icon-size);
+	height: var(--header-icon-size);
+	place-content: center;
+	background-color: rgb(222, 222, 222);
+	display: grid;
+	border-radius: 50%;
+	outline: none;
+	cursor: pointer;
+	border: none;
+	transition: box-shadow 400ms ease;
+	display: none;
+}
+
+#header-text {
+	font-size: 2.5em;
+	font-weight: bold;
+	text-align: center;
+	color: var(--header-color);
+	user-select: none;
+	animation-duration: 1s;
+	animation-iteration-count: infinite;
+	animation-name: none;
+}
+
+#github-icon {
+	background-image:url('https://raw.githubusercontent.com/devicons/devicon/master/icons/github/github-original.svg');
+	width: var(--header-icon-size);
+	height: var(--header-icon-size);
+	display: block;
+	transition: box-shadow 400ms ease;
+	border-radius: 100%;
+	filter: invert();
+}
+#github-icon:hover {
+	box-shadow: 0 0 19px -1px grey;
+}
+
 #container {
 	margin: 20px;
-	border: ridge green 10px;
+	border: ridge var(--outer-border-color) 10px;
 	padding: 15px;
-	background-color: #002;
-	color: whitesmoke;
+	background-color: var(--container-background-color);
+	color: #f5f5f5;
 	font-size: 20px;
 }
 #soodocode-input, input[type="text"] {
 	font-size: larger;
 	margin: 20px;
 	padding: 10px;
-	background-color: #051505;
+	background-color: var(--text-input-background-color);
 	color: #FFF;
 	tab-size: 4;
 }
@@ -88,21 +152,22 @@ td, th {
 }
 
 .program-display-inner {
-	border-left: 15px solid #0FF6;
+	border-left: 15px solid var(--program-block-accent-color);
 	padding: 5px;
 }
 .program-display-outer {
-	border-left: 4px solid #0FF6;
-	border-top: 2px solid #0FF6;
-	border-bottom: 2px solid #0FF6;
+	border-left: 4px solid var(--program-block-accent-color);
+	border-top: 2px solid var(--program-block-accent-color);
+	border-bottom: 2px solid var(--program-block-accent-color);
 	padding: 3px;
 }
 
 .expression-display-block {
-	background-color: #0FF2;
+	background-color: var(--program-expression-background-color);
 }
 .expression-container {
-	border: 1px solid #0FF8;
+	border: 1px solid var(--program-expression-outline-color);
+	text-shadow: 0 0 2px black;
 }
 
 .display-scroller {
