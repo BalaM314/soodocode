@@ -34,7 +34,26 @@ function token(type, text) {
     else
         return new Token(type, text);
 }
-function processExpressionASTLike(input) {
+function is_ExpressionASTArrayTypeNode(input) {
+    return Array.isArray(input[1][1]);
+}
+function process_Statement(input) {
+    return new input[0](input[1].map(process_ExpressionASTExt));
+}
+function process_ExpressionASTArrayTypeNode(input) {
+    return {
+        lengthInformation: input[0].map(bounds => bounds.map(b => new Token("number.decimal", b.toString()))),
+        type: token(input[1])
+    };
+}
+//this may have been a mistake
+function process_ExpressionASTExt(input) {
+    if (is_ExpressionASTArrayTypeNode(input))
+        return process_ExpressionASTArrayTypeNode(input);
+    else
+        return process_ExpressionAST(input);
+}
+function process_ExpressionAST(input) {
     if (input.length == 2) {
         return new Token(...input);
     }
@@ -54,10 +73,19 @@ function processExpressionASTLike(input) {
             operatorToken = operatorTokens[input[1]];
         }
         return {
-            nodes: input[2].map(processExpressionASTLike),
+            nodes: input[2].map(process_ExpressionAST),
             operator, operatorToken
         };
     }
+}
+function process_ProgramAST(output) {
+    return output.map(n => Array.isArray(n)
+        ? process_Statement(n)
+        : {
+            type: n.type,
+            controlStatements: n.controlStatements.map(process_Statement),
+            nodeGroups: n.nodeGroups.map(process_ProgramAST),
+        });
 }
 const sampleExpressions = Object.entries({
     number: [
@@ -729,9 +757,9 @@ const sampleExpressions = Object.entries({
 }).map(([name, [program, output]]) => [
     name,
     program.map(token),
-    output == "error" ? "error" : processExpressionASTLike(output)
+    output == "error" ? "error" : process_ExpressionAST(output)
 ]);
-const sampleStatements = Object.entries({
+const parseStatementTests = Object.entries({
     output: [
         [
             ["keyword.output", "OUTPUT"],
@@ -802,7 +830,12 @@ const sampleStatements = Object.entries({
                 ["keyword.declare", "DECLARE"],
                 ["name", "amogus"],
                 ["punctuation.colon", ":"],
-                ["name", "INTEGER"],
+                [
+                    [
+                        [0, 99]
+                    ],
+                    ["name", "INTEGER"],
+                ],
             ]]
     ],
     declareBad1: [
@@ -1044,18 +1077,9 @@ const sampleStatements = Object.entries({
 }).map(([name, [program, output]]) => [
     name,
     program.map(token),
-    output == "error" ? "error" : new output[0](output[1].map(processExpressionASTLike))
+    output == "error" ? "error" : process_Statement(output)
 ]);
-function processProgramASTLike(output) {
-    return output.map(n => Array.isArray(n)
-        ? new n[0](n[1].map(processExpressionASTLike))
-        : {
-            type: n.type,
-            controlStatements: n.controlStatements.map(s => new s[0](s[1].map(processExpressionASTLike))),
-            nodeGroups: n.nodeGroups.map(processProgramASTLike),
-        });
-}
-const samplePrograms = Object.entries({
+const parseProgramTests = Object.entries({
     output: [
         [
             ["keyword.output", "OUTPUT"],
@@ -1232,7 +1256,7 @@ const samplePrograms = Object.entries({
 }).map(([name, [program, output]]) => [
     name,
     program.map(token),
-    output == "error" ? "error" : processProgramASTLike(output)
+    output == "error" ? "error" : process_ProgramAST(output)
 ]);
 const functionArgumentTests = Object.entries({
     blank: [[], {}],
@@ -1659,7 +1683,7 @@ describe("parseExpression", () => {
     }
 });
 describe("parseStatement", () => {
-    for (const [name, program, output] of sampleStatements) {
+    for (const [name, program, output] of parseStatementTests) {
         if (output === "error") {
             it(`should not parse ${name} into a statement`, () => {
                 expect(() => parseStatement(program)).toThrowMatching(e => e instanceof SoodocodeError);
@@ -1673,7 +1697,7 @@ describe("parseStatement", () => {
     }
 });
 describe("parse", () => {
-    for (const [name, program, output] of samplePrograms) {
+    for (const [name, program, output] of parseProgramTests) {
         if (output === "error") {
             it(`should not parse ${name} into a program`, () => {
                 expect(() => parse(program)).toThrowMatching(e => e instanceof SoodocodeError);
@@ -1739,7 +1763,7 @@ describe("parseType", () => {
             });
         }
         else {
-            it(`should parse ${name} as function arguments`, () => {
+            it(`should parse ${name} as a valid type`, () => {
                 expect(parseType(input)).toEqual(output);
             });
         }

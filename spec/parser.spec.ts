@@ -9,7 +9,7 @@ This file contains unit tests for the parser.
 import "jasmine";
 import { Token, TokenType } from "../src/lexer.js";
 import { ProgramAST, parse, parseFunctionArguments, parseStatement, operators, ExpressionAST, parseExpression, OperatorType, ExpressionASTTreeNode, Operator, ProgramASTTreeNodeType, ArrayTypeData, parseType, ExpressionASTArrayTypeNode } from "../src/parser.js";
-import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, FunctionArguments, IfStatement, InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { VariableType } from "../src/runtime.js";
 
@@ -26,6 +26,8 @@ type _ExpressionASTTreeNode = [
 	operator: _Operator | [type: "function call", name:string] | [type: "array access", name:string],
 	nodes: _ExpressionASTNode[],
 ];
+type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
+
 type _Operator = Exclude<OperatorType, "assignment" | "pointer">;
 
 const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointer">, Token> = {
@@ -54,7 +56,28 @@ function token(type:TokenType | [type:TokenType, text:string], text?:string):Tok
 	else return new Token(type, text!);
 }
 
-function processExpressionASTLike(input:_ExpressionAST):ExpressionAST {
+function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
+	return Array.isArray(input[1][1]);
+}
+
+function process_Statement(input:_Statement):Statement {
+	return new input[0](input[1].map(process_ExpressionASTExt));
+}
+
+function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
+	return {
+		lengthInformation: input[0].map(bounds => bounds.map(b => new Token("number.decimal", b.toString()))),
+		type: token(input[1])
+	};
+}
+
+//this may have been a mistake
+function process_ExpressionASTExt(input:_ExpressionAST | _ExpressionASTArrayTypeNode):ExpressionAST | ExpressionASTArrayTypeNode {
+	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
+	else return process_ExpressionAST(input);
+}
+
+function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 	if(input.length == 2){
 		return new Token(...input);
 	} else {
@@ -71,10 +94,31 @@ function processExpressionASTLike(input:_ExpressionAST):ExpressionAST {
 			operatorToken = operatorTokens[input[1]];
 		}
 		return {
-			nodes: input[2].map(processExpressionASTLike),
+			nodes: input[2].map(process_ExpressionAST),
 			operator, operatorToken
 		} satisfies ExpressionASTTreeNode;
 	}
+}
+
+type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]];
+type _ProgramAST = _ProgramASTNode[];
+type _ProgramASTLeafNode = _Statement;
+type _ProgramASTNode = _ProgramASTLeafNode | _ProgramASTTreeNode;
+type _ProgramASTTreeNode = {
+	type: ProgramASTTreeNodeType;
+	controlStatements: _Statement[];
+	nodeGroups: _ProgramASTNode[][];
+}
+
+function process_ProgramAST(output:_ProgramAST):ProgramAST {
+	return output.map(n => Array.isArray(n)
+		? process_Statement(n)
+		: {
+			type: n.type,
+			controlStatements: n.controlStatements.map(process_Statement),
+			nodeGroups: n.nodeGroups.map(process_ProgramAST),
+		}
+	)
 }
 
 const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST | "error"][] = Object.entries<[program:_Token[], output:_ExpressionAST | "error"]>({
@@ -754,13 +798,11 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 	[
 		name,
 		program.map(token),
-		output == "error" ? "error" : processExpressionASTLike(output)
+		output == "error" ? "error" : process_ExpressionAST(output)
 	]
 );
 
-type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST)[]];
-
-const sampleStatements:[name:string, program:Token[], output:Statement | "error"][] = Object.entries<[program:_Token[], output:_Statement | "error"]>({
+const parseStatementTests:[name:string, program:Token[], output:Statement | "error"][] = Object.entries<[program:_Token[], output:_Statement | "error"]>({
 	output: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -831,7 +873,12 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 			["keyword.declare", "DECLARE"],
 			["name", "amogus"],
 			["punctuation.colon", ":"],
-			["name", "INTEGER"],
+			[
+				[
+					[0, 99]
+				],
+				["name", "INTEGER"],
+			],
 		]]
 	],
 	declareBad1: [
@@ -1075,31 +1122,12 @@ const sampleStatements:[name:string, program:Token[], output:Statement | "error"
 	[
 		name,
 		program.map(token),
-		output == "error" ? "error" : new output[0](output[1].map(processExpressionASTLike))
+		output == "error" ? "error" : process_Statement(output)
 	]
 );
 
-type _ProgramAST = _ProgramASTNode[];
-type _ProgramASTLeafNode = _Statement;
-type _ProgramASTNode = _ProgramASTLeafNode | _ProgramASTTreeNode;
-type _ProgramASTTreeNode = {
-	type: ProgramASTTreeNodeType;
-	controlStatements: _Statement[];
-	nodeGroups: _ProgramASTNode[][];
-}
 
-function processProgramASTLike(output:_ProgramAST):ProgramAST {
-	return output.map(n => Array.isArray(n)
-		? new n[0](n[1].map(processExpressionASTLike))
-		: {
-			type: n.type,
-			controlStatements: n.controlStatements.map(s => new s[0](s[1].map(processExpressionASTLike))),
-			nodeGroups: n.nodeGroups.map(processProgramASTLike),
-		}
-	)
-}
-
-const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"][] = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
+const parseProgramTests:[name:string, program:Token[], output:ProgramAST | "error"][] = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
 	output: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -1277,7 +1305,7 @@ const samplePrograms:[name:string, program:Token[], output:ProgramAST | "error"]
 	[
 		name,
 		program.map(token),
-		output == "error" ? "error" : processProgramASTLike(output)
+		output == "error" ? "error" : process_ProgramAST(output)
 	]
 );
 
@@ -1521,7 +1549,7 @@ const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {
 		))
 }));
 
-type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
+
 const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTArrayTypeNode | "error";}[] = Object.entries<[input:_Token[], output:_Token | _ExpressionASTArrayTypeNode | "error"]>({
 	simpleType1: [[
 		["name", "INTEGER"],
@@ -1718,7 +1746,7 @@ describe("parseExpression", () => {
 });
 
 describe("parseStatement", () => {
-	for(const [name, program, output] of sampleStatements){
+	for(const [name, program, output] of parseStatementTests){
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
 				expect(() => parseStatement(program)).toThrowMatching(e => e instanceof SoodocodeError);
@@ -1732,7 +1760,7 @@ describe("parseStatement", () => {
 });
 
 describe("parse", () => {
-	for(const [name, program, output] of samplePrograms){
+	for(const [name, program, output] of parseProgramTests){
 		if(output === "error"){
 			it(`should not parse ${name} into a program`, () => {
 				expect(() => parse(program)).toThrowMatching(e => e instanceof SoodocodeError);
@@ -1800,7 +1828,7 @@ describe("parseType", () => {
 					.toThrowMatching(t => t instanceof SoodocodeError);
 			});
 		} else {
-			it(`should parse ${name} as function arguments`, () => {
+			it(`should parse ${name} as a valid type`, () => {
 				expect(parseType(input)).toEqual(output);
 			});
 		}
