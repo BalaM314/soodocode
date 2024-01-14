@@ -10,7 +10,7 @@ which is the preferred representation of the program.
 
 import { getText, Token, type TokenType } from "./lexer.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
-import { FunctionArgumentData, FunctionArgumentDataPartial, FunctionArguments, Statement, statements } from "./statements.js";
+import { FunctionArgumentData, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
 //TODO improve error messages
@@ -64,7 +64,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
-	let passMode: "value" | "reference" = "value";
+	let passMode:PassMode = "value";
 	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
 		let offset = 0;
 		if(section[0]?.type == "keyword.by-reference"){

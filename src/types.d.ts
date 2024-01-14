@@ -5,6 +5,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains global type definitions.
 */
 
+//TODO move to .ts and do declare global
+
 interface ObjectConstructor {
 	/**
 	 * Returns an array of key/values of the enumerable properties of an object
@@ -13,3 +15,7 @@ interface ObjectConstructor {
 	entries<const K extends PropertyKey, T>(o: Record<K, T>): [K, T][];
 	fromEntries<const K extends PropertyKey, T>(entries: Iterable<readonly [K, T]>): Record<K, T>;
 }
+interface Array<T> {
+	map<TThis extends Array<T>, U>(this:TThis, fn:(v:T, i:number, a:TThis) => U): number extends TThis["length"] ? U[] : { [K in keyof TThis]: U };
+}
+

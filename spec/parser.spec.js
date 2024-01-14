@@ -29,7 +29,10 @@ const operatorTokens = {
     "negate": new Token("operator.subtract", "-"),
 };
 function token(type, text) {
-    return new Token(type, text);
+    if (Array.isArray(type))
+        return new Token(type[0], type[1]);
+    else
+        return new Token(type, text);
 }
 function processExpressionASTLike(input) {
     if (input.length == 2) {
@@ -725,7 +728,7 @@ const sampleExpressions = Object.entries({
     ]
 }).map(([name, [program, output]]) => [
     name,
-    program.map(t => new Token(t[0], t[1])),
+    program.map(token),
     output == "error" ? "error" : processExpressionASTLike(output)
 ]);
 const sampleStatements = Object.entries({
@@ -770,6 +773,29 @@ const sampleStatements = Object.entries({
             ["punctuation.comma", ","],
             ["name", "sussy"],
             ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+        ],
+        [DeclarationStatement, [
+                ["keyword.declare", "DECLARE"],
+                ["name", "amogus"],
+                ["punctuation.comma", ","],
+                ["name", "sussy"],
+                ["punctuation.colon", ":"],
+                ["name", "INTEGER"],
+            ]]
+    ],
+    declare3: [
+        [
+            ["keyword.declare", "DECLARE"],
+            ["name", "amogus"],
+            ["punctuation.colon", ":"],
+            ["keyword.array", "ARRAY"],
+            ["bracket.open", "["],
+            ["number.decimal", "0"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "99"],
+            ["bracket.close", "]"],
+            ["keyword.of", "OF"],
             ["name", "INTEGER"],
         ],
         [DeclarationStatement, [
@@ -1019,7 +1045,7 @@ const sampleStatements = Object.entries({
     ],
 }).map(([name, [program, output]]) => [
     name,
-    program.map(t => new Token(t[0], t[1])),
+    program.map(token),
     output == "error" ? "error" : new output[0](output[1].map(processExpressionASTLike))
 ]);
 function processProgramASTLike(output) {
@@ -1115,7 +1141,7 @@ const samplePrograms = Object.entries({
                             ["keyword.then", "THEN"],
                         ]],
                     [statements.byType["if.end"], [
-                            ["keyword.if_end", "ENDIF"]
+                            ["keyword.if_end", "ENDIF"],
                         ]]
                 ],
                 nodeGroups: [[
@@ -1171,7 +1197,7 @@ const samplePrograms = Object.entries({
                             ["keyword.then", "THEN"],
                         ]],
                     [statements.byType["if.end"], [
-                            ["keyword.if_end", "ENDIF"]
+                            ["keyword.if_end", "ENDIF"],
                         ]],
                 ],
                 nodeGroups: [[
@@ -1191,7 +1217,7 @@ const samplePrograms = Object.entries({
                                         ["keyword.then", "THEN"],
                                     ]],
                                 [statements.byType["if.end"], [
-                                        ["keyword.if_end", "ENDIF"]
+                                        ["keyword.if_end", "ENDIF"],
                                     ]]
                             ],
                             nodeGroups: [[
@@ -1207,250 +1233,344 @@ const samplePrograms = Object.entries({
     ]
 }).map(([name, [program, output]]) => [
     name,
-    program.map(t => new Token(t[0], t[1])),
+    program.map(token),
     output == "error" ? "error" : processProgramASTLike(output)
 ]);
-describe("parseFunctionArguments", () => {
-    function process(input) {
-        if (input instanceof Map)
-            return Object.fromEntries([...input.entries()].map(([k, v]) => [k, [v.type, v.passMode]]));
-        else
-            return input;
-    }
-    //TODO datastructify
-    it("should parse function arguments", () => {
-        expect(process(parseFunctionArguments([]))).toEqual({});
-        expect(process(parseFunctionArguments([
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-        ]))).toEqual({
-            arg: ["INTEGER", jasmine.any(String)],
-        });
-        expect(process(parseFunctionArguments([
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ]))).toEqual({
-            arg: ["INTEGER", jasmine.any(String)],
-            arg2: ["BOOLEAN", jasmine.any(String)],
-        });
-        expect(process(parseFunctionArguments([
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-            token("punctuation.comma", ","),
-            token("name", "arg3"),
-            token("punctuation.colon", ":"),
-            token("name", "STRING"),
-        ]))).toEqual({
-            arg: ["INTEGER", jasmine.any(String)],
-            arg2: ["BOOLEAN", jasmine.any(String)],
-            arg3: ["STRING", jasmine.any(String)],
-        });
-        expect(process(parseFunctionArguments([
-            token("name", "arg"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.comma", ","),
-            token("name", "arg3"),
-            token("punctuation.colon", ":"),
-            token("name", "STRING"),
-        ]))).toEqual({
-            arg: ["STRING", jasmine.any(String)],
-            arg2: ["STRING", jasmine.any(String)],
-            arg3: ["STRING", jasmine.any(String)],
-        });
-        expect(process(parseFunctionArguments([
-            token("name", "arg1"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.comma", ","),
-            token("name", "arg3"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ]))).toEqual({
-            arg1: ["BOOLEAN", jasmine.any(String)],
-            arg2: ["BOOLEAN", jasmine.any(String)],
-            arg3: ["BOOLEAN", jasmine.any(String)],
-        });
-    });
-    it("should correctly determine byref and byval for function arguments", () => {
-        expect(process(parseFunctionArguments([
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-        ]))).toEqual({
+const functionArgumentTests = Object.entries({
+    blank: [[], {}],
+    oneArg: [[
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["name", "arg"],
+        ], {
+            arg: ["INTEGER"],
+        }],
+    twoArgs: [[
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], {
+            arg: ["INTEGER"],
+            arg2: ["BOOLEAN"],
+        }],
+    threeArgs: [[
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+            ["punctuation.comma", ","],
+            ["name", "arg3"],
+            ["punctuation.colon", ":"],
+            ["name", "STRING"],
+        ], {
+            arg: ["INTEGER"],
+            arg2: ["BOOLEAN"],
+            arg3: ["STRING"],
+        }],
+    typeRepetition: [[
+            ["name", "arg"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.comma", ","],
+            ["name", "arg3"],
+            ["punctuation.colon", ":"],
+            ["name", "STRING"],
+        ], {
+            arg: ["STRING"],
+            arg2: ["STRING"],
+            arg3: ["STRING"],
+        }],
+    typeRepetition2: [[
+            ["name", "arg1"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.comma", ","],
+            ["name", "arg3"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], {
+            arg1: ["BOOLEAN"],
+            arg2: ["BOOLEAN"],
+            arg3: ["BOOLEAN"],
+        }],
+    passModeDefault: [[
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+        ], {
             arg: ["INTEGER", "value"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-        ]))).toEqual({
+        }],
+    passModeSpecified1: [[
+            ["keyword.by-reference", "BYREF"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+        ], {
             arg: ["INTEGER", "reference"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-        ]))).toEqual({
+        }],
+    passModeSpecified2: [[
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+        ], {
             arg: ["INTEGER", "value"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ]))).toEqual({
+        }],
+    passModeSpecified3: [[
+            ["keyword.by-reference", "BYREF"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], {
             arg: ["INTEGER", "reference"],
             arg2: ["BOOLEAN", "reference"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ]))).toEqual({
+        }],
+    passModeSpecified4: [[
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], {
             arg: ["INTEGER", "value"],
             arg2: ["BOOLEAN", "value"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ]))).toEqual({
+        }],
+    passModeSpecifiedTwice: [[
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], {
             arg: ["INTEGER", "value"],
             arg2: ["BOOLEAN", "value"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ]))).toEqual({
+        }],
+    passModeSpecifiedTwiceDifferently: [[
+            ["keyword.by-reference", "BYREF"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], {
             arg: ["INTEGER", "reference"],
             arg2: ["BOOLEAN", "value"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("name", "arg"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-            token("punctuation.comma", ","),
-            token("name", "arg3"),
-            token("punctuation.colon", ":"),
-            token("name", "STRING"),
-        ]))).toEqual({
+        }],
+    passModeSpecifiedTwiceDifferently2: [[
+            ["keyword.by-reference", "BYREF"],
+            ["name", "arg"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+            ["punctuation.comma", ","],
+            ["name", "arg3"],
+            ["punctuation.colon", ":"],
+            ["name", "STRING"],
+        ], {
             arg: ["INTEGER", "reference"],
             arg2: ["BOOLEAN", "value"],
             arg3: ["STRING", "value"],
-        });
-        expect(process(parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("name", "arg"),
-            token("punctuation.comma", ","),
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-            token("punctuation.comma", ","),
-            token("name", "arg3"),
-            token("punctuation.colon", ":"),
-            token("name", "STRING"),
-        ]))).toEqual({
+        }],
+    weirdCombination1: [[
+            ["keyword.by-reference", "BYREF"],
+            ["name", "arg"],
+            ["punctuation.comma", ","],
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+            ["punctuation.comma", ","],
+            ["name", "arg3"],
+            ["punctuation.colon", ":"],
+            ["name", "STRING"],
+        ], {
             arg: ["BOOLEAN", "reference"],
             arg2: ["BOOLEAN", "value"],
             arg3: ["STRING", "value"],
-        });
-    });
-    it("should throw on invalid function arguments", () => {
-        expect(() => parseFunctionArguments([
-            token("name", "arg2"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "DATE"),
-            token("name", "arg2"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "CHAR"),
-            token("punctuation.comma", ","),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "INTEGER"),
-            token("punctuation.comma", ","),
-            token("keyword.by-reference", "BYREF"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("keyword.by-value", "BYVAL"),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "BOOLEAN"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("keyword.by-reference", "BYREF"),
-            token("name", "arg1"),
-            token("punctuation.comma", ","),
-            token("name", "arg2"),
-            token("punctuation.comma", ","),
-            token("name", "arg3"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseFunctionArguments([
-            token("keyword.case", "CASE"),
-            token("name", "arg2"),
-            token("punctuation.colon", ":"),
-            token("name", "STRING"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-    });
-});
+        }],
+    nameOnly: [[
+            ["name", "arg2"],
+        ], "error"],
+    missingType: [[
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+        ], "error"],
+    missingComma: [[
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "DATE"],
+            ["name", "arg2"],
+        ], "error"],
+    extraComma: [[
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "CHAR"],
+            ["punctuation.comma", ","],
+        ], "error"],
+    onlyPassMode: [[
+            ["keyword.by-reference", "BYREF"],
+        ], "error"],
+    onlyPassMode2: [[
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["punctuation.comma", ","],
+            ["keyword.by-reference", "BYREF"],
+        ], "error"],
+    doublePassMode: [[
+            ["keyword.by-reference", "BYREF"],
+            ["keyword.by-value", "BYVAL"],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "BOOLEAN"],
+        ], "error"],
+    missingType2: [[
+            ["keyword.by-reference", "BYREF"],
+            ["name", "arg1"],
+            ["punctuation.comma", ","],
+            ["name", "arg2"],
+            ["punctuation.comma", ","],
+            ["name", "arg3"],
+        ], "error"],
+    randomJunk: [[
+            ["keyword.case", "CASE"],
+            ["name", "arg2"],
+            ["punctuation.colon", ":"],
+            ["name", "STRING"],
+        ], "error"],
+}).map(([name, [input, output]]) => ({
+    name,
+    input: input.map(token),
+    output: output == "error" ? "error" :
+        Object.fromEntries(Object.entries(output).map(([name, [type, passMode]]) => [name, { type, passMode: passMode ? passMode : jasmine.any(String) }]))
+}));
+const parseTypeTests = Object.entries({
+    simpleType1: [[
+            ["name", "INTEGER"],
+        ],
+        ["name", "INTEGER"]
+    ],
+    simpleType2: [[
+            ["name", "BOOLEAN"],
+        ],
+        ["name", "BOOLEAN"],
+    ],
+    "1dArray": [[
+            ["keyword.array", "ARRAY"],
+            ["bracket.open", "["],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "10"],
+            ["bracket.close", "]"],
+            ["keyword.of", "OF"],
+            ["name", "INTEGER"],
+        ], [
+            [
+                [1, 10]
+            ],
+            ["name", "INTEGER"],
+        ]],
+    "2dArray": [[
+            ["keyword.array", "ARRAY"],
+            ["bracket.open", "["],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "10"],
+            ["punctuation.comma", ","],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "20"],
+            ["bracket.close", "]"],
+            ["keyword.of", "OF"],
+            ["name", "INTEGER"],
+        ], [
+            [
+                [1, 10],
+                [1, 20],
+            ],
+            ["name", "INTEGER"]
+        ]],
+    invalid1: [[
+            ["keyword.array", "ARRAY"],
+        ], "error"],
+    arrayButWithBraces: [[
+            ["keyword.array", "ARRAY"],
+            ["brace.open", "{"],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "10"],
+            ["punctuation.comma", ","],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "20"],
+            ["brace.close", "}"],
+            ["keyword.of", "OF"],
+            ["name", "INTEGER"],
+        ], "error"],
+    unspecifiedLowerBound: [[
+            ["keyword.array", "ARRAY"],
+            ["bracket.open", "["],
+            ["number.decimal", "10"],
+            ["bracket.close", "]"],
+            ["keyword.of", "OF"],
+            ["name", "INTEGER"],
+        ], "error"],
+    missingOf: [[
+            ["keyword.array", "ARRAY"],
+            ["bracket.open", "["],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "10"],
+            ["bracket.close", "]"],
+            ["name", "INTEGER"],
+        ], "error"],
+    extraComma: [[
+            ["keyword.array", "ARRAY"],
+            ["bracket.open", "["],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["number.decimal", "10"],
+            ["punctuation.comma", ","],
+            ["bracket.close", "]"],
+            ["keyword.of", "OF"],
+            ["name", "INTEGER"],
+        ], "error"],
+}).map(([name, [input, output]]) => ({
+    name,
+    input: input.map(t => new Token(t[0], t[1])),
+    output: output == "error" ? output :
+        ((output) => !Array.isArray(output[1]))(output) //weird type guard IIFE shenanigans
+            ? token(output)
+            : {
+                lengthInformation: output[0].map(bounds => bounds.map(b => new Token("number.decimal", b.toString()))),
+                type: token(output[1])
+            }
+}));
 describe("parseExpression", () => {
     for (const [name, program, output] of sampleExpressions) {
         if (output === "error") {
@@ -1493,6 +1613,21 @@ describe("parse", () => {
         }
     }
 });
+describe("parseFunctionArguments", () => {
+    for (const { name, input, output } of functionArgumentTests) {
+        if (output == "error") {
+            it(`should not parse ${name} as function arguments`, () => {
+                expect(() => parseFunctionArguments(input))
+                    .toThrowMatching(t => t instanceof SoodocodeError);
+            });
+        }
+        else {
+            it(`should parse ${name} as function arguments`, () => {
+                expect(Object.fromEntries(parseFunctionArguments(input))).toEqual(output);
+            });
+        }
+    }
+});
 describe("ArrayTypeData", () => {
     it(`should generate correct data`, () => {
         const data1 = new ArrayTypeData([[0, 9]], "BOOLEAN");
@@ -1523,96 +1658,17 @@ describe("ArrayTypeData", () => {
     });
 });
 describe("parseType", () => {
-    it("should parse single tokens", () => {
-        expect(parseType([
-            token("name", "INTEGER")
-        ])).toEqual(token("name", "INTEGER"));
-        expect(parseType([
-            token("name", "BOOLEAN")
-        ])).toEqual(token("name", "BOOLEAN"));
-    });
-    it('should parse array types', () => {
-        expect(parseType([
-            token("keyword.array", "ARRAY"),
-            token("bracket.open", "["),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "10"),
-            token("bracket.close", "]"),
-            token("keyword.of", "OF"),
-            token("name", "INTEGER"),
-        ])).toEqual({
-            lengthInformation: [
-                [token("number.decimal", "1"), token("number.decimal", "10")]
-            ],
-            type: token("name", "INTEGER"),
-        });
-        expect(parseType([
-            token("keyword.array", "ARRAY"),
-            token("bracket.open", "["),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "10"),
-            token("punctuation.comma", ","),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "20"),
-            token("bracket.close", "]"),
-            token("keyword.of", "OF"),
-            token("name", "INTEGER"),
-        ])).toEqual({
-            lengthInformation: [
-                [token("number.decimal", "1"), token("number.decimal", "10")],
-                [token("number.decimal", "1"), token("number.decimal", "20")],
-            ],
-            type: token("name", "INTEGER"),
-        });
-    });
-    it("should throw on invalid array types", () => {
-        expect(() => parseType([
-            token("keyword.array", "ARRAY"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseType([
-            token("keyword.array", "ARRAY"),
-            token("brace.open", "{"),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "10"),
-            token("punctuation.comma", ","),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "20"),
-            token("brace.close", "}"),
-            token("keyword.of", "OF"),
-            token("name", "INTEGER"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseType([
-            token("keyword.array", "ARRAY"),
-            token("bracket.open", "["),
-            token("number.decimal", "10"),
-            token("bracket.close", "]"),
-            token("keyword.of", "OF"),
-            token("name", "INTEGER"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseType([
-            token("keyword.array", "ARRAY"),
-            token("bracket.open", "["),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "10"),
-            token("bracket.close", "]"),
-            token("name", "INTEGER"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => parseType([
-            token("keyword.array", "ARRAY"),
-            token("bracket.open", "["),
-            token("number.decimal", "1"),
-            token("punctuation.colon", ":"),
-            token("number.decimal", "10"),
-            token("punctuation.comma", ","),
-            token("bracket.close", "]"),
-            token("keyword.of", "OF"),
-            token("name", "INTEGER"),
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-    });
+    for (const { name, input, output } of parseTypeTests) {
+        if (output == "error") {
+            it(`should not parse ${name} into a valid type`, () => {
+                expect(() => parseType(input))
+                    .toThrowMatching(t => t instanceof SoodocodeError);
+            });
+        }
+        else {
+            it(`should parse ${name} as function arguments`, () => {
+                expect(parseType(input)).toEqual(output);
+            });
+        }
+    }
 });
