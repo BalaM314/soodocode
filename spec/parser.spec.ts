@@ -1535,6 +1535,16 @@ const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTAr
 	],
 		["name", "BOOLEAN"],
 	],
+	simpleType3: [[
+		["name", "STRING"],
+	],
+		["name", "STRING"],
+	],
+	simpleType4: [[
+		["name", "CHAR"],
+	],
+		["name", "CHAR"],
+	],
 	"1dArray": [[
 		["keyword.array", "ARRAY"],
 		["bracket.open", "["],
@@ -1549,6 +1559,21 @@ const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTAr
 			[1, 10]
 		],
 		["name", "INTEGER"],
+	]],
+	"1dArray2": [[
+		["keyword.array", "ARRAY"],
+		["bracket.open", "["],
+		["number.decimal", "0"],
+		["punctuation.colon", ":"],
+		["number.decimal", "102"],
+		["bracket.close", "]"],
+		["keyword.of", "OF"],
+		["name", "DATE"],
+	],[
+		[
+			[0, 102]
+		],
+		["name", "DATE"],
 	]],
 	"2dArray": [[
 		["keyword.array", "ARRAY"],
@@ -1567,6 +1592,54 @@ const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTAr
 		[
 			[1, 10],
 			[1, 20],
+		],
+		["name", "INTEGER"]
+	]],
+	"2dArray2": [[
+		["keyword.array", "ARRAY"],
+		["bracket.open", "["],
+		["number.decimal", "0"],
+		["punctuation.colon", ":"],
+		["number.decimal", "103"],
+		["punctuation.comma", ","],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "22"],
+		["bracket.close", "]"],
+		["keyword.of", "OF"],
+		["name", "BOOLEAN"],
+	],[
+		[
+			[0, 102],
+			[1, 22],
+		],
+		["name", "BOOLEAN"]
+	]],
+	"4dArray": [[
+		["keyword.array", "ARRAY"],
+		["bracket.open", "["],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "10"],
+		["punctuation.comma", ","],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "20"],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "30"],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "40"],
+		["bracket.close", "]"],
+		["keyword.of", "OF"],
+		["name", "INTEGER"],
+	],[
+		[
+			[1, 10],
+			[1, 20],
+			[1, 30],
+			[1, 40],
 		],
 		["name", "INTEGER"]
 	]],
