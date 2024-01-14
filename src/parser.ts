@@ -14,7 +14,7 @@ import { FunctionArgumentData, FunctionArgumentDataPartial, FunctionArguments, P
 import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
 //TODO improve error messages
-
+//TODO fix the array type node
 export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTLeafNode = Token;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTTreeNode;

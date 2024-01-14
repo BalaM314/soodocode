@@ -801,8 +801,6 @@ const sampleStatements = Object.entries({
         [DeclarationStatement, [
                 ["keyword.declare", "DECLARE"],
                 ["name", "amogus"],
-                ["punctuation.comma", ","],
-                ["name", "sussy"],
                 ["punctuation.colon", ":"],
                 ["name", "INTEGER"],
             ]]
@@ -1239,9 +1237,9 @@ const samplePrograms = Object.entries({
 const functionArgumentTests = Object.entries({
     blank: [[], {}],
     oneArg: [[
+            ["name", "arg"],
             ["punctuation.colon", ":"],
             ["name", "INTEGER"],
-            ["name", "arg"],
         ], {
             arg: ["INTEGER"],
         }],
@@ -1555,7 +1553,7 @@ const parseTypeTests = Object.entries({
             ["name", "BOOLEAN"],
         ], [
             [
-                [0, 102],
+                [0, 103],
                 [1, 22],
             ],
             ["name", "BOOLEAN"]
@@ -1570,9 +1568,11 @@ const parseTypeTests = Object.entries({
             ["number.decimal", "1"],
             ["punctuation.colon", ":"],
             ["number.decimal", "20"],
+            ["punctuation.comma", ","],
             ["number.decimal", "1"],
             ["punctuation.colon", ":"],
             ["number.decimal", "30"],
+            ["punctuation.comma", ","],
             ["number.decimal", "1"],
             ["punctuation.colon", ":"],
             ["number.decimal", "40"],
