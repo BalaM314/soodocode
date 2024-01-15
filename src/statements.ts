@@ -8,7 +8,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import type { FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType } from "./runtime.js";
 import { TokenType, Token } from "./lexer.js";
-import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTreeNode, ExpressionASTTypeNode, ProgramASTTreeNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
@@ -67,13 +67,13 @@ export class Statement {
 		return this.type.example;
 	}
 	/** Warning: block will not include the usual end statement. */
-	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
+	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):boolean {
 		return false;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode):void | StatementExecutionResult {
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult {
 		if(this.category == "block")
 			crash(`Missing runtime implementation for block statement ${this.stype}`);
 		else
@@ -291,7 +291,7 @@ export class ReturnStatement extends Statement {
 }
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
 export class CallStatement extends Statement {
-	func:ExpressionASTTreeNode;
+	func:ExpressionASTBranchNode;
 	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
 		if(!(tokens[1] instanceof Token) && tokens[1].operator == "function call"){
@@ -315,11 +315,11 @@ export class IfStatement extends Statement {
 		this.condition = tokens[1];
 	}
 	/** Warning: block will not include the usual end statement. */
-	static supportsSplit(block:ProgramASTTreeNode, statement:Statement):boolean {
+	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):boolean {
 		return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
 		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		if(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
 			return runtime.runBlock(node.nodeGroups[0]);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
@@ -340,7 +340,7 @@ export class ForStatement extends Statement {
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
 		const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
 		if(upper < lower) return;
@@ -378,7 +378,7 @@ export class WhileStatement extends Statement {
 		super(tokens);
 		this.condition = tokens[1];
 	}
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		while(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
@@ -390,7 +390,7 @@ export class WhileStatement extends Statement {
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
-	runBlock(runtime:Runtime, node:ProgramASTTreeNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,

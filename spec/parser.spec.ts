@@ -8,7 +8,7 @@ This file contains unit tests for the parser.
 
 import "jasmine";
 import { Token, TokenType } from "../src/lexer.js";
-import { ProgramAST, parse, parseFunctionArguments, parseStatement, operators, ExpressionAST, parseExpression, OperatorType, ExpressionASTTreeNode, Operator, ProgramASTTreeNodeType, ArrayTypeData, parseType, ExpressionASTArrayTypeNode } from "../src/parser.js";
+import { ProgramAST, parse, parseFunctionArguments, parseStatement, operators, ExpressionAST, parseExpression, OperatorType, ExpressionASTBranchNode, Operator, ProgramASTBranchNodeType, ArrayTypeData, parseType, ExpressionASTArrayTypeNode, ExpressionASTNodeExt } from "../src/parser.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { VariableType } from "../src/runtime.js";
@@ -17,18 +17,31 @@ import { VariableType } from "../src/runtime.js";
 
 //i miss rust macros
 
+//Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
 type _ExpressionAST = _ExpressionASTNode;
 type _ExpressionASTLeafNode = _Token;
 type _Token = [type:TokenType, text:string];
-type _ExpressionASTNode = _ExpressionASTLeafNode | _ExpressionASTTreeNode;
-type _ExpressionASTTreeNode = [
+type _ExpressionASTNode = _ExpressionASTLeafNode | _ExpressionASTBranchNode;
+type _ExpressionASTBranchNode = [
 	"tree",
 	operator: _Operator | [type: "function call", name:string] | [type: "array access", name:string],
 	nodes: _ExpressionASTNode[],
 ];
 type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
+type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
 
 type _Operator = Exclude<OperatorType, "assignment" | "pointer">;
+
+type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]];
+type _ProgramAST = _ProgramASTNode[];
+type _ProgramASTLeafNode = _Statement;
+type _ProgramASTNode = _ProgramASTLeafNode | _ProgramASTBranchNode;
+type _ProgramASTBranchNode = {
+	type: ProgramASTBranchNodeType;
+	controlStatements: _Statement[];
+	nodeGroups: _ProgramASTNode[][];
+}
+
 
 const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointer">, Token> = {
 	"add": new Token("operator.add", "+"),
@@ -72,7 +85,7 @@ function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):E
 }
 
 //this may have been a mistake
-function process_ExpressionASTExt(input:_ExpressionAST | _ExpressionASTArrayTypeNode):ExpressionAST | ExpressionASTArrayTypeNode {
+function process_ExpressionASTExt(input:_ExpressionASTExt):ExpressionASTNodeExt {
 	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
 	else return process_ExpressionAST(input);
 }
@@ -96,18 +109,8 @@ function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 		return {
 			nodes: input[2].map(process_ExpressionAST),
 			operator, operatorToken
-		} satisfies ExpressionASTTreeNode;
+		} satisfies ExpressionASTBranchNode;
 	}
-}
-
-type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]];
-type _ProgramAST = _ProgramASTNode[];
-type _ProgramASTLeafNode = _Statement;
-type _ProgramASTNode = _ProgramASTLeafNode | _ProgramASTTreeNode;
-type _ProgramASTTreeNode = {
-	type: ProgramASTTreeNodeType;
-	controlStatements: _Statement[];
-	nodeGroups: _ProgramASTNode[][];
 }
 
 function process_ProgramAST(output:_ProgramAST):ProgramAST {

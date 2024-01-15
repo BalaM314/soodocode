@@ -53,7 +53,8 @@ export class Runtime {
     evaluateExpr(expr, type) {
         if (expr instanceof Token)
             return this.evaluateToken(expr, type);
-        //Tree node
+        //Branch node
+        //Special cases
         switch (expr.operator) {
             case "array access":
                 return this.processArrayAccess(expr, "get", type);

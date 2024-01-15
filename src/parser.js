@@ -9,6 +9,7 @@ which is the preferred representation of the program.
 import { getText, Token } from "./lexer.js";
 import { statements } from "./statements.js";
 import { impossible, splitArray, fail, isVarType } from "./utils.js";
+/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
 export class ArrayTypeData {
     constructor(lengthInformation, type) {
         this.lengthInformation = lengthInformation;

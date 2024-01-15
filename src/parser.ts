@@ -14,20 +14,29 @@ import { FunctionArgumentData, FunctionArgumentDataPartial, FunctionArguments, P
 import { impossible, splitArray, fail, PartialKey, isVarType } from "./utils.js";
 
 //TODO improve error messages
-//TODO fix the array type node
+
+/** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;
+/** Represents a single node in an expression AST. */
+export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode;
+/** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
-export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTTreeNode;
-export type ExpressionASTTreeNode = {
+/** Represents a branch node (node with child nodes) in an expression AST. */
+export type ExpressionASTBranchNode = {
 	operatorToken: Token;
 	operator: Operator | "function call" | "array access";
 	nodes: ExpressionASTNode[];
 }
+/** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
 export type ExpressionASTArrayTypeNode = {
 	lengthInformation: [low:Token, high:Token][];
 	type: Token;
 }
-export type ExpressionASTTypeNode = ExpressionASTLeafNode | ExpressionASTArrayTypeNode;
+/** Represents a node that represents a type, which can be either a single token or an array type node. */
+export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
+/** Represents an "extended" expression AST node, which may also be an array type node */
+export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
+/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
 export class ArrayTypeData {
 	totalLength:number;
 	lengthInformation_:number[];
@@ -45,20 +54,28 @@ export class ArrayTypeData {
 	}
 }
 
+/** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
 export type TokenMatcher = TokenType | ".*" | ".+" | "expr+" | "type+";
 
+/** Represents a fully processed program. */
 export type ProgramAST = ProgramASTNode[];
+/** Represents a single node in a program AST. */
+export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
+/** Represents a leaf node (node with no child nodes) in a program AST. */
 export type ProgramASTLeafNode = Statement;
-export type ProgramASTNode = ProgramASTLeafNode | ProgramASTTreeNode;
-export type ProgramASTTreeNode = {
-	type: ProgramASTTreeNodeType;
+/** Represents a branch node (node with children) in a program AST. */
+export type ProgramASTBranchNode = {
+	type: ProgramASTBranchNodeType;
+	/**
+	 * Contains the control statements for this block.
+	 * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
+	 */
 	controlStatements: Statement[];
 	nodeGroups: ProgramASTNode[][];
 }
-//not necessary
-//export type UnfinishedProgramASTTreeNode = Partial<ProgramASTTreeNode> & Omit<ProgramASTTreeNode, "endStatement">;
 
-export type ProgramASTTreeNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
+/** The valid types for a branch node in a program AST. */
+export type ProgramASTBranchNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
 export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	//special case: blank
@@ -95,7 +112,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	}]));
 }
 
-export function processTypeData(ast:Token | ExpressionASTArrayTypeNode):VariableType {
+export function processTypeData(ast:ExpressionASTTypeNode):VariableType {
 	if(ast instanceof Token) return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`);
 	else return new ArrayTypeData(
 		ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
@@ -147,14 +164,14 @@ export function parse(tokens:Token[]):ProgramAST {
 		if(blockStack.length == 0) return program;
 		else return blockStack.at(-1)!.nodeGroups.at(-1)!;
 	}
-	const blockStack:ProgramASTTreeNode[] = [];
+	const blockStack:ProgramASTBranchNode[] = [];
 	for(const statement of statements){
 		if(statement.category == "normal"){
 			getActiveBuffer().push(statement);
 		} else if(statement.category == "block"){
-			const node:ProgramASTTreeNode = {
+			const node:ProgramASTBranchNode = {
 				controlStatements: [statement],
-				type: statement.stype as ProgramASTTreeNodeType,
+				type: statement.stype as ProgramASTBranchNodeType,
 				nodeGroups: [[]]
 			};
 			getActiveBuffer().push(node);

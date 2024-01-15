@@ -8,7 +8,7 @@ This file contains the runtime, which executes the program AST.
 
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token, TokenType } from "./lexer.js";
-import { operators, type ExpressionAST, type ProgramAST, type ProgramASTTreeNode, ProgramASTNode, ProgramASTTreeNodeType, ExpressionASTArrayTypeNode, ArrayTypeData, ExpressionASTTreeNode } from "./parser.js";
+import { operators, type ExpressionAST, type ProgramAST, type ProgramASTBranchNode, ProgramASTNode, ProgramASTBranchNodeType, ExpressionASTArrayTypeNode, ArrayTypeData, ExpressionASTBranchNode } from "./parser.js";
 import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement, FunctionArguments } from "./statements.js";
 import { crash, fail, forceType } from "./utils.js";
 
@@ -27,7 +27,7 @@ export type VariableData<T extends VariableType = VariableType> = {
 	mutable: true;
 }
 /** Either a function or a procedure TODO cleanup */
-export type FunctionData = ProgramASTTreeNode & {
+export type FunctionData = ProgramASTBranchNode & {
 	nodeGroups: [body:ProgramASTNode[]];
 } & ({
 	type: "function";
@@ -67,9 +67,9 @@ export class Runtime {
 		public _input: (message:string) => string,
 		public _output: (message:string) => void,
 	){}
-	processArrayAccess(expr:ExpressionASTTreeNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValueType];
-	processArrayAccess(expr:ExpressionASTTreeNode, operation:"set", value:ExpressionAST):void;
-	processArrayAccess(expr:ExpressionASTTreeNode, operation:"get" | "set", arg2?:VariableType | ExpressionAST){
+	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValueType];
+	processArrayAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
+	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | ExpressionAST){
 		const variable = this.getVariable(expr.operatorToken.text);
 		if(!variable) fail(`Undeclared variable ${expr.operatorToken.text}`);
 		if(!(variable.type instanceof ArrayTypeData)) fail(`Cannot convert variable of type ${variable.type} to an array`);
@@ -97,7 +97,9 @@ export class Runtime {
 		if(expr instanceof Token)
 			return this.evaluateToken(expr, type);
 
-		//Tree node
+		//Branch node
+
+		//Special cases
 		switch(expr.operator){
 			case "array access":
 				return this.processArrayAccess(expr, "get", type);
