@@ -3,8 +3,8 @@ Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
 This file contains the lexer, which takes the raw user input and processes it;
-first into a list of symbols, such as "operator.add", "numeric_fragment", and "quote.double",
-second into a list of tokens, such as "operator.add", "number.decimal", "keyword.reafile", and "string".
+first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" ("),
+second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
 */
 
 
@@ -27,6 +27,7 @@ export const symbolTypes = [
 ] as const;
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
 
+/** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
 export class Symbol {
 	constructor(
 		public type: SymbolType,
@@ -68,6 +69,7 @@ export const tokenTypes = [
 ] as const;
 export type TokenType = typeof tokenTypes extends ReadonlyArray<infer T> ? T : never;
 
+/** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
 export class Token {
 	constructor(
 		public type: TokenType,
@@ -82,7 +84,7 @@ export function token(type:TokenType, text:string){
 	return new Token(type, text);
 }
 
-
+/** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
 	lastMatched:string = "";
 	output:Symbol[] = [];
@@ -138,11 +140,12 @@ class SymbolizerIO {
 	}
 }
 
-
-export function symbolize(input:string){
+/** Converts an input string to a list of symbols. */
+export function symbolize(input:string):Symbol[] {
 	const str = new SymbolizerIO(input);
 	toNextCharacter:
 	while(str.has()){
+		//TODO optimize nested loop
 		for(const [identifier, symbolType] of symbolTypeData){
 			if(typeof identifier == "string" || identifier instanceof RegExp){
 				if(str.cons(identifier)){
@@ -164,13 +167,13 @@ export function symbolize(input:string){
 }
 
 //TS magic: _ is a default type argument to create a variable inside a generic, which is necessary to trigger DCT
-type Funcs<
+type SymbolSpecifierFunc<
 	Proto = (typeof SymbolizerIO)["prototype"],
 	_ = Proto[keyof Proto]
 > = _ extends () => boolean ? _ : never;
 
 const symbolTypeData: [
-	identifier: string | Funcs | RegExp, symbol:SymbolType
+	identifier: string | SymbolSpecifierFunc | RegExp, symbol:SymbolType
 ][] = [
 	["MOD", "operator.mod"],
 	["AND", "operator.and"],
@@ -214,6 +217,7 @@ const symbolTypeData: [
 	[/^./, "unknown"],
 ];
 
+/** Converts a list of symbols into a list of tokens. */
 export function tokenize(input:Symbol[]):Token[] {
 	const output:Token[] = [];
 	const state = {
@@ -324,10 +328,11 @@ export function tokenize(input:Symbol[]):Token[] {
 			output.push(symbol.toToken());
 		}
 	}
+	//Ending state checks
 	if(state.mComment) fail(`Unclosed multiline comment`);
 	if(state.dString) fail(`Unclosed double-quoted string`);
 	if(state.sString) fail(`Unclosed single-quoted string`);
-	if(state.decimalNumber == "requireNumber") fail(`Expected a number to follow "${(output.at(-1) ?? crash(`impossible`)).text}.", but found end of input`);
+	if(state.decimalNumber == "requireNumber") fail(`Expected a number to follow "${(output.at(-1) ?? impossible()).text}.", but found end of input`);
 	return output;
 
 	function write(type:TokenType){

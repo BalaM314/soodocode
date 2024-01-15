@@ -3,8 +3,8 @@ Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
 This file contains the lexer, which takes the raw user input and processes it;
-first into a list of symbols, such as "operator.add", "numeric_fragment", and "quote.double",
-second into a list of tokens, such as "operator.add", "number.decimal", "keyword.reafile", and "string".
+first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" ("),
+second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
 */
 import { crash, fail, impossible } from "./utils.js";
 export const symbolTypes = [
@@ -21,6 +21,7 @@ export const symbolTypes = [
     "newline",
     "operator.add", "operator.subtract", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ];
+/** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
 export class Symbol {
     constructor(type, text) {
         this.type = type;
@@ -60,6 +61,7 @@ export const tokenTypes = [
     "newline",
     "operator.add", "operator.subtract", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ];
+/** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
 export class Token {
     constructor(type, text) {
         this.type = type;
@@ -74,6 +76,7 @@ export class Token {
 export function token(type, text) {
     return new Token(type, text);
 }
+/** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;
@@ -137,9 +140,11 @@ class SymbolizerIO {
             (code >= 97 && code <= 122) || code === 95;
     }
 }
+/** Converts an input string to a list of symbols. */
 export function symbolize(input) {
     const str = new SymbolizerIO(input);
     toNextCharacter: while (str.has()) {
+        //TODO optimize nested loop
         for (const [identifier, symbolType] of symbolTypeData) {
             if (typeof identifier == "string" || identifier instanceof RegExp) {
                 if (str.cons(identifier)) {
@@ -202,6 +207,7 @@ const symbolTypeData = [
     [SymbolizerIO.prototype.isAlphanumeric, "word"],
     [/^./, "unknown"],
 ];
+/** Converts a list of symbols into a list of tokens. */
 export function tokenize(input) {
     const output = [];
     const state = {
@@ -404,6 +410,7 @@ export function tokenize(input) {
             output.push(symbol.toToken());
         }
     }
+    //Ending state checks
     if (state.mComment)
         fail(`Unclosed multiline comment`);
     if (state.dString)
@@ -411,7 +418,7 @@ export function tokenize(input) {
     if (state.sString)
         fail(`Unclosed single-quoted string`);
     if (state.decimalNumber == "requireNumber")
-        fail(`Expected a number to follow "${(output.at(-1) ?? crash(`impossible`)).text}.", but found end of input`);
+        fail(`Expected a number to follow "${(output.at(-1) ?? impossible()).text}.", but found end of input`);
     return output;
     function write(type) {
         output.push(token(type, symbol.text));

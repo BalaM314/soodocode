@@ -36,23 +36,6 @@ export type ExpressionASTArrayTypeNode = {
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 /** Represents an "extended" expression AST node, which may also be an array type node */
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
-/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
-export class ArrayTypeData {
-	totalLength:number;
-	lengthInformation_:number[];
-	constructor(
-		public lengthInformation: [low:number, high:number][],
-		public type: StringVariableType,
-	){
-		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
-		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
-		this.lengthInformation_ = this.lengthInformation.map(b => b[1] - b[0] + 1);
-		this.totalLength = this.lengthInformation_.reduce((a, b) => a * b, 1);
-	}
-	toString(){
-		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
-	}
-}
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
 export type TokenMatcher = TokenType | ".*" | ".+" | "expr+" | "type+";
@@ -73,16 +56,37 @@ export type ProgramASTBranchNode = {
 	controlStatements: Statement[];
 	nodeGroups: ProgramASTNode[][];
 }
-
 /** The valid types for a branch node in a program AST. */
 export type ProgramASTBranchNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
+/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
+export class ArrayTypeData {
+	totalLength:number;
+	lengthInformation_:number[];
+	constructor(
+		public lengthInformation: [low:number, high:number][],
+		public type: StringVariableType,
+	){
+		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
+		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
+		this.lengthInformation_ = this.lengthInformation.map(b => b[1] - b[0] + 1);
+		this.totalLength = this.lengthInformation_.reduce((a, b) => a * b, 1);
+	}
+	toString(){
+		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+	}
+}
+
+/** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
 	let passMode:PassMode = "value";
+	//Split the array on commas (no paren handling necessary)
 	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
+
+		//Increase the offset by 1 to ignore the pass mode specifier if present
 		let offset = 0;
 		if(section[0]?.type == "keyword.by-reference"){
 			offset = 1;
@@ -91,22 +95,29 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 			offset = 1;
 			passMode = "value";
 		}
+
+		//There must be a name
 		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? ","}`);
+
+		//If the name is the only thing present, then the type is specified later, leave it as null
 		if(section.length == offset + 1){
 			return [section[offset + 0].text, {
 				passMode,
 				type: null,
 			}];
 		} else {
+			//Expect a colon
 			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? ","}`);
 			return [section[offset + 0].text, {
 				passMode,
+				//Parse the rest of the section as a type
 				type: processTypeData(parseType(section.slice(offset + 2))),
 			}];
 		}
 	}).map<FunctionArgumentData>((arg, i, arr) => [arg[0], {
 		passMode: arg[1].passMode,
 		type: arg[1].type === null
+		//TODO O(n^2) fix somehow... probably reverse map reverse
 			? (arr.find((value, j):value is FunctionArgumentData => j > i && value[1].type != null) ?? fail(`Type not specified for function argument ${arg[0]}`))[1].type
 			: arg[1].type
 	}]));
