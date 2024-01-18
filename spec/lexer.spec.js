@@ -5,10 +5,53 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains unit tests for the lexer.
 */
 import "jasmine";
-import { symbol, symbolize, token, tokenize } from "../src/lexer.js";
+import { symbolize, tokenize } from "../src/lexer.js";
 import { SoodocodeError } from "../src/utils.js";
+import { symbol, token } from "./spec_utils.js";
+const symbolTests = Object.entries({
+    number_single1: [
+        "5",
+        [
+            ["numeric_fragment", "5"]
+        ]
+    ],
+    number_single2: [
+        "12345",
+        [
+            ["numeric_fragment", "12345"]
+        ]
+    ],
+    number_multi1: [
+        "12345 54321",
+        [
+            ["numeric_fragment", "12345"],
+            ["space", " "],
+            ["numeric_fragment", "54321"]
+        ]
+    ],
+    number_decimal1: [
+        "12345.54321",
+        [
+            ["numeric_fragment", "12345"],
+            ["punctuation.period", "."],
+            ["numeric_fragment", "54321"]
+        ]
+    ],
+}).map(([name, [input, output]]) => [name, input, output == "error" ? output : output.map(symbol)]);
 //TODO datastructify
 describe("symbolizer", () => {
+    for (const [name, input, output] of symbolTests) {
+        if (output == "error") {
+            it(`should not parse ${name} into symbols`, () => {
+                expect(() => symbolize(input)).toThrowMatching(e => e instanceof SoodocodeError);
+            });
+        }
+        else {
+            it(`should parse ${name} into symbols`, () => {
+                expect(symbolize(input)).toEqual(output);
+            });
+        }
+    }
     it("should parse numbers", () => {
         expect(symbolize("5")).toEqual([symbol("numeric_fragment", "5")]);
         expect(symbolize("12345")).toEqual([symbol("numeric_fragment", "12345")]);
