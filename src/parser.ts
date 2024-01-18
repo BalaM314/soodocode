@@ -241,8 +241,8 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 	//TODO understand it
 
 	const output:StatementCheckSuccessResult = [];
-	//todo check use of var
-	for(var i = statement.tokens[0] == "#" ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
+	let i, j;
+	for(i = +(statement.tokens[0] == "#"), j = 0; i < statement.tokens.length; i ++){
 		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+"){
 			const allowEmpty = statement.tokens[i] == ".*";
 			const start = j;
