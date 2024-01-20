@@ -7,7 +7,7 @@ This file contains unit tests for the lexer.
 import "jasmine";
 import { symbolize, tokenize } from "../src/lexer.js";
 import { SoodocodeError } from "../src/utils.js";
-import { symbol } from "./spec_utils.js";
+import { symbol, token } from "./spec_utils.js";
 const symbolTests = Object.entries({
     number_single1: [
         "5",
@@ -100,24 +100,9 @@ const symbolTests = Object.entries({
         ]
     ],
 }).map(([name, [input, output]]) => [name, input, output == "error" ? output : output.map(symbol)]);
-//TODO datastructify
-describe("symbolizer", () => {
-    for (const [name, input, output] of symbolTests) {
-        if (output == "error") {
-            it(`should not parse ${name} into symbols`, () => {
-                expect(() => symbolize(input)).toThrowMatching(e => e instanceof SoodocodeError);
-            });
-        }
-        else {
-            it(`should parse ${name} into symbols`, () => {
-                expect(symbolize(input)).toEqual(output);
-            });
-        }
-    }
-});
-describe("tokenizer", () => {
-    it("should leave most symbols untouched", () => {
-        expect(tokenize([
+const tokenizerTests = Object.entries({
+    simple: [
+        [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -126,7 +111,7 @@ describe("tokenizer", () => {
             ["bracket.close", "]"],
             ["parentheses.open", "("],
             ["parentheses.close", ")"],
-        ])).toEqual([
+        ], [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -135,10 +120,10 @@ describe("tokenizer", () => {
             ["bracket.close", "]"],
             ["parentheses.open", "("],
             ["parentheses.close", ")"],
-        ]);
-    });
-    it("should remove whitespace", () => {
-        expect(tokenize([
+        ]
+    ],
+    removeWhitespace: [
+        [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["space", " "],
@@ -148,17 +133,17 @@ describe("tokenizer", () => {
             ["space", " "],
             ["parentheses.open", "("],
             ["parentheses.close", ")"],
-        ])).toEqual([
+        ], [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.and", "AND"],
             ["number.decimal", "501"],
             ["parentheses.open", "("],
             ["parentheses.close", ")"],
-        ]);
-    });
-    it("should remove single line comments", () => {
-        expect(tokenize([
+        ]
+    ],
+    removeSingleLineComments: [
+        [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -171,7 +156,7 @@ describe("tokenizer", () => {
             ["numeric_fragment", "501"],
             ["newline", "\n"],
             ["parentheses.close", ")"],
-        ])).toEqual([
+        ], [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -181,10 +166,10 @@ describe("tokenizer", () => {
             ["parentheses.open", "("],
             ["newline", "\n"],
             ["parentheses.close", ")"],
-        ]);
-    });
-    it("should remove multiline comments", () => {
-        expect(tokenize([
+        ]
+    ],
+    removeMultilineComments: [
+        [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -197,7 +182,7 @@ describe("tokenizer", () => {
             ["numeric_fragment", "501"],
             ["comment.multiline_close", "*/"],
             ["parentheses.close", ")"],
-        ])).toEqual([
+        ], [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -206,10 +191,10 @@ describe("tokenizer", () => {
             ["bracket.close", "]"],
             ["parentheses.open", "("],
             ["parentheses.close", ")"],
-        ]);
-    });
-    it("should form strings", () => {
-        expect(tokenize([
+        ]
+    ],
+    strings: [
+        [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -227,7 +212,7 @@ describe("tokenizer", () => {
             ["numeric_fragment", "501"],
             ["quote.double", `\"`],
             ["parentheses.close", ")"],
-        ])).toEqual([
+        ], [
             ["punctuation.semicolon", ";"],
             ["newline", "\n"],
             ["operator.less_than", "<"],
@@ -239,38 +224,49 @@ describe("tokenizer", () => {
             ["operator.not_equal_to", "<>"],
             ["string", `"AND 501"`],
             ["parentheses.close", ")"],
-        ]);
-    });
-    it("should form numbers", () => {
-        expect(tokenize([
+        ]
+    ],
+    numbers1: [
+        [
             ["numeric_fragment", "12345"],
             ["punctuation.period", "."],
             ["numeric_fragment", "54321"],
-        ])).toEqual([
+        ], [
             ["number.decimal", "12345.54321"]
-        ]);
-        expect(tokenize([
+        ]
+    ],
+    numbers2: [
+        [
             ["numeric_fragment", "12345"],
-        ])).toEqual([
+        ], [
             ["number.decimal", "12345"]
-        ]);
-        expect(() => tokenize([
+        ]
+    ],
+    numbers3: [
+        [
             ["numeric_fragment", "12345"],
             ["punctuation.period", "."],
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => tokenize([
+        ],
+        "error"
+    ],
+    numbers4: [
+        [
             ["numeric_fragment", "12345"],
             ["numeric_fragment", "12345"],
             ["punctuation.period", "."],
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-        expect(() => tokenize([
+        ],
+        "error"
+    ],
+    numbers5: [
+        [
             ["punctuation.period", "."],
             ["numeric_fragment", "12345"],
             ["numeric_fragment", "12345"],
-        ])).toThrowMatching(t => t instanceof SoodocodeError);
-    });
-    it("should parse keywords", () => {
-        expect(tokenize([
+        ],
+        "error"
+    ],
+    keywords: [
+        [
             ["word", "WHILE"],
             ["space", " "],
             ["word", "Index"],
@@ -286,13 +282,41 @@ describe("tokenizer", () => {
             ["space", " "],
             ["word", "PROCEDURE"],
             ["quote.double", `"`],
-        ])).toEqual([
+        ], [
             ["keyword.while", "WHILE"],
             ["name", "Index"],
             ["operator.less_than", "<"],
             ["number.decimal", "501"],
             ["operator.and", "AND"],
             ["string", `"sussy PROCEDURE"`],
-        ]);
-    });
+        ]
+    ]
+}).map(([name, [input, output]]) => [name, input.map(symbol), output == "error" ? "error" : output.map(token)]);
+describe("symbolizer", () => {
+    for (const [name, input, output] of symbolTests) {
+        if (output == "error") {
+            it(`should not parse ${name} into symbols`, () => {
+                expect(() => symbolize(input)).toThrowMatching(e => e instanceof SoodocodeError);
+            });
+        }
+        else {
+            it(`should parse ${name} into symbols`, () => {
+                expect(symbolize(input)).toEqual(output);
+            });
+        }
+    }
+});
+describe("tokenizer", () => {
+    for (const [name, input, output] of tokenizerTests) {
+        if (output == "error") {
+            it(`should not parse ${name} into tokens`, () => {
+                expect(() => tokenize(input)).toThrowMatching(e => e instanceof SoodocodeError);
+            });
+        }
+        else {
+            it(`should parse ${name} into symbols`, () => {
+                expect(tokenize(input)).toEqual(output);
+            });
+        }
+    }
 });
