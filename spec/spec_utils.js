@@ -32,7 +32,7 @@ export function token(type, text) {
         return new Token(type, text);
 }
 export function is_ExpressionASTArrayTypeNode(input) {
-    return Array.isArray(input[1][1]);
+    return Array.isArray(input[1]);
 }
 export function process_Statement(input) {
     return new input[0](input[1].map(process_ExpressionASTExt));

@@ -69,7 +69,7 @@ export function token(type:TokenType | [type:TokenType, text:string], text?:stri
 }
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
-	return Array.isArray(input[1][1]);
+	return Array.isArray(input[1]);
 }
 
 export function process_Statement(input:_Statement):Statement {
