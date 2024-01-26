@@ -70,7 +70,9 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 		"amogus sussy imposter",
 		[
 			["word", "amogus"],
+			["space", " "],
 			["word", "sussy"],
+			["space", " "],
 			["word", "imposter"]
 		]
 	],
@@ -100,6 +102,36 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 			["operator.not", "NOT"],
 			["space", " "],
 			["word", "PastLast"],
+		]
+	],
+	invalidChars: [
+		`OUTPUT "!@#$%^&*()_+", amogus, αβγδ`,
+		[
+			["word", "OUTPUT"],
+			["space", " "],
+			["quote.double", `"`],
+			["unknown", "!"],
+			["unknown", "@"],
+			["unknown", "#"],
+			["unknown", "$"],
+			["unknown", "%"],
+			["operator.pointer", "^"],
+			["operator.string_concatenate", "&"],
+			["operator.multiply", "*"],
+			["parentheses.open", "("],
+			["parentheses.close", ")"],
+			["word", "_"],
+			["operator.add", "+"],
+			["quote.double", `"`],
+			["punctuation.comma", ","],
+			["space", " "],
+			["word", "amogus"],
+			["punctuation.comma", ","],
+			["space", " "],
+			["unknown", "😀"],
+			["unknown", "😀"],
+			["unknown", "😀"],
+			["unknown", "😀"],
 		]
 	],
 }).map(([name, [input, output]]) => [name, input, output == "error" ? output : output.map(symbol)]);
