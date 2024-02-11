@@ -7,8 +7,10 @@ This file contains the runtime, which executes the program AST.
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token, TokenType } from "./lexer.js";
-import { operators, type ExpressionAST, type ProgramAST, type ProgramASTBranchNode, ProgramASTNode, ProgramASTBranchNodeType, ExpressionASTArrayTypeNode, ArrayTypeData, ExpressionASTBranchNode } from "./parser.js";
+import { Token, TokenType } from "./lexer-types.js";
+import { ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayTypeData, ProgramAST } from "./parser-types.js";
+import { operators } from "./parser.js";
+
 import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement, FunctionArguments } from "./statements.js";
 import { crash, fail, forceType } from "./utils.js";
 

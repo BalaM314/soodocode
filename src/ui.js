@@ -10,7 +10,7 @@ import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
 import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
-import { Token } from "./lexer.js";
+import { Token } from "./lexer-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 function getElement(id, type) {

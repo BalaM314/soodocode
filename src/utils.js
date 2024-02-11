@@ -4,7 +4,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains utility functions.
 */
-import { Token } from "./lexer.js";
+import { Token } from "./lexer-types.js";
 export function stringifyExpressionASTArrayTypeNode(input) {
     return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;
 }
@@ -40,6 +40,9 @@ ${node.operatorToken.text}
 ${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`);
     }
+}
+export function getText(tokens) {
+    return tokens.map(t => t.text).join(" ");
 }
 //TODO refactor for token specific
 export function splitArray(arr, split) {

@@ -6,9 +6,10 @@ This file contains unit tests for the lexer.
 */
 
 import "jasmine";
-import { Symbol, Token, symbolize, tokenize } from "../src/lexer.js";
+import { symbolize, tokenize } from "../src/lexer.js";
+import { Symbol, Token, symbol, token } from "../src/lexer-types.js";
 import { SoodocodeError } from "../src/utils.js";
-import { _Symbol, _Token, symbol, token } from "./spec_utils.js";
+import { _Symbol, _Token } from "./spec_utils.js";
 
 
 const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Object.entries<[input:string, output:_Symbol[] | "error"]>({

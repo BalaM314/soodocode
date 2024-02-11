@@ -5,11 +5,12 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains unit tests for the parser.
 */
 import "jasmine";
-import { Token } from "../src/lexer.js";
-import { ArrayTypeData, parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
+import { Token, token } from "../src/lexer-types.js";
+import { ArrayTypeData } from "../src/parser-types.js";
+import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
-import { process_ExpressionAST, process_ProgramAST, process_Statement, token } from "./spec_utils.js";
+import { process_ExpressionAST, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 //i miss rust macros
 const sampleExpressions = Object.entries({

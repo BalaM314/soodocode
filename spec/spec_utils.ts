@@ -1,5 +1,8 @@
-import { Symbol, SymbolType, Token, TokenType } from "../src/lexer.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTNodeExt, Operator, ProgramAST, operators, OperatorType, ProgramASTBranchNodeType } from "../src/parser.js";
+import { SymbolType, Token, TokenType, symbol, token } from "../src/lexer-types.js";
+import {
+	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNodeType
+} from "../src/parser-types.js";
+import { Operator, operators, OperatorType } from "../src/parser.js";
 import { Statement } from "../src/statements.js";
 
 
@@ -51,21 +54,6 @@ export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointe
 	"greater_than_equal": new Token("operator.greater_than_equal", ">="),
 	"string_concatenate": new Token("operator.string_concatenate", "&"),
 	"negate": new Token("operator.subtract", "-"),
-}
-
-//TODO move these to lexer.ts
-export function symbol(type:SymbolType, text:string):Symbol;
-export function symbol(tokenLike:[type:SymbolType, text:string]):Symbol;
-export function symbol(type:SymbolType | [type:SymbolType, text:string], text?:string):Symbol {
-	if(Array.isArray(type)) return new Symbol(type[0], type[1]);
-	else return new Symbol(type, text!);
-}
-
-export function token(type:TokenType, text:string):Token;
-export function token(tokenLike:[type:TokenType, text:string]):Token;
-export function token(type:TokenType | [type:TokenType, text:string], text?:string):Token {
-	if(Array.isArray(type)) return new Token(type[0], type[1]);
-	else return new Token(type, text!);
 }
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {

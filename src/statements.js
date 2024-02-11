@@ -42,8 +42,9 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { Token } from "./lexer.js";
-import { ArrayTypeData, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { Token } from "./lexer-types.js";
+import { ArrayTypeData } from "./parser-types.js";
+import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {

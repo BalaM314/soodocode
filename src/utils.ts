@@ -5,8 +5,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { Token } from "./lexer.js";
-import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser.js";
+import { Token } from "./lexer-types.js";
+import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
 
 export function stringifyExpressionASTArrayTypeNode(input:ExpressionASTArrayTypeNode){
@@ -41,6 +41,10 @@ ${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "
 )`
 		);
 	}
+}
+
+export function getText(tokens:Token[]){
+	return tokens.map(t => t.text).join(" ");
 }
 
 //TODO refactor for token specific

@@ -6,25 +6,11 @@ This file contains the parser, which takes a list of tokens
 and processes it into an abstract syntax tree (AST),
 which is the preferred representation of the program.
 */
-import { getText, Token } from "./lexer.js";
+import { Token } from "./lexer-types.js";
+import { ArrayTypeData } from "./parser-types.js";
 import { statements } from "./statements.js";
-import { impossible, splitArray, fail, isVarType } from "./utils.js";
-/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
-export class ArrayTypeData {
-    constructor(lengthInformation, type) {
-        this.lengthInformation = lengthInformation;
-        this.type = type;
-        if (this.lengthInformation.some(b => b[1] < b[0]))
-            fail(`Invalid length information: upper bound cannot be less than lower bound`);
-        if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
-            fail(`Invalid length information: bound was not an integer`);
-        this.lengthInformation_ = this.lengthInformation.map(b => b[1] - b[0] + 1);
-        this.totalLength = this.lengthInformation_.reduce((a, b) => a * b, 1);
-    }
-    toString() {
-        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
-    }
-}
+import { impossible, splitArray, fail, isVarType, getText } from "./utils.js";
+//TODO improve error messages
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export function parseFunctionArguments(tokens) {
     //special case: blank
@@ -350,7 +336,7 @@ export function parseExpressionLeafNode(input) {
     if (input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
         return input;
     else
-        fail(`Invalid syntax: cannot parse expression \`${getText([input])}\`: not a valid expression leaf node`);
+        fail(`Invalid syntax: cannot parse expression \`${getText([input])}\`: not a valid expression leaf node`); //TODO this thing is spammed way too many times, fix with cumulative error messages
 }
 export function parseExpression(input) {
     //If there is only one token

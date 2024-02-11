@@ -1,4 +1,4 @@
-import { Symbol, Token } from "../src/lexer.js";
+import { Token, token } from "../src/lexer-types.js";
 import { operators } from "../src/parser.js";
 export const operatorTokens = {
     "add": new Token("operator.add", "+"),
@@ -19,18 +19,6 @@ export const operatorTokens = {
     "string_concatenate": new Token("operator.string_concatenate", "&"),
     "negate": new Token("operator.subtract", "-"),
 };
-export function symbol(type, text) {
-    if (Array.isArray(type))
-        return new Symbol(type[0], type[1]);
-    else
-        return new Symbol(type, text);
-}
-export function token(type, text) {
-    if (Array.isArray(type))
-        return new Token(type[0], type[1]);
-    else
-        return new Token(type, text);
-}
 export function is_ExpressionASTArrayTypeNode(input) {
     return Array.isArray(input[1]);
 }

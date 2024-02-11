@@ -6,8 +6,8 @@ This file contains unit tests for the lexer.
 */
 import "jasmine";
 import { symbolize, tokenize } from "../src/lexer.js";
+import { symbol, token } from "../src/lexer-types.js";
 import { SoodocodeError } from "../src/utils.js";
-import { symbol, token } from "./spec_utils.js";
 const symbolTests = Object.entries({
     number_single1: [
         "5",

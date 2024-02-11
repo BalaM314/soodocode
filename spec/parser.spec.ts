@@ -7,18 +7,16 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token } from "../src/lexer.js";
-import {
-	ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, parse, parseExpression,
-	parseFunctionArguments, parseStatement, parseType
-} from "../src/parser.js";
+import { Token, token } from "../src/lexer-types.js";
+import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
+import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { VariableType } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
-	process_ExpressionAST, process_ProgramAST, process_Statement, token
+	process_ExpressionAST, process_ProgramAST, process_Statement,
 } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -1256,7 +1254,7 @@ const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {
 		arg2: ["BOOLEAN"],
 		arg3: ["STRING"],
 	}],
-	typeRepetition: [[ //TODO find the actual name of this thing
+	typeRepetition: [[
 		["name", "arg"],
 		["punctuation.comma", ","],
 		["name", "arg2"],

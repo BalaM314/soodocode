@@ -5,8 +5,9 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the runtime, which executes the program AST.
 */
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token } from "./lexer.js";
-import { operators, ArrayTypeData } from "./parser.js";
+import { Token } from "./lexer-types.js";
+import { ArrayTypeData } from "./parser-types.js";
+import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { crash, fail } from "./utils.js";
 export class Runtime {
