@@ -106,7 +106,7 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 		]
 	],
 	invalidChars: [
-		`OUTPUT "!@#$%^&*()_+", amogus, αβγδ`,
+		`OUTPUT "!@#$%^&*()_+", amogus, 😀βγδ😀`,
 		[
 			["word", "OUTPUT"],
 			["space", " "],
@@ -130,8 +130,9 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 			["punctuation.comma", ","],
 			["space", " "],
 			["unknown", "😀"],
-			["unknown", "😀"],
-			["unknown", "😀"],
+			["unknown", "β"],
+			["unknown", "γ"],
+			["unknown", "δ"],
 			["unknown", "😀"],
 		]
 	],

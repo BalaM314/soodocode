@@ -48,7 +48,7 @@ const symbolTypeData = [
     ["\n", "newline"],
     [["isNumber"], "numeric_fragment"],
     [["isAlphanumeric"], "word"],
-    [/^./, "unknown"],
+    [/^./u, "unknown"],
 ];
 /** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {

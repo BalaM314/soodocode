@@ -102,7 +102,7 @@ const symbolTests = Object.entries({
         ]
     ],
     invalidChars: [
-        `OUTPUT "!@#$%^&*()_+", amogus, αβγδ`,
+        `OUTPUT "!@#$%^&*()_+", amogus, 😀βγδ😀`,
         [
             ["word", "OUTPUT"],
             ["space", " "],
@@ -126,8 +126,9 @@ const symbolTests = Object.entries({
             ["punctuation.comma", ","],
             ["space", " "],
             ["unknown", "😀"],
-            ["unknown", "😀"],
-            ["unknown", "😀"],
+            ["unknown", "β"],
+            ["unknown", "γ"],
+            ["unknown", "δ"],
             ["unknown", "😀"],
         ]
     ],
