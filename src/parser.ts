@@ -220,7 +220,7 @@ export function checkStatement(statement:typeof Statement, input:Token[]):{messa
 }
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N | "negate" : never;
 export type Operator = {
-	type: TokenType;
+	token: TokenType;
 	name: string;
 	unary: boolean;
 	overloadedUnary: boolean;
@@ -232,81 +232,81 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary" | "name
 		({
 			...o,
 			unary: o.unary ?? false,
-			name: o.name ?? o.type,
+			name: o.name ?? o.token,
 			overloadedUnary: o.overloadedUnary ?? false,
 		})
 	))
 )([
 	[
 		{
-			type: "operator.or",
+			token: "operator.or",
 			category: "logical"
 		}
 	],[
 		{
-			type: "operator.and",
+			token: "operator.and",
 			category: "logical"
 		}
 	],[
 		{
-			type: "operator.equal_to",
+			token: "operator.equal_to",
 			category: "logical"
 		},{
-			type: "operator.not_equal_to",
+			token: "operator.not_equal_to",
 			category: "logical"
 		}
 	],[
 		{
-			type: "operator.less_than",
+			token: "operator.less_than",
 			category: "logical"
 		},{
-			type: "operator.less_than_equal",
+			token: "operator.less_than_equal",
 			category: "logical"
 		},{
-			type: "operator.greater_than",
+			token: "operator.greater_than",
 			category: "logical"
 		},{
-			type: "operator.greater_than_equal",
+			token: "operator.greater_than_equal",
 			category: "logical"
 		}
 	],[
 		{
-			type: "operator.add",
+			token: "operator.add",
 			category: "arithmetic"
 		},{
-			type: "operator.subtract",
+			token: "operator.subtract",
 			category: "arithmetic",
 			overloadedUnary: true,
 		},{
-			type: "operator.string_concatenate",
+			token: "operator.string_concatenate",
 			category: "string"
 		}
 	],[
 		{
-			type: "operator.multiply",
+			token: "operator.multiply",
 			category: "arithmetic"
 		},{
-			type: "operator.divide",
+			token: "operator.divide",
 			category: "arithmetic"
 		},{
-			type: "operator.integer_divide",
+			token: "operator.integer_divide",
 			category: "arithmetic"
 		},{
-			type: "operator.mod",
+			token: "operator.mod",
 			category: "arithmetic"
 		}
 	],
 	//no exponentiation operator?
 	[
 		{
-			type: "operator.not",
+			token: "operator.not",
 			category: "logical",
 			unary: true,
 		},
 		{
-			type: "operator.subtract",
+			token: "operator.subtract",
 			name: "operator.negate",
-			category: "logical",
+			category: "arithmetic",
 			unary: true,
 		}
 	],
@@ -320,6 +320,11 @@ export const operators = Object.fromEntries(
 		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name
 	, o] as const)
 ) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
+
+function cannotEndExpression(token:Token){
+	//TODO is this the best way?
+	return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
+}
 
 export function parseExpressionLeafNode(input:Token):ExpressionASTLeafNode {
 	//Number, string, char, boolean, and variables can be parsed as-is
@@ -356,7 +361,7 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 			let operator!:Operator; //assignment assertion goes brrrrr
 			if(
 				parenNestLevel == 0 && bracketNestLevel == 0 && //the operator is not inside parentheses and
-				operatorsOfCurrentPriority.find(o => (operator = o).type == input[i].type) //it is currently being searched for
+				operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for
 			){
 				//this is the lowest priority operator in the expression and should become the root node
 				if(operator.unary){
@@ -378,6 +383,9 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 						else fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
 					}
 					if(right.length == 0) fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+					if(operator.overloadedUnary){
+						if(cannotEndExpression(input[i-1])) break; //Operator is not binary
+					}
 					return {
 						operatorToken: input[i],
 						operator,

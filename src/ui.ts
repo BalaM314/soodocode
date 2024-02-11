@@ -65,14 +65,14 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 		fail(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
 	} else if(node.operator == "array access"){
 		fail(`Cannot evaluate expression ${node.operatorToken.text}(...): array contents unknown`);
-	} else switch(node.operator.type){
+	} else switch(node.operator.name){
 		case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
 		case "operator.subtract": return evaluateExpressionDemo(node.nodes[0]) - evaluateExpressionDemo(node.nodes[1]);
 		case "operator.multiply": return evaluateExpressionDemo(node.nodes[0]) * evaluateExpressionDemo(node.nodes[1]);
 		case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
 		case "operator.integer_divide": return Math.trunc(evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]));
 		case "operator.mod": return evaluateExpressionDemo(node.nodes[0]) % evaluateExpressionDemo(node.nodes[1]);
-		default: fail(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.type}`);
+		default: fail(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.name}`);
 	}
 }
 

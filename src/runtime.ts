@@ -123,7 +123,7 @@ export class Runtime {
 		//arithmetic
 		if(type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic"){
 			if(type && !(type == "REAL" || type == "INTEGER"))
-				fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
 			
 			const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
 			let value:number;
@@ -166,7 +166,7 @@ help: try using DIV instead of / to produce an integer as the result`
 					value = left % right;
 					break;
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
 			}
 			return [guessedType, value];
 		}
@@ -174,7 +174,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		//logical
 		if(type == "BOOLEAN" || expr.operator.category == "logical"){
 			if(type && !(type == "BOOLEAN"))
-				fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a boolean result`);
+				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a boolean result`);
 
 			if(expr.operator.unary){
 				switch(expr.operator){
@@ -216,7 +216,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		//string
 		if(type == "STRING" || expr.operator.category == "string"){
 			if(type && !(type == "STRING"))
-				fail(`Cannot evaluate expression starting with ${expr.operator.type}: expected the expression to evaluate to a value of type ${type}, but the operator produces a string result`);
+				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a string result`);
 			switch(expr.operator){
 				case operators.string_concatenate:
 					return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING")[1] + this.evaluateExpr(expr.nodes[1], "STRING")[1]];
