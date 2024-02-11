@@ -7,6 +7,8 @@ This file contains code for the user interface.
 
 import * as lexer from "./lexer.js";
 import * as parser from "./parser.js";
+import * as lexerTypes from "./lexer-types.js";
+import * as parserTypes from "./parser-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
@@ -255,7 +257,7 @@ function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
 	(window as any).runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`));
 	Object.assign(window,
-		lexer, parser, statements, utils, runtime
+		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime
 	);
 }
 

@@ -335,6 +335,9 @@ function cannotEndExpression(token) {
     //TODO is this the best way?
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
+function canBeUnaryOperator(token) {
+    return Object.values(operators).find(o => o.unary && o.token == token.type);
+}
 export function parseExpressionLeafNode(input) {
     //Number, string, char, boolean, and variables can be parsed as-is
     if (input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
@@ -377,8 +380,21 @@ export function parseExpression(input) {
                 if (operator.unary) {
                     //Make sure there is only something on right side of the operator
                     const right = input.slice(i + 1);
-                    if (i != 0)
+                    if (i != 0) {
+                        //Binary operators
+                        //  1 / 2 / 3
+                        // (1 / 2)/ 3
+                        // ^
+                        // lowest priority is rightmost
+                        //Unary operators
+                        // - - 2
+                        // -(- 2)
+                        // ^
+                        // lowest priority is leftmost
+                        if (canBeUnaryOperator(input[i - 1]))
+                            continue; //Operator priority assumption is wrong, try again!
                         fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+                    }
                     if (right.length == 0)
                         fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                     return {
@@ -401,7 +417,7 @@ export function parseExpression(input) {
                         fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
                     if (operator.overloadedUnary) {
                         if (cannotEndExpression(input[i - 1]))
-                            break; //Operator is not binary
+                            break; //Binary operator can't fit here, this must be the unary operator
                     }
                     return {
                         operatorToken: input[i],
