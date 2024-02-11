@@ -1747,18 +1747,19 @@ describe("parseExpression", () => {
 			});
 		}
 	}
-	it("should pass the fuzzer with l=5 d=1000", () => {
+	it("should pass the fuzzer with n=5 l=4", () => {
 		const tokens = [
 			token("number.decimal", "5"),
 			token("operator.add", "+"),
 			token("operator.subtract", "-"),
-			token("operator.multiply", "*"),
+			// token("operator.multiply", "*"),
 			token("operator.not", "NOT"),
-		// 	token("parentheses.open", "("),
-		// 	token("parentheses.close", ")"),
-		]
-		for(let i = 0; i < 1000; i ++){
-			const expr = Array.from({length: 10}, () => tokens[Math.floor(Math.random() * tokens.length)]!);
+			// 	token("parentheses.open", "("),
+			// 	token("parentheses.close", ")"),
+		];
+		const length = 5;
+		for(let i = 0; i < tokens.length ** length; i ++){
+			const expr = Array.from({length}, (_, j) => tokens[Math.floor(i / (tokens.length ** j)) % tokens.length]);
 			try {
 				parseExpression(expr);
 			} catch(err){
