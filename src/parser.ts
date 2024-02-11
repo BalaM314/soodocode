@@ -22,8 +22,12 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	if(tokens.length == 0) return new Map();
 
 	let passMode:PassMode = "value";
+	let type:VariableType | null = null;
 	//Split the array on commas (no paren handling necessary)
 	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
+
+		let passMode:PassMode | null;
+		let type:VariableType | null;
 
 		//Increase the offset by 1 to ignore the pass mode specifier if present
 		let offset = 0;
@@ -33,32 +37,30 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 		} else if(section[0]?.type == "keyword.by-value"){
 			offset = 1;
 			passMode = "value";
-		}
+		} else passMode = null;
 
 		//There must be a name
 		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? ","}`);
 
 		//If the name is the only thing present, then the type is specified later, leave it as null
 		if(section.length == offset + 1){
-			return [section[offset + 0].text, {
-				passMode,
-				type: null,
-			}];
+			type = null;
 		} else {
 			//Expect a colon
 			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? ","}`);
-			return [section[offset + 0].text, {
-				passMode,
-				//Parse the rest of the section as a type
-				type: processTypeData(parseType(section.slice(offset + 2))),
-			}];
+			type = processTypeData(parseType(section.slice(offset + 2)));
 		}
-	}).map<FunctionArgumentData>((arg, i, arr) => [arg[0], {
-		passMode: arg[1].passMode,
-		type: arg[1].type === null
-		//TODO O(n^2) fix somehow... probably reverse map reverse
-			? (arr.find((value, j):value is FunctionArgumentData => j > i && value[1].type != null) ?? fail(`Type not specified for function argument ${arg[0]}`))[1].type
-			: arg[1].type
+		return [
+			section[offset + 0].text,
+			{ passMode, type }
+		];
+	}).map<[name:string, {type:VariableType | null, passMode:PassMode}]>(([name, data]) => [name, {
+		passMode: data.passMode ? passMode = data.passMode : passMode,
+		type: data.type
+	}])
+	.reverse().map(([name, data]) => [name, {
+		passMode: data.passMode,
+		type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument ${name}`)
 	}]));
 }
 
@@ -98,16 +100,8 @@ export function parseType(tokens:Token[]):ExpressionASTLeafNode | ExpressionASTA
 }
 
 export function parse(tokens:Token[]):ProgramAST {
-	let lines:Token[][] = [[]];
-	//TODO duped, use splitArray()
-	for(let i = 0; i < tokens.length; i ++){
-		if(tokens[i].type == "newline"){
-			lines.push([]);
-		} else {
-			lines.at(-1)!.push(tokens[i]);
-		}
-	}
-	lines = lines.filter(l => l.length != 0); //remove blank lines
+	let lines:Token[][] = splitArray(tokens, t => t.type == "newline")
+		.filter(l => l.length != 0); //remove blank lines
 	const statements = lines.map(parseStatement);
 	const program:ProgramAST = [];
 	function getActiveBuffer(){

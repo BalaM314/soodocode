@@ -32,8 +32,8 @@ export const statements = {
 
 export type PassMode = "value" | "reference";
 export type FunctionArguments = Map<string, {type:VariableType, passMode:PassMode}>
-export type FunctionArgumentData = [string, {type:VariableType, passMode:PassMode}];
-export type FunctionArgumentDataPartial = [string, {type:VariableType | null, passMode:PassMode}];
+export type FunctionArgumentData = [name:string, {type:VariableType, passMode:PassMode}];
+export type FunctionArgumentDataPartial = [name:string, {type:VariableType | null, passMode:PassMode | null}];
 
 export type StatementExecutionResult = {
 	type: "function_return";
