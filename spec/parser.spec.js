@@ -1708,6 +1708,27 @@ describe("parseExpression", () => {
             });
         }
     }
+    it("should pass the fuzzer with l=5 d=1000", () => {
+        const tokens = [
+            token("number.decimal", "5"),
+            token("operator.add", "+"),
+            token("operator.subtract", "-"),
+            token("operator.multiply", "*"),
+            token("operator.not", "NOT"),
+            // 	token("parentheses.open", "("),
+            // 	token("parentheses.close", ")"),
+        ];
+        for (let i = 0; i < 1000; i++) {
+            const expr = Array.from({ length: 10 }, () => tokens[Math.floor(Math.random() * tokens.length)]);
+            try {
+                parseExpression(expr);
+            }
+            catch (err) {
+                if (!(err instanceof SoodocodeError))
+                    throw err;
+            }
+        }
+    });
 });
 describe("parseStatement", () => {
     for (const [name, program, output] of parseStatementTests) {
