@@ -505,6 +505,107 @@ const sampleExpressions = Object.entries({
         ],
         "error"
     ],
+    unary1: [
+        [
+            ["operator.subtract", "-"],
+            ["number.decimal", "5"],
+        ],
+        ["tree", "negate", [
+                ["number.decimal", "5"]
+            ]]
+    ],
+    unary2: [
+        [
+            ["number.decimal", "5"],
+            ["operator.multiply", "*"],
+            ["operator.subtract", "-"],
+            ["number.decimal", "5"],
+        ],
+        ["tree", "multiply", [
+                ["number.decimal", "5"],
+                ["tree", "negate", [
+                        ["number.decimal", "5"]
+                    ]]
+            ]]
+    ],
+    unary3: [
+        [
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["number.decimal", "5"],
+        ],
+        ["tree", "negate", [
+                ["tree", "negate", [
+                        ["number.decimal", "5"]
+                    ]]
+            ]]
+    ],
+    unary4: [
+        [
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["number.decimal", "5"],
+        ],
+        ["tree", "negate", [
+                ["tree", "negate", [
+                        ["tree", "negate", [
+                                ["tree", "negate", [
+                                        ["tree", "negate", [
+                                                ["tree", "negate", [
+                                                        ["tree", "negate", [
+                                                                ["tree", "negate", [
+                                                                        ["tree", "negate", [
+                                                                                ["tree", "negate", [
+                                                                                        ["number.decimal", "5"]
+                                                                                    ]]
+                                                                            ]]
+                                                                    ]]
+                                                            ]]
+                                                    ]]
+                                            ]]
+                                    ]]
+                            ]]
+                    ]]
+            ]]
+    ],
+    nestedunary1: [
+        [
+            ["name", "amogus"],
+            ["bracket.open", "["],
+            ["operator.subtract", "-"],
+            ["number.decimal", "1"],
+            ["bracket.close", "]"],
+        ],
+        ["tree", ["array access", "amogus"], [
+                ["tree", "negate", [
+                        ["number.decimal", "1"]
+                    ]]
+            ]]
+    ],
+    unarybad1: [
+        [
+            ["number.decimal", "5"],
+            ["operator.subtract", "-"],
+            ["operator.multiply", "*"],
+            ["number.decimal", "5"],
+        ],
+        "error"
+    ],
+    unarybad2: [
+        [
+            ["number.decimal", "5"],
+            ["operator.subtract", "-"],
+        ],
+        "error"
+    ],
     SussyBaka: [
         [
             ["parentheses.open", "("],
