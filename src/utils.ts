@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { Token } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
 
@@ -47,7 +47,6 @@ export function getText(tokens:Token[]){
 	return tokens.map(t => t.text).join(" ");
 }
 
-//TODO refactor for token specific
 export function splitArray<T>(arr:T[], split:[T] | ((func:T, index:number) => boolean)):T[][]{
 	const output:T[][] = [[]];
 	if(typeof split == "function"){
@@ -60,6 +59,29 @@ export function splitArray<T>(arr:T[], split:[T] | ((func:T, index:number) => bo
 			if(el == split[0]) output.push([]);
 			else output.at(-1)!.push(el);
 		}
+	}
+	return output;
+}
+
+export function splitTokens(arr:Token[], split:TokenType):Token[][] {
+	const output:Token[][] = [[]];
+	for(const el of arr){
+		if(el.type == split) output.push([]);
+		else output.at(-1)!.push(el);
+	}
+	return output;
+}
+
+export function splitTokensOnComma(arr:Token[]):Token[][] {
+	const output:Token[][] = [[]];
+	let parenNestLevel = 0, bracketNestLevel = 0;
+	for(const token of arr){
+		if(token.type == "parentheses.open") parenNestLevel ++;
+		else if(token.type == "parentheses.close") parenNestLevel --;
+		else if(token.type == "bracket.open") bracketNestLevel ++;
+		else if(token.type == "bracket.close") bracketNestLevel --;
+		if(parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma") output.push([]);
+		else output.at(-1)!.push(token);
 	}
 	return output;
 }

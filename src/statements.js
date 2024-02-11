@@ -45,7 +45,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -269,21 +269,7 @@ let OutputStatement = (() => {
     var OutputStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            //TODO remove duplicated code, this is copied in parseExpression()
-            let parenNestLevel = 0, bracketNestLevel = 0;
-            this.outMessage = (
-            //Split the tokens between the parens on commas
-            splitArray(tokens.slice(1), t => {
-                if (t.type == "parentheses.open")
-                    parenNestLevel++;
-                else if (t.type == "parentheses.close")
-                    parenNestLevel--;
-                else if (t.type == "bracket.open")
-                    bracketNestLevel++;
-                else if (t.type == "bracket.close")
-                    bracketNestLevel--;
-                return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
-            })).map(parseExpression);
+            this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
         }
         run(runtime) {
             let outStr = "";

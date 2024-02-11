@@ -44,7 +44,6 @@ ${displayExpression(node.nodes[1], expand).split("\n").map((l, i) => (i == 0 ? "
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
-//TODO refactor for token specific
 export function splitArray(arr, split) {
     const output = [[]];
     if (typeof split == "function") {
@@ -62,6 +61,35 @@ export function splitArray(arr, split) {
             else
                 output.at(-1).push(el);
         }
+    }
+    return output;
+}
+export function splitTokens(arr, split) {
+    const output = [[]];
+    for (const el of arr) {
+        if (el.type == split)
+            output.push([]);
+        else
+            output.at(-1).push(el);
+    }
+    return output;
+}
+export function splitTokensOnComma(arr) {
+    const output = [[]];
+    let parenNestLevel = 0, bracketNestLevel = 0;
+    for (const token of arr) {
+        if (token.type == "parentheses.open")
+            parenNestLevel++;
+        else if (token.type == "parentheses.close")
+            parenNestLevel--;
+        else if (token.type == "bracket.open")
+            bracketNestLevel++;
+        else if (token.type == "bracket.close")
+            bracketNestLevel--;
+        if (parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma")
+            output.push([]);
+        else
+            output.at(-1).push(token);
     }
     return output;
 }

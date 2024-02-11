@@ -9,10 +9,17 @@ which is the preferred representation of the program.
 
 
 import { Token, type TokenType } from "./lexer-types.js";
-import { ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
-import type { StringVariableType, VariableType } from "./runtime.js";
-import { FunctionArgumentData, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { impossible, splitArray, fail, PartialKey, isVarType, getText } from "./utils.js";
+import {
+	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode,
+	ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType
+} from "./parser-types.js";
+import type { VariableType } from "./runtime.js";
+import {
+	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
+} from "./statements.js";
+import {
+	impossible, splitArray, fail, PartialKey, isVarType, getText, splitTokens, splitTokensOnComma
+} from "./utils.js";
 
 //TODO improve error messages
 
@@ -24,7 +31,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	let passMode:PassMode = "value";
 	let type:VariableType | null = null;
 	//Split the array on commas (no paren handling necessary)
-	return new Map(splitArray(tokens, t => t.type == "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
+	return new Map(splitTokens(tokens, "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:PassMode | null;
 		let type:VariableType | null;
@@ -87,7 +94,7 @@ export function parseType(tokens:Token[]):ExpressionASTLeafNode | ExpressionASTA
 	//ARRAY[1:10, 1:10] OF STRING
 
 	return {
-		lengthInformation: splitArray(tokens.slice(2, -3), t => t.type == "punctuation.comma")
+		lengthInformation: splitTokens(tokens.slice(2, -3), "punctuation.comma")
 		.map(section => {
 			if(section.length != 3) fail(`Invalid array range specifier "${section.join(" ")}"`);
 			if(section[0].type != "number.decimal") fail(`Expected a number, got ${section[0]}`);
@@ -421,38 +428,21 @@ export function parseExpression(input:Token[]):ExpressionASTNode {
 
 	//Special case: function call
 	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
-		let parenNestLevel = 0, bracketNestLevel = 0; //Duped paren handling, unavoidable
 		return {
 			operatorToken: input[0],
 			operator: "function call",
-			nodes: (
-				input.length == 3 ? [] //If there are no arguments, don't generate a blank argument group
-				//Split the tokens between the parens on commas
-				: splitArray(input.slice(2, -1), t => {
-					if(t.type == "parentheses.open") parenNestLevel ++;
-					else if(t.type == "parentheses.close") parenNestLevel --;
-					else if(t.type == "bracket.open") bracketNestLevel ++;
-					else if(t.type == "bracket.close") bracketNestLevel --;
-					return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
-				})
-			).map(parseExpression)
+			nodes: input.length == 3
+				? [] //If there are no arguments, don't generate a blank argument group
+				: splitTokensOnComma(input.slice(2, -1)).map(parseExpression)
 		};
 	}
 	
 	//Special case: array access
 	if(input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3){
-		let parenNestLevel = 0, bracketNestLevel = 0; //Duped paren handling but [] this time, unavoidable
 		return {
 			operatorToken: input[0],
 			operator: "array access",
-			//Split the tokens between the parens on commas
-			nodes: splitArray(input.slice(2, -1), t => {
-				if(t.type == "parentheses.open") parenNestLevel ++;
-				else if(t.type == "parentheses.close") parenNestLevel --;
-				else if(t.type == "bracket.open") bracketNestLevel ++;
-				else if(t.type == "bracket.close") bracketNestLevel --;
-				return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
-			}).map(parseExpression)
+			nodes: splitTokensOnComma(input.slice(2, -1)).map(parseExpression)
 		};
 	}
 

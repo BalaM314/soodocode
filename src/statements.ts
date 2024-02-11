@@ -6,11 +6,18 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import type { FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType } from "./runtime.js";
+import type {
+	FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType
+} from "./runtime.js";
 import { TokenType, Token } from "./lexer-types.js";
-import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
+import {
+	ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
+	ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher
+} from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, splitArray, isVarType } from "./utils.js";
+import {
+	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma
+} from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
 
@@ -212,18 +219,7 @@ export class OutputStatement extends Statement {
 	outMessage: (Token | ExpressionAST)[];
 	constructor(tokens:Token[]){
 		super(tokens);
-		//TODO remove duplicated code, this is copied in parseExpression()
-		let parenNestLevel = 0, bracketNestLevel = 0;
-		this.outMessage = (
-			//Split the tokens between the parens on commas
-			splitArray(tokens.slice(1), t => {
-				if(t.type == "parentheses.open") parenNestLevel ++;
-				else if(t.type == "parentheses.close") parenNestLevel --;
-				else if(t.type == "bracket.open") bracketNestLevel ++;
-				else if(t.type == "bracket.close") bracketNestLevel --;
-				return parenNestLevel == 0 && bracketNestLevel == 0 && t.type == "punctuation.comma";
-			})
-		).map(parseExpression);
+		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
 	}
 	run(runtime:Runtime){
 		let outStr = "";

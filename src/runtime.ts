@@ -11,7 +11,10 @@ import { Token, TokenType } from "./lexer-types.js";
 import { ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayTypeData, ProgramAST } from "./parser-types.js";
 import { operators } from "./parser.js";
 
-import { ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement, FunctionStatement, FunctionArguments } from "./statements.js";
+import {
+	ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement,
+	FunctionStatement, FunctionArguments
+} from "./statements.js";
 import { crash, fail, forceType } from "./utils.js";
 
 interface FileData {
