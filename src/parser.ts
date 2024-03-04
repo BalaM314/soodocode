@@ -31,7 +31,7 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	let passMode:PassMode = "value";
 	let type:VariableType | null = null;
 	//Split the array on commas (no paren handling necessary)
-	return new Map(splitTokens(tokens, "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
+	const argumentz = splitTokens(tokens, "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:PassMode | null;
 		let type:VariableType | null;
@@ -68,7 +68,12 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 	.reverse().map(([name, data]) => [name, {
 		passMode: data.passMode,
 		type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument ${name}`)
-	}]));
+	}] as const);
+	const argumentsMap = new Map(argumentz);
+	if(argumentsMap.size != argumentz.length){
+		fail(`Duplicate function argument ${argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j))}`);
+	}
+	return argumentsMap;
 }
 
 export function processTypeData(ast:ExpressionASTTypeNode):VariableType {

@@ -19,7 +19,7 @@ export function parseFunctionArguments(tokens) {
     let passMode = "value";
     let type = null;
     //Split the array on commas (no paren handling necessary)
-    return new Map(splitTokens(tokens, "punctuation.comma").map(section => {
+    const argumentz = splitTokens(tokens, "punctuation.comma").map(section => {
         let passMode;
         let type;
         //Increase the offset by 1 to ignore the pass mode specifier if present
@@ -58,7 +58,12 @@ export function parseFunctionArguments(tokens) {
         .reverse().map(([name, data]) => [name, {
             passMode: data.passMode,
             type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument ${name}`)
-        }]));
+        }]);
+    const argumentsMap = new Map(argumentz);
+    if (argumentsMap.size != argumentz.length) {
+        fail(`Duplicate function argument ${argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j))}`);
+    }
+    return argumentsMap;
 }
 export function processTypeData(ast) {
     if (ast instanceof Token)
