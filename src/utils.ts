@@ -86,9 +86,9 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 	return output;
 }
 
-export function getTotalRange(tokens:Token[]):TextRange {
-	return tokens.reduce((acc, t) => 
-		[Math.min(acc[0], t.range[0]), Math.max(acc[1], t.range[1])]
+export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {
+	return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => 
+		[Math.min(acc[0], t[0]), Math.max(acc[1], t[1])]
 	, [0, 0]);
 }
 
@@ -107,6 +107,37 @@ export function crash(message:string):never {
 export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
 }
+
+function isRange(input:unknown):input is TextRange {
+	return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
+}
+
+export function findRange(args:unknown[]):TextRange | undefined {
+	for(const arg of args){
+		if(typeof arg == "object" && arg != null && "range" in arg && isRange(arg.range))
+			return arg.range;
+		if(Array.isArray(arg) && isRange(arg[0]))
+			return getTotalRange(arg)
+		if(Array.isArray(arg) && isRange(arg[0].range))
+			return getTotalRange(arg)
+	}
+	return undefined;
+}
+
+export function errorBoundary<T extends (...args:any[]) => unknown>(func:T):T {
+	return function(...args){
+		try {
+			return func(...args);
+		} catch(err){
+			if(err instanceof SoodocodeError && !err.range){
+				//Try to find the range
+				err.range = findRange(args);
+				throw err;
+			} else throw err;
+		}
+	} as T;
+}
+
 export function escapeHTML(input:string):string {
 	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }

@@ -94,7 +94,7 @@ export function splitTokensOnComma(arr) {
     return output;
 }
 export function getTotalRange(tokens) {
-    return tokens.reduce((acc, t) => [Math.min(acc[0], t.range[0]), Math.max(acc[1], t.range[1])], [0, 0]);
+    return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [0, 0]);
 }
 export class SoodocodeError extends Error {
     constructor(message, range) {
@@ -110,6 +110,36 @@ export function crash(message) {
 }
 export function impossible() {
     throw new Error(`this shouldn't be possible...`);
+}
+function isRange(input) {
+    return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
+}
+export function findRange(args) {
+    for (const arg of args) {
+        if (typeof arg == "object" && arg != null && "range" in arg && isRange(arg.range))
+            return arg.range;
+        if (Array.isArray(arg) && isRange(arg[0]))
+            return getTotalRange(arg);
+        if (Array.isArray(arg) && isRange(arg[0].range))
+            return getTotalRange(arg);
+    }
+    return undefined;
+}
+export function errorBoundary(func) {
+    return function (...args) {
+        try {
+            return func(...args);
+        }
+        catch (err) {
+            if (err instanceof SoodocodeError && !err.range) {
+                //Try to find the range
+                err.range = findRange(args);
+                throw err;
+            }
+            else
+                throw err;
+        }
+    };
 }
 export function escapeHTML(input) {
     return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
