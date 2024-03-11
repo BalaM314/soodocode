@@ -6,7 +6,7 @@ This file contains the lexer, which takes the raw user input and processes it;
 first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" ("),
 second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
 */
-import { symbol, token } from "./lexer-types.js";
+import { Symbol, token } from "./lexer-types.js";
 import { crash, fail, impossible } from "./utils.js";
 const symbolTypeData = [
     ["MOD", "operator.mod"],
@@ -55,14 +55,15 @@ class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;
         this.offset = offset;
-        this.lastMatched = "";
+        this.lastMatched = null;
+        this.lastMatchedRange = null;
         this.output = [];
     }
     inc(amount) {
         this.offset += amount;
     }
     at() {
-        return this.lastMatched = this.string[this.offset];
+        return this.string[this.offset];
     }
     cons(input) {
         if (input instanceof RegExp) {
@@ -70,12 +71,14 @@ class SymbolizerIO {
             if (matchData == null || matchData.index != 0)
                 return false;
             this.lastMatched = matchData[0];
+            this.lastMatchedRange = [this.offset, this.offset + matchData[0].length];
             this.offset += matchData[0].length;
             return true;
         }
         else {
-            if (input.split("").every((v, i) => this.string[this.offset + i] == v)) {
+            if (this.string.slice(this.offset, this.offset + input.length) == input) {
                 this.lastMatched = input;
+                this.lastMatchedRange = [this.offset, this.offset + input.length];
                 this.offset += input.length;
                 return true;
             }
@@ -87,16 +90,23 @@ class SymbolizerIO {
         return this.string[this.offset] != undefined;
     }
     read() {
-        return this.lastMatched = this.string[this.offset++];
+        this.lastMatchedRange ?? (this.lastMatchedRange = [this.offset, this.offset]);
+        this.lastMatched ?? (this.lastMatched = "");
+        this.lastMatchedRange[1]++;
+        this.lastMatched += this.string[this.offset++];
+        return this.string[this.offset - 1];
     }
     length() {
         return this.string.length;
     }
-    writeText(type, text) {
-        this.output.push(symbol(type, text));
+    writeText(type, text, range) {
+        this.output.push(new Symbol(type, text, range));
     }
     write(type) {
-        this.output.push(symbol(type, this.lastMatched));
+        if (!this.lastMatched || !this.lastMatchedRange)
+            crash(`Cannot write symbol, no stored match`);
+        this.output.push(new Symbol(type, this.lastMatched, this.lastMatchedRange.slice()));
+        this.lastMatched = this.lastMatchedRange = null;
     }
     isNumber() {
         if (!this.has())
@@ -130,11 +140,10 @@ export function symbolize(input) {
             else {
                 const func = SymbolizerIO.prototype[identifier[0]];
                 if (func.call(str)) {
-                    let buffer = "";
                     do {
-                        buffer += str.read();
+                        str.read();
                     } while (func.call(str));
-                    str.writeText(symbolType, buffer);
+                    str.write(symbolType);
                     continue toNextCharacter;
                 }
             }

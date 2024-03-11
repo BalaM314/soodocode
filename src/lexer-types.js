@@ -15,9 +15,10 @@ export const symbolTypes = [
 ];
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
 export class Symbol {
-    constructor(type, text) {
+    constructor(type, text, range) {
         this.type = type;
         this.text = text;
+        this.range = range;
     }
     /** type must be a valid token type */
     toToken() {
@@ -29,12 +30,16 @@ export class Symbol {
     toString() {
         return `<${this.type} ${this.text}>`;
     }
+    clearRange() {
+        this.range = [-1, -1];
+        return this;
+    }
 }
 export function symbol(type, text) {
     if (Array.isArray(type))
-        return new Symbol(type[0], type[1]);
+        return new Symbol(type[0], type[1], [-1, -1]);
     else
-        return new Symbol(type, text);
+        return new Symbol(type, text, [-1, -1]);
 }
 export const tokenTypes = [
     "number.decimal",

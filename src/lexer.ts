@@ -8,7 +8,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
-import { symbol, Symbol, SymbolType, token, Token, TokenType } from "./lexer-types.js";
+import { Symbol, SymbolType, token, Token, TokenType } from "./lexer-types.js";
 import { crash, fail, impossible } from "./utils.js";
 
 
@@ -61,25 +61,28 @@ const symbolTypeData: [
 
 /** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
-	lastMatched:string = "";
+	lastMatched:string | null = null;
+	lastMatchedRange:[start:number, end:number] | null = null;
 	output:Symbol[] = [];
 	constructor(public string:string, public offset:number = 0){}
 	inc(amount:number){
 		this.offset += amount;
 	}
 	at(){
-		return this.lastMatched = this.string[this.offset];
+		return this.string[this.offset];
 	}
 	cons(input:string | RegExp):boolean {
 		if(input instanceof RegExp){
 			const matchData = input.exec(this.string.slice(this.offset));
 			if(matchData == null || matchData.index != 0) return false;
 			this.lastMatched = matchData[0];
+			this.lastMatchedRange = [this.offset, this.offset + matchData[0].length];
 			this.offset += matchData[0].length;
 			return true;
 		} else {
-			if(input.split("").every((v, i) => this.string[this.offset + i] == v)){
+			if(this.string.slice(this.offset, this.offset + input.length) == input){
 				this.lastMatched = input;
+				this.lastMatchedRange = [this.offset, this.offset + input.length];
 				this.offset += input.length;
 				return true;
 			} else return false;
@@ -89,16 +92,22 @@ class SymbolizerIO {
 		return this.string[this.offset] != undefined;
 	}
 	read(){
-		return this.lastMatched = this.string[this.offset ++];
+		this.lastMatchedRange ??= [this.offset, this.offset];
+		this.lastMatched ??= "";
+		this.lastMatchedRange[1] ++;
+		this.lastMatched += this.string[this.offset ++];
+		return this.string[this.offset - 1];
 	}
 	length(){
 		return this.string.length;
 	}
-	writeText(type:SymbolType, text:string){
-		this.output.push(symbol(type, text));
+	writeText(type:SymbolType, text:string, range:[start:number, end:number]){
+		this.output.push(new Symbol(type, text, range));
 	}
 	write(type:SymbolType){
-		this.output.push(symbol(type, this.lastMatched));
+		if(!this.lastMatched || !this.lastMatchedRange) crash(`Cannot write symbol, no stored match`);
+		this.output.push(new Symbol(type, this.lastMatched, this.lastMatchedRange.slice()));
+		this.lastMatched = this.lastMatchedRange = null;
 	}
 	isNumber(){
 		if(!this.has()) return false;
@@ -131,11 +140,10 @@ export function symbolize(input:string):Symbol[] {
 			} else {
 				const func = SymbolizerIO.prototype[identifier[0]];
 				if(func.call(str)){
-					let buffer = "";
 					do {
-						buffer += str.read();
+						str.read();
 					} while(func.call(str));
-					str.writeText(symbolType, buffer);
+					str.write(symbolType);
 					continue toNextCharacter;
 				}
 			}

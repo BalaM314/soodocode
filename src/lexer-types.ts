@@ -17,12 +17,17 @@ export const symbolTypes = [
 ] as const;
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
 
+export type SymbolizedProgram = {
+	input: string;
+	symbols: Symbol[];
+}
 
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
 export class Symbol {
 	constructor(
 		public type: SymbolType,
 		public text: string,
+		public range: [start:number, end:number],
 	){}
 	/** type must be a valid token type */
 	toToken(){
@@ -33,12 +38,16 @@ export class Symbol {
 	toString(){
 		return `<${this.type} ${this.text}>`;
 	}
+	clearRange():Symbol {
+		this.range = [-1, -1];
+		return this;
+	}
 }
 export function symbol(type:SymbolType, text:string):Symbol;
 export function symbol(tokenLike:[type:SymbolType, text:string]):Symbol;
 export function symbol(type:SymbolType | [type:SymbolType, text:string], text?:string):Symbol {
-	if(Array.isArray(type)) return new Symbol(type[0], type[1]);
-	else return new Symbol(type, text!);
+	if(Array.isArray(type)) return new Symbol(type[0], type[1], [-1, -1]);
+	else return new Symbol(type, text!, [-1, -1]);
 }
 
 

@@ -334,7 +334,7 @@ describe("symbolizer", () => {
         }
         else {
             it(`should parse ${name} into symbols`, () => {
-                expect(symbolize(input)).toEqual(output);
+                expect(symbolize(input).map(s => s.clearRange())).toEqual(output);
             });
         }
     }
