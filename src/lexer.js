@@ -6,7 +6,7 @@ This file contains the lexer, which takes the raw user input and processes it;
 first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" ("),
 second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
 */
-import { Symbol, token } from "./lexer-types.js";
+import { Symbol, Token } from "./lexer-types.js";
 import { crash, fail, impossible } from "./utils.js";
 const symbolTypeData = [
     ["MOD", "operator.mod"],
@@ -190,7 +190,7 @@ export function tokenize(input) {
                 state.sString = false;
                 if (currentString.length != 3)
                     fail(`Character ${currentString} has an invalid length: expected one character`);
-                output.push(token("char", currentString));
+                output.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
                 currentString = "";
             }
         }
@@ -198,7 +198,7 @@ export function tokenize(input) {
             currentString += symbol.text;
             if (symbol.type === "quote.double") {
                 state.dString = false;
-                output.push(token("string", currentString));
+                output.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
                 currentString = "";
             }
         }
@@ -210,7 +210,9 @@ export function tokenize(input) {
         else if (state.decimalNumber == "requireNumber") {
             const num = output.at(-1) ?? crash(`impossible`);
             if (symbol.type == "numeric_fragment") {
+                //very cursed modifying of the token
                 num.text += "." + symbol.text;
+                num.range[1] += (1 + symbol.text.length);
                 if (isNaN(Number(num.text)))
                     crash(`Invalid parsed number ${symbol.text}`);
                 state.decimalNumber = "none";
@@ -239,7 +241,7 @@ export function tokenize(input) {
             state.decimalNumber = "allowDecimal";
             if (isNaN(Number(symbol.text)))
                 crash(`Invalid parsed number ${symbol.text}`);
-            output.push(token("number.decimal", symbol.text));
+            output.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
         }
         else if (symbol.type === "word") {
             switch (symbol.text) { //TODO datastructify
@@ -346,7 +348,7 @@ export function tokenize(input) {
                     write("keyword.array");
                     break;
                 default:
-                    output.push(token("name", symbol.text));
+                    output.push(new Token("name", symbol.text, symbol.range.slice()));
                     break;
             }
         }
@@ -366,6 +368,6 @@ export function tokenize(input) {
         fail(`Expected a number to follow "${(output.at(-1) ?? impossible()).text}.", but found end of input`);
     return output;
     function write(type) {
-        output.push(token(type, symbol.text));
+        output.push(new Token(type, symbol.text, symbol.range.slice()));
     }
 }

@@ -22,6 +22,11 @@ export type SymbolizedProgram = {
 	symbols: Symbol[];
 }
 
+export type TokenizedProgram = {
+	input: string;
+	symbols: Token[];
+}
+
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
 export class Symbol {
 	constructor(
@@ -32,7 +37,7 @@ export class Symbol {
 	/** type must be a valid token type */
 	toToken(){
 		if(tokenTypes.includes(this.type as TokenType)) //typescript being dumb
-			return new Token(this.type as TokenType, this.text);
+			return new Token(this.type as TokenType, this.text, this.range);
 		else crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
 	}
 	toString(){
@@ -79,15 +84,20 @@ export class Token {
 	constructor(
 		public type: TokenType,
 		public text: string,
+		public range: [start:number, end:number],
 	){}
 	__token__(){};
 	toString(){
 		return `[${this.type} ${this.text}]`;
 	}
+	clearRange():Token {
+		this.range = [-1, -1];
+		return this;
+	}
 }
 export function token(type:TokenType, text:string):Token;
 export function token(tokenLike:[type:TokenType, text:string]):Token;
 export function token(type:TokenType | [type:TokenType, text:string], text?:string):Token {
-	if(Array.isArray(type)) return new Token(type[0], type[1]);
-	else return new Token(type, text!);
+	if(Array.isArray(type)) return new Token(type[0], type[1], [-1, -1]);
+	else return new Token(type, text!, [-1, -1]);
 }

@@ -23,7 +23,7 @@ export class Symbol {
     /** type must be a valid token type */
     toToken() {
         if (tokenTypes.includes(this.type)) //typescript being dumb
-            return new Token(this.type, this.text);
+            return new Token(this.type, this.text, this.range);
         else
             crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
     }
@@ -64,19 +64,24 @@ export const tokenTypes = [
 ];
 /** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
 export class Token {
-    constructor(type, text) {
+    constructor(type, text, range) {
         this.type = type;
         this.text = text;
+        this.range = range;
     }
     __token__() { }
     ;
     toString() {
         return `[${this.type} ${this.text}]`;
     }
+    clearRange() {
+        this.range = [-1, -1];
+        return this;
+    }
 }
 export function token(type, text) {
     if (Array.isArray(type))
-        return new Token(type[0], type[1]);
+        return new Token(type[0], type[1], [-1, -1]);
     else
-        return new Token(type, text);
+        return new Token(type, text, [-1, -1]);
 }

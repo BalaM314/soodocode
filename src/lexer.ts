@@ -8,7 +8,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
-import { Symbol, SymbolType, token, Token, TokenType } from "./lexer-types.js";
+import { Symbol, SymbolType, Token, TokenType } from "./lexer-types.js";
 import { crash, fail, impossible } from "./utils.js";
 
 
@@ -187,14 +187,14 @@ export function tokenize(input:Symbol[]):Token[] {
 			if(symbol.type === "quote.single"){
 				state.sString = false;
 				if(currentString.length != 3) fail(`Character ${currentString} has an invalid length: expected one character`);
-				output.push(token("char", currentString));
+				output.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
 				currentString = "";
 			}
 		} else if(state.dString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.double"){
 				state.dString = false;
-				output.push(token("string", currentString));
+				output.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
 				currentString = "";
 			}
 		} else if(symbol.type === "comment.singleline") state.sComment = true;
@@ -203,7 +203,9 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(state.decimalNumber == "requireNumber"){
 			const num = output.at(-1) ?? crash(`impossible`);
 			if(symbol.type == "numeric_fragment"){
+				//very cursed modifying of the token
 				num.text += "." + symbol.text;
+				num.range[1] += (1 + symbol.text.length);
 				if(isNaN(Number(num.text))) crash(`Invalid parsed number ${symbol.text}`);
 				state.decimalNumber = "none";
 			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`);
@@ -221,7 +223,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
-			output.push(token("number.decimal", symbol.text));
+			output.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
 		} else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
 				case "TRUE": write("boolean.true"); break;
@@ -258,7 +260,7 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "ENDCASE": write("keyword.case_end"); break;
 				case "OTHERWISE": write("keyword.otherwise"); break;
 				case "ARRAY": write("keyword.array"); break;
-				default: output.push(token("name", symbol.text)); break;
+				default: output.push(new Token("name", symbol.text, symbol.range.slice())); break;
 			}
 		} else {
 			symbol.type satisfies TokenType;
@@ -273,7 +275,7 @@ export function tokenize(input:Symbol[]):Token[] {
 	return output;
 
 	function write(type:TokenType){
-		output.push(token(type, symbol.text));
+		output.push(new Token(type, symbol.text, symbol.range.slice()));
 	}
 }
 

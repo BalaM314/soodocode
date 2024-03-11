@@ -359,7 +359,7 @@ describe("tokenizer", () => {
 			});
 		} else {
 			it(`should parse ${name} into symbols`, () => {
-				expect(tokenize(input)).toEqual(output);
+				expect(tokenize(input).map(t => t.clearRange())).toEqual(output);
 			});
 		}
 	}
