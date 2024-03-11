@@ -5,12 +5,12 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains unit tests for the parser.
 */
 import "jasmine";
-import { Token, token } from "../src/lexer-types.js";
+import { token } from "../src/lexer-types.js";
 import { ArrayTypeData } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
-import { process_ExpressionAST, process_ProgramAST, process_Statement, } from "./spec_utils.js";
+import { process_ExpressionAST, process_ExpressionASTArrayTypeNode, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 //i miss rust macros
 const sampleExpressions = Object.entries({
@@ -1708,14 +1708,11 @@ const parseTypeTests = Object.entries({
         ], "error"],
 }).map(([name, [input, output]]) => ({
     name,
-    input: input.map(t => new Token(t[0], t[1])),
+    input: input.map(token),
     output: output == "error" ? output :
         ((output) => !Array.isArray(output[1]))(output) //weird type guard IIFE shenanigans
             ? token(output)
-            : {
-                lengthInformation: output[0].map(bounds => bounds.map(b => new Token("number.decimal", b.toString()))),
-                type: token(output[1])
-            }
+            : process_ExpressionASTArrayTypeNode(output)
 }));
 describe("parseExpression", () => {
     for (const [name, program, output] of sampleExpressions) {

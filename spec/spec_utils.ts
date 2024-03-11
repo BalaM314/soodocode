@@ -37,23 +37,23 @@ export type _ProgramASTBranchNode = {
 
 
 export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointer">, Token> = {
-	"add": new Token("operator.add", "+"),
-	"subtract": new Token("operator.subtract", "-"),
-	"multiply": new Token("operator.multiply", "*"),
-	"divide": new Token("operator.divide", "/"),
-	"mod": new Token("operator.mod", "MOD"),
-	"integer_divide": new Token("operator.integer_divide", "DIV"),
-	"and": new Token("operator.and", "AND"),
-	"or": new Token("operator.or", "OR"),
-	"not": new Token("operator.not", "NOT"),
-	"equal_to": new Token("operator.equal_to", "="),
-	"not_equal_to": new Token("operator.not_equal_to", "<>"),
-	"less_than": new Token("operator.less_than", "<"),
-	"greater_than": new Token("operator.greater_than", ">"),
-	"less_than_equal": new Token("operator.less_than_equal", "<="),
-	"greater_than_equal": new Token("operator.greater_than_equal", ">="),
-	"string_concatenate": new Token("operator.string_concatenate", "&"),
-	"negate": new Token("operator.subtract", "-"),
+	"add": token("operator.add", "+"),
+	"subtract": token("operator.subtract", "-"),
+	"multiply": token("operator.multiply", "*"),
+	"divide": token("operator.divide", "/"),
+	"mod": token("operator.mod", "MOD"),
+	"integer_divide": token("operator.integer_divide", "DIV"),
+	"and": token("operator.and", "AND"),
+	"or": token("operator.or", "OR"),
+	"not": token("operator.not", "NOT"),
+	"equal_to": token("operator.equal_to", "="),
+	"not_equal_to": token("operator.not_equal_to", "<>"),
+	"less_than": token("operator.less_than", "<"),
+	"greater_than": token("operator.greater_than", ">"),
+	"less_than_equal": token("operator.less_than_equal", "<="),
+	"greater_than_equal": token("operator.greater_than_equal", ">="),
+	"string_concatenate": token("operator.string_concatenate", "&"),
+	"negate": token("operator.subtract", "-"),
 }
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
@@ -66,7 +66,7 @@ export function process_Statement(input:_Statement):Statement {
 
 export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
 	return {
-		lengthInformation: input[0].map(bounds => bounds.map(b => new Token("number.decimal", b.toString()))),
+		lengthInformation: input[0].map(bounds => bounds.map(b => token("number.decimal", b.toString()))),
 		type: token(input[1])
 	};
 }
@@ -78,16 +78,16 @@ export function process_ExpressionASTExt(input:_ExpressionASTExt):ExpressionASTN
 
 export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 	if(input.length == 2){
-		return new Token(...input);
+		return token(...input);
 	} else {
 		let operator:Operator | "array access" | "function call";
 		let operatorToken:Token;
 		if(Array.isArray(input[1]) && input[1][0] == "array access"){
 			operator = input[1][0];
-			operatorToken = new Token("name", input[1][1]);
+			operatorToken = token("name", input[1][1]);
 		} else if(Array.isArray(input[1]) && input[1][0] == "function call"){
 			operator = input[1][0];
-			operatorToken = new Token("name", input[1][1]);
+			operatorToken = token("name", input[1][1]);
 		} else {
 			operator = operators[input[1]];
 			operatorToken = operatorTokens[input[1]];

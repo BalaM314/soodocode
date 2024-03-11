@@ -16,7 +16,7 @@ import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfState
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
-	process_ExpressionAST, process_ProgramAST, process_Statement,
+	process_ExpressionAST, process_ExpressionASTArrayTypeNode, process_ProgramAST, process_Statement,
 } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -1744,15 +1744,12 @@ const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTAr
 	], "error"],
 }).map(([name, [input, output]]) => ({
 	name,
-	input: input.map(t => new Token(t[0], t[1])),
+	input: input.map(token),
 	output: 
 		output == "error" ? output :
 		((output):output is _Token => !Array.isArray(output[1]))(output) //weird type guard IIFE shenanigans
 		? token(output)
-		: {
-			lengthInformation: output[0].map(bounds => bounds.map(b => new Token("number.decimal", b.toString()))),
-			type: token(output[1])
-		}
+		: process_ExpressionASTArrayTypeNode(output)
 }));
 
 
