@@ -4,6 +4,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains all builtin functions defined in the insert.
 */
+import { fail } from "./utils.js";
 export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
         args: new Map(data.args.map(a => [a[0], { passMode: "reference", type: a[1] }])),
         name,

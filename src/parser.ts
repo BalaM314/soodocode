@@ -47,14 +47,14 @@ export function parseFunctionArguments(tokens:Token[]):FunctionArguments {
 		} else passMode = null;
 
 		//There must be a name
-		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? ","}`);
+		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? section[offset - 1].rangeAfter());
 
 		//If the name is the only thing present, then the type is specified later, leave it as null
 		if(section.length == offset + 1){
 			type = null;
 		} else {
 			//Expect a colon
-			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? ","}`);
+			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`);
 			type = processTypeData(parseType(section.slice(offset + 2)));
 		}
 		return [

@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { Token, TokenType } from "./lexer-types.js";
+import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
 
@@ -86,10 +86,20 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 	return output;
 }
 
-export class SoodocodeError extends Error {}
+export function getTotalRange(tokens:Token[]):TextRange {
+	return tokens.reduce((acc, t) => 
+		[Math.min(acc[0], t.range[0]), Math.max(acc[1], t.range[1])]
+	, [0, 0]);
+}
 
-export function fail(message:string):never {
-	throw new SoodocodeError(message);
+export class SoodocodeError extends Error {
+	constructor(message:string, public range?:TextRange){
+		super(message);
+	}
+}
+
+export function fail(message:string, range?:TextRange | TextRanged):never {
+	throw new SoodocodeError(message, Array.isArray(range) ? range : range?.range);
 }
 export function crash(message:string):never {
 	throw new Error(message);

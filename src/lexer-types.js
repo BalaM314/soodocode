@@ -78,6 +78,9 @@ export class Token {
         this.range = [-1, -1];
         return this;
     }
+    rangeAfter() {
+        return [this.range[1], this.range[1] + 1];
+    }
 }
 export function token(type, text) {
     if (Array.isArray(type))

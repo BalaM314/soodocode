@@ -93,10 +93,17 @@ export function splitTokensOnComma(arr) {
     }
     return output;
 }
-export class SoodocodeError extends Error {
+export function getTotalRange(tokens) {
+    return tokens.reduce((acc, t) => [Math.min(acc[0], t.range[0]), Math.max(acc[1], t.range[1])], [0, 0]);
 }
-export function fail(message) {
-    throw new SoodocodeError(message);
+export class SoodocodeError extends Error {
+    constructor(message, range) {
+        super(message);
+        this.range = range;
+    }
+}
+export function fail(message, range) {
+    throw new SoodocodeError(message, Array.isArray(range) ? range : range?.range);
 }
 export function crash(message) {
     throw new Error(message);

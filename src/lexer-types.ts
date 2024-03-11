@@ -1,5 +1,9 @@
 import { crash } from "./utils.js";
 
+export type TextRange = [start:number, end:number];
+export interface TextRanged {
+	range: TextRange;
+}
 
 export const symbolTypes = [
 	"numeric_fragment",
@@ -28,11 +32,11 @@ export type TokenizedProgram = {
 }
 
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
-export class Symbol {
+export class Symbol implements TextRanged {
 	constructor(
 		public type: SymbolType,
 		public text: string,
-		public range: [start:number, end:number],
+		public range: TextRange,
 	){}
 	/** type must be a valid token type */
 	toToken(){
@@ -80,11 +84,11 @@ export const tokenTypes = [
 export type TokenType = typeof tokenTypes extends ReadonlyArray<infer T> ? T : never;
 
 /** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
-export class Token {
+export class Token implements TextRanged {
 	constructor(
 		public type: TokenType,
 		public text: string,
-		public range: [start:number, end:number],
+		public range: TextRange,
 	){}
 	__token__(){};
 	toString(){
@@ -93,6 +97,9 @@ export class Token {
 	clearRange():Token {
 		this.range = [-1, -1];
 		return this;
+	}
+	rangeAfter():TextRange {
+		return [this.range[1], this.range[1] + 1];
 	}
 }
 export function token(type:TokenType, text:string):Token;

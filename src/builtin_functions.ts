@@ -7,7 +7,7 @@ This file contains all builtin functions defined in the insert.
 
 
 import type { BuiltinFunctionData, VariableType, VariableValueType } from "./runtime.js";
-
+import { fail } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {

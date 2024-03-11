@@ -8,7 +8,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
-import { Symbol, SymbolType, SymbolizedProgram, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
+import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
 import { crash, fail, impossible } from "./utils.js";
 
 
@@ -62,7 +62,7 @@ const symbolTypeData: [
 /** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
 	lastMatched:string | null = null;
-	lastMatchedRange:[start:number, end:number] | null = null;
+	lastMatchedRange:TextRange | null = null;
 	output:Symbol[] = [];
 	constructor(public string:string, public offset:number = 0){}
 	inc(amount:number){
@@ -101,7 +101,7 @@ class SymbolizerIO {
 	length(){
 		return this.string.length;
 	}
-	writeText(type:SymbolType, text:string, range:[start:number, end:number]){
+	writeText(type:SymbolType, text:string, range:TextRange){
 		this.output.push(new Symbol(type, text, range));
 	}
 	write(type:SymbolType){
