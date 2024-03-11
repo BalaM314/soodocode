@@ -150,11 +150,14 @@ export function symbolize(input) {
         }
         impossible();
     }
-    return str.output;
+    return {
+        program: input,
+        symbols: str.output
+    };
 }
 /** Converts a list of symbols into a list of tokens. */
 export function tokenize(input) {
-    const output = [];
+    const tokens = [];
     const state = {
         sComment: false,
         mComment: false,
@@ -164,7 +167,7 @@ export function tokenize(input) {
     };
     let currentString = "";
     let symbol;
-    for (symbol of input) {
+    for (symbol of input.symbols) {
         if (state.decimalNumber == "allowDecimal" && symbol.type !== "punctuation.period")
             state.decimalNumber = "none"; //Cursed state reset
         //State checks and comments
@@ -172,7 +175,7 @@ export function tokenize(input) {
             if (symbol.type === "newline") {
                 state.sComment = false;
                 symbol.type;
-                output.push(symbol.toToken());
+                tokens.push(symbol.toToken());
             }
         }
         else if (symbol.type === "comment.multiline_close") {
@@ -190,7 +193,7 @@ export function tokenize(input) {
                 state.sString = false;
                 if (currentString.length != 3)
                     fail(`Character ${currentString} has an invalid length: expected one character`);
-                output.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
+                tokens.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
                 currentString = "";
             }
         }
@@ -198,7 +201,7 @@ export function tokenize(input) {
             currentString += symbol.text;
             if (symbol.type === "quote.double") {
                 state.dString = false;
-                output.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
+                tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
                 currentString = "";
             }
         }
@@ -208,7 +211,7 @@ export function tokenize(input) {
             state.mComment = true;
         //Decimals
         else if (state.decimalNumber == "requireNumber") {
-            const num = output.at(-1) ?? crash(`impossible`);
+            const num = tokens.at(-1) ?? crash(`impossible`);
             if (symbol.type == "numeric_fragment") {
                 //very cursed modifying of the token
                 num.text += "." + symbol.text;
@@ -241,7 +244,7 @@ export function tokenize(input) {
             state.decimalNumber = "allowDecimal";
             if (isNaN(Number(symbol.text)))
                 crash(`Invalid parsed number ${symbol.text}`);
-            output.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
+            tokens.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
         }
         else if (symbol.type === "word") {
             switch (symbol.text) { //TODO datastructify
@@ -348,13 +351,13 @@ export function tokenize(input) {
                     write("keyword.array");
                     break;
                 default:
-                    output.push(new Token("name", symbol.text, symbol.range.slice()));
+                    tokens.push(new Token("name", symbol.text, symbol.range.slice()));
                     break;
             }
         }
         else {
             symbol.type;
-            output.push(symbol.toToken());
+            tokens.push(symbol.toToken());
         }
     }
     //Ending state checks
@@ -365,9 +368,12 @@ export function tokenize(input) {
     if (state.sString)
         fail(`Unclosed single-quoted string`);
     if (state.decimalNumber == "requireNumber")
-        fail(`Expected a number to follow "${(output.at(-1) ?? impossible()).text}.", but found end of input`);
-    return output;
+        fail(`Expected a number to follow "${(tokens.at(-1) ?? impossible()).text}.", but found end of input`);
+    return {
+        program: input.program,
+        tokens
+    };
     function write(type) {
-        output.push(new Token(type, symbol.text, symbol.range.slice()));
+        tokens.push(new Token(type, symbol.text, symbol.range.slice()));
     }
 }

@@ -54,7 +54,7 @@ export class Statement {
 	category:StatementCategory;
 	static category:StatementCategory;
 	static example:string;
-	static tokens:(TokenMatcher | "#")[] = null!;
+	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;

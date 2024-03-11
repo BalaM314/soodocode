@@ -33,7 +33,7 @@ export function flattenTree(program) {
     }).flat(1);
 }
 export function displayProgram(program) {
-    return program.map(node => node instanceof Statement ?
+    return (Array.isArray(program) ? program : program.nodes).map(node => node instanceof Statement ?
         node.toString(true) + "\n" :
         node.nodeGroups.length > 1 ?
             `<div class="program-display-outer">\
@@ -94,7 +94,7 @@ evaluateExpressionButton.addEventListener("click", e => {
     try {
         expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
         // |> operator when
-        )))).toString();
+        )).tokens)).toString();
         expressionOutputDiv.style.color = "white";
     }
     catch (err) {
@@ -110,7 +110,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        const text = displayExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value))), dumpExpressionTreeVerbose.checked);
+        const text = displayExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens), dumpExpressionTreeVerbose.checked);
         //Syntax highlighting
         let outputText = "";
         let linePos = 0;
@@ -184,7 +184,7 @@ dumpTokensButton.addEventListener("click", e => {
 <tr> <th>Text</th> <th>Type</th> </tr>
 </thead>
 <tbody>
-${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+${symbols.symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 </tbody>
 </table>
 </div>
@@ -195,7 +195,7 @@ ${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="tex
 <tr> <th>Text</th> <th>Type</th> </tr>
 </thead>
 <tbody>
-${tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 </tbody>
 </table>
 </div>
@@ -230,7 +230,7 @@ executeSoodocodeButton.addEventListener("click", e => {
             });
         }
         outputDiv.style.color = "white";
-        runtime.runBlock(program);
+        runtime.runBlock(program.nodes); //TODO runProgram() ?
         outputDiv.innerText = output.join("\n");
     }
     catch (err) {

@@ -324,7 +324,7 @@ const tokenizerTests = Object.entries({
             ["string", `"sussy PROCEDURE"`],
         ]
     ]
-}).map(([name, [input, output]]) => [name, input.map(symbol), output == "error" ? "error" : output.map(token)]);
+}).map(([name, [input, output]]) => [name, { program: null /* SPECNULL */, symbols: input.map(symbol) }, output == "error" ? "error" : output.map(token)]);
 describe("symbolizer", () => {
     for (const [name, input, output] of symbolTests) {
         if (output == "error") {
@@ -334,7 +334,9 @@ describe("symbolizer", () => {
         }
         else {
             it(`should parse ${name} into symbols`, () => {
-                expect(symbolize(input).map(s => s.clearRange())).toEqual(output);
+                const { program, symbols } = symbolize(input);
+                expect(symbols.map(s => s.clearRange())).toEqual(output);
+                expect(program).toBe(input);
             });
         }
     }
@@ -348,7 +350,8 @@ describe("tokenizer", () => {
         }
         else {
             it(`should parse ${name} into symbols`, () => {
-                expect(tokenize(input).map(t => t.clearRange())).toEqual(output);
+                const { program, tokens } = tokenize(input);
+                expect(tokens.map(t => t.clearRange())).toEqual(output);
             });
         }
     }

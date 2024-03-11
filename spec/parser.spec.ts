@@ -7,7 +7,7 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token, token } from "../src/lexer-types.js";
+import { Token, TokenizedProgram, token } from "../src/lexer-types.js";
 import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { VariableType } from "../src/runtime.js";
@@ -1131,7 +1131,7 @@ const parseStatementTests:[name:string, program:Token[], output:Statement | "err
 );
 
 
-const parseProgramTests:[name:string, program:Token[], output:ProgramAST | "error"][] = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
+const parseProgramTests:[name:string, program:TokenizedProgram, output:ProgramAST | "error"][] = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
 	output: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -1305,10 +1305,13 @@ const parseProgramTests:[name:string, program:Token[], output:ProgramAST | "erro
 			}
 		],
 	]
-}).map<[name:string, program:Token[], output:ProgramAST | "error"]>(([name, [program, output]]) =>
+}).map<[name:string, program:TokenizedProgram, output:ProgramAST | "error"]>(([name, [program, output]]) =>
 	[
 		name,
-		program.map(token),
+		{
+			program: null!, //SPECNULL
+			tokens: program.map(token)
+		},
 		output == "error" ? "error" : process_ProgramAST(output)
 	]
 );

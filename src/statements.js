@@ -89,7 +89,7 @@ export class Statement {
             crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
     }
 }
-Statement.tokens = null;
+Statement.tokens = null; //Assigned in the decorator
 function statement(type, example, ...args) {
     return function (input) {
         input.type = type;

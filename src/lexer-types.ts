@@ -18,13 +18,13 @@ export const symbolTypes = [
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
 
 export type SymbolizedProgram = {
-	input: string;
+	program: string;
 	symbols: Symbol[];
 }
 
 export type TokenizedProgram = {
-	input: string;
-	symbols: Token[];
+	program: string;
+	tokens: Token[];
 }
 
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */

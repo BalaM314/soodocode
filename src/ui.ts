@@ -14,7 +14,7 @@ import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
 import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTNode, ProgramAST } from "./parser-types.js";
+import { ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 
@@ -27,14 +27,14 @@ function getElement<T extends typeof HTMLElement>(id:string, type:T){
 
 type FlattenTreeOutput = [depth:number, statement:Statement];
 
-export function flattenTree(program:ProgramAST):FlattenTreeOutput[]{
+export function flattenTree(program:ProgramASTNode[]):FlattenTreeOutput[]{
 	return program.map(s => {
 		if(s instanceof Statement) return [[0, s] satisfies FlattenTreeOutput];
 		else return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement] satisfies FlattenTreeOutput);
 	}).flat(1);
 }
-export function displayProgram(program:ProgramAST):string {
-	return program.map(node =>
+export function displayProgram(program:ProgramAST | ProgramASTNode[]):string {
+	return (Array.isArray(program) ? program : program.nodes).map(node =>
 		node instanceof Statement ?
 			node.toString(true) + "\n" :
 			node.nodeGroups.length > 1 ?
@@ -98,7 +98,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 						expressionInput.value
 						// |> operator when
 					)
-				)
+				).tokens
 			)
 		).toString();
 		expressionOutputDiv.style.color = "white";
@@ -121,7 +121,7 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 					lexer.symbolize(
 						expressionInput.value
 					)
-				)
+				).tokens
 			), dumpExpressionTreeVerbose.checked
 		)
 
@@ -193,7 +193,7 @@ dumpTokensButton.addEventListener("click", e => {
 <tr> <th>Text</th> <th>Type</th> </tr>
 </thead>
 <tbody>
-${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+${symbols.symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 </tbody>
 </table>
 </div>
@@ -204,7 +204,7 @@ ${symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="tex
 <tr> <th>Text</th> <th>Type</th> </tr>
 </thead>
 <tbody>
-${tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 </tbody>
 </table>
 </div>
@@ -241,7 +241,7 @@ executeSoodocodeButton.addEventListener("click", e => {
 			});
 		}
 		outputDiv.style.color = "white";
-		runtime.runBlock(program);
+		runtime.runBlock(program.nodes); //TODO runProgram() ?
 		outputDiv.innerText = output.join("\n");
 	} catch(err){
 		outputDiv.style.color = "red";

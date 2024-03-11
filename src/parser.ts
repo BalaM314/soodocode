@@ -8,10 +8,10 @@ which is the preferred representation of the program.
 */
 
 
-import { Token, type TokenType } from "./lexer-types.js";
+import { Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
 	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode,
-	ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType
+	ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
 import type { VariableType } from "./runtime.js";
 import {
@@ -111,13 +111,13 @@ export function parseType(tokens:Token[]):ExpressionASTLeafNode | ExpressionASTA
 	};
 }
 
-export function parse(tokens:Token[]):ProgramAST {
+export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	let lines:Token[][] = splitArray(tokens, t => t.type == "newline")
 		.filter(l => l.length != 0); //remove blank lines
 	const statements = lines.map(parseStatement);
-	const program:ProgramAST = [];
+	const programNodes:ProgramASTNode[] = [];
 	function getActiveBuffer(){
-		if(blockStack.length == 0) return program;
+		if(blockStack.length == 0) return programNodes;
 		else return blockStack.at(-1)!.nodeGroups.at(-1)!;
 	}
 	const blockStack:ProgramASTBranchNode[] = [];
@@ -148,7 +148,10 @@ export function parse(tokens:Token[]):ProgramAST {
 		} else statement.category satisfies never;
 	}
 	if(blockStack.length) fail(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].blockEndStatement().type}" statement`);
-	return program;
+	return {
+		program,
+		nodes: programNodes
+	};
 }
 
 /**

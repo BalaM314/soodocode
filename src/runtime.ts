@@ -346,7 +346,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 		return [fn.returnType, fn.impl(...processedArgs) as VariableValueType];
 	}
-	runBlock(code:ProgramAST, scope?:VariableScope):void | {
+	runBlock(code:ProgramASTNode[], scope?:VariableScope):void | {
 		type: "function_return";
 		value: VariableValueType;
 	}{

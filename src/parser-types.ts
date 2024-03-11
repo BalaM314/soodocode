@@ -31,7 +31,10 @@ export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNod
 export type TokenMatcher = TokenType | ".*" | ".+" | "expr+" | "type+";
 
 /** Represents a fully processed program. */
-export type ProgramAST = ProgramASTNode[];
+export type ProgramAST = {
+	program: string;
+	nodes: ProgramASTNode[];
+};
 /** Represents a single node in a program AST. */
 export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
 /** Represents a leaf node (node with no child nodes) in a program AST. */

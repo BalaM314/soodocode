@@ -7,7 +7,7 @@ This file contains unit tests for the lexer.
 
 import "jasmine";
 import { symbolize, tokenize } from "../src/lexer.js";
-import { Symbol, Token, symbol, token } from "../src/lexer-types.js";
+import { Symbol, SymbolizedProgram, Token, symbol, token } from "../src/lexer-types.js";
 import { SoodocodeError } from "../src/utils.js";
 import { _Symbol, _Token } from "./spec_utils.js";
 
@@ -138,7 +138,7 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 	],
 }).map(([name, [input, output]]) => [name, input, output == "error" ? output : output.map(symbol)]);
 
-const tokenizerTests:[name:string, input:Symbol[], output:Token[] | "error"][] = Object.entries<[input:_Symbol[], output:_Token[] | "error"]>({
+const tokenizerTests:[name:string, input:SymbolizedProgram, output:Token[] | "error"][] = Object.entries<[input:_Symbol[], output:_Token[] | "error"]>({
 	simple: [
 		[
 			["punctuation.semicolon", ";"],
@@ -335,7 +335,7 @@ const tokenizerTests:[name:string, input:Symbol[], output:Token[] | "error"][] =
 			["string", `"sussy PROCEDURE"`],
 		]
 	]
-}).map(([name, [input, output]]) => [name, input.map(symbol), output == "error" ? "error" : output.map(token)]);
+}).map(([name, [input, output]]) => [name, {program: null! /* SPECNULL */, symbols: input.map(symbol)}, output == "error" ? "error" : output.map(token)]);
 
 describe("symbolizer", () => {
 	for(const [name, input, output] of symbolTests){
@@ -345,7 +345,9 @@ describe("symbolizer", () => {
 			});
 		} else {
 			it(`should parse ${name} into symbols`, () => {
-				expect(symbolize(input).map(s => s.clearRange())).toEqual(output);
+				const {program, symbols} = symbolize(input);
+				expect(symbols.map(s => s.clearRange())).toEqual(output);
+				expect(program).toBe(input);
 			});
 		}
 	}
@@ -359,7 +361,8 @@ describe("tokenizer", () => {
 			});
 		} else {
 			it(`should parse ${name} into symbols`, () => {
-				expect(tokenize(input).map(t => t.clearRange())).toEqual(output);
+				const { program, tokens } = tokenize(input);
+				expect(tokens.map(t => t.clearRange())).toEqual(output);
 			});
 		}
 	}

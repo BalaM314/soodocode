@@ -102,14 +102,14 @@ export function parseType(tokens) {
         type: tokens.at(-1),
     };
 }
-export function parse(tokens) {
+export function parse({ program, tokens }) {
     let lines = splitArray(tokens, t => t.type == "newline")
         .filter(l => l.length != 0); //remove blank lines
     const statements = lines.map(parseStatement);
-    const program = [];
+    const programNodes = [];
     function getActiveBuffer() {
         if (blockStack.length == 0)
-            return program;
+            return programNodes;
         else
             return blockStack.at(-1).nodeGroups.at(-1);
     }
@@ -152,7 +152,10 @@ export function parse(tokens) {
     }
     if (blockStack.length)
         fail(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`);
-    return program;
+    return {
+        program,
+        nodes: programNodes
+    };
 }
 /**
  * Parses a string of tokens into a Statement.

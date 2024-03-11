@@ -62,12 +62,18 @@ export function process_ExpressionAST(input) {
         };
     }
 }
-export function process_ProgramAST(output) {
-    return output.map(n => Array.isArray(n)
-        ? process_Statement(n)
+export function process_ProgramAST(input, program = null /* SPECNULL */) {
+    return {
+        program,
+        nodes: input.map(process_ProgramASTNode)
+    };
+}
+export function process_ProgramASTNode(input) {
+    return Array.isArray(input)
+        ? process_Statement(input)
         : {
-            type: n.type,
-            controlStatements: n.controlStatements.map(process_Statement),
-            nodeGroups: n.nodeGroups.map(process_ProgramAST),
-        });
+            type: input.type,
+            controlStatements: input.controlStatements.map(process_Statement),
+            nodeGroups: input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
+        };
 }

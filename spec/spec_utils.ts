@@ -1,6 +1,6 @@
 import { SymbolType, Token, TokenType, symbol, token } from "../src/lexer-types.js";
 import {
-	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNodeType
+	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNodeType, ProgramASTNode
 } from "../src/parser-types.js";
 import { Operator, operators, OperatorType } from "../src/parser.js";
 import { Statement } from "../src/statements.js";
@@ -99,13 +99,19 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 	}
 }
 
-export function process_ProgramAST(output:_ProgramAST):ProgramAST {
-	return output.map(n => Array.isArray(n)
-		? process_Statement(n)
+export function process_ProgramAST(input:_ProgramAST, program:string = null! /* SPECNULL */):ProgramAST {
+	return {
+		program,
+		nodes: input.map(process_ProgramASTNode)
+	};
+}
+
+export function process_ProgramASTNode(input:_ProgramASTNode):ProgramASTNode {
+	return Array.isArray(input)
+		? process_Statement(input)
 		: {
-			type: n.type,
-			controlStatements: n.controlStatements.map(process_Statement),
-			nodeGroups: n.nodeGroups.map(process_ProgramAST),
-		}
-	)
+			type: input.type,
+			controlStatements: input.controlStatements.map(process_Statement),
+			nodeGroups: input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
+		};
 }

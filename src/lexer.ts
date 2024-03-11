@@ -8,7 +8,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
-import { Symbol, SymbolType, Token, TokenType } from "./lexer-types.js";
+import { Symbol, SymbolType, SymbolizedProgram, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
 import { crash, fail, impossible } from "./utils.js";
 
 
@@ -126,7 +126,7 @@ class SymbolizerIO {
 SymbolizerIO.prototype satisfies Record<SymbolSpecifierFuncName, () => boolean>;
 
 /** Converts an input string to a list of symbols. */
-export function symbolize(input:string):Symbol[] {
+export function symbolize(input:string):SymbolizedProgram {
 	const str = new SymbolizerIO(input);
 	toNextCharacter:
 	while(str.has()){
@@ -150,13 +150,16 @@ export function symbolize(input:string):Symbol[] {
 		}
 		impossible();
 	}
-	return str.output;
+	return {
+		program: input,
+		symbols: str.output
+	};
 }
 
 
 /** Converts a list of symbols into a list of tokens. */
-export function tokenize(input:Symbol[]):Token[] {
-	const output:Token[] = [];
+export function tokenize(input:SymbolizedProgram):TokenizedProgram {
+	const tokens:Token[] = [];
 	const state = {
 		sComment: false,
 		mComment: false,
@@ -166,7 +169,7 @@ export function tokenize(input:Symbol[]):Token[] {
 	}
 	let currentString = "";
 	let symbol:Symbol;
-	for(symbol of input){
+	for(symbol of input.symbols){
 		if(state.decimalNumber == "allowDecimal" && symbol.type !== "punctuation.period")
 			state.decimalNumber = "none"; //Cursed state reset
 
@@ -175,7 +178,7 @@ export function tokenize(input:Symbol[]):Token[] {
 			if(symbol.type === "newline"){
 				state.sComment = false;
 				symbol.type satisfies TokenType;
-				output.push(symbol.toToken());
+				tokens.push(symbol.toToken());
 			}
 		} else if(symbol.type === "comment.multiline_close"){
 			if(state.mComment) state.mComment = false;
@@ -187,21 +190,21 @@ export function tokenize(input:Symbol[]):Token[] {
 			if(symbol.type === "quote.single"){
 				state.sString = false;
 				if(currentString.length != 3) fail(`Character ${currentString} has an invalid length: expected one character`);
-				output.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
+				tokens.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
 				currentString = "";
 			}
 		} else if(state.dString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.double"){
 				state.dString = false;
-				output.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
+				tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
 				currentString = "";
 			}
 		} else if(symbol.type === "comment.singleline") state.sComment = true;
 		else if(symbol.type === "comment.multiline_open") state.mComment = true;
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
-			const num = output.at(-1) ?? crash(`impossible`);
+			const num = tokens.at(-1) ?? crash(`impossible`);
 			if(symbol.type == "numeric_fragment"){
 				//very cursed modifying of the token
 				num.text += "." + symbol.text;
@@ -223,7 +226,7 @@ export function tokenize(input:Symbol[]):Token[] {
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
-			output.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
+			tokens.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
 		} else if(symbol.type === "word"){
 			switch(symbol.text){ //TODO datastructify
 				case "TRUE": write("boolean.true"); break;
@@ -260,22 +263,25 @@ export function tokenize(input:Symbol[]):Token[] {
 				case "ENDCASE": write("keyword.case_end"); break;
 				case "OTHERWISE": write("keyword.otherwise"); break;
 				case "ARRAY": write("keyword.array"); break;
-				default: output.push(new Token("name", symbol.text, symbol.range.slice())); break;
+				default: tokens.push(new Token("name", symbol.text, symbol.range.slice())); break;
 			}
 		} else {
 			symbol.type satisfies TokenType;
-			output.push(symbol.toToken());
+			tokens.push(symbol.toToken());
 		}
 	}
 	//Ending state checks
 	if(state.mComment) fail(`Unclosed multiline comment`);
 	if(state.dString) fail(`Unclosed double-quoted string`);
 	if(state.sString) fail(`Unclosed single-quoted string`);
-	if(state.decimalNumber == "requireNumber") fail(`Expected a number to follow "${(output.at(-1) ?? impossible()).text}.", but found end of input`);
-	return output;
+	if(state.decimalNumber == "requireNumber") fail(`Expected a number to follow "${(tokens.at(-1) ?? impossible()).text}.", but found end of input`);
+	return {
+		program: input.program,
+		tokens
+	};
 
 	function write(type:TokenType){
-		output.push(new Token(type, symbol.text, symbol.range.slice()));
+		tokens.push(new Token(type, symbol.text, symbol.range.slice()));
 	}
 }
 
