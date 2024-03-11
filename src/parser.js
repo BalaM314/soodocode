@@ -9,10 +9,10 @@ which is the preferred representation of the program.
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { statements } from "./statements.js";
-import { impossible, splitArray, fail, isVarType, getText, splitTokens, splitTokensOnComma } from "./utils.js";
+import { impossible, splitArray, fail, isVarType, getText, splitTokens, splitTokensOnComma, errorBoundary } from "./utils.js";
 //TODO improve error messages
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
-export function parseFunctionArguments(tokens) {
+export const parseFunctionArguments = errorBoundary((tokens) => {
     //special case: blank
     if (tokens.length == 0)
         return new Map();
@@ -64,16 +64,16 @@ export function parseFunctionArguments(tokens) {
         fail(`Duplicate function argument ${argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j))}`);
     }
     return argumentsMap;
-}
-export function processTypeData(ast) {
+});
+export const processTypeData = errorBoundary((ast) => {
     if (ast instanceof Token)
         return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`);
     else
         return new ArrayTypeData(ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), 
         //todo fix this insanity of "type" "text"
         isVarType(ast.type.text) ? ast.type.text : fail(`Invalid variable type ${ast.type}`));
-}
-export function parseType(tokens) {
+});
+export const parseType = errorBoundary((tokens) => {
     if (tokens.length == 1) {
         if (tokens[0].type == "name")
             return tokens[0];
@@ -101,8 +101,8 @@ export function parseType(tokens) {
         }),
         type: tokens.at(-1),
     };
-}
-export function parse({ program, tokens }) {
+});
+export const parse = errorBoundary(({ program, tokens }) => {
     let lines = splitArray(tokens, t => t.type == "newline")
         .filter(l => l.length != 0); //remove blank lines
     const statements = lines.map(parseStatement);
@@ -156,12 +156,12 @@ export function parse({ program, tokens }) {
         program,
         nodes: programNodes
     };
-}
+});
 /**
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export function parseStatement(tokens) {
+export const parseStatement = errorBoundary((tokens) => {
     if (tokens.length < 1)
         fail("Empty statement");
     let possibleStatements;
@@ -186,12 +186,12 @@ export function parseStatement(tokens) {
             maxError = error;
     }
     fail(maxError.message);
-}
+});
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
  */
-export function checkStatement(statement, input) {
+export const checkStatement = errorBoundary((statement, input) => {
     //warning: despite writing it, I do not fully understand this code
     //but it works
     //TODO understand it
@@ -243,7 +243,7 @@ export function checkStatement(statement, input) {
     if (j != input.length)
         return { message: `Expected end of line, found ${input[j].type}`, priority: 7 };
     return output;
-}
+});
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
     ...o,
@@ -340,14 +340,14 @@ function cannotEndExpression(token) {
 function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.unary && o.token == token.type);
 }
-export function parseExpressionLeafNode(input) {
+export const parseExpressionLeafNode = errorBoundary((input) => {
     //Number, string, char, boolean, and variables can be parsed as-is
     if (input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
         return input;
     else
         fail(`Invalid syntax: cannot parse expression \`${getText([input])}\`: not a valid expression leaf node`); //TODO this thing is spammed way too many times, fix with cumulative error messages
-}
-export function parseExpression(input) {
+});
+export const parseExpression = errorBoundary((input) => {
     //If there is only one token
     if (input.length == 1)
         return parseExpressionLeafNode(input[0]);
@@ -461,4 +461,4 @@ export function parseExpression(input) {
     }
     //No operators found at all, something went wrong
     fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
-}
+});
