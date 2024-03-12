@@ -101,8 +101,10 @@ evaluateExpressionButton.addEventListener("click", e => {
         expressionOutputDiv.style.color = "red";
         if (err instanceof SoodocodeError) {
             expressionOutputDiv.innerText = "Error: " + err.message;
-            if (err.range)
-                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.range)}"`;
+            if (err.rangeSpecific)
+                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeSpecific)}"`;
+            if (err.rangeGeneral)
+                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeGeneral)}"`;
         }
         else {
             console.error(err);
@@ -146,8 +148,10 @@ dumpExpressionTreeButton.addEventListener("click", e => {
         expressionOutputDiv.style.color = "red";
         if (err instanceof SoodocodeError) {
             expressionOutputDiv.innerText = "Error: " + err.message;
-            if (err.range)
-                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.range)}"`;
+            if (err.rangeSpecific)
+                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeSpecific)}"`;
+            if (err.rangeGeneral)
+                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeGeneral)}"`;
         }
         else {
             console.error(err);
@@ -211,8 +215,10 @@ ${displayProgram(program)}`;
         outputDiv.style.color = "red";
         if (err instanceof SoodocodeError) {
             outputDiv.innerText = `Error: ${err.message}`;
-            if (err.range)
-                expressionOutputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.range)}"`;
+            if (err.rangeSpecific)
+                outputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.rangeSpecific)}"`;
+            if (err.rangeGeneral)
+                outputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.rangeGeneral)}"`;
         }
         else {
             outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
@@ -243,8 +249,10 @@ executeSoodocodeButton.addEventListener("click", e => {
         outputDiv.style.color = "red";
         if (err instanceof SoodocodeError) {
             outputDiv.innerText = `Error: ${err.message}`;
-            if (err.range)
-                outputDiv.innerText += `\n  at "${soodocodeInput.value.slice(...err.range)}"`;
+            if (err.rangeSpecific)
+                outputDiv.innerText += `\n  at "${soodocodeInput.value.slice(...err.rangeSpecific)}"`;
+            if (err.rangeGeneral)
+                outputDiv.innerText += `\n  at "${soodocodeInput.value.slice(...err.rangeGeneral)}"`;
         }
         else {
             outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;

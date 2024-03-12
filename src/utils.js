@@ -94,25 +94,21 @@ export function splitTokensOnComma(arr) {
     return output;
 }
 export function getTotalRange(tokens) {
-    return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [0, 0]);
+    if (tokens.length == 0)
+        crash(`Cannot get range from an empty list of tokens`);
+    return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [Infinity, -Infinity]);
 }
-export class SoodocodeError extends Error {
-    constructor(message, range) {
-        super(message);
-        this.range = range;
-    }
-}
-export function fail(message, range) {
-    throw new SoodocodeError(message, Array.isArray(range) ? range : range?.range);
-}
-export function crash(message) {
-    throw new Error(message);
-}
-export function impossible() {
-    throw new Error(`this shouldn't be possible...`);
-}
-function isRange(input) {
+export function isRange(input) {
     return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
+}
+export function getRange(input) {
+    if (!input)
+        return input;
+    if (isRange(input))
+        return input;
+    if (Array.isArray(input))
+        return getTotalRange(input);
+    return input.range;
 }
 export function findRange(args) {
     for (const arg of args) {
@@ -125,19 +121,36 @@ export function findRange(args) {
     }
     return undefined;
 }
+export class SoodocodeError extends Error {
+    constructor(message, rangeSpecific, rangeGeneral) {
+        super(message);
+        this.rangeSpecific = rangeSpecific;
+        this.rangeGeneral = rangeGeneral;
+    }
+}
+export function fail(message, rangeSpecific, rangeGeneral) {
+    throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral));
+}
+export function crash(message) {
+    throw new Error(message);
+}
+export function impossible() {
+    throw new Error(`this shouldn't be possible...`);
+}
 export function errorBoundary(func) {
     return function (...args) {
         try {
             return func(...args);
         }
         catch (err) {
-            if (err instanceof SoodocodeError && !err.range) {
+            if (err instanceof SoodocodeError) {
                 //Try to find the range
-                err.range = findRange(args);
-                throw err;
+                if (err.rangeSpecific === undefined)
+                    err.rangeSpecific = findRange(args);
+                else if (err.rangeGeneral === undefined)
+                    err.rangeGeneral = findRange(args);
             }
-            else
-                throw err;
+            throw err;
         }
     };
 }

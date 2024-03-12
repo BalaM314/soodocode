@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
+import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
 
@@ -87,31 +87,23 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 }
 
 export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {
+	if(tokens.length == 0) crash(`Cannot get range from an empty list of tokens`);
 	return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => 
 		[Math.min(acc[0], t[0]), Math.max(acc[1], t[1])]
-	, [0, 0]);
+	, [Infinity, -Infinity]);
 }
-
-export class SoodocodeError extends Error {
-	constructor(message:string, public range?:TextRange){
-		super(message);
-	}
-}
-
-export function fail(message:string, range?:TextRange | TextRanged):never {
-	throw new SoodocodeError(message, Array.isArray(range) ? range : range?.range);
-}
-export function crash(message:string):never {
-	throw new Error(message);
-}
-export function impossible():never {
-	throw new Error(`this shouldn't be possible...`);
-}
-
-function isRange(input:unknown):input is TextRange {
+export function isRange(input:unknown):input is TextRange {
 	return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
 }
-
+export function getRange(input:TextRangeLike):TextRange;
+export function getRange(input?:TextRangeLike):TextRange | undefined;
+export function getRange(input?:TextRangeLike | null):TextRange | undefined | null;
+export function getRange(input?:TextRangeLike | null):TextRange | undefined | null {
+	if(!input) return input;
+	if(isRange(input)) return input;
+	if(Array.isArray(input)) return getTotalRange(input);
+	return input.range;
+}
 export function findRange(args:unknown[]):TextRange | undefined {
 	for(const arg of args){
 		if(typeof arg == "object" && arg != null && "range" in arg && isRange(arg.range))
@@ -124,16 +116,33 @@ export function findRange(args:unknown[]):TextRange | undefined {
 	return undefined;
 }
 
+export class SoodocodeError extends Error {
+	constructor(message:string, public rangeSpecific?:TextRange | null, public rangeGeneral?:TextRange | null){
+		super(message);
+	}
+}
+
+export function fail(message:string, rangeSpecific?:TextRangeLike | null, rangeGeneral?:TextRangeLike | null):never {
+	throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral));
+}
+export function crash(message:string):never {
+	throw new Error(message);
+}
+export function impossible():never {
+	throw new Error(`this shouldn't be possible...`);
+}
+
 export function errorBoundary<T extends (...args:any[]) => unknown>(func:T):T {
 	return function(...args){
 		try {
 			return func(...args);
 		} catch(err){
-			if(err instanceof SoodocodeError && !err.range){
+			if(err instanceof SoodocodeError){
 				//Try to find the range
-				err.range = findRange(args);
-				throw err;
-			} else throw err;
+				if(err.rangeSpecific === undefined) err.rangeSpecific = findRange(args);
+				else if(err.rangeGeneral === undefined) err.rangeGeneral = findRange(args);
+			}
+			throw err;
 		}
 	} as T;
 }

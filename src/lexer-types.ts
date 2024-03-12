@@ -4,6 +4,7 @@ export type TextRange = [start:number, end:number];
 export interface TextRanged {
 	range: TextRange;
 }
+export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
 
 export const symbolTypes = [
 	"numeric_fragment",
