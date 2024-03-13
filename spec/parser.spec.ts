@@ -641,6 +641,54 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 			]]
 		]]
 	],
+	unary6: [
+		[
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["parentheses.open", "("],
+			["number.decimal", "3"],
+			["operator.add", "+"],
+			["number.decimal", "4"],
+			["operator.multiply", "*"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["operator.subtract", "-"],
+			["number.decimal", "5"],
+			["parentheses.close", ")"],
+		],
+		["tree", "negate", [
+			["tree", "negate", [
+				["tree", "negate", [
+					["tree", "negate", [
+						["tree", "add", [
+							["number.decimal", "3"],
+							["tree", "multiply", [
+								["number.decimal", "4"],
+								["tree", "negate", [
+									["tree", "negate", [
+										["tree", "negate", [
+											["tree", "negate", [
+												["tree", "negate", [
+													["tree", "negate", [
+														["number.decimal", "5"]
+													]]
+												]]
+											]]
+										]]
+									]]
+								]]
+							]]
+						]]
+					]]
+				]]
+			]]
+		]]
+	],
 	nestedunary1: [
 		[
 			["name", "amogus"],

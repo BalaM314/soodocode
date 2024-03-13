@@ -10,7 +10,7 @@ import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { statements } from "./statements.js";
 import { impossible, splitArray, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote } from "./utils.js";
-//TODO improve error messages
+//TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
     //special case: blank
@@ -44,7 +44,7 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
         else {
             //Expect a colon
             if (section[offset + 1]?.type != "punctuation.colon")
-                fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
+                fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
             type = processTypeData(parseType(section.slice(offset + 2)));
         }
         return [
@@ -68,11 +68,11 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
 });
 export const processTypeData = errorBoundary((ast) => {
     if (ast instanceof Token)
-        return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
+        return isVarType(ast.text) ? ast.text : fail(fquote `Invalid variable type ${ast.text}`); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
     else
         return new ArrayTypeData(ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), 
         //todo fix this insanity of "type" "text"
-        isVarType(ast.type.text) ? ast.type.text : fail(`Invalid variable type ${ast.type}`));
+        isVarType(ast.type.text) ? ast.type.text : fail(fquote `Invalid variable type ${ast.type.text}`));
 });
 export const parseType = errorBoundary((tokens) => {
     if (tokens.length == 1) {
@@ -85,7 +85,7 @@ export const parseType = errorBoundary((tokens) => {
         tokens[1]?.type == "bracket.open" &&
         tokens.at(-2)?.type == "keyword.of" &&
         tokens.at(-1)?.type == "name"))
-        fail(`Cannot parse type from "${tokens.join(" ")}"`); //TODO %r
+        fail(fquote `Cannot parse type from ${tokens.join(" ")}`); //TODO %r
     //ARRAY[1:10, 1:10] OF STRING
     return {
         lengthInformation: splitTokens(tokens.slice(2, -3), "punctuation.comma")
