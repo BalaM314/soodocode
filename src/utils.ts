@@ -15,24 +15,33 @@ export function stringifyExpressionASTArrayTypeNode(input:ExpressionASTArrayType
 }
 
 export function displayExpression(node:ExpressionASTNode | ExpressionASTArrayTypeNode, expand = false, html = false):string {
-	if(node instanceof Token){
+	if(node instanceof Token)
 		return escapeHTML(node.text);
-	} else if("lengthInformation" in node){ //TODO rm in check
+	if("lengthInformation" in node) //TODO rm in check
 		return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
-	} else if(node.operator == "function call"){
+
+	const compressed = !expand || node.nodes.every(n => n instanceof Token);
+	if(node.operator == "function call"){
 		const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")})`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
 	} else if(node.operator == "array access"){
 		const text = `${node.operatorToken.text}[${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")}]`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
-	} else if(!node.operator.unary && (!expand || node.nodes.every(n => n instanceof Token))){
+	} else if(!node.operator.unary && compressed){
 		//Not a unary operator and, argument says don't expand or all child nodes are leaf nodes.
 		const text = `(${displayExpression(node.nodes[0], expand, html)} ${node.operatorToken.text} ${displayExpression(node.nodes[1], expand, html)})`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
-	} else if(node.operator.unary && (!expand || node.nodes[0] instanceof Token)){
+	} else if(node.operator.unary && compressed){
 		//Is a unary operator and, argument says don't expand or all child nodes are leaf nodes.
 		const text = `(${node.operatorToken.text} ${displayExpression(node.nodes[0], expand, html)})`;
 		return html ? `<span class="expression-display-block">${text}</span>` : text;
+	} else if(node.operator.unary){
+		return (
+`(
+${node.operatorToken.text}
+${displayExpression(node.nodes[0], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
+)`
+		);
 	} else {
 		return (
 `(

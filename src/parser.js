@@ -350,12 +350,14 @@ export const parseExpressionLeafNode = errorBoundary((input) => {
 });
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
 export const parseExpression = errorBoundary((input) => {
+    if (!Array.isArray(input))
+        crash(`parseExpression(): expected array of tokens, got ${input}`);
     //If there is only one token
     if (input.length == 1)
         return parseExpressionLeafNode(input[0]);
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     //TODO O(mn) unnecessarily, optimize
-    for (const operatorsOfCurrentPriority of operatorsByPriority) {
+    toNextOperator: for (const operatorsOfCurrentPriority of operatorsByPriority) {
         let parenNestLevel = 0, bracketNestLevel = 0;
         //Find the index of the last (lowest priority) operator of the current priority
         //Iterate through token list backwards
@@ -396,7 +398,7 @@ export const parseExpression = errorBoundary((input) => {
                         // ^
                         // lowest priority is leftmost
                         if (canBeUnaryOperator(input[i - 1]))
-                            continue; //Operator priority assumption is wrong, try again! //TODO shouldn't this be the outer for loop?
+                            continue; //Operator priority assumption is wrong, try again!
                         fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
                     }
                     if (right.length == 0)
@@ -413,7 +415,7 @@ export const parseExpression = errorBoundary((input) => {
                     const right = input.slice(i + 1);
                     if (left.length == 0) {
                         if (operator.overloadedUnary)
-                            break;
+                            break; //TODO is this also wrong?
                         else
                             fail(`No expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
                     }
@@ -421,7 +423,7 @@ export const parseExpression = errorBoundary((input) => {
                         fail(`No expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
                     if (operator.overloadedUnary) {
                         if (cannotEndExpression(input[i - 1]))
-                            break; //Binary operator can't fit here, this must be the unary operator //TODO won't this incorrectly trip the paren nest level check? shouldn't it be continue to next operator
+                            continue; //Binary operator can't fit here, this must be the unary operator
                     }
                     return {
                         operatorToken: input[i],

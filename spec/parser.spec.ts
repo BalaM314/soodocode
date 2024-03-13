@@ -601,7 +601,7 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 			["operator.subtract", "-"],
 			["parentheses.open", "("],
 			["number.decimal", "3"],
-			["operator.subtract", "+"],
+			["operator.add", "+"],
 			["number.decimal", "4"],
 			["operator.subtract", "-"],
 			["operator.subtract", "-"],
