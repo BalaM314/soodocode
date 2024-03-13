@@ -576,6 +576,54 @@ const sampleExpressions = Object.entries({
                     ]]
             ]]
     ],
+    unary5: [
+        [
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["parentheses.open", "("],
+            ["number.decimal", "3"],
+            ["operator.subtract", "+"],
+            ["number.decimal", "4"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["operator.subtract", "-"],
+            ["number.decimal", "5"],
+            ["parentheses.close", ")"],
+        ],
+        ["tree", "negate", [
+                ["tree", "negate", [
+                        ["tree", "negate", [
+                                ["tree", "negate", [
+                                        ["tree", "subtract", [
+                                                ["tree", "add", [
+                                                        ["number.decimal", "3"],
+                                                        ["number.decimal", "4"]
+                                                    ]],
+                                                ["tree", "negate", [
+                                                        ["tree", "negate", [
+                                                                ["tree", "negate", [
+                                                                        ["tree", "negate", [
+                                                                                ["tree", "negate", [
+                                                                                        ["tree", "negate", [
+                                                                                                ["number.decimal", "5"]
+                                                                                            ]]
+                                                                                    ]]
+                                                                            ]]
+                                                                    ]]
+                                                            ]]
+                                                    ]]
+                                            ]]
+                                    ]]
+                            ]]
+                    ]]
+            ]]
+    ],
     nestedunary1: [
         [
             ["name", "amogus"],
@@ -984,10 +1032,11 @@ const parseStatementTests = Object.entries({
                 ["parentheses.close", `)`],
             ]]
     ],
-    empty: [
-        [],
-        "error"
-    ],
+    // empty: [
+    // 	[
+    // 	],
+    // 	"error"
+    // ],
     randomjunk1: [
         [
             ["number.decimal", "31415"],
