@@ -52,6 +52,12 @@ export class Symbol implements TextRanged {
 		this.range = [-1, -1];
 		return this;
 	}
+	rangeBefore():TextRange {
+		return [this.range[0] - 1, this.range[0]];
+	}
+	rangeAfter():TextRange {
+		return [this.range[1], this.range[1] + 1];
+	}
 }
 export function symbol(type:SymbolType, text:string):Symbol;
 export function symbol(tokenLike:[type:SymbolType, text:string]):Symbol;

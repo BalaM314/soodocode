@@ -34,6 +34,12 @@ export class Symbol {
         this.range = [-1, -1];
         return this;
     }
+    rangeBefore() {
+        return [this.range[0] - 1, this.range[0]];
+    }
+    rangeAfter() {
+        return [this.range[1], this.range[1] + 1];
+    }
 }
 export function symbol(type, text) {
     if (Array.isArray(type))

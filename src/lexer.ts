@@ -161,10 +161,10 @@ export function symbolize(input:string):SymbolizedProgram {
 export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 	const tokens:Token[] = [];
 	const state = {
-		sComment: false,
-		mComment: false,
-		sString: false,
-		dString: false,
+		sComment: null as null | Symbol,
+		mComment: null as null | Symbol,
+		sString: null as null | Symbol,
+		dString: null as null | Symbol,
 		decimalNumber: "none" as "none" | "allowDecimal" | "requireNumber",
 	}
 	let currentString = "";
@@ -176,32 +176,32 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		//State checks and comments
 		if(state.sComment){
 			if(symbol.type === "newline"){
-				state.sComment = false;
+				state.sComment = null;
 				symbol.type satisfies TokenType;
 				tokens.push(symbol.toToken());
 			}
 		} else if(symbol.type === "comment.multiline_close"){
-			if(state.mComment) state.mComment = false;
-			else fail(`Cannot close multiline comment, no open multiline comment`);
+			if(state.mComment) state.mComment = null;
+			else fail(`Cannot close multiline comment, no open multiline comment`, symbol);
 		} else if(state.mComment){
 			//discard the symbol
 		} else if(state.sString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.single"){
-				state.sString = false;
-				if(currentString.length != 3) fail(`Character ${currentString} has an invalid length: expected one character`);
+				state.sString = null;
+				if(currentString.length != 3) fail(`Character ${currentString} has an invalid length: expected one character`, [symbol.range[1] - currentString.length, symbol.range[1]]);
 				tokens.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
 				currentString = "";
 			}
 		} else if(state.dString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.double"){
-				state.dString = false;
+				state.dString = null;
 				tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
 				currentString = "";
 			}
-		} else if(symbol.type === "comment.singleline") state.sComment = true;
-		else if(symbol.type === "comment.multiline_open") state.mComment = true;
+		} else if(symbol.type === "comment.singleline") state.sComment = symbol;
+		else if(symbol.type === "comment.multiline_open") state.mComment = symbol;
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
 			const num = tokens.at(-1) ?? crash(`impossible`);
@@ -211,18 +211,18 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 				num.range[1] += (1 + symbol.text.length);
 				if(isNaN(Number(num.text))) crash(`Invalid parsed number ${symbol.text}`);
 				state.decimalNumber = "none";
-			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`);
+			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`, symbol);
 		} else if(state.decimalNumber == "allowDecimal" && symbol.type == "punctuation.period"){
 			state.decimalNumber = "requireNumber";
 		} else if(symbol.type === "quote.single"){
-			state.sString = true;
+			state.sString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "quote.double"){
-			state.dString = true;
+			state.dString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
-		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`);
-		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`);
+		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`, symbol);
+		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`, symbol);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
@@ -271,10 +271,10 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		}
 	}
 	//Ending state checks
-	if(state.mComment) fail(`Unclosed multiline comment`);
-	if(state.dString) fail(`Unclosed double-quoted string`);
-	if(state.sString) fail(`Unclosed single-quoted string`);
-	if(state.decimalNumber == "requireNumber") fail(`Expected a number to follow "${(tokens.at(-1) ?? impossible()).text}.", but found end of input`);
+	if(state.mComment) fail(`Unclosed multiline comment`, state.mComment);
+	if(state.dString) fail(`Unclosed double-quoted string`, state.dString);
+	if(state.sString) fail(`Unclosed single-quoted string`, state.sString);
+	if(state.decimalNumber == "requireNumber") fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1)!.rangeAfter());
 	return {
 		program: input.program,
 		tokens
