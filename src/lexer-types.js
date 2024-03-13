@@ -78,6 +78,9 @@ export class Token {
         this.range = [-1, -1];
         return this;
     }
+    rangeBefore() {
+        return [this.range[0] - 1, this.range[0]];
+    }
     rangeAfter() {
         return [this.range[1], this.range[1] + 1];
     }

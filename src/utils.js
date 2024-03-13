@@ -147,8 +147,14 @@ export function errorBoundary(func) {
                 //Try to find the range
                 if (err.rangeSpecific === undefined)
                     err.rangeSpecific = findRange(args);
-                else if (err.rangeGeneral === undefined)
-                    err.rangeGeneral = findRange(args);
+                else if (err.rangeGeneral === undefined) {
+                    const _rangeGeneral = findRange(args);
+                    if ( //If the general range is unspecified, and when guessede is equal to the specific range, just set it to null
+                    _rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
+                        err.rangeGeneral = null;
+                    else
+                        err.rangeGeneral = _rangeGeneral;
+                }
             }
             throw err;
         }
