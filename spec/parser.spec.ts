@@ -1766,6 +1766,23 @@ const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTAr
 		],
 		["name", "BOOLEAN"]
 	]],
+	"Cursed2dArray": [[
+		["keyword.array", "ARRAY"],
+		["bracket.open", "["],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "10"],
+		["bracket.close", "]"],
+		["keyword.of", "OF"],
+		["keyword.array", "ARRAY"],
+		["bracket.open", "["],
+		["number.decimal", "1"],
+		["punctuation.colon", ":"],
+		["number.decimal", "20"],
+		["bracket.close", "]"],
+		["keyword.of", "OF"],
+		["name", "INTEGER"],
+	], "error"],
 	"4dArray": [[
 		["keyword.array", "ARRAY"],
 		["bracket.open", "["],

@@ -8,7 +8,7 @@ This file contains the runtime, which executes the program AST.
 
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token, TokenType } from "./lexer-types.js";
-import { ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayTypeData, ProgramAST } from "./parser-types.js";
+import { ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayTypeData, ProgramAST, ExpressionASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 
 import {
@@ -75,20 +75,39 @@ export class Runtime {
 	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValueType];
 	processArrayAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
 	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | ExpressionAST){
+
+		//Make sure the variable exists and is an array
 		const variable = this.getVariable(expr.operatorToken.text);
-		if(!variable) fail(`Undeclared variable ${expr.operatorToken.text}`);
-		if(!(variable.type instanceof ArrayTypeData)) fail(`Cannot convert variable of type ${variable.type} to an array`);
+		if(!variable) fail(`Undeclared variable ${expr.operatorToken.text}`, expr.operatorToken);
+		if(!(variable.type instanceof ArrayTypeData)) fail(`Cannot convert variable of type ${variable.type} to an array`, expr.operatorToken);
 		const varTypeData = variable.type;
-		if(arg2 instanceof ArrayTypeData) fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${variable.type.type}`);
-		if(expr.nodes.length != variable.type.lengthInformation.length) fail(`Cannot evaluate expression starting with "array access": incorrect number of indices for n-dimensional array`);
-		const indexes = expr.nodes.map(e => this.evaluateExpr(e, "INTEGER")[1]);
+
+		//TODO is there any way of getting a 1D array out of a 2D array?
+		//Forbids getting any arrays from arrays
+		if(arg2 instanceof ArrayTypeData)
+			fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.operatorToken);
+
+		if(expr.nodes.length != variable.type.lengthInformation.length)
+			fail(
+`Cannot evaluate expression starting with "array access": \
+${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
+but found ${expr.nodes.length} indices`,
+				//expr.nodes //TODO
+			);
+		const indexes:[ExpressionASTNode, number][] = expr.nodes.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
 		let invalidIndexIndex;
-		if((invalidIndexIndex = indexes.findIndex((value, index) => value > varTypeData.lengthInformation[index][1] || value < varTypeData.lengthInformation[index][0])) != -1)
-			fail(`Array index out of bounds: value ${indexes[invalidIndexIndex]} was not in range ${varTypeData.lengthInformation[invalidIndexIndex]}`);
-		const index = indexes.reduce((acc, value, index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.lengthInformation_[index]), 0);
+		if(
+			(invalidIndexIndex = indexes.findIndex(([expr, value], index) =>
+				value > varTypeData.lengthInformation[index][1] ||
+				value < varTypeData.lengthInformation[index][0])
+			)
+			!= -1
+		)
+			fail(`Array index out of bounds: value ${indexes[invalidIndexIndex][1]} was not in range (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, /* TODO indexes[invalidIndexIndex][0] */);
+		const index = indexes.reduce((acc, [e, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.lengthInformation_[index]), 0);
 		if(operation == "get"){
 			const output = (variable.value as Array<StringVariableTypeValue>)[index];
-			if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`);
+			if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`, expr.operatorToken);
 			if(arg2) return [arg2 as VariableType, this.coerceValue(output, variable.type.type, arg2 as VariableType)];
 			else return [variable.type.type, output];
 		} else {
