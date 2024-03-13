@@ -9,14 +9,14 @@ This file contains the definitions for every statement type supported by Soodoco
 import type {
 	FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType
 } from "./runtime.js";
-import { TokenType, Token } from "./lexer-types.js";
+import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
 	ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
 	ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
-	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma
+	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
@@ -40,14 +40,14 @@ export const statements = {
 export type PassMode = "value" | "reference";
 export type FunctionArguments = Map<string, {type:VariableType, passMode:PassMode}>
 export type FunctionArgumentData = [name:string, {type:VariableType, passMode:PassMode}];
-export type FunctionArgumentDataPartial = [name:string, {type:VariableType | null, passMode:PassMode | null}];
+export type FunctionArgumentDataPartial = [nameToken:Token, {type:VariableType | null, passMode:PassMode | null}];
 
 export type StatementExecutionResult = {
 	type: "function_return";
 	value: VariableValueType;
 };
 
-export class Statement {
+export class Statement implements TextRanged {
 	type:typeof Statement;
 	stype:StatementType;
 	static type:StatementType;
@@ -55,10 +55,15 @@ export class Statement {
 	static category:StatementCategory;
 	static example:string;
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
+	range: TextRange;
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;
+		this.range = getTotalRange(tokens.map(t =>
+			t instanceof Token ? t :
+			[0, 0] //TODO all the expression ast nodes need to store a range
+		));
 	}
 	toString(html = false){
 		if(html){

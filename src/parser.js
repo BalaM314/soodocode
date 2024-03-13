@@ -9,7 +9,7 @@ which is the preferred representation of the program.
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { statements } from "./statements.js";
-import { impossible, splitArray, fail, isVarType, getText, splitTokens, splitTokensOnComma, errorBoundary } from "./utils.js";
+import { impossible, splitArray, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash } from "./utils.js";
 //TODO improve error messages
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
@@ -44,11 +44,11 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
         else {
             //Expect a colon
             if (section[offset + 1]?.type != "punctuation.colon")
-                fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`);
+                fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 0] ?? section[offset - 1].rangeAfter());
             type = processTypeData(parseType(section.slice(offset + 2)));
         }
         return [
-            section[offset + 0].text,
+            section[offset + 0],
             { passMode, type }
         ];
     }).map(([name, data]) => [name, {
@@ -57,17 +57,18 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
         }])
         .reverse().map(([name, data]) => [name, {
             passMode: data.passMode,
-            type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument ${name}`)
+            type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument "${name.text}"`, name)
         }]);
-    const argumentsMap = new Map(argumentz);
+    const argumentsMap = new Map(argumentz.map(([name, data]) => [name.text, data]));
     if (argumentsMap.size != argumentz.length) {
-        fail(`Duplicate function argument ${argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j))}`);
+        const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
+        fail(`Duplicate function argument "${duplicateArgument.text}"`, duplicateArgument);
     }
     return argumentsMap;
 });
 export const processTypeData = errorBoundary((ast) => {
     if (ast instanceof Token)
-        return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`);
+        return isVarType(ast.text) ? ast.text : fail(`Invalid variable type ${ast.type}`); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
     else
         return new ArrayTypeData(ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), 
         //todo fix this insanity of "type" "text"
@@ -84,25 +85,25 @@ export const parseType = errorBoundary((tokens) => {
         tokens[1]?.type == "bracket.open" &&
         tokens.at(-2)?.type == "keyword.of" &&
         tokens.at(-1)?.type == "name"))
-        fail(`Cannot parse type from "${tokens.join(" ")}"`);
+        fail(`Cannot parse type from "${tokens.join(" ")}"`); //TODO %r
     //ARRAY[1:10, 1:10] OF STRING
     return {
         lengthInformation: splitTokens(tokens.slice(2, -3), "punctuation.comma")
             .map(section => {
             if (section.length != 3)
-                fail(`Invalid array range specifier "${section.join(" ")}"`);
+                fail(`Invalid array range specifier "${section.join(" ")}"`, section);
             if (section[0].type != "number.decimal")
-                fail(`Expected a number, got ${section[0]}`);
+                fail(`Expected a number, got ${section[0]}`, section[0]);
             if (section[1].type != "punctuation.colon")
-                fail(`Expected a colon, got ${section[1]}`);
+                fail(`Expected a colon, got ${section[1]}`, section[1]);
             if (section[2].type != "number.decimal")
-                fail(`Expected a number, got ${section[2]}`);
+                fail(`Expected a number, got ${section[2]}`, section[1]);
             return [section[0], section[2]];
         }),
         type: tokens.at(-1),
     };
 });
-export const parse = errorBoundary(({ program, tokens }) => {
+export function parse({ program, tokens }) {
     let lines = splitArray(tokens, t => t.type == "newline")
         .filter(l => l.length != 0); //remove blank lines
     const statements = lines.map(parseStatement);
@@ -130,20 +131,20 @@ export const parse = errorBoundary(({ program, tokens }) => {
         else if (statement.category == "block_end") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Unexpected statement "${statement.toString()}": no open blocks`);
+                fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement);
             else if (lastNode.controlStatements[0].stype == statement.stype.split(".")[0]) { //probably bad code
                 lastNode.controlStatements.push(statement);
                 blockStack.pop();
             }
             else
-                fail(`Unexpected statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`);
+                fail(`Unexpected statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
         }
         else if (statement.category == "block_multi_split") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Unexpected statement "${statement.toString()}": no open blocks`);
+                fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement, null);
             if (!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement))
-                fail(`Unexpected statement "${statement.toString()}": current block cannot be split by "${statement.toString()}"`);
+                fail(`Unexpected statement "${statement.toString()}": current block cannot be split by "${statement.toString()}"`, null);
             lastNode.controlStatements.push(statement);
             lastNode.nodeGroups.push([]);
         }
@@ -151,26 +152,26 @@ export const parse = errorBoundary(({ program, tokens }) => {
             statement.category;
     }
     if (blockStack.length)
-        fail(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`);
+        fail(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`, blockStack.at(-1).controlStatements[0], null);
     return {
         program,
         nodes: programNodes
     };
-});
+}
 /**
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
 export const parseStatement = errorBoundary((tokens) => {
     if (tokens.length < 1)
-        fail("Empty statement");
+        crash("Empty statement");
     let possibleStatements;
     if (tokens[0].type in statements.byStartKeyword)
         possibleStatements = [statements.byStartKeyword[tokens[0].type]];
     else
         possibleStatements = statements.irregular;
     if (possibleStatements.length == 0)
-        fail(`No possible statements`);
+        fail(`No possible statements`, tokens);
     let errors = [];
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
@@ -185,7 +186,7 @@ export const parseStatement = errorBoundary((tokens) => {
         if (error.priority > maxError.priority)
             maxError = error;
     }
-    fail(maxError.message);
+    fail(maxError.message, tokens);
 });
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
@@ -345,8 +346,9 @@ export const parseExpressionLeafNode = errorBoundary((input) => {
     if (input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
         return input;
     else
-        fail(`Invalid syntax: cannot parse expression \`${getText([input])}\`: not a valid expression leaf node`); //TODO this thing is spammed way too many times, fix with cumulative error messages
+        fail(`Invalid expression leaf node`);
 });
+//TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
 export const parseExpression = errorBoundary((input) => {
     //If there is only one token
     if (input.length == 1)
@@ -369,11 +371,11 @@ export const parseExpression = errorBoundary((input) => {
             else if (input[i].type == "bracket.open")
                 bracketNestLevel--;
             if (parenNestLevel < 0)
-                //nest level going below 0 means too many (, so unclosed parens
-                fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed parentheses`);
+                //nest level going below 0 means too many (
+                fail(`Unclosed parentheses`);
             if (bracketNestLevel < 0)
-                //nest level going below 0 means too many (, so unclosed parens
-                fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unclosed square bracket`);
+                //nest level going below 0 means too many [
+                fail(`Unclosed square bracket`);
             let operator; //assignment assertion goes brrrrr
             if (parenNestLevel == 0 && bracketNestLevel == 0 && //the operator is not inside parentheses and
                 operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for
@@ -394,11 +396,11 @@ export const parseExpression = errorBoundary((input) => {
                         // ^
                         // lowest priority is leftmost
                         if (canBeUnaryOperator(input[i - 1]))
-                            continue; //Operator priority assumption is wrong, try again!
-                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: unexpected expression on left side of operator ${input[i].text}`);
+                            continue; //Operator priority assumption is wrong, try again! //TODO shouldn't this be the outer for loop?
+                        fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
                     }
                     if (right.length == 0)
-                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                        fail(`Mo expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
                     return {
                         operatorToken: input[i],
                         operator,
@@ -413,13 +415,13 @@ export const parseExpression = errorBoundary((input) => {
                         if (operator.overloadedUnary)
                             break;
                         else
-                            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on left side of operator ${input[i].text}`);
+                            fail(`No expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
                     }
                     if (right.length == 0)
-                        fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no expression on right side of operator ${input[i].text}`);
+                        fail(`No expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
                     if (operator.overloadedUnary) {
                         if (cannotEndExpression(input[i - 1]))
-                            break; //Binary operator can't fit here, this must be the unary operator
+                            break; //Binary operator can't fit here, this must be the unary operator //TODO won't this incorrectly trip the paren nest level check? shouldn't it be continue to next operator
                     }
                     return {
                         operatorToken: input[i],
@@ -431,9 +433,9 @@ export const parseExpression = errorBoundary((input) => {
         }
         //Nest level being above zero at the beginning of the string means too many )
         if (parenNestLevel != 0)
-            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no parentheses group to close`);
+            fail(`No parentheses group to close`, null); //TODO find the correct token
         if (bracketNestLevel != 0)
-            fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no bracket group to close`);
+            fail(`No bracket group to close`, null); //TODO find the correct token
         //No operators of the current priority found, look for operator with the next level higher priority
     }
     //If the whole expression is surrounded by parentheses, parse the inner expression
@@ -460,5 +462,5 @@ export const parseExpression = errorBoundary((input) => {
         };
     }
     //No operators found at all, something went wrong
-    fail(`Invalid syntax: cannot parse expression \`${getText(input)}\`: no operators found`);
+    fail(`No operators found`);
 });

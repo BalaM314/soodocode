@@ -45,7 +45,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -58,6 +58,9 @@ export class Statement {
         this.type = this.constructor;
         this.stype = this.type.type;
         this.category = this.type.category;
+        this.range = getTotalRange(tokens.map(t => t instanceof Token ? t :
+            [0, 0] //TODO all the expression ast nodes need to store a range
+        ));
     }
     toString(html = false) {
         if (html) {
