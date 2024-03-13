@@ -5,7 +5,10 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains global type definitions.
 */
 
-export {}; //force module
+
+export interface TagFunction<Tin = string, Tout = string> {
+	(stringChunks: readonly string[], ...varChunks: readonly Tin[]):Tout;
+}
 
 declare global {
 	interface ObjectConstructor {

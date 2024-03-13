@@ -183,4 +183,11 @@ export function parseError(thing) {
         return "Unable to parse error object";
     }
 }
+/** Generates a tag template processor from a function that processes one value at a time. */
+export function tagProcessor(transformer) {
+    return function (stringChunks, ...varChunks) {
+        return String.raw({ raw: stringChunks }, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));
+    };
+}
+export const fquote = tagProcessor((chunk) => chunk.length == 0 ? "[empty]" : `"${chunk}"`);
 export function forceType(input) { }

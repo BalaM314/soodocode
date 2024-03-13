@@ -8,6 +8,7 @@ This file contains utility functions.
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
 import type { StringVariableType, VariableType } from "./runtime.js";
+import { TagFunction } from "./types.js";
 
 export function stringifyExpressionASTArrayTypeNode(input:ExpressionASTArrayTypeNode){
 	return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;
@@ -180,5 +181,18 @@ export function parseError(thing:unknown):string {
 		return "Unable to parse error object";
 	}
 }
+
+/** Generates a tag template processor from a function that processes one value at a time. */
+export function tagProcessor<T>(
+	transformer:(chunk:T, index:number, allStringChunks:readonly string[], allVarChunks:readonly T[]) => string
+):TagFunction<T, string> {
+	return function(stringChunks:readonly string[], ...varChunks:readonly T[]){
+		return String.raw({raw: stringChunks}, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));
+	}
+}
+
+export const fquote = tagProcessor((chunk:string) =>
+	chunk.length == 0 ? "[empty]" : `"${chunk}"`
+);
 
 export function forceType<T>(input:unknown):asserts input is T {}
