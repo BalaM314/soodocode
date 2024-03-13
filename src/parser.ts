@@ -18,7 +18,8 @@ import {
 	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
 } from "./statements.js";
 import {
-	impossible, splitArray, fail, PartialKey, isVarType, getText, splitTokens, splitTokensOnComma, errorBoundary, crash
+	impossible, splitArray, fail, PartialKey, isVarType, getText, splitTokens, splitTokensOnComma,
+	errorBoundary, crash, fquote
 } from "./utils.js";
 
 //TODO improve error messages
@@ -47,14 +48,14 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 		} else passMode = null;
 
 		//There must be a name
-		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? section[offset - 1].rangeAfter());
+		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
 
 		//If the name is the only thing present, then the type is specified later, leave it as null
 		if(section.length == offset + 1){
 			type = null;
 		} else {
 			//Expect a colon
-			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 0] ?? section[offset - 1].rangeAfter());
+			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
 			type = processTypeData(parseType(section.slice(offset + 2)));
 		}
 		return [
@@ -71,7 +72,7 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 	}] as const);
 	const argumentsMap:FunctionArguments = new Map(argumentz.map(([name, data]) => [name.text, data] as const));
 	if(argumentsMap.size != argumentz.length){
-		const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
+		const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
 		fail(`Duplicate function argument "${duplicateArgument.text}"`, duplicateArgument);
 	}
 	return argumentsMap;
@@ -102,7 +103,7 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | 
 	return {
 		lengthInformation: splitTokens(tokens.slice(2, -3), "punctuation.comma")
 		.map(section => {
-			if(section.length != 3) fail(`Invalid array range specifier "${section.join(" ")}"`, section);
+			if(section.length != 3) fail(fquote`Invalid array range specifier ${section.join(" ")}`, section.length ? section : null); //TODO somehow get this?
 			if(section[0].type != "number.decimal") fail(`Expected a number, got ${section[0]}`, section[0]);
 			if(section[1].type != "punctuation.colon") fail(`Expected a colon, got ${section[1]}`, section[1]);
 			if(section[2].type != "number.decimal") fail(`Expected a number, got ${section[2]}`, section[1]);

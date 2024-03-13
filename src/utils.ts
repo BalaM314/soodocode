@@ -110,7 +110,7 @@ export function findRange(args:unknown[]):TextRange | undefined {
 			return arg.range;
 		if(Array.isArray(arg) && isRange(arg[0]))
 			return getTotalRange(arg)
-		if(Array.isArray(arg) && isRange(arg[0].range))
+		if(Array.isArray(arg) && arg.length > 0 && isRange(arg[0].range))
 			return getTotalRange(arg)
 	}
 	return undefined;

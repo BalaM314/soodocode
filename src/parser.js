@@ -9,7 +9,7 @@ which is the preferred representation of the program.
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { statements } from "./statements.js";
-import { impossible, splitArray, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash } from "./utils.js";
+import { impossible, splitArray, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote } from "./utils.js";
 //TODO improve error messages
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
@@ -36,7 +36,7 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
             passMode = null;
         //There must be a name
         if (section[offset + 0]?.type != "name")
-            fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? section[offset - 1].rangeAfter());
+            fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
         //If the name is the only thing present, then the type is specified later, leave it as null
         if (section.length == offset + 1) {
             type = null;
@@ -44,7 +44,7 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
         else {
             //Expect a colon
             if (section[offset + 1]?.type != "punctuation.colon")
-                fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 0] ?? section[offset - 1].rangeAfter());
+                fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
             type = processTypeData(parseType(section.slice(offset + 2)));
         }
         return [
@@ -61,7 +61,7 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
         }]);
     const argumentsMap = new Map(argumentz.map(([name, data]) => [name.text, data]));
     if (argumentsMap.size != argumentz.length) {
-        const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a == b && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
+        const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
         fail(`Duplicate function argument "${duplicateArgument.text}"`, duplicateArgument);
     }
     return argumentsMap;
@@ -91,7 +91,7 @@ export const parseType = errorBoundary((tokens) => {
         lengthInformation: splitTokens(tokens.slice(2, -3), "punctuation.comma")
             .map(section => {
             if (section.length != 3)
-                fail(`Invalid array range specifier "${section.join(" ")}"`, section);
+                fail(fquote `Invalid array range specifier ${section.join(" ")}`, section.length ? section : null); //TODO somehow get this?
             if (section[0].type != "number.decimal")
                 fail(`Expected a number, got ${section[0]}`, section[0]);
             if (section[1].type != "punctuation.colon")
