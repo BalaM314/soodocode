@@ -10,7 +10,7 @@ which is the preferred representation of the program.
 
 import { Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
-	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode,
+	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode, ExpressionASTNode,
 	ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
 import type { VariableType } from "./runtime.js";
@@ -92,25 +92,26 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | 
 		if(tokens[0].type == "name") return tokens[0];
 		else fail(`Token ${tokens[0]} is not a valid type`);
 	}
+	
+	//Array type
 	if(!(
 		tokens[0]?.type == "keyword.array" &&
 		tokens[1]?.type == "bracket.open" &&
 		tokens.at(-2)?.type == "keyword.of" &&
 		tokens.at(-1)?.type == "name"
 	)) fail(fquote`Cannot parse type from ${tokens.join(" ")}`); //TODO %r
-	//ARRAY[1:10, 1:10] OF STRING
-
-	return {
-		lengthInformation: splitTokens(tokens.slice(2, -3), "punctuation.comma")
+	return new ExpressionASTArrayTypeNode(
+		splitTokens(tokens.slice(2, -3), "punctuation.comma")
 		.map(section => {
 			if(section.length != 3) fail(fquote`Invalid array range specifier ${section.join(" ")}`, section.length ? section : null); //TODO somehow get this?
 			if(section[0].type != "number.decimal") fail(`Expected a number, got ${section[0]}`, section[0]);
 			if(section[1].type != "punctuation.colon") fail(`Expected a colon, got ${section[1]}`, section[1]);
 			if(section[2].type != "number.decimal") fail(`Expected a number, got ${section[2]}`, section[1]);
-			return [section[0], section[2]] as const;
+			return [section[0], section[2]] as [Token, Token];
 		}),
-		type: tokens.at(-1)!,
-	};
+		tokens.at(-1)!,
+		tokens
+	);
 });
 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
@@ -400,11 +401,12 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 						fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
 					}
 					if(right.length == 0) fail(`Mo expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
-					return {
-						operatorToken: input[i],
+					return new ExpressionASTBranchNode(
+						input[i],
 						operator,
-						nodes: [parseExpression(right)]
-					};
+						[parseExpression(right)],
+						input
+					);
 				} else {
 					//Make sure there is something on left and right of the operator
 					const left = input.slice(0, i);
@@ -417,11 +419,12 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 					if(operator.overloadedUnary){
 						if(cannotEndExpression(input[i - 1])) continue; //Binary operator can't fit here, this must be the unary operator
 					}
-					return {
-						operatorToken: input[i],
+					return new ExpressionASTBranchNode(
+						input[i],
 						operator,
-						nodes: [parseExpression(left), parseExpression(right)]
-					};
+						[parseExpression(left), parseExpression(right)],
+						input
+					);
 				}
 			}
 		}
@@ -442,22 +445,24 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 
 	//Special case: function call
 	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
-		return {
-			operatorToken: input[0],
-			operator: "function call",
-			nodes: input.length == 3
+		return new ExpressionASTBranchNode(
+			input[0],
+			"function call",
+			input.length == 3
 				? [] //If there are no arguments, don't generate a blank argument group
-				: splitTokensOnComma(input.slice(2, -1)).map(parseExpression)
-		};
+				: splitTokensOnComma(input.slice(2, -1)).map(parseExpression),
+			input
+		);
 	}
 	
 	//Special case: array access
 	if(input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3){
-		return {
-			operatorToken: input[0],
-			operator: "array access",
-			nodes: splitTokensOnComma(input.slice(2, -1)).map(parseExpression)
-		};
+		return new ExpressionASTBranchNode(
+			input[0],
+			"array access",
+			splitTokensOnComma(input.slice(2, -1)).map(parseExpression),
+			input
+		);
 	}
 
 	//No operators found at all, something went wrong

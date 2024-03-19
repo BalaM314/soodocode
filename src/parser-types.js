@@ -1,4 +1,24 @@
-import { fail } from "./utils.js";
+import { fail, getTotalRange } from "./utils.js";
+/** Represents a branch node (node with child nodes) in an expression AST. */
+export class ExpressionASTBranchNode {
+    constructor(operatorToken, operator, nodes, allTokens) {
+        this.operatorToken = operatorToken;
+        this.operator = operator;
+        this.nodes = nodes;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+}
+/** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
+export class ExpressionASTArrayTypeNode {
+    constructor(lengthInformation, //TODO store the tokens here?
+    type, allTokens) {
+        this.lengthInformation = lengthInformation;
+        this.type = type;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+}
 /** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
 export class ArrayTypeData {
     constructor(lengthInformation, type) {

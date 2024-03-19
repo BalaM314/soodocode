@@ -1,8 +1,8 @@
-import { Token, TokenType } from "./lexer-types.js";
+import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
 import { StringVariableType } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { fail } from "./utils.js";
+import { fail, getTotalRange } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -12,15 +12,27 @@ export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode;
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
-export type ExpressionASTBranchNode = {
-	operatorToken: Token;
-	operator: Operator | "function call" | "array access";
-	nodes: ExpressionASTNode[];
+export class ExpressionASTBranchNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public operatorToken: Token,
+		public operator: Operator | "function call" | "array access",
+		public nodes: ExpressionASTNode[],
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
-export type ExpressionASTArrayTypeNode = {
-	lengthInformation: [low:Token, high:Token][];
-	type: Token;
+export class ExpressionASTArrayTypeNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public lengthInformation: [low:Token, high:Token][], //TODO store the tokens here?
+		public type: Token,
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
 }
 /** Represents a node that represents a type, which can be either a single token or an array type node. */
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;

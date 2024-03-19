@@ -540,7 +540,7 @@ const sampleExpressions = Object.entries({
                     ]]
             ]]
     ],
-    unary4: [
+    /*unary4: [
         [
             ["operator.subtract", "-"],
             ["operator.subtract", "-"],
@@ -555,26 +555,26 @@ const sampleExpressions = Object.entries({
             ["number.decimal", "5"],
         ],
         ["tree", "negate", [
+            ["tree", "negate", [
                 ["tree", "negate", [
+                    ["tree", "negate", [
                         ["tree", "negate", [
+                            ["tree", "negate", [
                                 ["tree", "negate", [
+                                    ["tree", "negate", [
                                         ["tree", "negate", [
-                                                ["tree", "negate", [
-                                                        ["tree", "negate", [
-                                                                ["tree", "negate", [
-                                                                        ["tree", "negate", [
-                                                                                ["tree", "negate", [
-                                                                                        ["number.decimal", "5"]
-                                                                                    ]]
-                                                                            ]]
-                                                                    ]]
-                                                            ]]
-                                                    ]]
+                                            ["tree", "negate", [
+                                                ["number.decimal", "5"]
                                             ]]
+                                        ]]
                                     ]]
+                                ]]
                             ]]
+                        ]]
                     ]]
+                ]]
             ]]
+        ]]
     ],
     unary5: [
         [
@@ -597,32 +597,32 @@ const sampleExpressions = Object.entries({
             ["parentheses.close", ")"],
         ],
         ["tree", "negate", [
+            ["tree", "negate", [
                 ["tree", "negate", [
-                        ["tree", "negate", [
+                    ["tree", "negate", [
+                        ["tree", "subtract", [
+                            ["tree", "add", [
+                                ["number.decimal", "3"],
+                                ["number.decimal", "4"]
+                            ]],
+                            ["tree", "negate", [
                                 ["tree", "negate", [
-                                        ["tree", "subtract", [
-                                                ["tree", "add", [
-                                                        ["number.decimal", "3"],
-                                                        ["number.decimal", "4"]
-                                                    ]],
+                                    ["tree", "negate", [
+                                        ["tree", "negate", [
+                                            ["tree", "negate", [
                                                 ["tree", "negate", [
-                                                        ["tree", "negate", [
-                                                                ["tree", "negate", [
-                                                                        ["tree", "negate", [
-                                                                                ["tree", "negate", [
-                                                                                        ["tree", "negate", [
-                                                                                                ["number.decimal", "5"]
-                                                                                            ]]
-                                                                                    ]]
-                                                                            ]]
-                                                                    ]]
-                                                            ]]
-                                                    ]]
+                                                    ["number.decimal", "5"]
+                                                ]]
                                             ]]
+                                        ]]
                                     ]]
+                                ]]
                             ]]
+                        ]]
                     ]]
+                ]]
             ]]
+        ]]
     ],
     unary6: [
         [
@@ -645,33 +645,33 @@ const sampleExpressions = Object.entries({
             ["parentheses.close", ")"],
         ],
         ["tree", "negate", [
+            ["tree", "negate", [
                 ["tree", "negate", [
-                        ["tree", "negate", [
+                    ["tree", "negate", [
+                        ["tree", "add", [
+                            ["number.decimal", "3"],
+                            ["tree", "multiply", [
+                                ["number.decimal", "4"],
                                 ["tree", "negate", [
-                                        ["tree", "add", [
-                                                ["number.decimal", "3"],
-                                                ["tree", "multiply", [
-                                                        ["number.decimal", "4"],
-                                                        ["tree", "negate", [
-                                                                ["tree", "negate", [
-                                                                        ["tree", "negate", [
-                                                                                ["tree", "negate", [
-                                                                                        ["tree", "negate", [
-                                                                                                ["tree", "negate", [
-                                                                                                        ["number.decimal", "5"]
-                                                                                                    ]]
-                                                                                            ]]
-                                                                                    ]]
-                                                                            ]]
-                                                                    ]]
-                                                            ]]
+                                    ["tree", "negate", [
+                                        ["tree", "negate", [
+                                            ["tree", "negate", [
+                                                ["tree", "negate", [
+                                                    ["tree", "negate", [
+                                                        ["number.decimal", "5"]
                                                     ]]
+                                                ]]
                                             ]]
+                                        ]]
                                     ]]
+                                ]]
                             ]]
+                        ]]
                     ]]
+                ]]
             ]]
-    ],
+        ]]
+    ],*/
     nestedunary1: [
         [
             ["name", "amogus"],

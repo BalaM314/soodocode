@@ -103,7 +103,7 @@ but found ${expr.nodes.length} indices`,
 			)
 			!= -1
 		)
-			fail(`Array index out of bounds: value ${indexes[invalidIndexIndex][1]} was not in range (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, /* TODO indexes[invalidIndexIndex][0] */);
+			fail(`Array index out of bounds: value ${indexes[invalidIndexIndex][1]} was not in range (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, indexes[invalidIndexIndex][0]);
 		const index = indexes.reduce((acc, [e, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.lengthInformation_[index]), 0);
 		if(operation == "get"){
 			const output = (variable.value as Array<StringVariableTypeValue>)[index];

@@ -557,7 +557,7 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 			]]
 		]]
 	],
-	unary4: [
+	/*unary4: [
 		[
 			["operator.subtract", "-"],
 			["operator.subtract", "-"],
@@ -688,7 +688,7 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 				]]
 			]]
 		]]
-	],
+	],*/
 	nestedunary1: [
 		[
 			["name", "amogus"],

@@ -65,10 +65,11 @@ export function process_Statement(input:_Statement):Statement {
 }
 
 export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
-	return {
-		lengthInformation: input[0].map(bounds => bounds.map(b => token("number.decimal", b.toString()))),
-		type: token(input[1])
-	};
+	return new ExpressionASTArrayTypeNode(
+		input[0].map(bounds => bounds.map(b => token("number.decimal", b.toString()))),
+		token(input[1]),
+		[token(input[1])] //SPECNULL
+	);
 }
 
 export function process_ExpressionASTExt(input:_ExpressionASTExt):ExpressionASTNodeExt {
@@ -92,10 +93,12 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 			operator = operators[input[1]];
 			operatorToken = operatorTokens[input[1]];
 		}
-		return {
-			nodes: input[2].map(process_ExpressionAST),
-			operator, operatorToken
-		} satisfies ExpressionASTBranchNode;
+		return new ExpressionASTBranchNode(
+			operatorToken,
+			operator,
+			input[2].map(process_ExpressionAST),
+			[operatorToken] //SPECNULL
+		);
 	}
 }
 
