@@ -176,7 +176,7 @@ soodocodeInput.onkeydown = e => {
 		soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
 	}
 	//Update text
-	const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2013", "-");
+	const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2013", "-").replaceAll("\u2011", "-");
 	if(soodocodeInput.value != newText){
 		const start = soodocodeInput.selectionStart;
 		soodocodeInput.value = newText;
