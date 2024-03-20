@@ -10,7 +10,7 @@ import { ArrayTypeData } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
-import { process_ExpressionAST, process_ExpressionASTArrayTypeNode, process_ProgramAST, process_Statement, } from "./spec_utils.js";
+import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 //i miss rust macros
 const sampleExpressions = Object.entries({
@@ -540,7 +540,7 @@ const sampleExpressions = Object.entries({
                     ]]
             ]]
     ],
-    /*unary4: [
+    unary4: [
         [
             ["operator.subtract", "-"],
             ["operator.subtract", "-"],
@@ -555,26 +555,26 @@ const sampleExpressions = Object.entries({
             ["number.decimal", "5"],
         ],
         ["tree", "negate", [
-            ["tree", "negate", [
                 ["tree", "negate", [
-                    ["tree", "negate", [
                         ["tree", "negate", [
-                            ["tree", "negate", [
                                 ["tree", "negate", [
-                                    ["tree", "negate", [
                                         ["tree", "negate", [
-                                            ["tree", "negate", [
-                                                ["number.decimal", "5"]
+                                                ["tree", "negate", [
+                                                        ["tree", "negate", [
+                                                                ["tree", "negate", [
+                                                                        ["tree", "negate", [
+                                                                                ["tree", "negate", [
+                                                                                        ["number.decimal", "5"]
+                                                                                    ]]
+                                                                            ]]
+                                                                    ]]
+                                                            ]]
+                                                    ]]
                                             ]]
-                                        ]]
                                     ]]
-                                ]]
                             ]]
-                        ]]
                     ]]
-                ]]
             ]]
-        ]]
     ],
     unary5: [
         [
@@ -597,32 +597,32 @@ const sampleExpressions = Object.entries({
             ["parentheses.close", ")"],
         ],
         ["tree", "negate", [
-            ["tree", "negate", [
                 ["tree", "negate", [
-                    ["tree", "negate", [
-                        ["tree", "subtract", [
-                            ["tree", "add", [
-                                ["number.decimal", "3"],
-                                ["number.decimal", "4"]
-                            ]],
-                            ["tree", "negate", [
+                        ["tree", "negate", [
                                 ["tree", "negate", [
-                                    ["tree", "negate", [
-                                        ["tree", "negate", [
-                                            ["tree", "negate", [
+                                        ["tree", "subtract", [
+                                                ["tree", "add", [
+                                                        ["number.decimal", "3"],
+                                                        ["number.decimal", "4"]
+                                                    ]],
                                                 ["tree", "negate", [
-                                                    ["number.decimal", "5"]
-                                                ]]
+                                                        ["tree", "negate", [
+                                                                ["tree", "negate", [
+                                                                        ["tree", "negate", [
+                                                                                ["tree", "negate", [
+                                                                                        ["tree", "negate", [
+                                                                                                ["number.decimal", "5"]
+                                                                                            ]]
+                                                                                    ]]
+                                                                            ]]
+                                                                    ]]
+                                                            ]]
+                                                    ]]
                                             ]]
-                                        ]]
                                     ]]
-                                ]]
                             ]]
-                        ]]
                     ]]
-                ]]
             ]]
-        ]]
     ],
     unary6: [
         [
@@ -645,33 +645,33 @@ const sampleExpressions = Object.entries({
             ["parentheses.close", ")"],
         ],
         ["tree", "negate", [
-            ["tree", "negate", [
                 ["tree", "negate", [
-                    ["tree", "negate", [
-                        ["tree", "add", [
-                            ["number.decimal", "3"],
-                            ["tree", "multiply", [
-                                ["number.decimal", "4"],
+                        ["tree", "negate", [
                                 ["tree", "negate", [
-                                    ["tree", "negate", [
-                                        ["tree", "negate", [
-                                            ["tree", "negate", [
-                                                ["tree", "negate", [
-                                                    ["tree", "negate", [
-                                                        ["number.decimal", "5"]
+                                        ["tree", "add", [
+                                                ["number.decimal", "3"],
+                                                ["tree", "multiply", [
+                                                        ["number.decimal", "4"],
+                                                        ["tree", "negate", [
+                                                                ["tree", "negate", [
+                                                                        ["tree", "negate", [
+                                                                                ["tree", "negate", [
+                                                                                        ["tree", "negate", [
+                                                                                                ["tree", "negate", [
+                                                                                                        ["number.decimal", "5"]
+                                                                                                    ]]
+                                                                                            ]]
+                                                                                    ]]
+                                                                            ]]
+                                                                    ]]
+                                                            ]]
                                                     ]]
-                                                ]]
                                             ]]
-                                        ]]
                                     ]]
-                                ]]
                             ]]
-                        ]]
                     ]]
-                ]]
             ]]
-        ]]
-    ],*/
+    ],
     nestedunary1: [
         [
             ["name", "amogus"],
@@ -880,7 +880,7 @@ const sampleExpressions = Object.entries({
 }).map(([name, [program, output]]) => [
     name,
     program.map(token),
-    output == "error" ? "error" : process_ExpressionAST(output)
+    output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
 ]);
 const parseStatementTests = Object.entries({
     output: [
@@ -1201,7 +1201,7 @@ const parseStatementTests = Object.entries({
 }).map(([name, [program, output]]) => [
     name,
     program.map(token),
-    output == "error" ? "error" : process_Statement(output)
+    output == "error" ? "error" : applyAnyRange(process_Statement(output))
 ]);
 const parseProgramTests = Object.entries({
     output: [
@@ -1380,7 +1380,7 @@ const parseProgramTests = Object.entries({
 }).map(([name, [program, output]]) => [
     name,
     {
-        program: null,
+        program: "",
         tokens: program.map(token)
     },
     output == "error" ? "error" : process_ProgramAST(output)
@@ -1826,10 +1826,7 @@ const parseTypeTests = Object.entries({
 }).map(([name, [input, output]]) => ({
     name,
     input: input.map(token),
-    output: output == "error" ? output :
-        ((output) => !Array.isArray(output[1]))(output) //weird type guard IIFE shenanigans
-            ? token(output)
-            : process_ExpressionASTArrayTypeNode(output)
+    output: output == "error" ? output : applyAnyRange(process_ExpressionASTExt(output))
 }));
 describe("parseExpression", () => {
     for (const [name, program, output] of sampleExpressions) {

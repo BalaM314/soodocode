@@ -1,6 +1,8 @@
-import { token } from "../src/lexer-types.js";
+import { Token, token } from "../src/lexer-types.js";
 import { ExpressionASTArrayTypeNode, ExpressionASTBranchNode } from "../src/parser-types.js";
 import { operators } from "../src/parser.js";
+import { Statement } from "../src/statements.js";
+import { crash } from "../src/utils.js";
 export const operatorTokens = {
     "add": token("operator.add", "+"),
     "subtract": token("operator.subtract", "-"),
@@ -34,7 +36,7 @@ export function process_ExpressionASTExt(input) {
     if (is_ExpressionASTArrayTypeNode(input))
         return process_ExpressionASTArrayTypeNode(input);
     else
-        return process_ExpressionAST(input);
+        return process_ExpressionAST(input); //unsafe
 }
 export function process_ExpressionAST(input) {
     if (input.length == 2) {
@@ -59,7 +61,7 @@ export function process_ExpressionAST(input) {
         );
     }
 }
-export function process_ProgramAST(input, program = null /* SPECNULL */) {
+export function process_ProgramAST(input, program = "" /* SPECNULL */) {
     return {
         program,
         nodes: input.map(process_ProgramASTNode)
@@ -73,4 +75,35 @@ export function process_ProgramASTNode(input) {
             controlStatements: input.controlStatements.map(process_Statement),
             nodeGroups: input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
         };
+}
+export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
+/** Mutates input unsafely */
+export function applyAnyRange(input) {
+    if (input instanceof Token) {
+        input.range;
+        input.range = anyRange;
+    }
+    else if (input instanceof Statement) {
+        input.range;
+        input.range = anyRange;
+        input.tokens.forEach(applyAnyRange);
+    }
+    else if (input instanceof ExpressionASTBranchNode) {
+        input.range;
+        input.range = anyRange;
+        input.allTokens;
+        input.allTokens = jasmine.any(Array);
+        applyAnyRange(input.operatorToken);
+        input.nodes.forEach(applyAnyRange);
+    }
+    else if (input instanceof ExpressionASTArrayTypeNode) {
+        input.range;
+        input.range = anyRange;
+        input.allTokens;
+        input.allTokens = jasmine.any(Array);
+        applyAnyRange(input.type);
+    }
+    else
+        crash(`Type error at applyAnyRange()`);
+    return input;
 }

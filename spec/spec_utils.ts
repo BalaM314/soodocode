@@ -1,9 +1,10 @@
 import { SymbolType, Token, TokenType, symbol, token } from "../src/lexer-types.js";
 import {
-	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNodeType, ProgramASTNode
+	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNodeType, ProgramASTNode
 } from "../src/parser-types.js";
 import { Operator, operators, OperatorType } from "../src/parser.js";
 import { Statement } from "../src/statements.js";
+import { crash } from "../src/utils.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
@@ -72,9 +73,12 @@ export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayType
 	);
 }
 
-export function process_ExpressionASTExt(input:_ExpressionASTExt):ExpressionASTNodeExt {
+export function process_ExpressionASTExt<TIn extends _ExpressionASTExt>(input:TIn):
+	TIn extends (_ExpressionASTArrayTypeNode | _ExpressionASTLeafNode)
+		? (ExpressionASTArrayTypeNode | ExpressionASTLeafNode)
+		: (ExpressionASTNodeExt) {
 	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
-	else return process_ExpressionAST(input);
+	else return process_ExpressionAST(input) as any; //unsafe
 }
 
 export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
@@ -102,7 +106,7 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 	}
 }
 
-export function process_ProgramAST(input:_ProgramAST, program:string = null! /* SPECNULL */):ProgramAST {
+export function process_ProgramAST(input:_ProgramAST, program:string = "" /* SPECNULL */):ProgramAST {
 	return {
 		program,
 		nodes: input.map(process_ProgramASTNode)
@@ -117,4 +121,32 @@ export function process_ProgramASTNode(input:_ProgramASTNode):ProgramASTNode {
 			controlStatements: input.controlStatements.map(process_Statement),
 			nodeGroups: input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
 		};
+}
+
+export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
+
+/** Mutates input unsafely */
+export function applyAnyRange<TIn extends ExpressionAST | ExpressionASTArrayTypeNode | Statement>(input:TIn):jasmine.Expected<TIn> {
+	if(input instanceof Token){
+		input.range;
+		(input as any).range = anyRange;
+	} else if(input instanceof Statement){
+		input.range;
+		(input as any).range = anyRange;
+		input.tokens.forEach(applyAnyRange);
+	} else if(input instanceof ExpressionASTBranchNode){
+		input.range;
+		(input as any).range = anyRange;
+		input.allTokens;
+		(input as any).allTokens = jasmine.any(Array);
+		applyAnyRange(input.operatorToken)
+		input.nodes.forEach(applyAnyRange);
+	} else if(input instanceof ExpressionASTArrayTypeNode){
+		input.range;
+		(input as any).range = anyRange;
+		input.allTokens;
+		(input as any).allTokens = jasmine.any(Array);
+		applyAnyRange(input.type);
+	} else crash(`Type error at applyAnyRange()`);
+	return input;
 }

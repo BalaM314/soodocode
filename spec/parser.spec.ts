@@ -16,7 +16,8 @@ import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfState
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
-	process_ExpressionAST, process_ExpressionASTArrayTypeNode, process_ProgramAST, process_Statement,
+	applyAnyRange,
+	process_ExpressionAST, process_ExpressionASTArrayTypeNode, process_ExpressionASTExt, process_ProgramAST, process_Statement,
 } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -24,7 +25,7 @@ import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _
 //i miss rust macros
 
 
-const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST | "error"][] = Object.entries<[program:_Token[], output:_ExpressionAST | "error"]>({
+const sampleExpressions = Object.entries<[program:_Token[], output:_ExpressionAST | "error"]>({
 	number: [
 		[
 			["number.decimal", "5"],
@@ -557,7 +558,7 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 			]]
 		]]
 	],
-	/*unary4: [
+	unary4: [
 		[
 			["operator.subtract", "-"],
 			["operator.subtract", "-"],
@@ -688,7 +689,7 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 				]]
 			]]
 		]]
-	],*/
+	],
 	nestedunary1: [
 		[
 			["name", "amogus"],
@@ -894,15 +895,15 @@ const sampleExpressions:[name:string, expression:Token[], output:ExpressionAST |
 		//yet another huge tree
 		["tree","add",[["tree",["function call","amogus"],[["tree","and",[["tree","greater_than",[["tree","greater_than",[["tree","subtract",[["tree","add",[["number.decimal","1"],["number.decimal","2"]]],["tree","integer_divide",[["tree","mod",[["tree","divide",[["tree","multiply",[["number.decimal","3"],["number.decimal","4"]]],["number.decimal","5"]]],["number.decimal","6"]]],["number.decimal","7"]]]]],["number.decimal","8"]]],["tree","equal_to",[["number.decimal","9"],["number.decimal","10"]]]]],["tree","not",[["number.decimal","12"]]]]],["string","\"sus\""],["tree",["array access","x"],[["number.decimal","5"]]],["tree",["function call","amogus"],[["tree",["array access","arr"],[["number.decimal","1"],["number.decimal","5"]]],["tree",["array access","bigarr"],[["tree",["function call","sussy"],[]],["tree",["function call","sussier"],[["number.decimal","37"],["tree",["array access","y"],[["tree","add",[["number.decimal","5"],["tree",["array access","z"],[["number.decimal","0"],["number.decimal","0"]]]]]]]]]]],["number.decimal","5"]]]]],["number.decimal","0"]]]
 	]
-}).map<[name:string, expression:Token[], output:ExpressionAST | "error"]>(([name, [program, output]]) =>
+}).map<[name:string, expression:Token[], output:jasmine.Expected<ExpressionAST> | "error"]>(([name, [program, output]]) =>
 	[
 		name,
 		program.map(token),
-		output == "error" ? "error" : process_ExpressionAST(output)
+		output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
 	]
 );
 
-const parseStatementTests:[name:string, program:Token[], output:Statement | "error"][] = Object.entries<[program:_Token[], output:_Statement | "error"]>({
+const parseStatementTests = Object.entries<[program:_Token[], output:_Statement | "error"]>({
 	output: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -1218,16 +1219,16 @@ const parseStatementTests:[name:string, program:Token[], output:Statement | "err
 		],
 		"error"
 	],
-}).map<[name:string, program:Token[], output:Statement | "error"]>(([name, [program, output]]) =>
+}).map<[name:string, program:Token[], output:jasmine.Expected<Statement> | "error"]>(([name, [program, output]]) =>
 	[
 		name,
 		program.map(token),
-		output == "error" ? "error" : process_Statement(output)
+		output == "error" ? "error" : applyAnyRange(process_Statement(output))
 	]
 );
 
 
-const parseProgramTests:[name:string, program:TokenizedProgram, output:ProgramAST | "error"][] = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
+const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
 	output: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -1401,11 +1402,11 @@ const parseProgramTests:[name:string, program:TokenizedProgram, output:ProgramAS
 			}
 		],
 	]
-}).map<[name:string, program:TokenizedProgram, output:ProgramAST | "error"]>(([name, [program, output]]) =>
+}).map<[name:string, program:TokenizedProgram, output:jasmine.Expected<ProgramAST> | "error"]>(([name, [program, output]]) =>
 	[
 		name,
 		{
-			program: null!, //SPECNULL
+			program: "", //SPECNULL
 			tokens: program.map(token)
 		},
 		output == "error" ? "error" : process_ProgramAST(output)
@@ -1675,7 +1676,7 @@ const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {
 }));
 
 
-const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTArrayTypeNode | "error";}[] = Object.entries<[input:_Token[], output:_Token | _ExpressionASTArrayTypeNode | "error"]>({
+const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _ExpressionASTArrayTypeNode | "error"]>({
 	simpleType1: [[
 		["name", "INTEGER"],
 	],
@@ -1858,14 +1859,10 @@ const parseTypeTests:{name:string; input:Token[]; output:Token | ExpressionASTAr
 		["keyword.of", "OF"],
 		["name", "INTEGER"],
 	], "error"],
-}).map(([name, [input, output]]) => ({
+}).map<{name:string; input:Token[]; output:jasmine.Expected<Token | ExpressionASTArrayTypeNode> | "error";}>(([name, [input, output]]) => ({
 	name,
 	input: input.map(token),
-	output: 
-		output == "error" ? output :
-		((output):output is _Token => !Array.isArray(output[1]))(output) //weird type guard IIFE shenanigans
-		? token(output)
-		: process_ExpressionASTArrayTypeNode(output)
+	output: output == "error" ? output : applyAnyRange(process_ExpressionASTExt(output))
 }));
 
 

@@ -324,7 +324,7 @@ const tokenizerTests = Object.entries({
             ["string", `"sussy PROCEDURE"`],
         ]
     ]
-}).map(([name, [input, output]]) => [name, { program: null /* SPECNULL */, symbols: input.map(symbol) }, output == "error" ? "error" : output.map(token)]);
+}).map(([name, [input, output]]) => [name, { program: "" /* SPECNULL */, symbols: input.map(symbol) }, output == "error" ? "error" : output.map(token)]);
 describe("symbolizer", () => {
     for (const [name, input, output] of symbolTests) {
         if (output == "error") {
