@@ -189,7 +189,6 @@ type StatementCheckSuccessResult = (Token | {type:"expression" | "type"; start:n
 export const checkStatement = errorBoundary((statement:typeof Statement, input:Token[]):{message:string; priority:number} | StatementCheckSuccessResult => {
 	//warning: despite writing it, I do not fully understand this code
 	//but it works
-	//TODO understand it
 
 	const output:StatementCheckSuccessResult = [];
 	let i, j;
@@ -413,7 +412,7 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 					const left = input.slice(0, i);
 					const right = input.slice(i + 1);
 					if(left.length == 0){
-						if(operator.overloadedUnary) break; //TODO is this also wrong?
+						if(operator.overloadedUnary) continue; //this is the unary operator, try again
 						else fail(`No expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
 					}
 					if(right.length == 0) fail(`No expression on right side of operator ${input[i].text}`, input[i].rangeAfter());

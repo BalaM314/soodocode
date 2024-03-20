@@ -311,6 +311,7 @@ const tokenizerTests:[name:string, input:SymbolizedProgram, output:Token[] | "er
 
 	keywords: [
 		[
+			["word", "DECLARE"],
 			["word", "WHILE"],
 			["space", " "],
 			["word", "Index"],
@@ -327,6 +328,7 @@ const tokenizerTests:[name:string, input:SymbolizedProgram, output:Token[] | "er
 			["word", "PROCEDURE"],
 			["quote.double", `"`],
 		], [
+			["keyword.declare", "DECLARE"],
 			["keyword.while", "WHILE"],
 			["name", "Index"],
 			["operator.less_than", "<"],

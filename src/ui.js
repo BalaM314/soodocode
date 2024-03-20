@@ -71,6 +71,7 @@ export function evaluateExpressionDemo(node) {
     }
     else
         switch (node.operator.name) {
+            case "operator.negate": return -evaluateExpressionDemo(node.nodes[0]);
             case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
             case "operator.subtract": return evaluateExpressionDemo(node.nodes[0]) - evaluateExpressionDemo(node.nodes[1]);
             case "operator.multiply": return evaluateExpressionDemo(node.nodes[0]) * evaluateExpressionDemo(node.nodes[1]);

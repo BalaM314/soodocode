@@ -188,7 +188,6 @@ export const parseStatement = errorBoundary((tokens) => {
 export const checkStatement = errorBoundary((statement, input) => {
     //warning: despite writing it, I do not fully understand this code
     //but it works
-    //TODO understand it
     const output = [];
     let i, j;
     for (i = +(statement.tokens[0] == "#"), j = 0; i < statement.tokens.length; i++) {
@@ -405,7 +404,7 @@ export const parseExpression = errorBoundary((input) => {
                     const right = input.slice(i + 1);
                     if (left.length == 0) {
                         if (operator.overloadedUnary)
-                            break; //TODO is this also wrong?
+                            continue; //this is the unary operator, try again
                         else
                             fail(`No expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
                     }

@@ -12,8 +12,6 @@ import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, Tok
 import { crash, fail, impossible } from "./utils.js";
 
 
-/** A The name of a function on SymbolizerIO that can be used to parse a symbol. */
-type SymbolSpecifierFuncName = "isAlphanumeric" | "isNumber";
 const symbolTypeData: [
 	identifier: string | [SymbolSpecifierFuncName] | RegExp, symbol:SymbolType
 ][] = [
@@ -58,6 +56,46 @@ const symbolTypeData: [
 	[/^./u, "unknown"],
 ];
 
+const tokenNameTypeData = (<T>(d:T) => d as T & {[index:string]: TokenType | undefined;})({
+	"TRUE": "boolean.true",
+	"FALSE": "boolean.false",
+	"DECLARE": "keyword.declare",
+	"CONSTANT": "keyword.constant",
+	"OUTPUT": "keyword.output",
+	"INPUT": "keyword.input",
+	"CALL": "keyword.call",
+	"IF": "keyword.if",
+	"THEN": "keyword.then",
+	"ELSE": "keyword.else",
+	"ENDIF": "keyword.if_end",
+	"FOR": "keyword.for",
+	"TO": "keyword.to",
+	"NEXT": "keyword.for_end",
+	"WHILE": "keyword.while",
+	"ENDWHILE": "keyword.while_end",
+	"REPEAT": "keyword.dowhile",
+	"UNTIL": "keyword.dowhile_end",
+	"FUNCTION": "keyword.function",
+	"BYREF": "keyword.by-reference",
+	"BYVAL": "keyword.by-value",
+	"ENDFUNCTION": "keyword.function_end",
+	"PROCEDURE": "keyword.procedure",
+	"ENDPROCEDURE": "keyword.procedure_end",
+	"RETURN": "keyword.return",
+	"RETURNS": "keyword.returns",
+	"OPENFILE": "keyword.openfile",
+	"READFILE": "keyword.readfile",
+	"WRITEFILE": "keyword.writefile",
+	"CASE": "keyword.case",
+	"OF": "keyword.of",
+	"ENDCASE": "keyword.case_end",
+	"OTHERWISE": "keyword.otherwise",
+	"ARRAY": "keyword.array",
+});
+
+
+/** A The name of a function on SymbolizerIO that can be used to parse a symbol. */
+type SymbolSpecifierFuncName = "isAlphanumeric" | "isNumber";
 /** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
 	lastMatched:string | null = null;
@@ -227,43 +265,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
 			tokens.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
 		} else if(symbol.type === "word"){
-			switch(symbol.text){ //TODO datastructify
-				case "TRUE": write("boolean.true"); break;
-				case "FALSE": write("boolean.false"); break;
-				case "DECLARE": write("keyword.declare"); break;
-				case "CONSTANT": write("keyword.constant"); break;
-				case "OUTPUT": write("keyword.output"); break;
-				case "INPUT": write("keyword.input"); break;
-				case "CALL": write("keyword.call"); break;
-				case "IF": write("keyword.if"); break;
-				case "THEN": write("keyword.then"); break;
-				case "ELSE": write("keyword.else"); break;
-				case "ENDIF": write("keyword.if_end"); break;
-				case "FOR": write("keyword.for"); break;
-				case "TO": write("keyword.to"); break;
-				case "NEXT": write("keyword.for_end"); break;
-				case "WHILE": write("keyword.while"); break;
-				case "ENDWHILE": write("keyword.while_end"); break;
-				case "REPEAT": write("keyword.dowhile"); break;
-				case "UNTIL": write("keyword.dowhile_end"); break;
-				case "FUNCTION": write("keyword.function"); break;
-				case "BYREF": write("keyword.by-reference"); break;
-				case "BYVAL": write("keyword.by-value"); break;
-				case "ENDFUNCTION": write("keyword.function_end"); break;
-				case "PROCEDURE": write("keyword.procedure"); break;
-				case "ENDPROCEDURE": write("keyword.procedure_end"); break;
-				case "RETURN": write("keyword.return"); break;
-				case "RETURNS": write("keyword.returns"); break;
-				case "OPENFILE": write("keyword.openfile"); break;
-				case "READFILE": write("keyword.readfile"); break;
-				case "WRITEFILE": write("keyword.writefile"); break;
-				case "CASE": write("keyword.case"); break;
-				case "OF": write("keyword.of"); break;
-				case "ENDCASE": write("keyword.case_end"); break;
-				case "OTHERWISE": write("keyword.otherwise"); break;
-				case "ARRAY": write("keyword.array"); break;
-				default: tokens.push(new Token("name", symbol.text, symbol.range.slice())); break;
-			}
+			write(tokenNameTypeData[symbol.text] ?? "name");
 		} else {
 			symbol.type satisfies TokenType;
 			tokens.push(symbol.toToken());

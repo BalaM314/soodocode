@@ -300,6 +300,7 @@ const tokenizerTests = Object.entries({
     ],
     keywords: [
         [
+            ["word", "DECLARE"],
             ["word", "WHILE"],
             ["space", " "],
             ["word", "Index"],
@@ -316,6 +317,7 @@ const tokenizerTests = Object.entries({
             ["word", "PROCEDURE"],
             ["quote.double", `"`],
         ], [
+            ["keyword.declare", "DECLARE"],
             ["keyword.while", "WHILE"],
             ["name", "Index"],
             ["operator.less_than", "<"],
