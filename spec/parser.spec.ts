@@ -1409,7 +1409,7 @@ const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST |
 			program: "", //SPECNULL
 			tokens: program.map(token)
 		},
-		output == "error" ? "error" : process_ProgramAST(output)
+		output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
 	]
 );
 

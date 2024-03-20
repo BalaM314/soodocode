@@ -1383,7 +1383,7 @@ const parseProgramTests = Object.entries({
         program: "",
         tokens: program.map(token)
     },
-    output == "error" ? "error" : process_ProgramAST(output)
+    output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
 ]);
 const functionArgumentTests = Object.entries({
     blank: [[], {}],
