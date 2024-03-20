@@ -231,7 +231,7 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 	return output;
 });
 
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N | "negate" : never;
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract") : never;
 export type Operator = {
 	token: TokenType;
 	name: string;
@@ -287,7 +287,8 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary" | "name
 			token: "operator.add",
 			category: "arithmetic"
 		},{
-			token: "operator.subtract",
+			name: "operator.subtract",
+			token: "operator.minus",
 			category: "arithmetic",
 			overloadedUnary: true,
 		},{
@@ -317,7 +318,7 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary" | "name
 			unary: true,
 		},
 		{
-			token: "operator.subtract",
+			token: "operator.minus",
 			name: "operator.negate",
 			category: "arithmetic",
 			unary: true,

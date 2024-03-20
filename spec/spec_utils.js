@@ -5,7 +5,7 @@ import { Statement } from "../src/statements.js";
 import { crash } from "../src/utils.js";
 export const operatorTokens = {
     "add": token("operator.add", "+"),
-    "subtract": token("operator.subtract", "-"),
+    "subtract": token("operator.minus", "-"),
     "multiply": token("operator.multiply", "*"),
     "divide": token("operator.divide", "/"),
     "mod": token("operator.mod", "MOD"),
@@ -20,7 +20,7 @@ export const operatorTokens = {
     "less_than_equal": token("operator.less_than_equal", "<="),
     "greater_than_equal": token("operator.greater_than_equal", ">="),
     "string_concatenate": token("operator.string_concatenate", "&"),
-    "negate": token("operator.subtract", "-"),
+    "negate": token("operator.minus", "-"),
 };
 export function is_ExpressionASTArrayTypeNode(input) {
     return Array.isArray(input[1]);

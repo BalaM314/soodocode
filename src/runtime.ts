@@ -17,6 +17,34 @@ import {
 } from "./statements.js";
 import { crash, fail, forceType } from "./utils.js";
 
+/**Stores the JS type used for each pseudocode variable type */
+export type VariableTypeMapping<T> = 
+	T extends "INTEGER" ? number :
+	T extends "REAL" ? number :
+	T extends "STRING" ? string :
+	T extends "CHAR" ? string :
+	T extends "BOOLEAN" ? boolean :
+	T extends "DATE" ? Date :
+	T extends ArrayTypeData ? Array<VariableTypeMapping<T["type"]> | null> //Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
+	: never
+;
+
+
+export type StringVariableType =
+	| "INTEGER"
+	| "REAL"
+	| "STRING"
+	| "CHAR"
+	| "BOOLEAN"
+	| "DATE"
+;
+
+export type VariableType = StringVariableType | ArrayTypeData;
+export type VariableValueType = VariableTypeMapping<VariableType>;
+export type StringVariableTypeValue = VariableTypeMapping<StringVariableType>;
+
+type FileMode = "READ" | "WRITE" | "APPEND";
+
 interface FileData {
 	name: string;
 	text: string;
@@ -400,33 +428,3 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 	}
 }
-
-
-
-/**Stores the JS type used for each pseudocode variable type */
-export type VariableTypeMapping<T> = 
-	T extends "INTEGER" ? number :
-	T extends "REAL" ? number :
-	T extends "STRING" ? string :
-	T extends "CHAR" ? string :
-	T extends "BOOLEAN" ? boolean :
-	T extends "DATE" ? Date :
-	T extends ArrayTypeData ? Array<VariableTypeMapping<T["type"]> | null> //Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
-	: never
-;
-
-
-export type StringVariableType =
-	| "INTEGER"
-	| "REAL"
-	| "STRING"
-	| "CHAR"
-	| "BOOLEAN"
-	| "DATE"
-;
-//TODO wrong file
-export type VariableType = StringVariableType | ArrayTypeData;
-export type VariableValueType = VariableTypeMapping<VariableType>;
-export type StringVariableTypeValue = VariableTypeMapping<StringVariableType>;
-
-type FileMode = "READ" | "WRITE" | "APPEND";

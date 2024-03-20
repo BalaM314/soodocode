@@ -39,7 +39,7 @@ export type _ProgramASTBranchNode = {
 
 export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointer">, Token> = {
 	"add": token("operator.add", "+"),
-	"subtract": token("operator.subtract", "-"),
+	"subtract": token("operator.minus", "-"),
 	"multiply": token("operator.multiply", "*"),
 	"divide": token("operator.divide", "/"),
 	"mod": token("operator.mod", "MOD"),
@@ -54,7 +54,7 @@ export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointe
 	"less_than_equal": token("operator.less_than_equal", "<="),
 	"greater_than_equal": token("operator.greater_than_equal", ">="),
 	"string_concatenate": token("operator.string_concatenate", "&"),
-	"negate": token("operator.subtract", "-"),
+	"negate": token("operator.minus", "-"),
 }
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {

@@ -33,7 +33,7 @@ export class ProgramASTBranchNode {
         this.range = getTotalRange(controlStatements.concat(nodeGroups.flat()));
     }
 }
-/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
+/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayTypeData {
     constructor(lengthInformation, type) {
         this.lengthInformation = lengthInformation;

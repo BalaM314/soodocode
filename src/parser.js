@@ -282,7 +282,8 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
             token: "operator.add",
             category: "arithmetic"
         }, {
-            token: "operator.subtract",
+            name: "operator.subtract",
+            token: "operator.minus",
             category: "arithmetic",
             overloadedUnary: true,
         }, {
@@ -312,7 +313,7 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
             unary: true,
         },
         {
-            token: "operator.subtract",
+            token: "operator.minus",
             name: "operator.negate",
             category: "arithmetic",
             unary: true,

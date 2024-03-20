@@ -69,7 +69,7 @@ export class ProgramASTBranchNode implements TextRanged {
 /** The valid types for a branch node in a program AST. */
 export type ProgramASTBranchNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";
 
-/** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
+/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayTypeData {
 	totalLength:number;
 	lengthInformation_:number[];
