@@ -188,9 +188,10 @@ export class ConstantStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`);
+		const [type, value] = runtime.evaluateExpr(this.expr); //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
 		runtime.getCurrentScope().variables[this.name] = {
-			type: "INTEGER", //TODO guess type required
-			value: runtime.evaluateExpr(this.expr, "INTEGER")[1], //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
+			type,
+			value,
 			declaration: this,
 			mutable: false,
 		};

@@ -204,9 +204,10 @@ let ConstantStatement = (() => {
         run(runtime) {
             if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`);
+            const [type, value] = runtime.evaluateExpr(this.expr); //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
             runtime.getCurrentScope().variables[this.name] = {
-                type: "INTEGER",
-                value: runtime.evaluateExpr(this.expr, "INTEGER")[1],
+                type,
+                value,
                 declaration: this,
                 mutable: false,
             };

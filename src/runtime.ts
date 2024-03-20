@@ -115,7 +115,7 @@ but found ${expr.nodes.length} indices`,
 		}
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValueType];
-	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:VariableType, value:VariableTypeMapping<T>];
+	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:T, value:VariableTypeMapping<T>];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType):[type:VariableType, value:VariableValueType] {
 
 		if(expr instanceof Token)
