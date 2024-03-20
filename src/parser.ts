@@ -163,9 +163,10 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
  **/
 export const parseStatement = errorBoundary((tokens:Token[]):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
-	let possibleStatements:(typeof Statement)[];
-	if(tokens[0].type in statements.byStartKeyword) possibleStatements = [statements.byStartKeyword[tokens[0].type]!];
-	else possibleStatements = statements.irregular;
+	let possibleStatements:(typeof Statement)[] =
+		tokens[0].type in statements.byStartKeyword
+			? statements.byStartKeyword[tokens[0].type]!
+			: statements.irregular;
 	if(possibleStatements.length == 0) fail(`No possible statements`, tokens);
 	let errors:{message:string, priority:number}[] = [];
 	for(const possibleStatement of possibleStatements){

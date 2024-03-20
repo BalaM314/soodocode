@@ -32,7 +32,7 @@ export type StatementType =
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
 export const statements = {
-	byStartKeyword: {} as Partial<Record<TokenType, typeof Statement>>,
+	byStartKeyword: {} as Partial<Record<TokenType, (typeof Statement)[]>>,
 	byType: {} as Record<StatementType, typeof Statement>,
 	irregular: [] as (typeof Statement)[],
 };
@@ -129,9 +129,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 			statements.irregular.push(input);
 		} else {
 			const firstToken = args[0] as TokenType;
-			if(statements.byStartKeyword[firstToken])
-				crash(`Invalid statement definitions! Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
-			statements.byStartKeyword[firstToken] = input;
+			(statements.byStartKeyword[firstToken] ??= []).push(input);
 		}
 		if(statements.byType[type]) crash(`Invalid statement definitions! Statement for type ${type} already registered`);
 		statements.byType[type] = input;

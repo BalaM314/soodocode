@@ -95,6 +95,7 @@ export class Statement {
 Statement.tokens = null; //Assigned in the decorator
 function statement(type, example, ...args) {
     return function (input) {
+        var _a;
         input.type = type;
         input.example = example;
         if (args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split") {
@@ -121,9 +122,7 @@ function statement(type, example, ...args) {
         }
         else {
             const firstToken = args[0];
-            if (statements.byStartKeyword[firstToken])
-                crash(`Invalid statement definitions! Statement starting with ${firstToken} already registered`); //TODO overloads, eg FOR STEP
-            statements.byStartKeyword[firstToken] = input;
+            ((_a = statements.byStartKeyword)[firstToken] ?? (_a[firstToken] = [])).push(input);
         }
         if (statements.byType[type])
             crash(`Invalid statement definitions! Statement for type ${type} already registered`);
