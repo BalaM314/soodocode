@@ -19,6 +19,20 @@ export class ExpressionASTArrayTypeNode {
         this.range = getTotalRange(allTokens);
     }
 }
+/** Represents a branch node (node with children) in a program AST. */
+export class ProgramASTBranchNode {
+    constructor(type, 
+    /**
+     * Contains the control statements for this block.
+     * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
+     */
+    controlStatements, nodeGroups) {
+        this.type = type;
+        this.controlStatements = controlStatements;
+        this.nodeGroups = nodeGroups;
+        this.range = getTotalRange(controlStatements.concat(nodeGroups.flat()));
+    }
+}
 /** Contains data about an array type. Processed from an ExpressionAStArrayTypeNode. */
 export class ArrayTypeData {
     constructor(lengthInformation, type) {

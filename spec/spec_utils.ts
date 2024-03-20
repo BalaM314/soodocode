@@ -1,6 +1,6 @@
 import { SymbolType, Token, TokenType, symbol, token } from "../src/lexer-types.js";
 import {
-	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNodeType, ProgramASTNode
+	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
 } from "../src/parser-types.js";
 import { Operator, operators, OperatorType } from "../src/parser.js";
 import { Statement } from "../src/statements.js";
@@ -116,17 +116,19 @@ export function process_ProgramAST(input:_ProgramAST, program:string = "" /* SPE
 export function process_ProgramASTNode(input:_ProgramASTNode):ProgramASTNode {
 	return Array.isArray(input)
 		? process_Statement(input)
-		: {
-			type: input.type,
-			controlStatements: input.controlStatements.map(process_Statement),
-			nodeGroups: input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
-		};
+		: new ProgramASTBranchNode(
+			input.type,
+			input.controlStatements.map(process_Statement),
+			input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
+		);
 }
 
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
 
 /** Mutates input unsafely */
-export function applyAnyRange<TIn extends ExpressionAST | ExpressionASTArrayTypeNode | Statement>(input:TIn):jasmine.Expected<TIn> {
+export function applyAnyRange<TIn extends
+	ExpressionAST | ExpressionASTArrayTypeNode | Statement | ProgramASTBranchNode | ProgramAST
+>(input:TIn):jasmine.Expected<TIn> {
 	if(input instanceof Token){
 		input.range;
 		(input as any).range = anyRange;
@@ -147,6 +149,16 @@ export function applyAnyRange<TIn extends ExpressionAST | ExpressionASTArrayType
 		input.allTokens;
 		(input as any).allTokens = jasmine.any(Array);
 		applyAnyRange(input.type);
-	} else crash(`Type error at applyAnyRange()`);
+	} else if(input instanceof ProgramASTBranchNode){
+		input.range;
+		(input as any).range = anyRange;
+		input.controlStatements.forEach(applyAnyRange);
+		input.nodeGroups.forEach(block => block.forEach(applyAnyRange));
+	} else if("nodes" in input && "program" in input){
+		input.nodes.forEach(applyAnyRange);
+	} else {
+		input satisfies never;
+		crash(`Type error at applyAnyRange()`);
+	}
 	return input;
 }

@@ -128,11 +128,11 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 		if(statement.category == "normal"){
 			getActiveBuffer().push(statement);
 		} else if(statement.category == "block"){
-			const node:ProgramASTBranchNode = {
-				controlStatements: [statement],
-				type: statement.stype as ProgramASTBranchNodeType,
-				nodeGroups: [[]]
-			};
+			const node = new ProgramASTBranchNode(
+				statement.stype as ProgramASTBranchNodeType,
+				[statement],
+				[[]]
+			);
 			getActiveBuffer().push(node);
 			blockStack.push(node);
 		} else if(statement.category == "block_end"){

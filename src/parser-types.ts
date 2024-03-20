@@ -52,14 +52,19 @@ export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
 /** Represents a leaf node (node with no child nodes) in a program AST. */
 export type ProgramASTLeafNode = Statement;
 /** Represents a branch node (node with children) in a program AST. */
-export type ProgramASTBranchNode = {
-	type: ProgramASTBranchNodeType;
-	/**
-	 * Contains the control statements for this block.
-	 * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
-	 */
-	controlStatements: Statement[];
-	nodeGroups: ProgramASTNode[][];
+export class ProgramASTBranchNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public type: ProgramASTBranchNodeType,
+		/**
+		 * Contains the control statements for this block.
+		 * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
+		 */
+		public controlStatements: Statement[],
+		public nodeGroups: ProgramASTNode[][],
+	){
+		this.range = getTotalRange((controlStatements as (Statement | ProgramASTNode)[]).concat(nodeGroups.flat()));
+	}
 }
 /** The valid types for a branch node in a program AST. */
 export type ProgramASTBranchNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure";

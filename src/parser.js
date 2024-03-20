@@ -7,7 +7,7 @@ and processes it into an abstract syntax tree (AST),
 which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
-import { ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode } from "./parser-types.js";
+import { ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ProgramASTBranchNode } from "./parser-types.js";
 import { statements } from "./statements.js";
 import { impossible, splitArray, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
@@ -117,11 +117,7 @@ export function parse({ program, tokens }) {
             getActiveBuffer().push(statement);
         }
         else if (statement.category == "block") {
-            const node = {
-                controlStatements: [statement],
-                type: statement.stype,
-                nodeGroups: [[]]
-            };
+            const node = new ProgramASTBranchNode(statement.stype, [statement], [[]]);
             getActiveBuffer().push(node);
             blockStack.push(node);
         }
