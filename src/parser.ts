@@ -188,12 +188,13 @@ type StatementCheckSuccessResult = (Token | {type:"expression" | "type"; start:n
  * This is to avoid duplicating the expression parsing logic.
  */
 export const checkStatement = errorBoundary((statement:typeof Statement, input:Token[]):{message:string; priority:number} | StatementCheckSuccessResult => {
+	//TODO error ranges
 	//warning: despite writing it, I do not fully understand this code
 	//but it works
 
 	const output:StatementCheckSuccessResult = [];
 	let i, j;
-	for(i = +(statement.tokens[0] == "#"), j = 0; i < statement.tokens.length; i ++){
+	for(i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
 		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+"){
 			const allowEmpty = statement.tokens[i] == ".*";
 			const start = j;
@@ -221,7 +222,7 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 		} else {
 			if(j >= input.length) return {message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4};
 			if(statement.tokens[i] == "#") impossible();
-			else if(statement.tokens[i] == input[j].type){
+			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type){
 				output.push(input[j]);
 				j++; //Token matches, move to next one
 			} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};

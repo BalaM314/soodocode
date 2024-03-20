@@ -184,11 +184,12 @@ export const parseStatement = errorBoundary((tokens) => {
  * This is to avoid duplicating the expression parsing logic.
  */
 export const checkStatement = errorBoundary((statement, input) => {
+    //TODO error ranges
     //warning: despite writing it, I do not fully understand this code
     //but it works
     const output = [];
     let i, j;
-    for (i = +(statement.tokens[0] == "#"), j = 0; i < statement.tokens.length; i++) {
+    for (i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
         if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+") {
             const allowEmpty = statement.tokens[i] == ".*";
             const start = j;
@@ -223,7 +224,7 @@ export const checkStatement = errorBoundary((statement, input) => {
                 return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4 };
             if (statement.tokens[i] == "#")
                 impossible();
-            else if (statement.tokens[i] == input[j].type) {
+            else if (statement.tokens[i] == "." || statement.tokens[i] == input[j].type) {
                 output.push(input[j]);
                 j++; //Token matches, move to next one
             }

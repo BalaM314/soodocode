@@ -40,7 +40,7 @@ export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
-export type TokenMatcher = TokenType | ".*" | ".+" | "expr+" | "type+";
+export type TokenMatcher = TokenType | "." | ".*" | ".+" | "expr+" | "type+";
 
 /** Represents a fully processed program. */
 export type ProgramAST = {
