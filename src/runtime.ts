@@ -317,7 +317,11 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(from == "STRING" && to == "CHAR") return value as any;
 		if(from == "INTEGER" && to == "REAL") return value as any;
 		if(from == "REAL" && to == "INTEGER") return Math.trunc(value as any) as any;
-		if(to == "STRING" && value.toString) return value.toString() as any;
+		if(to == "STRING"){
+			if(from == "BOOLEAN" || from == "CHAR" || from == "DATE" || from == "INTEGER" || from == "REAL" || from == "STRING")
+				return value.toString() as any;
+			else if(from instanceof ArrayTypeData) return `[${(value as StringVariableTypeValue[]).join(",")}]` as any;
+		}
 		fail(`Cannot coerce value of type ${from} to ${to}`);
 	}
 	callFunction(funcNode:FunctionData, args:ExpressionAST[]):VariableValueType | null;

@@ -6,7 +6,7 @@ import { fail, getTotalRange } from "./utils.js";
 
 
 /** Represents an expression tree. */
-export type ExpressionAST = ExpressionASTNode;
+export type ExpressionAST = ExpressionASTNode; //TODO make this a class too, OR put a "root" property in ExpressionASTBranchNode
 /** Represents a single node in an expression AST. */
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode;
 /** Represents a leaf node (node with no child nodes) in an expression AST. */

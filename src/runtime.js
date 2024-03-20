@@ -279,8 +279,12 @@ help: try using DIV instead of / to produce an integer as the result`);
             return value;
         if (from == "REAL" && to == "INTEGER")
             return Math.trunc(value);
-        if (to == "STRING" && value.toString)
-            return value.toString();
+        if (to == "STRING") {
+            if (from == "BOOLEAN" || from == "CHAR" || from == "DATE" || from == "INTEGER" || from == "REAL" || from == "STRING")
+                return value.toString();
+            else if (from instanceof ArrayTypeData)
+                return `[${value.join(",")}]`;
+        }
         fail(`Cannot coerce value of type ${from} to ${to}`);
     }
     callFunction(funcNode, args, requireReturnValue = false) {
