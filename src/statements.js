@@ -42,10 +42,11 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
+import { Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -482,6 +483,116 @@ let ElseStatement = (() => {
     return ElseStatement = _classThis;
 })();
 export { ElseStatement };
+let SwitchStatement = (() => {
+    let _classDecorators = [statement("switch", "CASE OF x", "block", "keyword.case", "keyword.of", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var SwitchStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [, , this.expression] = tokens;
+        }
+        static supportsSplit(block, statement) {
+            return block.type == "switch" && statement.stype == "case" && (block.nodeGroups.at(-1).length > 0 || block.nodeGroups.length == 1);
+        }
+        runBlock(runtime, { controlStatements, nodeGroups }) {
+            const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
+            for (let i = 1; i < controlStatements.length; i++) {
+                //skip the first one as that is the switch statement
+                if (controlStatements[i] instanceof SwitchEndStatement)
+                    break; //end of statements
+                else if (controlStatements[i] instanceof CaseBranchStatement) {
+                    const caseToken = controlStatements[i].value;
+                    //Ensure that OTHERWISE is the last branch
+                    if (caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
+                        fail(`OTHERWISE case branch must be the last case branch`, controlStatements[i]);
+                    if ((function branchMatches() {
+                        if (caseToken.type == "keyword.otherwise")
+                            return true;
+                        try {
+                            //Try to evaluate the case token with the same type as the switch target
+                            const [caseType, caseValue] = Runtime.evaluateToken(caseToken, switchType);
+                            return switchValue == caseValue;
+                        }
+                        catch (err) {
+                            if (err instanceof SoodocodeError) {
+                                //type error (TODO make sure it is actually a type error)
+                                //try again leaving the type blank, this will probably evaluate to false and it will try the next branch
+                                const [caseType, caseValue] = Runtime.evaluateToken(caseToken);
+                                return switchType == caseType && switchValue == caseValue;
+                            }
+                            else
+                                throw err;
+                        }
+                    })()) {
+                        runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
+                        break;
+                    }
+                }
+                else {
+                    console.error(controlStatements, nodeGroups);
+                    crash(`Invalid set of control statements for switch block`);
+                }
+            }
+        }
+    };
+    __setFunctionName(_classThis, "SwitchStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        SwitchStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return SwitchStatement = _classThis;
+})();
+export { SwitchStatement };
+let SwitchEndStatement = (() => {
+    let _classDecorators = [statement("switch.end", "ENDCASE", "block_end", "keyword.case_end")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var SwitchEndStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "SwitchEndStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        SwitchEndStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return SwitchEndStatement = _classThis;
+})();
+export { SwitchEndStatement };
+let CaseBranchStatement = (() => {
+    let _classDecorators = [statement("case", "5: ", "block_multi_split", "#", ".", "punctuation.colon")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var CaseBranchStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [this.value] = tokens;
+            if (this.value.type != "keyword.otherwise")
+                Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically TODO check error message
+        }
+    };
+    __setFunctionName(_classThis, "CaseBranchStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        CaseBranchStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return CaseBranchStatement = _classThis;
+})();
+export { CaseBranchStatement };
 let ForStatement = (() => {
     let _classDecorators = [statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")];
     let _classDescriptor;

@@ -6,7 +6,7 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import type {
+import {
 	FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType
 } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
@@ -16,19 +16,20 @@ import {
 } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
-	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange
+	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
 
 export type StatementType =
-	"declaration" | "constant" | "assignment" | "output" | "input" | "return" | "call" |
-	"if" | "if.end" | "else" |
-	"for" | "for.end" |
-	"while" | "while.end" |
-	"dowhile" | "dowhile.end" |
-	"function" | "function.end" |
-	"procedure" | "procedure.end";
+	| "declaration" | "constant" | "assignment" | "output" | "input" | "return" | "call"
+	| "if" | "if.end" | "else"
+	| "switch" | "switch.end" | "case"
+	| "for" | "for.end"
+	| "while" | "while.end"
+	| "dowhile" | "dowhile.end"
+	| "function" | "function.end"
+	| "procedure" | "procedure.end";
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
 export const statements = {
@@ -99,6 +100,8 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", ...tokens:TokenMatcher[]):
+	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", irregular:"#", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", endType:"auto", ...tokens:TokenMatcher[]):
 	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
@@ -330,6 +333,65 @@ export class IfStatement extends Statement {
 }
 @statement("else", "ELSE", "block_multi_split", "keyword.else")
 export class ElseStatement extends Statement {}
+@statement("switch", "CASE OF x", "block", "keyword.case", "keyword.of", "expr+")
+export class SwitchStatement extends Statement {
+	//First node group is blank, because a blank node group is created and then the block is split by the first case branch
+	expression:ExpressionAST;
+	constructor(tokens:[Token, Token, ExpressionAST]){
+		super(tokens);
+		[,, this.expression] = tokens;
+	}
+	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):boolean { //TODO allow error messages
+		return block.type == "switch" && statement.stype == "case" && (block.nodeGroups.at(-1)!.length > 0 || block.nodeGroups.length == 1);
+	}
+	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
+		const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
+		for(let i = 1; i < controlStatements.length; i ++){
+			//skip the first one as that is the switch statement
+			if(controlStatements[i] instanceof SwitchEndStatement) break; //end of statements
+			else if(controlStatements[i] instanceof CaseBranchStatement){
+				const caseToken = (controlStatements[i] as CaseBranchStatement).value;
+				//Ensure that OTHERWISE is the last branch
+				if(caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
+					fail(`OTHERWISE case branch must be the last case branch`, controlStatements[i]);
+
+				if((function branchMatches(){
+					if(caseToken.type == "keyword.otherwise") return true;
+					try {
+						//Try to evaluate the case token with the same type as the switch target
+						const [caseType, caseValue] = Runtime.evaluateToken(caseToken, switchType);
+						return switchValue == caseValue;
+					} catch(err){
+						if(err instanceof SoodocodeError){
+							//type error (TODO make sure it is actually a type error)
+							//try again leaving the type blank, this will probably evaluate to false and it will try the next branch
+							const [caseType, caseValue] = Runtime.evaluateToken(caseToken);
+							return switchType == caseType && switchValue == caseValue;
+						} else throw err;
+					}
+				})()){
+					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
+					break;
+				}
+			} else {
+				console.error(controlStatements, nodeGroups);
+				crash(`Invalid set of control statements for switch block`);
+			}
+		}
+	}
+}
+@statement("switch.end", "ENDCASE", "block_end", "keyword.case_end")
+export class SwitchEndStatement extends Statement {}
+@statement("case", "5: ", "block_multi_split", "#", ".", "punctuation.colon")
+export class CaseBranchStatement extends Statement {
+	value:Token;
+	constructor(tokens:[Token, Token]){
+		super(tokens);
+		[this.value] = tokens;
+		if(this.value.type != "keyword.otherwise")
+			Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically TODO check error message
+	}
+}
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
 export class ForStatement extends Statement {
 	name:string;

@@ -31,6 +31,7 @@ export class ProgramASTBranchNode {
         this.controlStatements = controlStatements;
         this.nodeGroups = nodeGroups;
         this.range = getTotalRange(controlStatements.concat(nodeGroups.flat()));
+        //TODO this needs to be run after the node is finished, maybe change range to a method?
     }
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
