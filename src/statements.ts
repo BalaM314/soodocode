@@ -6,9 +6,7 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import {
-	FunctionData, Runtime, StringVariableTypeValue, VariableType, VariableValueType
-} from "./runtime.js";
+import { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
 	ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
@@ -16,7 +14,8 @@ import {
 } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
-	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError
+	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange,
+	SoodocodeError
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 

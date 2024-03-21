@@ -98,7 +98,7 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 
 export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {
 	if(tokens.length == 0) crash(`Cannot get range from an empty list of tokens`);
-	return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => 
+	return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) =>
 		[Math.min(acc[0], t[0]), Math.max(acc[1], t[1])]
 	, [Infinity, -Infinity]);
 }
@@ -142,10 +142,10 @@ export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
 }
 
-export function errorBoundary<T extends (...args:any[]) => unknown>(func:T):T {
-	return function(...args){
+export function errorBoundary<T extends (...args:any[]) => unknown>(func:T, ctx?:ClassMethodDecoratorContext):T {
+	return function(this:ThisParameterType<T>, ...args){
 		try {
-			return func(...args);
+			return func.apply(this, args);
 		} catch(err){
 			if(err instanceof SoodocodeError){
 				//Try to find the range
@@ -168,9 +168,6 @@ export function errorBoundary<T extends (...args:any[]) => unknown>(func:T):T {
 export function escapeHTML(input:string):string {
 	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
-
-/** Makes the property K of T optional. */
-export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
 
 //TODO move to runtime, user defined types
 export function isVarType(input:string):input is StringVariableType {

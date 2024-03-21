@@ -7,18 +7,20 @@ This file contains the runtime, which executes the program AST.
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token, TokenType } from "./lexer-types.js";
-import { ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayTypeData, ProgramAST, ExpressionASTNode } from "./parser-types.js";
+import { Token } from "./lexer-types.js";
+import {
+	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayTypeData,
+	ExpressionASTNode
+} from "./parser-types.js";
 import { operators } from "./parser.js";
-
 import {
 	ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement,
 	FunctionStatement, FunctionArguments
 } from "./statements.js";
-import { crash, fail, forceType } from "./utils.js";
+import { crash, errorBoundary, fail } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
-export type VariableTypeMapping<T> = 
+export type VariableTypeMapping<T> =
 	T extends "INTEGER" ? number :
 	T extends "REAL" ? number :
 	T extends "STRING" ? string :
@@ -102,6 +104,7 @@ export class Runtime {
 	){}
 	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValueType];
 	processArrayAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
+	@errorBoundary
 	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | ExpressionAST){
 
 		//Make sure the variable exists and is an array
@@ -174,7 +177,7 @@ but found ${expr.nodes.length} indices`,
 		if(type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic"){
 			if(type && !(type == "REAL" || type == "INTEGER"))
 				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
-			
+
 			const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
 			let value:number;
 			//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
@@ -243,7 +246,7 @@ help: try using DIV instead of / to produce an integer as the result`
 					//Type is unknown
 					const [leftType, left] = this.evaluateExpr(expr.nodes[0]);
 					const [rightType, right] = this.evaluateExpr(expr.nodes[1]);
-					const typesMatch = 
+					const typesMatch =
 						(leftType == rightType) ||
 						(leftType == "INTEGER" && rightType == "REAL") ||
 						(leftType == "REAL" && rightType == "INTEGER");

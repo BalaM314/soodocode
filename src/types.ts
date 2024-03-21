@@ -10,6 +10,9 @@ export interface TagFunction<Tin = string, Tout = string> {
 	(stringChunks: readonly string[], ...varChunks: readonly Tin[]):Tout;
 }
 
+/** Makes the property K of T optional. */
+export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
+
 declare global {
 	interface ObjectConstructor {
 		/**

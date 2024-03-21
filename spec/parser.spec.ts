@@ -285,7 +285,7 @@ const sampleExpressions = Object.entries<[program:_Token[], output:_ExpressionAS
 			]],
 			["tree", ["function call", "baka"], [
 				["tree", ["function call", "sussy"], [
-				
+
 				]],
 			]],
 			["tree", "string_concatenate", [
@@ -721,7 +721,7 @@ const sampleExpressions = Object.entries<[program:_Token[], output:_ExpressionAS
 		"error"
 	],
 	SussyBaka: [
-		[	
+		[
 			["parentheses.open", "("],
 			["name", "a"],
 			["operator.greater_than_equal", ">="],

@@ -10,8 +10,9 @@ which is the preferred representation of the program.
 
 import { Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
-	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode, ExpressionASTNode,
-	ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
+	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
+	ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode,
+	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
 import type { VariableType } from "./runtime.js";
 import {
@@ -19,9 +20,10 @@ import {
 	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
 } from "./statements.js";
 import {
-	impossible, splitArray, fail, PartialKey, isVarType, getText, splitTokens, splitTokensOnComma,
+	impossible, splitArray, fail, isVarType, getText, splitTokens, splitTokensOnComma,
 	errorBoundary, crash, fquote
 } from "./utils.js";
+import { PartialKey } from "./types.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -93,7 +95,7 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | 
 		if(tokens[0].type == "name") return tokens[0];
 		else fail(`Token ${tokens[0]} is not a valid type`);
 	}
-	
+
 	//Array type
 	if(!(
 		tokens[0]?.type == "keyword.array" &&
@@ -461,7 +463,7 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 			input
 		);
 	}
-	
+
 	//Special case: array access
 	if(input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3){
 		return new ExpressionASTBranchNode(

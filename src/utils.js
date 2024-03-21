@@ -142,10 +142,10 @@ export function crash(message) {
 export function impossible() {
     throw new Error(`this shouldn't be possible...`);
 }
-export function errorBoundary(func) {
+export function errorBoundary(func, ctx) {
     return function (...args) {
         try {
-            return func(...args);
+            return func.apply(this, args);
         }
         catch (err) {
             if (err instanceof SoodocodeError) {

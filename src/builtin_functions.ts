@@ -17,7 +17,7 @@ type PreprocesssedBuiltinFunctionData = {
 };
 export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
-		Object.fromEntries(Object.entries(d).map(([name, data]) => 
+		Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
 				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: a[1]}])),
 				name,
