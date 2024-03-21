@@ -318,6 +318,18 @@ help: try using DIV instead of / to produce an integer as the result`
 			default: fail(`Cannot evaluate token of type ${token.type}`);
 		}
 	}
+	static NotStaticError = class extends Error {}
+	static evaluateToken(token:Token, type?:VariableType):[type:VariableType, value:VariableValueType] {
+		//major shenanigans
+		try {
+			return this.prototype.evaluateToken.call(new Proxy({}, {
+				get(){ throw new Runtime.NotStaticError(); },
+			}), token, type);
+		} catch(err){
+			if(err instanceof Runtime.NotStaticError) fail(`Cannot evaluate token ${token} in a static context`);
+			else throw err;
+		}
+	}
 	/** Returned variable may not be initialized */
 	getVariable(name:string):VariableData | ConstantData | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
