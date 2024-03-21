@@ -59,9 +59,7 @@ export class Statement {
         this.type = this.constructor;
         this.stype = this.type.type;
         this.category = this.type.category;
-        this.range = getTotalRange(tokens.map(t => t instanceof Token ? t :
-            [0, 0] //TODO all the expression ast nodes need to store a range
-        ));
+        this.range = getTotalRange(tokens);
     }
     toString(html = false) {
         if (html) {
@@ -581,7 +579,7 @@ let CaseBranchStatement = (() => {
             super(tokens);
             [this.value] = tokens;
             if (this.value.type != "keyword.otherwise")
-                Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically TODO check error message
+                Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically
         }
     };
     __setFunctionName(_classThis, "CaseBranchStatement");
@@ -709,6 +707,7 @@ let DoWhileStatement = (() => {
     let _classSuper = Statement;
     var DoWhileStatement = _classThis = class extends _classSuper {
         runBlock(runtime, node) {
+            let i = 0;
             do {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
@@ -716,7 +715,8 @@ let DoWhileStatement = (() => {
                 });
                 if (result)
                     return result;
-                //TODO prevent infinite loops
+                if (++i > DoWhileStatement.maxLoops)
+                    fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
             } while (!runtime.evaluateExpr(node.controlStatements[1].condition, "BOOLEAN")[1]);
             //Inverted, the pseudocode statement is "until"
         }
@@ -727,6 +727,9 @@ let DoWhileStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         DoWhileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.maxLoops = 10000; //CONFIG
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return DoWhileStatement = _classThis;

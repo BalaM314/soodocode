@@ -27,8 +27,8 @@ export class ExpressionASTBranchNode implements TextRanged {
 export class ExpressionASTArrayTypeNode implements TextRanged {
 	range: TextRange;
 	constructor(
-		public lengthInformation: [low:Token, high:Token][], //TODO store the tokens here?
-		public type: Token,
+		public lengthInformation: [low:Token, high:Token][],
+		public elementType: Token,
 		public allTokens: Token[],
 	){
 		this.range = getTotalRange(allTokens);
@@ -53,7 +53,6 @@ export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
 export type ProgramASTLeafNode = Statement;
 /** Represents a branch node (node with children) in a program AST. */
 export class ProgramASTBranchNode implements TextRanged {
-	range: TextRange;
 	constructor(
 		public type: ProgramASTBranchNodeType,
 		/**
@@ -62,9 +61,9 @@ export class ProgramASTBranchNode implements TextRanged {
 		 */
 		public controlStatements: Statement[],
 		public nodeGroups: ProgramASTNode[][],
-	){
-		this.range = getTotalRange((controlStatements as (Statement | ProgramASTNode)[]).concat(nodeGroups.flat()));
-		//TODO this needs to be run after the node is finished, maybe change range to a method?
+	){}
+	range():TextRange {
+		return getTotalRange((this.controlStatements as (Statement | ProgramASTNode)[]).concat(this.nodeGroups.flat()));
 	}
 }
 /** The valid types for a branch node in a program AST. */

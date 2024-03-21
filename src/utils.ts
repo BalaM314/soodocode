@@ -6,18 +6,18 @@ This file contains utility functions.
 */
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
-import type { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
-import type { StringVariableType, VariableType } from "./runtime.js";
+import { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
+import type { StringVariableType } from "./runtime.js";
 import { TagFunction } from "./types.js";
 
 export function stringifyExpressionASTArrayTypeNode(input:ExpressionASTArrayTypeNode){
-	return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;
+	return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.elementType.text}`;
 }
 
 export function displayExpression(node:ExpressionASTNode | ExpressionASTArrayTypeNode, expand = false, html = false):string {
 	if(node instanceof Token)
 		return escapeHTML(node.text);
-	if("lengthInformation" in node) //TODO rm in check
+	if(node instanceof ExpressionASTArrayTypeNode)
 		return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
 
 	const compressed = !expand || node.nodes.every(n => n instanceof Token);
@@ -73,11 +73,22 @@ export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array
 	return output;
 }
 
-export function splitTokens(arr:Token[], split:TokenType):Token[][] {
+export function splitTokens(arr:Token[], split:TokenType){
 	const output:Token[][] = [[]];
 	for(const el of arr){
 		if(el.type == split) output.push([]);
 		else output.at(-1)!.push(el);
+	}
+	return output;
+}
+
+export function splitTokensWithSplitter(arr:Token[], split:TokenType){
+	const output:{ group:Token[]; splitter?:Token; }[] = [{ group: [] }];
+	for(const el of arr){
+		if(el.type == split){
+			output.at(-1)!.splitter = el;
+			output.push({ group: [] });
+		} else output.at(-1)!.group.push(el);
 	}
 	return output;
 }
@@ -98,7 +109,7 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 
 export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {
 	if(tokens.length == 0) crash(`Cannot get range from an empty list of tokens`);
-	return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) =>
+	return tokens.map(t => Array.isArray(t) ? t : (typeof t.range == "function" ? t.range() : t.range)).reduce((acc, t) =>
 		[Math.min(acc[0], t[0]), Math.max(acc[1], t[1])]
 	, [Infinity, -Infinity]);
 }
@@ -112,7 +123,8 @@ export function getRange(input?:TextRangeLike | null):TextRange | undefined | nu
 	if(!input) return input;
 	if(isRange(input)) return input;
 	if(Array.isArray(input)) return getTotalRange(input);
-	return input.range;
+	if(typeof input.range == "function") return input.range();
+	else return input.range;
 }
 export function findRange(args:unknown[]):TextRange | undefined {
 	for(const arg of args){

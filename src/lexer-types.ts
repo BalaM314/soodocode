@@ -1,8 +1,8 @@
 import { crash } from "./utils.js";
 
 export type TextRange = [start:number, end:number];
-export interface TextRanged {
-	range: TextRange;
+export type TextRanged = {
+	range: TextRange | (() => TextRange);
 }
 export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
 

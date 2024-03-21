@@ -75,7 +75,7 @@ let Runtime = (() => {
                 if (expr.nodes.length != variable.type.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
 ${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
-but found ${expr.nodes.length} indices`);
+but found ${expr.nodes.length} indices`, expr.nodes);
                 const indexes = expr.nodes.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([expr, value], index) => value > varTypeData.lengthInformation[index][1] ||
@@ -296,7 +296,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 catch (err) {
                     if (err instanceof _a.NotStaticError)
-                        fail(`Cannot evaluate token ${token} in a static context`);
+                        fail(`Cannot evaluate token ${token} in a static context`, token);
                     else
                         throw err;
                 }
@@ -388,6 +388,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     processedArgs.push(this.evaluateExpr(args[i], type)[1]);
                     i++;
                 }
+                //TODO maybe coerce the value?
                 return [fn.returnType, fn.impl(...processedArgs)];
             }
             runBlock(code, scope) {

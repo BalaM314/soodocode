@@ -60,10 +60,7 @@ export class Statement implements TextRanged {
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;
-		this.range = getTotalRange(tokens.map(t =>
-			t instanceof Token ? t :
-			[0, 0] //TODO all the expression ast nodes need to store a range
-		));
+		this.range = getTotalRange(tokens);
 	}
 	toString(html = false){
 		if(html){
@@ -149,7 +146,7 @@ export class DeclarationStatement extends Statement {
 
 		//parse the variable list
 		let expected:"name" | "commaOrColon" = "name";
-		for(const token of tokens.slice(1, -2)){
+		for(const token of tokens.slice(1, -2) as Token[]){
 			if(expected == "name"){
 				if(token.type == "name"){
 					this.variables.push(token.text);
@@ -168,7 +165,7 @@ export class DeclarationStatement extends Statement {
 		for(const variable of this.variables){
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
-				type: this.varType, //todo user defined types
+				type: this.varType, //TODO user defined types
 				value: this.varType instanceof ArrayTypeData ? Array(this.varType.totalLength).fill(null) : null,
 				declaration: this,
 				mutable: true,
@@ -389,7 +386,7 @@ export class CaseBranchStatement extends Statement {
 		super(tokens);
 		[this.value] = tokens;
 		if(this.value.type != "keyword.otherwise")
-			Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically TODO check error message
+			Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically
 	}
 }
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
@@ -453,14 +450,17 @@ export class WhileStatement extends Statement {
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
+	static maxLoops = 10_000; //CONFIG
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+		let i = 0;
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				variables: {}
 			});
 			if(result) return result;
-			//TODO prevent infinite loops
+			if(++i > DoWhileStatement.maxLoops)
+				fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
 		} while(!runtime.evaluateExpr((node.controlStatements[1] as DoWhileEndStatement).condition, "BOOLEAN")[1]);
 		//Inverted, the pseudocode statement is "until"
 	}

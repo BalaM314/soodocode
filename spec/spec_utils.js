@@ -97,11 +97,9 @@ export function applyAnyRange(input) {
         input.range = anyRange;
         input.allTokens;
         input.allTokens = jasmine.any(Array);
-        applyAnyRange(input.type);
+        applyAnyRange(input.elementType);
     }
     else if (input instanceof ProgramASTBranchNode) {
-        input.range;
-        input.range = anyRange;
         input.controlStatements.forEach(applyAnyRange);
         input.nodeGroups.forEach(block => block.forEach(applyAnyRange));
     }

@@ -61,6 +61,13 @@ export type VariableData<T extends VariableType = VariableType> = {
 	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement;
 	mutable: true;
 }
+export type ConstantData<T extends VariableType = VariableType> = {
+	type: T;
+	/** Cannot be null */
+	value: VariableTypeMapping<T>;
+	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
+	mutable: false;
+}
 /** Either a function or a procedure TODO cleanup */
 export type FunctionData = ProgramASTBranchNode & {
 	nodeGroups: [body:ProgramASTNode[]];
@@ -78,12 +85,6 @@ export type BuiltinFunctionData = {
 	impl: (...args:VariableValueType[]) => VariableValueType;
 };
 
-interface ConstantData {
-	type: VariableType;
-	value: VariableValueType;
-	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement; //TODO is this the best solution?
-	mutable: false;
-}
 
 export type VariableScope = {
 	statement: Statement | "global";
@@ -123,7 +124,7 @@ export class Runtime {
 `Cannot evaluate expression starting with "array access": \
 ${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
 but found ${expr.nodes.length} indices`,
-				//expr.nodes //TODO
+				expr.nodes
 			);
 		const indexes:[ExpressionASTNode, number][] = expr.nodes.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
 		let invalidIndexIndex;
@@ -329,7 +330,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				get(){ throw new Runtime.NotStaticError(); },
 			}), token, type);
 		} catch(err){
-			if(err instanceof Runtime.NotStaticError) fail(`Cannot evaluate token ${token} in a static context`);
+			if(err instanceof Runtime.NotStaticError) fail(`Cannot evaluate token ${token} in a static context`, token);
 			else throw err;
 		}
 	}
@@ -410,6 +411,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			processedArgs.push(this.evaluateExpr(args[i], type)[1]);
 			i ++;
 		}
+		//TODO maybe coerce the value?
 		return [fn.returnType, fn.impl(...processedArgs) as VariableValueType];
 	}
 	runBlock(code:ProgramASTNode[], scope?:VariableScope):void | {

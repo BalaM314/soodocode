@@ -5,13 +5,14 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 import { Token } from "./lexer-types.js";
+import { ExpressionASTArrayTypeNode } from "./parser-types.js";
 export function stringifyExpressionASTArrayTypeNode(input) {
-    return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.type.text}`;
+    return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.elementType.text}`;
 }
 export function displayExpression(node, expand = false, html = false) {
     if (node instanceof Token)
         return escapeHTML(node.text);
-    if ("lengthInformation" in node) //TODO rm in check
+    if (node instanceof ExpressionASTArrayTypeNode)
         return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
     const compressed = !expand || node.nodes.every(n => n instanceof Token);
     if (node.operator == "function call") {
@@ -79,6 +80,18 @@ export function splitTokens(arr, split) {
     }
     return output;
 }
+export function splitTokensWithSplitter(arr, split) {
+    const output = [{ group: [] }];
+    for (const el of arr) {
+        if (el.type == split) {
+            output.at(-1).splitter = el;
+            output.push({ group: [] });
+        }
+        else
+            output.at(-1).group.push(el);
+    }
+    return output;
+}
 export function splitTokensOnComma(arr) {
     const output = [[]];
     let parenNestLevel = 0, bracketNestLevel = 0;
@@ -101,7 +114,7 @@ export function splitTokensOnComma(arr) {
 export function getTotalRange(tokens) {
     if (tokens.length == 0)
         crash(`Cannot get range from an empty list of tokens`);
-    return tokens.map(t => Array.isArray(t) ? t : t.range).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [Infinity, -Infinity]);
+    return tokens.map(t => Array.isArray(t) ? t : (typeof t.range == "function" ? t.range() : t.range)).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [Infinity, -Infinity]);
 }
 export function isRange(input) {
     return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
@@ -113,7 +126,10 @@ export function getRange(input) {
         return input;
     if (Array.isArray(input))
         return getTotalRange(input);
-    return input.range;
+    if (typeof input.range == "function")
+        return input.range();
+    else
+        return input.range;
 }
 export function findRange(args) {
     for (const arg of args) {

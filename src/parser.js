@@ -9,7 +9,7 @@ which is the preferred representation of the program.
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ProgramASTBranchNode } from "./parser-types.js";
 import { CaseBranchStatement, statements } from "./statements.js";
-import { impossible, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote } from "./utils.js";
+import { impossible, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
@@ -66,13 +66,11 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
     }
     return argumentsMap;
 });
-export const processTypeData = errorBoundary((ast) => {
-    if (ast instanceof Token)
-        return isVarType(ast.text) ? ast.text : fail(fquote `Invalid variable type ${ast.text}`); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
+export const processTypeData = errorBoundary((typeNode) => {
+    if (typeNode instanceof Token)
+        return isVarType(typeNode.text) ? typeNode.text : fail(fquote `Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
     else
-        return new ArrayTypeData(ast.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), 
-        //todo fix this insanity of "type" "text"
-        isVarType(ast.type.text) ? ast.type.text : fail(fquote `Invalid variable type ${ast.type.text}`));
+        return new ArrayTypeData(typeNode.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isVarType(typeNode.elementType.text) ? typeNode.elementType.text : fail(fquote `Invalid variable type ${typeNode.elementType.text}`));
 });
 export const parseType = errorBoundary((tokens) => {
     if (tokens.length == 1) {
@@ -86,18 +84,18 @@ export const parseType = errorBoundary((tokens) => {
         tokens[1]?.type == "bracket.open" &&
         tokens.at(-2)?.type == "keyword.of" &&
         tokens.at(-1)?.type == "name"))
-        fail(fquote `Cannot parse type from ${tokens.join(" ")}`); //TODO %r
-    return new ExpressionASTArrayTypeNode(splitTokens(tokens.slice(2, -3), "punctuation.comma")
-        .map(section => {
-        if (section.length != 3)
-            fail(fquote `Invalid array range specifier ${section.join(" ")}`, section.length ? section : null); //TODO somehow get this?
-        if (section[0].type != "number.decimal")
-            fail(`Expected a number, got ${section[0]}`, section[0]);
-        if (section[1].type != "punctuation.colon")
-            fail(`Expected a colon, got ${section[1]}`, section[1]);
-        if (section[2].type != "number.decimal")
-            fail(`Expected a number, got ${section[2]}`, section[1]);
-        return [section[0], section[2]];
+        fail(fquote `Cannot parse type from ${tokens.join(" ")}`);
+    return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma")
+        .map(({ group, splitter }) => {
+        if (group.length != 3)
+            fail(fquote `Invalid array range specifier ${group.join(" ")}`, group.length ? group : splitter);
+        if (group[0].type != "number.decimal")
+            fail(fquote `Expected a number, got ${group[0].text}`, group[0]);
+        if (group[1].type != "punctuation.colon")
+            fail(fquote `Expected a colon, got ${group[1].text}`, group[1]);
+        if (group[2].type != "number.decimal")
+            fail(fquote `Expected a number, got ${group[2].text}`, group[1]);
+        return [group[0], group[2]];
     }), tokens.at(-1), tokens);
 });
 export function parse({ program, tokens }) {
@@ -369,10 +367,10 @@ export const parseExpression = errorBoundary((input) => {
                 bracketNestLevel--;
             if (parenNestLevel < 0)
                 //nest level going below 0 means too many (
-                fail(`Unclosed parentheses`);
+                fail(`Unclosed parentheses`, input[i]);
             if (bracketNestLevel < 0)
                 //nest level going below 0 means too many [
-                fail(`Unclosed square bracket`);
+                fail(`Unclosed square bracket`, input[i]);
             let operator; //assignment assertion goes brrrrr
             if (parenNestLevel == 0 && bracketNestLevel == 0 && //the operator is not inside parentheses and
                 operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for
@@ -420,11 +418,33 @@ export const parseExpression = errorBoundary((input) => {
                 }
             }
         }
-        //Nest level being above zero at the beginning of the string means too many )
-        if (parenNestLevel != 0)
-            fail(`No parentheses group to close`, null); //TODO find the correct token
-        if (bracketNestLevel != 0)
-            fail(`No bracket group to close`, null); //TODO find the correct token
+        //Nest level being above zero at the beginning of the token list means too many )
+        if (parenNestLevel != 0) {
+            //Iterate through the tokens left-to-right to find the unmatched paren
+            input.reduce((acc, item) => {
+                if (item.type == "parentheses.open")
+                    acc++;
+                else if (item.type == "parentheses.close")
+                    acc--;
+                if (acc < 0) //found the extra )
+                    fail(`No parentheses group to close`, item);
+                return acc;
+            }, 0);
+            impossible();
+        }
+        if (bracketNestLevel != 0) {
+            //Iterate through the tokens left-to-right to find the unmatched bracket
+            input.reduce((acc, item) => {
+                if (item.type == "bracket.open")
+                    acc++;
+                else if (item.type == "bracket.close")
+                    acc--;
+                if (acc < 0) //found the extra ]
+                    fail(`No bracket group to close`, item);
+                return acc;
+            }, 0);
+            impossible();
+        }
         //No operators of the current priority found, look for operator with the next level higher priority
     }
     //If the whole expression is surrounded by parentheses, parse the inner expression

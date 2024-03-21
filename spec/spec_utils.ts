@@ -148,10 +148,8 @@ export function applyAnyRange<TIn extends
 		(input as any).range = anyRange;
 		input.allTokens;
 		(input as any).allTokens = jasmine.any(Array);
-		applyAnyRange(input.type);
+		applyAnyRange(input.elementType);
 	} else if(input instanceof ProgramASTBranchNode){
-		input.range;
-		(input as any).range = anyRange;
 		input.controlStatements.forEach(applyAnyRange);
 		input.nodeGroups.forEach(block => block.forEach(applyAnyRange));
 	} else if("nodes" in input && "program" in input){

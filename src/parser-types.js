@@ -11,10 +11,9 @@ export class ExpressionASTBranchNode {
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
 export class ExpressionASTArrayTypeNode {
-    constructor(lengthInformation, //TODO store the tokens here?
-    type, allTokens) {
+    constructor(lengthInformation, elementType, allTokens) {
         this.lengthInformation = lengthInformation;
-        this.type = type;
+        this.elementType = elementType;
         this.allTokens = allTokens;
         this.range = getTotalRange(allTokens);
     }
@@ -30,8 +29,9 @@ export class ProgramASTBranchNode {
         this.type = type;
         this.controlStatements = controlStatements;
         this.nodeGroups = nodeGroups;
-        this.range = getTotalRange(controlStatements.concat(nodeGroups.flat()));
-        //TODO this needs to be run after the node is finished, maybe change range to a method?
+    }
+    range() {
+        return getTotalRange(this.controlStatements.concat(this.nodeGroups.flat()));
     }
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
