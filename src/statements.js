@@ -499,6 +499,8 @@ let SwitchStatement = (() => {
         }
         runBlock(runtime, { controlStatements, nodeGroups }) {
             const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
+            if (nodeGroups[0].length > 0)
+                fail(`Statements are not allowed before the first case branch`, nodeGroups[0]); //TODO this is a syntax error and should error at parse
             for (let i = 1; i < controlStatements.length; i++) {
                 //skip the first one as that is the switch statement
                 if (controlStatements[i] instanceof SwitchEndStatement)

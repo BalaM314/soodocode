@@ -8,8 +8,8 @@ which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ProgramASTBranchNode } from "./parser-types.js";
-import { statements } from "./statements.js";
-import { impossible, splitArray, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote } from "./utils.js";
+import { CaseBranchStatement, statements } from "./statements.js";
+import { impossible, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
@@ -101,8 +101,11 @@ export const parseType = errorBoundary((tokens) => {
     }), tokens.at(-1), tokens);
 });
 export function parse({ program, tokens }) {
-    let lines = splitArray(tokens, t => t.type == "newline")
-        .filter(l => l.length != 0); //remove blank lines
+    //TODO remove hardcoded special handling for case branch statement
+    let lines = splitTokens(tokens, "newline").map(ts => Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
+        ? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
+        : [ts] //nothing, but put it in an array anyway so it gets flattened again
+    ).flat(1).filter(ts => ts.length > 0); //remove blank lines
     const statements = lines.map(parseStatement);
     const programNodes = [];
     function getActiveBuffer() {

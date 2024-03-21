@@ -15,6 +15,7 @@ import {
 } from "./parser-types.js";
 import type { VariableType } from "./runtime.js";
 import {
+	CaseBranchStatement,
 	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
 } from "./statements.js";
 import {
@@ -115,8 +116,12 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | 
 });
 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
-	let lines:Token[][] = splitArray(tokens, t => t.type == "newline")
-		.filter(l => l.length != 0); //remove blank lines
+	//TODO remove hardcoded special handling for case branch statement
+	let lines:Token[][] = splitTokens(tokens, "newline").map(ts =>
+		Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
+			? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
+			: [ts] //nothing, but put it in an array anyway so it gets flattened again
+	).flat(1).filter(ts => ts.length > 0); //remove blank lines
 	const statements = lines.map(parseStatement);
 	const programNodes:ProgramASTNode[] = [];
 	function getActiveBuffer(){

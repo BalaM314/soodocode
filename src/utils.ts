@@ -57,11 +57,11 @@ export function getText(tokens:Token[]){
 	return tokens.map(t => t.text).join(" ");
 }
 
-export function splitArray<T>(arr:T[], split:[T] | ((func:T, index:number) => boolean)):T[][]{
+export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array:T[]) => boolean)):T[][] {
 	const output:T[][] = [[]];
 	if(typeof split == "function"){
 		for(let i = 0; i < arr.length; i ++){
-			if(split(arr[i], i)) output.push([]);
+			if(split(arr[i], i, arr)) output.push([]);
 			else output.at(-1)!.push(arr[i]);
 		}
 	} else {

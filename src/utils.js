@@ -53,7 +53,7 @@ export function splitArray(arr, split) {
     const output = [[]];
     if (typeof split == "function") {
         for (let i = 0; i < arr.length; i++) {
-            if (split(arr[i], i))
+            if (split(arr[i], i, arr))
                 output.push([]);
             else
                 output.at(-1).push(arr[i]);
