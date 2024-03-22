@@ -1,4 +1,4 @@
-import { crash } from "./utils.js";
+import { crash, getRange, getTotalRange } from "./utils.js";
 
 export type TextRange = [start:number, end:number];
 export type TextRanged = {
@@ -99,6 +99,13 @@ export class Token implements TextRanged {
 	__token__(){};
 	toString(){
 		return `[${this.type} ${this.text}]`;
+	}
+	clone():Token {
+		return new Token(this.type, this.text, this.range);
+	}
+	extendRange(other:TextRangeLike):Token {
+		this.range = getTotalRange([getRange(other), this]);
+		return this;
 	}
 	clearRange():Token {
 		this.range = [-1, -1];

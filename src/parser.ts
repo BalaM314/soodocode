@@ -122,8 +122,11 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	//TODO remove hardcoded special handling for case branch statement
 	let lines:Token[][] = splitTokens(tokens, "newline").map(ts =>
-		Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
+		//Horrible bodge
+		Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2)))//if the first two tokens are valid for a case branch
 			? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
+		: Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
+			? [ts.slice(0, 3), ts.slice(3)]
 			: [ts] //nothing, but put it in an array anyway so it gets flattened again
 	).flat(1).filter(ts => ts.length > 0); //remove blank lines
 	const statements = lines.map(parseStatement);
@@ -191,6 +194,16 @@ export const parseStatement = errorBoundary((tokens:Token[]):Statement => {
 	fail(maxError.message, tokens);
 });
 
+export function isLiteral(type:TokenType){
+	switch(type){
+		case "boolean.false": case "boolean.true":
+		case "number.decimal":
+		case "string": case "char":
+			return true;
+		default: return false;
+	}
+}
+
 type StatementCheckSuccessResult = (Token | {type:"expression" | "type"; start:number; end:number})[];
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
@@ -234,6 +247,17 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type){
 				output.push(input[j]);
 				j++; //Token matches, move to next one
+			} else if(statement.tokens[i] == "literal" || statement.tokens[i] == "literal|otherwise"){
+				if(isLiteral(input[j].type) || (statement.tokens[i] == "literal|otherwise" && input[j].type == "keyword.otherwise"))
+					output.push(input[j++]); //The current token is a valid literal or it's "otherwise" and that's allowed
+				else if(input[j].type == "operator.minus" && j + 1 < input.length && input[j + 1].type == "number.decimal"){
+					//Replace the number token with a negative number, and drop the minus operator
+					const negativeNumber = input[j + 1].clone();
+					negativeNumber.extendRange(input[j]);
+					negativeNumber.text = input[j].text + negativeNumber.text;
+					output.push(negativeNumber);
+					j += 2;
+				} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 8};
 			} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};
 		}
 	}
@@ -397,7 +421,7 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 				if(operator.unary){
 					//Make sure there is only something on right side of the operator
 					const right = input.slice(i + 1);
-					if(i != 0){
+					if(i != 0){ //if there are tokens to the left of a unary operator
 						//Binary operators
 						//  1 / 2 / 3
 						// (1 / 2)/ 3
@@ -412,6 +436,15 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 						fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
 					}
 					if(right.length == 0) fail(`Mo expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
+					if(right.length == 1 && operator.name == "operator.negate" && right[0].type == "number.decimal"){
+						//Special handling for negative numbers:
+						//Do not create an expression, instead mutate the number token into a negative number
+						//Very cursed
+						const negativeNumber = right[0].clone();
+						negativeNumber.extendRange(input[i]);
+						negativeNumber.text = input[i].text + negativeNumber.text;
+						return negativeNumber;
+					}
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,

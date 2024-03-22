@@ -237,7 +237,8 @@ executeSoodocodeButton.addEventListener("click", e => {
 		const program = parser.parse(tokens);
 		let output:string[] = [];
 		const runtime = new Runtime(
-			(msg) => prompt(msg) ?? fail("input was empty"), m => {
+			(msg) => prompt(msg) ?? fail("input was empty"),
+			m => {
 				output.push(m);
 				console.log(`[Runtime] ${m}`);
 			}
@@ -249,7 +250,7 @@ executeSoodocodeButton.addEventListener("click", e => {
 		}
 		outputDiv.style.color = "white";
 		runtime.runBlock(program.nodes); //TODO runProgram() ?
-		outputDiv.innerText = output.join("\n");
+		outputDiv.innerText = output.join("\n") || "<no output>";
 	} catch(err){
 		outputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){

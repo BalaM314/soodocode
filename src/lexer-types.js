@@ -1,4 +1,4 @@
-import { crash } from "./utils.js";
+import { crash, getRange, getTotalRange } from "./utils.js";
 export const symbolTypes = [
     "numeric_fragment",
     "quote.single", "quote.double",
@@ -78,6 +78,13 @@ export class Token {
     ;
     toString() {
         return `[${this.type} ${this.text}]`;
+    }
+    clone() {
+        return new Token(this.type, this.text, this.range);
+    }
+    extendRange(other) {
+        this.range = getTotalRange([getRange(other), this]);
+        return this;
     }
     clearRange() {
         this.range = [-1, -1];

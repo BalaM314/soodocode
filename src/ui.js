@@ -244,7 +244,7 @@ executeSoodocodeButton.addEventListener("click", e => {
         }
         outputDiv.style.color = "white";
         runtime.runBlock(program.nodes); //TODO runProgram() ?
-        outputDiv.innerText = output.join("\n");
+        outputDiv.innerText = output.join("\n") || "<no output>";
     }
     catch (err) {
         outputDiv.style.color = "red";

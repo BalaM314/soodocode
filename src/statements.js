@@ -187,7 +187,7 @@ let DeclarationStatement = (() => {
 })();
 export { DeclarationStatement };
 let ConstantStatement = (() => {
-    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", ".")];
+    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "literal")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -571,7 +571,7 @@ let SwitchEndStatement = (() => {
 })();
 export { SwitchEndStatement };
 let CaseBranchStatement = (() => {
-    let _classDecorators = [statement("case", "5: ", "block_multi_split", "#", ".", "punctuation.colon")];
+    let _classDecorators = [statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -580,8 +580,6 @@ let CaseBranchStatement = (() => {
         constructor(tokens) {
             super(tokens);
             [this.value] = tokens;
-            if (this.value.type != "keyword.otherwise")
-                Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically
         }
     };
     __setFunctionName(_classThis, "CaseBranchStatement");

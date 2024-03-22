@@ -173,7 +173,7 @@ export class DeclarationStatement extends Statement {
 		}
 	}
 }
-@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", ".") //the equal_to operator is used in this statement, idk why
+@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "literal") //the equal_to operator is used in this statement, idk why
 export class ConstantStatement extends Statement {
 	name: string;
 	expr: Token;
@@ -380,14 +380,12 @@ export class SwitchStatement extends Statement {
 }
 @statement("switch.end", "ENDCASE", "block_end", "keyword.case_end")
 export class SwitchEndStatement extends Statement {}
-@statement("case", "5: ", "block_multi_split", "#", ".", "punctuation.colon")
+@statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")
 export class CaseBranchStatement extends Statement {
 	value:Token;
 	constructor(tokens:[Token, Token]){
 		super(tokens);
 		[this.value] = tokens;
-		if(this.value.type != "keyword.otherwise")
-			Runtime.evaluateToken(this.value); //make sure the value can be evaluated statically
 	}
 }
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")

@@ -505,16 +505,23 @@ const sampleExpressions = Object.entries({
         ],
         "error"
     ],
-    unary1: [
+    negativenumber1: [
         [
             ["operator.minus", "-"],
             ["number.decimal", "5"],
         ],
+        ["number.decimal", "-5"],
+    ],
+    unary1: [
+        [
+            ["operator.minus", "-"],
+            ["name", "x"],
+        ],
         ["tree", "negate", [
-                ["number.decimal", "5"]
+                ["name", "x"]
             ]]
     ],
-    unary2: [
+    negativenumber2: [
         [
             ["number.decimal", "5"],
             ["operator.multiply", "*"],
@@ -523,20 +530,42 @@ const sampleExpressions = Object.entries({
         ],
         ["tree", "multiply", [
                 ["number.decimal", "5"],
+                ["number.decimal", "-5"],
+            ]]
+    ],
+    unary2: [
+        [
+            ["number.decimal", "5"],
+            ["operator.multiply", "*"],
+            ["operator.minus", "-"],
+            ["name", "x"],
+        ],
+        ["tree", "multiply", [
+                ["number.decimal", "5"],
                 ["tree", "negate", [
-                        ["number.decimal", "5"]
+                        ["name", "x"],
                     ]]
             ]]
     ],
-    unary3: [
+    negativenumber3: [
         [
             ["operator.minus", "-"],
             ["operator.minus", "-"],
             ["number.decimal", "5"],
         ],
         ["tree", "negate", [
+                ["number.decimal", "-5"],
+            ]]
+    ],
+    unary3: [
+        [
+            ["operator.minus", "-"],
+            ["operator.minus", "-"],
+            ["name", "x"],
+        ],
+        ["tree", "negate", [
                 ["tree", "negate", [
-                        ["number.decimal", "5"]
+                        ["name", "x"],
                     ]]
             ]]
     ],
@@ -552,7 +581,7 @@ const sampleExpressions = Object.entries({
             ["operator.minus", "-"],
             ["operator.minus", "-"],
             ["operator.minus", "-"],
-            ["number.decimal", "5"],
+            ["name", "x"],
         ],
         ["tree", "negate", [
                 ["tree", "negate", [
@@ -564,7 +593,7 @@ const sampleExpressions = Object.entries({
                                                                 ["tree", "negate", [
                                                                         ["tree", "negate", [
                                                                                 ["tree", "negate", [
-                                                                                        ["number.decimal", "5"]
+                                                                                        ["name", "x"],
                                                                                     ]]
                                                                             ]]
                                                                     ]]
@@ -593,7 +622,7 @@ const sampleExpressions = Object.entries({
             ["operator.minus", "-"],
             ["operator.minus", "-"],
             ["operator.minus", "-"],
-            ["number.decimal", "5"],
+            ["name", "x"],
             ["parentheses.close", ")"],
         ],
         ["tree", "negate", [
@@ -611,7 +640,7 @@ const sampleExpressions = Object.entries({
                                                                         ["tree", "negate", [
                                                                                 ["tree", "negate", [
                                                                                         ["tree", "negate", [
-                                                                                                ["number.decimal", "5"]
+                                                                                                ["name", "x"],
                                                                                             ]]
                                                                                     ]]
                                                                             ]]
@@ -657,9 +686,7 @@ const sampleExpressions = Object.entries({
                                                                         ["tree", "negate", [
                                                                                 ["tree", "negate", [
                                                                                         ["tree", "negate", [
-                                                                                                ["tree", "negate", [
-                                                                                                        ["number.decimal", "5"]
-                                                                                                    ]]
+                                                                                                ["number.decimal", "-5"],
                                                                                             ]]
                                                                                     ]]
                                                                             ]]
@@ -677,12 +704,12 @@ const sampleExpressions = Object.entries({
             ["name", "amogus"],
             ["bracket.open", "["],
             ["operator.minus", "-"],
-            ["number.decimal", "1"],
+            ["name", "x"],
             ["bracket.close", "]"],
         ],
         ["tree", ["array access", "amogus"], [
                 ["tree", "negate", [
-                        ["number.decimal", "1"]
+                        ["name", "x"],
                     ]]
             ]]
     ],
