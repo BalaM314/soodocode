@@ -302,6 +302,7 @@ export class CallStatement extends Statement {
 		const name = this.func.operatorToken.text;
 		const func = runtime.getFunction(name);
 		if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
+		if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
 		runtime.callFunction(func, this.func.nodes);
 	}
 }
