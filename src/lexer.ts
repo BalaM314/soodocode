@@ -22,7 +22,7 @@ const symbolTypeData: [
 	["OR", "operator.or"],
 	["NOT", "operator.not"],
 	["DIV", "operator.integer_divide"],
-	["<-", "operator.assignment"],
+	[/<-{1,2}/, "operator.assignment"],
 	[">=", "operator.greater_than_equal"],
 	["<=", "operator.less_than_equal"],
 	["<>", "operator.not_equal_to"],

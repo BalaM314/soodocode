@@ -74,11 +74,13 @@ const symbolTests = Object.entries({
         ]
     ],
     symbols1: [
-        "X <- 5",
+        "X <-<-<-- 5",
         [
             ["word", "X"],
             ["space", " "],
             ["operator.assignment", "<-"],
+            ["operator.assignment", "<-"],
+            ["operator.assignment", "<--"],
             ["space", " "],
             ["numeric_fragment", "5"]
         ]
