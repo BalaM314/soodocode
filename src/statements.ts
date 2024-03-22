@@ -173,11 +173,11 @@ export class DeclarationStatement extends Statement {
 		}
 	}
 }
-@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "expr+") //the equal_to operator is used in this statement, idk why
+@statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", ".") //the equal_to operator is used in this statement, idk why
 export class ConstantStatement extends Statement {
 	name: string;
-	expr: ExpressionAST;
-	constructor(tokens:[Token, Token, Token, ExpressionAST]){
+	expr: Token;
+	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens);
 		let [constant, name, equals, expr] = tokens;
 		this.name = name.text;
@@ -185,7 +185,7 @@ export class ConstantStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`);
-		const [type, value] = runtime.evaluateExpr(this.expr); //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
+		const [type, value] = Runtime.evaluateToken(this.expr);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
 			value,

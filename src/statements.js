@@ -187,7 +187,7 @@ let DeclarationStatement = (() => {
 })();
 export { DeclarationStatement };
 let ConstantStatement = (() => {
-    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "expr+")];
+    let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", ".")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -202,7 +202,7 @@ let ConstantStatement = (() => {
         run(runtime) {
             if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`);
-            const [type, value] = runtime.evaluateExpr(this.expr); //TODO static context? forbid use of variables or function calls? is CONSTANT actually a macro???
+            const [type, value] = Runtime.evaluateToken(this.expr);
             runtime.getCurrentScope().variables[this.name] = {
                 type,
                 value,
