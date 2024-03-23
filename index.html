@@ -41,17 +41,21 @@
 		Run and check pseudocode that uses Cambridge (IGCSE or AS/A) CS syntax. (not fully implemented but most features are working)
 		<h2>Expression parser</h2>
 		<input name="expression-input" id="expression-input" type="text" value="25 * 2777 - 5"/><br>
-		<button id="evaluate-expression-button" style="margin-bottom: 10px;">Evaluate</button><br>
-		<button id="dump-expression-tree-button">Dump parsed tree</button><br>
-		<label for="dump-expression-tree-verbose">Verbose</label>
-		<input type="checkbox" name="dump-expression-tree-verbose" id="dump-expression-tree-verbose" checked="true">
+		<div class="horizontal">
+			<button id="evaluate-expression-button">Evaluate</button>
+			<button id="dump-expression-tree-button">Show parsed tree</button>
+			<label for="dump-expression-tree-verbose" style="vertical-align: middle;">Verbose</label>
+			<input type="checkbox" name="dump-expression-tree-verbose" id="dump-expression-tree-verbose" checked="true">
+		</div>
 		<div id="expression-output-div" class="output-div"></div>
 		<h2>Soodocode input</h2>
 		<div id="input-wrapper">
-			<textarea name="soodocode-input" id="soodocode-input" cols="60" rows="15"></textarea>
+			<textarea name="soodocode-input" id="soodocode-input" cols="60" rows="15" spellcheck="false"></textarea>
 		</div>
-		<button id="execute-soodocode-button" style="margin-bottom: 10px;">Execute</button><br>
-		<button id="dump-tokens-button">Dump tokens</button>
+		<div class="horizontal">
+			<button id="execute-soodocode-button"">Execute</button><br>
+			<button id="dump-tokens-button">Show parser output</button>
+		</div>
 		<div id="output-div" class="output-div"></div>
 		<footer>
 			Copyright © <a href="https://github.com/BalaM314">BalaM314</a>. All Rights Reserved. <a href="https://github.com/BalaM314/soodocode">Open source.</a>

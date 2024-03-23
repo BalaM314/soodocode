@@ -226,7 +226,7 @@ dumpTokensButton.addEventListener("click", e => {
 		const tokens = lexer.tokenize(symbols);
 		const program = parser.parse(tokens);
 		outputDiv.innerHTML = `\
-<h3>Symbols</h3>\
+<!--<h2>Symbols</h2>\
 <div class="display-scroller">
 <table>
 <thead>
@@ -236,8 +236,8 @@ dumpTokensButton.addEventListener("click", e => {
 ${symbols.symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
 </tbody>
 </table>
-</div>
-<h3>Tokens</h3>\
+</div>-->
+<h2>Tokens</h2>\
 <div class="display-scroller">
 <table>
 <thead>
@@ -248,7 +248,7 @@ ${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span styl
 </tbody>
 </table>
 </div>
-<h3>Statements</h3>
+<h2>Statements</h2>
 ${displayProgram(program)}`
 		;
 		outputDiv.style.color = "white";
@@ -297,6 +297,28 @@ executeSoodocodeButton.addEventListener("click", e => {
 		}
 	}
 });
+
+let flashing = false;
+let bouncing = false;
+let flipped = false;
+let clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+headerText.addEventListener("click", e => {
+	clickTimes.shift();
+			clickTimes.push(Date.now());
+	if(e.shiftKey) flashing = !flashing;
+	if(e.altKey) bouncing = !bouncing;
+	if(e.ctrlKey) flipped = !flipped;
+	headerText.style.setProperty("transform", flipped ? "scaleX(-1)" : "none");
+	headerText.style.setProperty("animation-name", bouncing ? "sizebounce" : "none");
+	//modifying animation-play-state didn't work as the animation could get paused when the size is high, causing scrollbars to appear
+	if(!e.shiftKey && !e.altKey && !e.ctrlKey)
+		headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
+	if(((Date.now() - clickTimes[0]) / 10) < 500)
+		headerText.style.setProperty("visibility", "hidden");
+});
+setInterval(() => {
+	if(flashing) headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
+}, 500);
 
 function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
