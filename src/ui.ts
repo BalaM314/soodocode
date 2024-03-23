@@ -165,19 +165,54 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 });
 
 soodocodeInput.onkeydown = e => {
-	if(e.key == "Tab"){
+	if((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)){
 		e.preventDefault();
 		//Save cursor position
-		const start = soodocodeInput.selectionStart;
-		//Insert tab
-		let x = soodocodeInput.value.split("");
-		x.splice(start, 0, "\t");
-		soodocodeInput.value = x.join("");
+		const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
+		const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
+		const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n(?=\t)/g)?.length ?? 0;
+		//indent the text
+		soodocodeInput.value = soodocodeInput.value
+			.slice(0, end)
+			.split("\n")
+			.map((line, i, text) =>
+				i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line
+			).join("\n") + soodocodeInput.value.slice(end);
 		//Replace cursor position
-		soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
+		soodocodeInput.selectionStart = start - 1;
+		soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
+	} else if(e.key == "Tab" || (e.key == "]" && e.ctrlKey)){
+		e.preventDefault();
+		if(soodocodeInput.selectionStart == soodocodeInput.selectionEnd && !(e.key == "]" && e.ctrlKey)){
+			//Insert a tab character
+
+			//Save cursor position
+			const start = soodocodeInput.selectionStart;
+			//Insert tab
+			soodocodeInput.value = soodocodeInput.value.slice(0, start) + "\t" + soodocodeInput.value.slice(start);
+			//Replace cursor position
+			soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
+		} else {
+			//indent the block
+
+			//Save cursor position
+			const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
+			const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
+			const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n/g)?.length ?? 0;
+			//indent the text
+			soodocodeInput.value = soodocodeInput.value
+				.slice(0, end)
+				.split("\n")
+				.map((line, i, text) =>
+					i >= numNewlinesBefore ? "\t" + line : line
+				).join("\n") + soodocodeInput.value.slice(end);
+			//Replace cursor position
+			soodocodeInput.selectionStart = start + 1;
+			soodocodeInput.selectionEnd = end + 1 + numNewlinesWithin;
+		}
 	}
 	//Update text
-	const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2013", "-").replaceAll("\u2011", "-");
+	const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2190", "<-").replaceAll("\u2013", "-").replaceAll("\u2011", "-");
 	if(soodocodeInput.value != newText){
 		const start = soodocodeInput.selectionStart;
 		soodocodeInput.value = newText;
