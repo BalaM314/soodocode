@@ -46,7 +46,7 @@ import { Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ArrayTypeData } from "./parser-types.js";
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -79,7 +79,7 @@ export class Statement {
     }
     /** Warning: block will not include the usual end statement. */
     static supportsSplit(block, statement) {
-        return false;
+        return fquote `current block of type ${block.type} cannot be split by ${statement.toString()}`;
     }
     run(runtime) {
         crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -441,7 +441,9 @@ let IfStatement = (() => {
         }
         /** Warning: block will not include the usual end statement. */
         static supportsSplit(block, statement) {
-            return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
+            if (statement.stype != "else")
+                return `${statement.stype} statements are not valid in IF blocks`;
+            return true;
             //If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
         }
         runBlock(runtime, node) {
@@ -495,7 +497,11 @@ let SwitchStatement = (() => {
             [, , this.expression] = tokens;
         }
         static supportsSplit(block, statement) {
-            return block.type == "switch" && statement.stype == "case" && (block.nodeGroups.at(-1).length > 0 || block.nodeGroups.length == 1);
+            if (statement.stype != "case")
+                return `${statement.stype} statements are not valid in CASE OF blocks`;
+            if (block.nodeGroups.at(-1).length == 0 && block.nodeGroups.length != 1)
+                return `Previous case branch was empty.`;
+            return true;
         }
         runBlock(runtime, { controlStatements, nodeGroups }) {
             const [switchType, switchValue] = runtime.evaluateExpr(this.expression);

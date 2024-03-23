@@ -15,7 +15,8 @@ import {
 import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
 	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange,
-	SoodocodeError
+	SoodocodeError,
+	fquote
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
@@ -77,8 +78,8 @@ export class Statement implements TextRanged {
 		return this.type.example;
 	}
 	/** Warning: block will not include the usual end statement. */
-	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):boolean {
-		return false;
+	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
+		return fquote`current block of type ${block.type} cannot be split by ${statement.toString()}`;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -316,8 +317,9 @@ export class IfStatement extends Statement {
 		this.condition = tokens[1];
 	}
 	/** Warning: block will not include the usual end statement. */
-	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):boolean {
-		return block.type == "if" && statement.stype == "else" && block.nodeGroups[0].length > 0;
+	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
+		if(statement.stype != "else") return `${statement.stype} statements are not valid in IF blocks`;
+		return true;
 		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
@@ -338,8 +340,10 @@ export class SwitchStatement extends Statement {
 		super(tokens);
 		[,, this.expression] = tokens;
 	}
-	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):boolean { //TODO allow error messages
-		return block.type == "switch" && statement.stype == "case" && (block.nodeGroups.at(-1)!.length > 0 || block.nodeGroups.length == 1);
+	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
+		if(statement.stype != "case") return `${statement.stype} statements are not valid in CASE OF blocks`;
+		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty.`;
+		return true;
 	}
 	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
 		const [switchType, switchValue] = runtime.evaluateExpr(this.expression);

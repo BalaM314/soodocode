@@ -140,9 +140,10 @@ export function parse({ program, tokens }) {
         else if (statement.category == "block_multi_split") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement, null);
-            if (!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement))
-                fail(`Unexpected statement "${statement.toString()}": current block cannot be split by "${statement.toString()}"`, null);
+                fail(`Unexpected statement "${statement.toString()}": this statement must be inside a block`, statement, null);
+            let errorMessage;
+            if ((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
+                fail(`Unexpected statement "${statement.toString()}": ${errorMessage}`, statement, null);
             lastNode.controlStatements.push(statement);
             lastNode.nodeGroups.push([]);
         }
@@ -182,7 +183,7 @@ export const parseStatement = errorBoundary((tokens) => {
         if (error.priority > maxError.priority)
             maxError = error;
     }
-    fail(maxError.message, tokens);
+    fail(maxError.message, maxError.range, tokens);
 });
 export function isLiteral(type) {
     switch (type) {
@@ -198,11 +199,13 @@ export function isLiteral(type) {
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
+ * `input` must not be empty.
  */
 export const checkStatement = errorBoundary((statement, input) => {
-    //TODO error ranges
     //warning: despite writing it, I do not fully understand this code
     //but it works
+    if (input.length == 0)
+        crash(`checkStatement() called with empty input`);
     const output = [];
     let i, j;
     for (i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
@@ -213,7 +216,7 @@ export const checkStatement = errorBoundary((statement, input) => {
                 if (allowEmpty)
                     continue; //Consumed all tokens
                 else
-                    return { message: `Unexpected end of line`, priority: 4 };
+                    return { message: `Unexpected end of line`, priority: 4, range: input.at(-1).rangeAfter() };
             }
             let anyTokensSkipped = false;
             while (statement.tokens[i + 1] != input[j].type) { //Repeat until the current token in input is the next token
@@ -222,12 +225,12 @@ export const checkStatement = errorBoundary((statement, input) => {
                 if (j >= input.length) { //end reached
                     if (i == statement.tokens.length - 1)
                         break; //Consumed all tokens
-                    return { message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4 };
+                    return { message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4, range: input.at(-1).rangeAfter() };
                 }
             }
             const end = j - 1;
             if (!anyTokensSkipped && !allowEmpty)
-                return { message: `Expected one or more tokens, but found zero`, priority: 6 };
+                return { message: `Expected one or more tokens, but found zero`, priority: 6, range: input[j].range };
             if (statement.tokens[i] == "expr+")
                 output.push({ type: "expression", start, end });
             else if (statement.tokens[i] == "type+")
@@ -237,7 +240,7 @@ export const checkStatement = errorBoundary((statement, input) => {
         }
         else {
             if (j >= input.length)
-                return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4 };
+                return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
             if (statement.tokens[i] == "#")
                 impossible();
             else if (statement.tokens[i] == "." || statement.tokens[i] == input[j].type) {
@@ -256,14 +259,14 @@ export const checkStatement = errorBoundary((statement, input) => {
                     j += 2;
                 }
                 else
-                    return { message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 8 };
+                    return { message: `Expected a ${statement.tokens[i]}`, priority: 8, range: input[j].range };
             }
             else
-                return { message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5 };
+                return { message: `Expected a ${statement.tokens[i]}`, priority: 5, range: input[j].range };
         }
     }
     if (j != input.length)
-        return { message: `Expected end of line, found ${input[j].type}`, priority: 7 };
+        return { message: `Expected end of line, found ${input[j].type}`, priority: 7, range: input[j].range };
     return output;
 });
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */

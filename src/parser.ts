@@ -8,7 +8,7 @@ which is the preferred representation of the program.
 */
 
 
-import { Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
+import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
 	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
 	ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode,
@@ -156,13 +156,16 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 			} else fail(`Unexpected statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
 		} else if(statement.category == "block_multi_split"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement, null);
-			if(!lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) fail(`Unexpected statement "${statement.toString()}": current block cannot be split by "${statement.toString()}"`, null);
+			if(!lastNode) fail(`Unexpected statement "${statement.toString()}": this statement must be inside a block`, statement, null);
+			let errorMessage:true | string;
+			if((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
+				fail(`Unexpected statement "${statement.toString()}": ${errorMessage}`, statement, null);
 			lastNode.controlStatements.push(statement);
 			lastNode.nodeGroups.push([]);
 		} else statement.category satisfies never;
 	}
-	if(blockStack.length) fail(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].blockEndStatement().type}" statement`, blockStack.at(-1)!.controlStatements[0], null);
+	if(blockStack.length)
+		fail(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].blockEndStatement().type}" statement`, blockStack.at(-1)!.controlStatements[0], null);
 	return {
 		program,
 		nodes: programNodes
@@ -180,18 +183,18 @@ export const parseStatement = errorBoundary((tokens:Token[]):Statement => {
 			? statements.byStartKeyword[tokens[0].type]!
 			: statements.irregular;
 	if(possibleStatements.length == 0) fail(`No possible statements`, tokens);
-	let errors:{message:string, priority:number}[] = [];
+	let errors:StatementCheckFailResult[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
 			return new possibleStatement(result.map(x => x instanceof Token ? x : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
 		} else errors.push(result);
 	}
-	let maxError:{message:string, priority:number} = errors[0];
+	let maxError:StatementCheckFailResult = errors[0];
 	for(const error of errors){
 		if(error.priority > maxError.priority) maxError = error;
 	}
-	fail(maxError.message, tokens);
+	fail(maxError.message, maxError.range, tokens);
 });
 
 export function isLiteral(type:TokenType){
@@ -204,17 +207,22 @@ export function isLiteral(type:TokenType){
 	}
 }
 
-type StatementCheckSuccessResult = (Token | {type:"expression" | "type"; start:number; end:number})[];
+/** start and end are inclusive */
+type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
+type StatementCheckFailResult = { message: string; priority: number; range: TextRange; };
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
+ * `input` must not be empty.
  */
-export const checkStatement = errorBoundary((statement:typeof Statement, input:Token[]):{message:string; priority:number} | StatementCheckSuccessResult => {
-	//TODO error ranges
+export const checkStatement = errorBoundary((statement:typeof Statement, input:Token[]):
+	StatementCheckFailResult | StatementCheckTokenRange[] => {
 	//warning: despite writing it, I do not fully understand this code
 	//but it works
 
-	const output:StatementCheckSuccessResult = [];
+	if(input.length == 0) crash(`checkStatement() called with empty input`);
+
+	const output:StatementCheckTokenRange[] = [];
 	let i, j;
 	for(i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
 		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+"){
@@ -222,7 +230,7 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 			const start = j;
 			if(j >= input.length){
 				if(allowEmpty) continue; //Consumed all tokens
-				else return {message: `Unexpected end of line`, priority: 4};
+				else return { message: `Unexpected end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
 			}
 			let anyTokensSkipped = false;
 			while(statement.tokens[i + 1] != input[j].type){ //Repeat until the current token in input is the next token
@@ -230,11 +238,11 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 				j ++;
 				if(j >= input.length){ //end reached
 					if(i == statement.tokens.length - 1) break; //Consumed all tokens
-					return {message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4};
+					return { message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4, range: input.at(-1)!.rangeAfter() };
 				}
 			}
 			const end = j - 1;
-			if(!anyTokensSkipped && !allowEmpty) return {message: `Expected one or more tokens, but found zero`, priority: 6};
+			if(!anyTokensSkipped && !allowEmpty) return { message: `Expected one or more tokens, but found zero`, priority: 6, range: input[j].range };
 			if(statement.tokens[i] == "expr+")
 				output.push({type: "expression", start, end});
 			else if(statement.tokens[i] == "type+")
@@ -242,7 +250,7 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 			else
 				output.push(...input.slice(start, end + 1));
 		} else {
-			if(j >= input.length) return {message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4};
+			if(j >= input.length) return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
 			if(statement.tokens[i] == "#") impossible();
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type){
 				output.push(input[j]);
@@ -257,11 +265,11 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 					negativeNumber.text = input[j].text + negativeNumber.text;
 					output.push(negativeNumber);
 					j += 2;
-				} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 8};
-			} else return {message: `Expected a ${statement.tokens[i]}, got "${input[j].text}" (${input[j].type})`, priority: 5};
+				} else return { message: `Expected a ${statement.tokens[i]}`, priority: 8, range: input[j].range };
+			} else return { message: `Expected a ${statement.tokens[i]}`, priority: 5, range: input[j].range };
 		}
 	}
-	if(j != input.length) return {message: `Expected end of line, found ${input[j].type}`, priority: 7};
+	if(j != input.length) return { message: `Expected end of line, found ${input[j].type}`, priority: 7, range: input[j].range };
 	return output;
 });
 
