@@ -102,9 +102,9 @@ export function parse({ program, tokens }) {
     //TODO remove hardcoded special handling for case branch statement
     let lines = splitTokens(tokens, "newline").map(ts => 
     //Horrible bodge
-    Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
+    ts.length > 3 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
         ? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
-        : Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
+        : ts.length > 4 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
             ? [ts.slice(0, 3), ts.slice(3)]
             : [ts] //nothing, but put it in an array anyway so it gets flattened again
     ).flat(1).filter(ts => ts.length > 0); //remove blank lines
