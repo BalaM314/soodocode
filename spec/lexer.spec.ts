@@ -100,9 +100,9 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 			["space", " "],
 			["numeric_fragment", "501"],
 			["space", " "],
-			["operator.and", "AND"],
+			["word", "AND"],
 			["space", " "],
-			["operator.not", "NOT"],
+			["word", "NOT"],
 			["space", " "],
 			["word", "PastLast"],
 		]
@@ -586,7 +586,7 @@ describe("tokenizer", () => {
 				expect(() => tokenize(input)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
-			it(`should parse ${name} into symbols`, () => {
+			it(`should parse ${name} into tokens`, () => {
 				const { program, tokens } = tokenize(input);
 				expect(tokens.map(t => t.clearRange())).toEqual(output);
 			});
