@@ -931,7 +931,7 @@ const sampleExpressions = Object.entries<[program:_Token[], output:_ExpressionAS
 );
 
 const parseStatementTests = Object.entries<[program:_Token[], output:_Statement | "error"]>({
-	output: [
+	output1: [
 		[
 			["keyword.output", "OUTPUT"],
 			["string", `"amogus"`],
@@ -940,6 +940,60 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 			["keyword.output", "OUTPUT"],
 			["string", `"amogus"`],
 		]]
+	],
+	output2: [
+		[
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["punctuation.comma", `,`],
+			["string", `"amogus"`],
+		],
+		[OutputStatement, [
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["punctuation.comma", `,`],
+			["string", `"amogus"`],
+		]]
+	],
+	output3: [
+		[
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["punctuation.comma", `,`],
+			["number.decimal", `5`],
+			["punctuation.comma", `,`],
+			["string", `"amogus"`],
+		],
+		[OutputStatement, [
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["punctuation.comma", `,`],
+			["number.decimal", `5`],
+			["punctuation.comma", `,`],
+			["string", `"amogus"`],
+		]]
+	],
+	outputBad1: [
+		[
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["number.decimal", `5`],
+			["punctuation.comma", `,`],
+			["string", `"amogus"`],
+		],
+		"error"
+	],
+	outputBad2: [
+		[
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["punctuation.comma", `,`],
+			["number.decimal", `5`],
+			["punctuation.comma", `,`],
+			["string", `"amogus"`],
+			["punctuation.comma", `,`],
+		],
+		"error"
 	],
 	input: [
 		[
@@ -950,6 +1004,20 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 			["keyword.input", "INPUT"],
 			["name", `amogus`],
 		]]
+	],
+	inputBad1: [
+		[
+			["keyword.input", "INPUT"],
+			["string", `"amogus"`],
+		],
+		"error"
+	],
+	inputBad2: [
+		[
+			["keyword.input", "INPUT"],
+			["number.decimal", `5`],
+		],
+		"error"
 	],
 	declare1: [
 		[
@@ -1048,6 +1116,26 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 			["operator.assignment", `<-`],
 			["number.decimal", "31415"],
 		]]
+	],
+	assign2: [
+		[
+			["name", "x"],
+			["operator.assignment", `<--`],
+			["name", "y"],
+		],
+		[AssignmentStatement, [
+			["name", "x"],
+			["operator.assignment", `<--`],
+			["name", "y"],
+		]]
+	],
+	assignbad1: [
+		[
+			["number.decimal", "5"],
+			["operator.assignment", `<--`],
+			["name", "y"],
+		],
+		"error"
 	],
 	if: [
 		[
