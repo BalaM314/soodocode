@@ -139,7 +139,7 @@ but found ${expr.nodes.length} indices`,
 		const index = indexes.reduce((acc, [e, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.lengthInformation_[index]), 0);
 		if(operation == "get"){
 			const output = (variable.value as Array<StringVariableTypeValue>)[index];
-			if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`, expr.operatorToken);
+			if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
 			if(arg2) return [arg2 as VariableType, this.coerceValue(output, variable.type.type, arg2 as VariableType)];
 			else return [variable.type.type, output];
 		} else {

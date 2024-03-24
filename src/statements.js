@@ -44,8 +44,8 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 };
 import { Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
-import { ArrayTypeData } from "./parser-types.js";
-import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { ArrayTypeData, ExpressionASTBranchNode } from "./parser-types.js";
+import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
@@ -232,13 +232,17 @@ let AssignmentStatement = (() => {
         constructor(tokens) {
             super(tokens);
             [this.name, , this.expr] = tokens;
-            if ("operator" in this.name) {
+            if (this.name instanceof ExpressionASTBranchNode) {
                 if (this.name.operator != "array access")
-                    fail(`Expression ${displayExpression(this.name)} cannot be assigned to`);
+                    fail(`Expression ${displayExpression(this.name)} cannot be assigned to`, this.name, this);
+            }
+            else {
+                if (isLiteral(this.name.type))
+                    fail(fquote `Cannot assign to literal token ${this.name.text}`, this.name, this);
             }
         }
         run(runtime) {
-            if ("operator" in this.name) {
+            if (this.name instanceof ExpressionASTBranchNode) {
                 runtime.processArrayAccess(this.name, "set", this.expr);
             }
             else {

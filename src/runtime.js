@@ -86,7 +86,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                 if (operation == "get") {
                     const output = variable.value[index];
                     if (output == null)
-                        fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.join(", ")}]`, expr.operatorToken);
+                        fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
                     if (arg2)
                         return [arg2, this.coerceValue(output, variable.type.type, arg2)];
                     else

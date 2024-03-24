@@ -12,7 +12,7 @@ import {
 	ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
 	ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
-import { parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
 	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange,
 	SoodocodeError,
@@ -203,12 +203,14 @@ export class AssignmentStatement extends Statement {
 	constructor(tokens:[ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
 		[this.name, , this.expr] = tokens;
-		if("operator" in this.name){
-			if(this.name.operator != "array access") fail(`Expression ${displayExpression(this.name)} cannot be assigned to`);
+		if(this.name instanceof ExpressionASTBranchNode){
+			if(this.name.operator != "array access") fail(`Expression ${displayExpression(this.name)} cannot be assigned to`, this.name, this);
+		} else {
+			if(isLiteral(this.name.type)) fail(fquote`Cannot assign to literal token ${this.name.text}`, this.name, this);
 		}
 	}
 	run(runtime:Runtime){
-		if("operator" in this.name){
+		if(this.name instanceof ExpressionASTBranchNode){
 			runtime.processArrayAccess(this.name, "set", this.expr);
 		} else {
 			const variable = runtime.getVariable(this.name.text);
