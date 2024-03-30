@@ -1,12 +1,12 @@
 import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
-import { Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
+import { EnumeratedVariableType, Runtime, VariableType, VariableValue } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
-const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>({
+const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]>({
 	boolean_true: [
 		["boolean.true", "true"],
 		"BOOLEAN",
@@ -72,7 +72,58 @@ const tokenTests = Object.entries<[token:_Token, type:VariableType | null, outpu
 		"INTEGER",
 		["error"]
 	],
-}).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>(([k, v]) => [k, token(v[0]), v[1], v[2]]);
+	variable_number: [
+		["name", "x"],
+		"INTEGER",
+		["INTEGER", 5],
+		r => r.getCurrentScope().variables["x"] = {
+			mutable: false,
+			declaration: null!,
+			type: "INTEGER",
+			value: 5
+		}
+	],
+	enum_valid: (() => {
+		const type = new EnumeratedVariableType(
+			"amogusType",
+			["amoma", "sugoma", "amoma", "sugus"]
+		);
+		return [
+			["name", "amoma"],
+			type,
+			[type, "amoma"],
+			r => r.getCurrentScope().types["amogusType"] = type
+		];
+	})(),
+	enum_invalid_different: (() => {
+		const type1 = new EnumeratedVariableType(
+			"amogusType",
+			["amoma", "sugoma", "amoma", "sugus"]
+		);
+		const type2 = new EnumeratedVariableType(
+			"dayOfWeek",
+			["sunday", "monday", "tuesday", "wednesday", "thursday", "friday"]
+		);
+		return [
+			["name", "amoma"],
+			type2,
+			["error"],
+			r => r.getCurrentScope().types["amogusType"] = type1
+		];
+	})(),
+	enum_invalid_nonexistent: (() => {
+		const type = new EnumeratedVariableType(
+			"amogusType",
+			["amoma", "sugoma", "amoma", "sugus"]
+		);
+		return [
+			["name", "sussybaka"],
+			null,
+			["error"],
+			r => r.getCurrentScope().types["amogusType"] = type
+		];
+	})(),
+}).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup:(r:Runtime) => unknown]>(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => {})]);
 
 const expressionTests = Object.entries<[expression:_ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>({
 	addNumbers: [
@@ -128,9 +179,10 @@ const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?
 
 
 describe("runtime's token evaluator", () => {
-	for(const [name, token, type, output] of tokenTests){
+	for(const [name, token, type, output, setup] of tokenTests){
 		it(`should produce the expected output for ${name}`, () => {
 			const runtime = new Runtime(() => fail(`Cannot input`), () => fail(`Cannot output`));
+			setup(runtime);
 			if(output[0] == "error")
 				expect(() => runtime.evaluateToken(token, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
 			else
