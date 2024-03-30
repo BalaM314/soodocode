@@ -1,13 +1,25 @@
 import "jasmine";
-import { ProgramAST } from "../src/parser-types.js";
-import { OutputStatement } from "../src/statements.js";
-import { _ProgramAST, _Token, process_ProgramAST } from "./spec_utils.js";
-import { Runtime } from "../src/runtime.js";
-import { fail } from "../src/utils.js";
 import { Token, token } from "../src/lexer-types.js";
+import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
+import { Runtime, VariableType, VariableValueType } from "../src/runtime.js";
+import { StatementExecutionResult } from "../src/statements.js";
+import { SoodocodeError, fail } from "../src/utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
+
+const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>({
+
+}).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>(([k, v]) => [k, token(v[0]), v[1], v[2]]);
+
+const expressionTests = Object.entries<[expression:_ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>({
+
+}).map<[name:string, expression:ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2]]);
+
+const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs?:string[]]>({
+
+}).map<[name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs:string[]]>(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 
 const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?:string[]]>({
-	
+
 }).map<[name:string, program:ProgramAST, output:string, inputs:string[]]>(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
 
 
