@@ -1,25 +1,129 @@
 import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
-import { Runtime, VariableType, VariableValueType } from "../src/runtime.js";
-import { StatementExecutionResult } from "../src/statements.js";
+import { Runtime, VariableData, VariableType, VariableValueType } from "../src/runtime.js";
+import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
 const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>({
-
+	boolean_true: [
+		["boolean.true", "true"],
+		"BOOLEAN",
+		["BOOLEAN", true]
+	],
+	boolean_false: [
+		["boolean.false", "false"],
+		"BOOLEAN",
+		["BOOLEAN", false]
+	],
+	number_int: [
+		["number.decimal", "5"],
+		"INTEGER",
+		["INTEGER", 5]
+	],
+	number_int2: [
+		["number.decimal", "1398403"],
+		"INTEGER",
+		["INTEGER", 1398403]
+	],
+	number_real: [
+		["number.decimal", "5"],
+		"REAL",
+		["REAL", 5]
+	],
+	number_real2: [
+		["number.decimal", "1398403"],
+		"REAL",
+		["REAL", 1398403]
+	],
+	number_decimal: [
+		["number.decimal", "5.2"],
+		null,
+		["REAL", 5.2]
+	],
+	number_decimal_int: [
+		["number.decimal", "5.2"],
+		"INTEGER",
+		["error"]
+	],
+	number_negative: [
+		["number.decimal", "-5"],
+		"INTEGER",
+		["INTEGER", -5]
+	],
+	number_negative_decimal: [
+		["number.decimal", "-5.2"],
+		null,
+		["REAL", -5.2]
+	],
+	number_too_large: [
+		["number.decimal", "9".repeat(45)],
+		"INTEGER",
+		["error"]
+	],
+	number_real_too_large: [
+		["number.decimal", "9".repeat(309)],
+		"REAL",
+		["error"]
+	],
+	number_negative_too_large: [
+		["number.decimal", "-" + "9".repeat(45)],
+		"INTEGER",
+		["error"]
+	],
 }).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>(([k, v]) => [k, token(v[0]), v[1], v[2]]);
 
 const expressionTests = Object.entries<[expression:_ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>({
-
+	addNumbers: [
+		["tree", "add", [
+			["number.decimal", "5"],
+			["number.decimal", "6"]
+		]],
+		"INTEGER",
+		["INTEGER", 11]
+	]
 }).map<[name:string, expression:ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2]]);
 
 const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs?:string[]]>({
-
+	declare1: [
+		[DeclarationStatement, [
+			["keyword.declare", "DECLARE"],
+			["name", "x"],
+			["punctuation.colon", ":"],
+			["name", "DATE"],
+		]],
+		r => {},
+		r => expect(r.scopes[0]?.variables?.x).toEqual({
+			declaration: jasmine.any(DeclarationStatement),
+			mutable: true,
+			type: "DATE",
+			value: null
+		})
+	]
 }).map<[name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs:string[]]>(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 
 const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?:string[]]>({
-
+	simpleProgram: [
+		[
+			[DeclarationStatement, [
+				["keyword.declare", "DECLARE"],
+				["name", "x"],
+				["punctuation.colon", ":"],
+				["name", "STRING"],
+			]],
+			[AssignmentStatement, [
+				["name", "x"],
+				["operator.assignment", "<-"],
+				["string", `"amogus"`],
+			]],
+			[OutputStatement, [
+				["keyword.output", "OUTPUT"],
+				["name", "x"],
+			]],
+		],
+		`amogus`
+	]
 }).map<[name:string, program:ProgramAST, output:string, inputs:string[]]>(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
 
 
