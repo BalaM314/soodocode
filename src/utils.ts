@@ -182,8 +182,7 @@ export function escapeHTML(input:string):string {
 }
 
 //TODO move to runtime, user defined types
-/** @deprecated */
-export function isVarType(input:string):input is PrimitiveVariableTypeName {
+export function isPrimitiveType(input:string):input is PrimitiveVariableTypeName {
 	return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }
 

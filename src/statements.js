@@ -46,7 +46,7 @@ import { Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ArrayVariableType, ExpressionASTBranchNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -785,7 +785,7 @@ let FunctionStatement = (() => {
                 fail(`Invalid function arguments: ${args}`);
             this.args = args;
             const returnType = tokens.at(-1).text;
-            if (!isVarType(returnType))
+            if (!isPrimitiveType(returnType))
                 fail(`Invalid type ${returnType}`);
             this.returnType = returnType;
             this.name = tokens[1].text;

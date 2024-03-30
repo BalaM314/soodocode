@@ -185,8 +185,7 @@ export function escapeHTML(input) {
     return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 //TODO move to runtime, user defined types
-/** @deprecated */
-export function isVarType(input) {
+export function isPrimitiveType(input) {
     return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }
 export function parseError(thing) {

@@ -14,9 +14,8 @@ import {
 } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
-	displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange,
-	SoodocodeError,
-	fquote
+	displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange,
+	SoodocodeError, fquote
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
@@ -494,7 +493,7 @@ export class FunctionStatement extends Statement {
 		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
 		const returnType = tokens.at(-1)!.text;
-		if(!isVarType(returnType)) fail(`Invalid type ${returnType}`);
+		if(!isPrimitiveType(returnType)) fail(`Invalid type ${returnType}`);
 		this.returnType = returnType;
 		this.name = tokens[1].text;
 	}
