@@ -41,6 +41,7 @@ export type StringVariableType =
 	| "DATE"
 ;
 
+//TODO refactor this to support pointers, user defined records, etc
 export type VariableType = StringVariableType | ArrayTypeData;
 export type VariableValueType = VariableTypeMapping<VariableType>;
 export type StringVariableTypeValue = VariableTypeMapping<StringVariableType>;
@@ -147,7 +148,7 @@ but found ${expr.nodes.length} indices`,
 		}
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValueType];
-	evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):[type:T, value:VariableTypeMapping<T>];
+	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):[type:T, value:VariableTypeMapping<T>];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType):[type:VariableType, value:VariableValueType] {
 
 		if(expr instanceof Token)
