@@ -7,9 +7,9 @@ and processes it into an abstract syntax tree (AST),
 which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
-import { ArrayVariableType, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ProgramASTBranchNode } from "./parser-types.js";
+import { ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ProgramASTBranchNode } from "./parser-types.js";
 import { CaseBranchStatement, statements } from "./statements.js";
-import { impossible, fail, isVarType, splitTokens, splitTokensOnComma, errorBoundary, crash, fquote, splitTokensWithSplitter } from "./utils.js";
+import { crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
@@ -68,9 +68,9 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
 });
 export const processTypeData = errorBoundary((typeNode) => {
     if (typeNode instanceof Token)
-        return isVarType(typeNode.text) ? typeNode.text : fail(fquote `Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
+        return isPrimitiveType(typeNode.text) ? typeNode.text : fail(fquote `Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
     else
-        return new ArrayVariableType(typeNode.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isVarType(typeNode.elementType.text) ? typeNode.elementType.text : fail(fquote `Invalid variable type ${typeNode.elementType.text}`));
+        return typeNode.toData();
 });
 export const parseType = errorBoundary((tokens) => {
     if (tokens.length == 1) {

@@ -1,4 +1,5 @@
-import { fail, getTotalRange } from "./utils.js";
+import { EnumeratedVariableType, PointerVariableType } from "./runtime.js";
+import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
 /** Represents a branch node (node with child nodes) in an expression AST. */
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
@@ -16,6 +17,29 @@ export class ExpressionASTArrayTypeNode {
         this.elementType = elementType;
         this.allTokens = allTokens;
         this.range = getTotalRange(allTokens);
+    }
+    toData() {
+        return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isPrimitiveType(this.elementType.text) ? this.elementType.text : fail(fquote `Invalid variable type ${this.elementType.text}`));
+    }
+}
+export class ExpressionASTPointerTypeNode {
+    constructor(targetType, allTokens) {
+        this.targetType = targetType;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+    toData(name) {
+        return new PointerVariableType(name, isPrimitiveType(this.targetType.text) ? this.targetType.text : fail(fquote `Invalid variable type ${this.targetType.text}`));
+    }
+}
+export class ExpressionASTEnumTypeNode {
+    constructor(values, allTokens) {
+        this.values = values;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+    toData(name) {
+        return new EnumeratedVariableType(name, this.values.map(t => t.text));
     }
 }
 /** Represents a branch node (node with children) in a program AST. */

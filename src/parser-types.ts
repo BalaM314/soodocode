@@ -1,8 +1,8 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
-import { VariableType } from "./runtime.js";
+import { EnumeratedVariableType, PointerVariableType, VariableType } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { fail, getTotalRange } from "./utils.js";
+import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -32,6 +32,42 @@ export class ExpressionASTArrayTypeNode implements TextRanged {
 		public allTokens: Token[],
 	){
 		this.range = getTotalRange(allTokens);
+	}
+	toData():ArrayVariableType {
+		return new ArrayVariableType(
+			this.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
+			isPrimitiveType(this.elementType.text) ? this.elementType.text : fail(fquote`Invalid variable type ${this.elementType.text}`)
+		);
+	}
+}
+export class ExpressionASTPointerTypeNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public targetType: Token,
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
+	toData(name:string):PointerVariableType {
+		return new PointerVariableType(
+			name,
+			isPrimitiveType(this.targetType.text) ? this.targetType.text : fail(fquote`Invalid variable type ${this.targetType.text}`)
+		);
+	}
+}
+export class ExpressionASTEnumTypeNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public values: Token[],
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
+	toData(name:string):EnumeratedVariableType {
+		return new EnumeratedVariableType(
+			name,
+			this.values.map(t => t.text)
+		);
 	}
 }
 /** Represents a node that represents a type, which can be either a single token or an array type node. */

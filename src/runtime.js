@@ -55,11 +55,12 @@ export class RecordVariableType {
 }
 ;
 export class PointerVariableType {
-    constructor(target) {
+    constructor(name, target) {
+        this.name = name;
         this.target = target;
     }
     toString() {
-        return `^${this.target}`;
+        return fquote `pointer type ${this.name} (^${this.target})`;
     }
 }
 export class EnumeratedVariableType {

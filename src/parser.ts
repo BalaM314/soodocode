@@ -19,11 +19,11 @@ import {
 	CaseBranchStatement,
 	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
 } from "./statements.js";
-import {
-	impossible, splitArray, fail, isVarType, getText, splitTokens, splitTokensOnComma,
-	errorBoundary, crash, fquote, splitTokensWithSplitter
-} from "./utils.js";
 import { PartialKey } from "./types.js";
+import {
+	crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma,
+	splitTokensWithSplitter
+} from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -82,11 +82,8 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 });
 
 export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):VariableType => {
-	if(typeNode instanceof Token) return isVarType(typeNode.text) ? typeNode.text : fail(fquote`Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
-	else return new ArrayVariableType(
-		typeNode.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
-		isVarType(typeNode.elementType.text) ? typeNode.elementType.text : fail(fquote`Invalid variable type ${typeNode.elementType.text}`)
-	);
+	if(typeNode instanceof Token) return isPrimitiveType(typeNode.text) ? typeNode.text : fail(fquote`Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
+	else return typeNode.toData();
 });
 
 export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | ExpressionASTArrayTypeNode => {
