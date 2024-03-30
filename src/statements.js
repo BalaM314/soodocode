@@ -635,7 +635,8 @@ let ForStatement = (() => {
                             type: "INTEGER",
                             value: i
                         }
-                    }
+                    },
+                    types: {}
                 });
                 if (result)
                     return result;
@@ -691,7 +692,8 @@ let WhileStatement = (() => {
             while (runtime.evaluateExpr(this.condition, "BOOLEAN")[1]) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
-                    variables: {}
+                    variables: {},
+                    types: {},
                 });
                 if (result)
                     return result;
@@ -721,7 +723,8 @@ let DoWhileStatement = (() => {
             do {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
-                    variables: {}
+                    variables: {},
+                    types: {},
                 });
                 if (result)
                     return result;

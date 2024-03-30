@@ -422,7 +422,8 @@ export class ForStatement extends Statement {
 						type: "INTEGER",
 						value: i
 					}
-				}
+				},
+				types: {}
 			});
 			if(result) return result;
 		}
@@ -447,7 +448,8 @@ export class WhileStatement extends Statement {
 		while(runtime.evaluateExpr(this.condition, "BOOLEAN")[1]){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
-				variables: {}
+				variables: {},
+				types: {},
 			});
 			if(result) return result;
 		}
@@ -461,7 +463,8 @@ export class DoWhileStatement extends Statement {
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
-				variables: {}
+				variables: {},
+				types: {},
 			});
 			if(result) return result;
 			if(++i > DoWhileStatement.maxLoops)
