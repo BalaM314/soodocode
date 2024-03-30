@@ -6,10 +6,10 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import { FunctionData, Runtime, VariableType, VariableValueType } from "./runtime.js";
+import { FunctionData, Runtime, VariableType, VariableValue } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
-	ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
+	ArrayVariableType, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
 	ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
@@ -45,7 +45,7 @@ export type FunctionArgumentDataPartial = [nameToken:Token, {type:VariableType |
 
 export type StatementExecutionResult = {
 	type: "function_return";
-	value: VariableValueType;
+	value: VariableValue;
 };
 
 export class Statement implements TextRanged {
@@ -167,7 +167,7 @@ export class DeclarationStatement extends Statement {
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
 				type: this.varType, //TODO user defined types
-				value: this.varType instanceof ArrayTypeData ? Array(this.varType.totalLength).fill(null) : null,
+				value: this.varType instanceof ArrayVariableType ? Array(this.varType.totalLength).fill(null) : null,
 				declaration: this,
 				mutable: true,
 			};

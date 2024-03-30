@@ -185,6 +185,7 @@ export function escapeHTML(input) {
     return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 //TODO move to runtime, user defined types
+/** @deprecated */
 export function isVarType(input) {
     return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }
@@ -210,5 +211,8 @@ export function tagProcessor(transformer) {
         return String.raw({ raw: stringChunks }, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));
     };
 }
-export const fquote = tagProcessor((chunk) => chunk.length == 0 ? "[empty]" : `"${chunk}"`);
+export const fquote = tagProcessor((chunk) => {
+    const str = chunk.toString();
+    return str.length == 0 ? "[empty]" : `"${str}"`;
+});
 export function forceType(input) { }

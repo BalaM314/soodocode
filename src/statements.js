@@ -44,7 +44,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 };
 import { Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
-import { ArrayTypeData, ExpressionASTBranchNode } from "./parser-types.js";
+import { ArrayVariableType, ExpressionASTBranchNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, isVarType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
@@ -168,7 +168,7 @@ let DeclarationStatement = (() => {
                     fail(`Variable ${variable} was already declared`);
                 runtime.getCurrentScope().variables[variable] = {
                     type: this.varType,
-                    value: this.varType instanceof ArrayTypeData ? Array(this.varType.totalLength).fill(null) : null,
+                    value: this.varType instanceof ArrayVariableType ? Array(this.varType.totalLength).fill(null) : null,
                     declaration: this,
                     mutable: true,
                 };

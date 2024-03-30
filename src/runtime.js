@@ -40,10 +40,10 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ArrayTypeData } from "./parser-types.js";
+import { ArrayVariableType } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
-import { crash, errorBoundary, fail } from "./utils.js";
+import { crash, errorBoundary, fail, fquote } from "./utils.js";
 let Runtime = (() => {
     var _a;
     let _instanceExtraInitializers = [];
@@ -62,15 +62,16 @@ let Runtime = (() => {
             }
             processArrayAccess(expr, operation, arg2) {
                 //Make sure the variable exists and is an array
-                const variable = this.getVariable(expr.operatorToken.text);
-                if (!variable)
+                const _variable = this.getVariable(expr.operatorToken.text);
+                if (!_variable)
                     fail(`Undeclared variable ${expr.operatorToken.text}`, expr.operatorToken);
-                if (!(variable.type instanceof ArrayTypeData))
-                    fail(`Cannot convert variable of type ${variable.type} to an array`, expr.operatorToken);
+                if (!(_variable.type instanceof ArrayVariableType))
+                    fail(`Cannot convert variable of type ${_variable.type} to an array`, expr.operatorToken);
+                const variable = _variable;
                 const varTypeData = variable.type;
                 //TODO is there any way of getting a 1D array out of a 2D array?
                 //Forbids getting any arrays from arrays
-                if (arg2 instanceof ArrayTypeData)
+                if (arg2 instanceof ArrayVariableType)
                     fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.operatorToken);
                 if (expr.nodes.length != variable.type.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
@@ -79,16 +80,18 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                 const indexes = expr.nodes.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([expr, value], index) => value > varTypeData.lengthInformation[index][1] ||
-                    value < varTypeData.lengthInformation[index][0]))
-                    != -1)
+                    value < varTypeData.lengthInformation[index][0])) != -1)
                     fail(`Array index out of bounds: value ${indexes[invalidIndexIndex][1]} was not in range (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, indexes[invalidIndexIndex][0]);
-                const index = indexes.reduce((acc, [e, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.lengthInformation_[index]), 0);
+                const index = indexes.reduce((acc, [e, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index]), 0);
+                if (index >= variable.value.length)
+                    crash(`Array index bounds check failed`);
                 if (operation == "get") {
+                    const type = arg2;
                     const output = variable.value[index];
                     if (output == null)
                         fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
-                    if (arg2)
-                        return [arg2, this.coerceValue(output, variable.type.type, arg2)];
+                    if (type)
+                        return [type, this.coerceValue(output, variable.type.type, type)];
                     else
                         return [variable.type.type, output];
                 }
@@ -334,10 +337,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (to == "STRING") {
                     if (from == "BOOLEAN" || from == "CHAR" || from == "DATE" || from == "INTEGER" || from == "REAL" || from == "STRING")
                         return value.toString();
-                    else if (from instanceof ArrayTypeData)
+                    else if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;
                 }
-                fail(`Cannot coerce value of type ${from} to ${to}`);
+                fail(fquote `Cannot coerce value of type ${from} to ${to}`);
             }
             callFunction(funcNode, args, requireReturnValue = false) {
                 const func = funcNode.controlStatements[0];

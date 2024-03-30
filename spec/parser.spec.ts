@@ -8,7 +8,7 @@ This file contains unit tests for the parser.
 
 import "jasmine";
 import { Token, TokenizedProgram, token } from "../src/lexer-types.js";
-import { ArrayTypeData, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
+import { ArrayVariableType, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { VariableType } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement,
@@ -2063,31 +2063,31 @@ describe("parseFunctionArguments", () => {
 
 describe("ArrayTypeData", () => {
 	it(`should generate correct data`, () => {
-		const data1 = new ArrayTypeData([[0, 9]], "BOOLEAN");
-		expect(data1.lengthInformation_).toEqual([10]);
+		const data1 = new ArrayVariableType([[0, 9]], "BOOLEAN");
+		expect(data1.arraySizes).toEqual([10]);
 		expect(data1.totalLength).toEqual(10);
-		const data2 = new ArrayTypeData([[1, 15]], "STRING");
-		expect(data2.lengthInformation_).toEqual([15]);
+		const data2 = new ArrayVariableType([[1, 15]], "STRING");
+		expect(data2.arraySizes).toEqual([15]);
 		expect(data2.totalLength).toEqual(15);
-		const data3 = new ArrayTypeData([[0, 9], [0, 19]], "BOOLEAN");
-		expect(data3.lengthInformation_).toEqual([10, 20]);
+		const data3 = new ArrayVariableType([[0, 9], [0, 19]], "BOOLEAN");
+		expect(data3.arraySizes).toEqual([10, 20]);
 		expect(data3.totalLength).toEqual(200);
-		const data4 = new ArrayTypeData([[1, 10], [1, 15]], "DATE");
-		expect(data4.lengthInformation_).toEqual([10, 15]);
+		const data4 = new ArrayVariableType([[1, 10], [1, 15]], "DATE");
+		expect(data4.arraySizes).toEqual([10, 15]);
 		expect(data4.totalLength).toEqual(150);
-		const data5 = new ArrayTypeData([[0, 9], [1, 15], [0, 20]], "INTEGER");
-		expect(data5.lengthInformation_).toEqual([10, 15, 21]);
+		const data5 = new ArrayVariableType([[0, 9], [1, 15], [0, 20]], "INTEGER");
+		expect(data5.arraySizes).toEqual([10, 15, 21]);
 		expect(data5.totalLength).toEqual(3150);
 	});
 	it(`should handle correct inputs`, () => {
-		expect(() => new ArrayTypeData([[0, 0]], "CHAR")).not.toThrow();
-		expect(() => new ArrayTypeData([[5, 5]], "CHAR")).not.toThrow();
+		expect(() => new ArrayVariableType([[0, 0]], "CHAR")).not.toThrow();
+		expect(() => new ArrayVariableType([[5, 5]], "CHAR")).not.toThrow();
 	})
 	it(`should handle incorrect inputs`, () => {
-		expect(() => new ArrayTypeData([[0, -1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayTypeData([[2, 1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayTypeData([[0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayTypeData([[0, 1], [0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, -1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[2, 1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, 1], [0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
 	});
 });
 

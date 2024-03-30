@@ -10,7 +10,7 @@ which is the preferred representation of the program.
 
 import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
-	ArrayTypeData, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
+	ArrayVariableType, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
 	ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode,
 	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
@@ -83,7 +83,7 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 
 export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):VariableType => {
 	if(typeNode instanceof Token) return isVarType(typeNode.text) ? typeNode.text : fail(fquote`Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
-	else return new ArrayTypeData(
+	else return new ArrayVariableType(
 		typeNode.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
 		isVarType(typeNode.elementType.text) ? typeNode.elementType.text : fail(fquote`Invalid variable type ${typeNode.elementType.text}`)
 	);

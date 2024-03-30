@@ -1,12 +1,12 @@
 import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
-import { Runtime, VariableData, VariableType, VariableValueType } from "../src/runtime.js";
+import { Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
-const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>({
+const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>({
 	boolean_true: [
 		["boolean.true", "true"],
 		"BOOLEAN",
@@ -72,9 +72,9 @@ const tokenTests = Object.entries<[token:_Token, type:VariableType | null, outpu
 		"INTEGER",
 		["error"]
 	],
-}).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>(([k, v]) => [k, token(v[0]), v[1], v[2]]);
+}).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>(([k, v]) => [k, token(v[0]), v[1], v[2]]);
 
-const expressionTests = Object.entries<[expression:_ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>({
+const expressionTests = Object.entries<[expression:_ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>({
 	addNumbers: [
 		["tree", "add", [
 			["number.decimal", "5"],
@@ -83,7 +83,7 @@ const expressionTests = Object.entries<[expression:_ExpressionAST, type:Variable
 		"INTEGER",
 		["INTEGER", 11]
 	]
-}).map<[name:string, expression:ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValueType] | ["error"]]>(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2]]);
+}).map<[name:string, expression:ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"]]>(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2]]);
 
 const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs?:string[]]>({
 	declare1: [

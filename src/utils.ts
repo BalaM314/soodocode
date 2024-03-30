@@ -7,7 +7,7 @@ This file contains utility functions.
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionASTArrayTypeNode, ExpressionASTNode } from "./parser-types.js";
-import type { StringVariableType } from "./runtime.js";
+import { PrimitiveVariableTypeName } from "./runtime.js";
 import { TagFunction } from "./types.js";
 
 export function stringifyExpressionASTArrayTypeNode(input:ExpressionASTArrayTypeNode){
@@ -182,7 +182,8 @@ export function escapeHTML(input:string):string {
 }
 
 //TODO move to runtime, user defined types
-export function isVarType(input:string):input is StringVariableType {
+/** @deprecated */
+export function isVarType(input:string):input is PrimitiveVariableTypeName {
 	return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }
 
@@ -209,8 +210,9 @@ export function tagProcessor<T>(
 	}
 }
 
-export const fquote = tagProcessor((chunk:string) =>
-	chunk.length == 0 ? "[empty]" : `"${chunk}"`
-);
+export const fquote = tagProcessor((chunk:string | Object) => {
+	const str = chunk.toString();
+	return str.length == 0 ? "[empty]" : `"${str}"`
+});
 
 export function forceType<T>(input:unknown):asserts input is T {}

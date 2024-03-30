@@ -6,14 +6,14 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import type { BuiltinFunctionData, VariableType, VariableValueType } from "./runtime.js";
+import type { BuiltinFunctionData, VariableType, VariableValue } from "./runtime.js";
 import { fail } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
 	args: [name:string, type:VariableType][];
 	returnType: VariableType;
-	impl(...args:VariableValueType[]):VariableValueType;
+	impl(...args:VariableValue[]):VariableValue;
 };
 export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
