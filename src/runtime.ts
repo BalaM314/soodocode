@@ -126,12 +126,14 @@ export type BuiltinFunctionData = {
 export type VariableScope = {
 	statement: Statement | "global";
 	variables: Record<string, VariableData | ConstantData>;
+	types: Record<string, VariableType>;
 };
 
 export class Runtime {
 	scopes: VariableScope[] = [{
 		statement: "global",
-		variables: {}
+		variables: {},
+		types: {}
 	}];
 	functions: Record<string, FunctionData> = {};
 	types: Record<string, VariableData> = {};
@@ -352,11 +354,17 @@ help: try using DIV instead of / to produce an integer as the result`
 				if(!type || type == "CHAR") return ["CHAR", token.text.slice(1, -1)]; //remove the quotes
 				else fail(`Cannot convert value ${token.text} to ${type}`);
 			case "name":
-				const variable = this.getVariable(token.text);
-				if(!variable) fail(`Undeclared variable ${token.text}`);
-				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`);
-				if(type) return [type, this.coerceValue(variable.value, variable.type, type)];
-				else return [variable.type, variable.value];
+				const enumType = this.getEnum(token.text);
+				if(enumType){
+					if(!type || type === enumType) return [enumType, token.text];
+					else fail(fquote`Cannot convert value of type ${enumType} to ${type}`);
+				} else {
+					const variable = this.getVariable(token.text);
+					if(!variable) fail(`Undeclared variable ${token.text}`);
+					if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`);
+					if(type) return [type, this.coerceValue(variable.value, variable.type, type)];
+					else return [variable.type, variable.value];
+				}
 			default: fail(`Cannot evaluate token of type ${token.type}`);
 		}
 	}
@@ -376,6 +384,14 @@ help: try using DIV instead of / to produce an integer as the result`
 	getVariable(name:string):VariableData | ConstantData | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			if(this.scopes[i].variables[name]) return this.scopes[i].variables[name];
+		}
+		return null;
+	}
+	getEnum(name:string):EnumeratedVariableType | null {
+		for(let i = this.scopes.length - 1; i >= 0; i--){
+			const data = Object.values(this.scopes[i].types)
+				.find((data):data is EnumeratedVariableType => data instanceof EnumeratedVariableType && data.values.includes(name))
+			if(data) return data;
 		}
 		return null;
 	}
@@ -420,7 +436,8 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(func.args.size != args.length) fail(`Incorrect number of arguments for function ${func.name}`);
 		const scope:VariableScope = {
 			statement: func,
-			variables: {}
+			variables: {},
+			types: {},
 		};
 		let i = 0;
 		for(const [name, {type, passMode}] of func.args){

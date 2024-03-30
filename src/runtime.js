@@ -81,7 +81,8 @@ let Runtime = (() => {
                 this._output = _output;
                 this.scopes = [{
                         statement: "global",
-                        variables: {}
+                        variables: {},
+                        types: {}
                     }];
                 this.functions = {};
                 this.types = {};
@@ -305,15 +306,24 @@ help: try using DIV instead of / to produce an integer as the result`);
                         else
                             fail(`Cannot convert value ${token.text} to ${type}`);
                     case "name":
-                        const variable = this.getVariable(token.text);
-                        if (!variable)
-                            fail(`Undeclared variable ${token.text}`);
-                        if (variable.value == null)
-                            fail(`Cannot use the value of uninitialized variable ${token.text}`);
-                        if (type)
-                            return [type, this.coerceValue(variable.value, variable.type, type)];
-                        else
-                            return [variable.type, variable.value];
+                        const enumType = this.getEnum(token.text);
+                        if (enumType) {
+                            if (!type || type === enumType)
+                                return [enumType, token.text];
+                            else
+                                fail(fquote `Cannot convert value of type ${enumType} to ${type}`);
+                        }
+                        else {
+                            const variable = this.getVariable(token.text);
+                            if (!variable)
+                                fail(`Undeclared variable ${token.text}`);
+                            if (variable.value == null)
+                                fail(`Cannot use the value of uninitialized variable ${token.text}`);
+                            if (type)
+                                return [type, this.coerceValue(variable.value, variable.type, type)];
+                            else
+                                return [variable.type, variable.value];
+                        }
                     default: fail(`Cannot evaluate token of type ${token.type}`);
                 }
             }
@@ -336,6 +346,15 @@ help: try using DIV instead of / to produce an integer as the result`);
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     if (this.scopes[i].variables[name])
                         return this.scopes[i].variables[name];
+                }
+                return null;
+            }
+            getEnum(name) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    const data = Object.values(this.scopes[i].types)
+                        .find((data) => data instanceof EnumeratedVariableType && data.values.includes(name));
+                    if (data)
+                        return data;
                 }
                 return null;
             }
@@ -385,7 +404,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                     fail(`Incorrect number of arguments for function ${func.name}`);
                 const scope = {
                     statement: func,
-                    variables: {}
+                    variables: {},
+                    types: {},
                 };
                 let i = 0;
                 for (const [name, { type, passMode }] of func.args) {
