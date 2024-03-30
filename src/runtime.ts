@@ -28,6 +28,9 @@ export type VariableTypeMapping<T> =
 	T extends "BOOLEAN" ? boolean :
 	T extends "DATE" ? Date :
 	T extends ArrayVariableType ? Array<VariableTypeMapping<T["type"]> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
+	T extends RecordVariableType ? Record<string, unknown> :
+	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
+	T extends EnumeratedVariableType ? string :
 	never
 ;
 
@@ -42,11 +45,41 @@ export type PrimitiveVariableTypeName =
 ;
 
 export type PrimitiveVariableType = PrimitiveVariableTypeName;
+export class RecordVariableType {
+	constructor(
+		public name: string,
+		public fields: Record<string, VariableType>,
+	){}
+	toString(){
+		return fquote`record type ${this.name}`;
+	}
+};
+export class PointerVariableType {
+	constructor(
+		public target: VariableType
+	){}
+	toString(){
+		return `^${this.target}`;
+	}
+}
+export class EnumeratedVariableType {
+	constructor(
+		public name: string,
+		public values: string[]
+	){}
+	toString(){
+		return fquote`enumerated type ${this.name}`;
+	}
+}
 
 //TODO refactor this to support pointers, user defined records, etc
 export type VariableType =
 	| PrimitiveVariableType
-	| ArrayVariableType;
+	| ArrayVariableType
+	| RecordVariableType
+	| PointerVariableType
+	| EnumeratedVariableType
+;
 export type VariableValue = VariableTypeMapping<VariableType>;
 
 type FileMode = "READ" | "WRITE" | "APPEND";

@@ -44,6 +44,33 @@ import { ArrayVariableType } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { crash, errorBoundary, fail, fquote } from "./utils.js";
+export class RecordVariableType {
+    constructor(name, fields) {
+        this.name = name;
+        this.fields = fields;
+    }
+    toString() {
+        return fquote `record type ${this.name}`;
+    }
+}
+;
+export class PointerVariableType {
+    constructor(target) {
+        this.target = target;
+    }
+    toString() {
+        return `^${this.target}`;
+    }
+}
+export class EnumeratedVariableType {
+    constructor(name, values) {
+        this.name = name;
+        this.values = values;
+    }
+    toString() {
+        return fquote `enumerated type ${this.name}`;
+    }
+}
 let Runtime = (() => {
     var _a;
     let _instanceExtraInitializers = [];
