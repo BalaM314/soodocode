@@ -13,7 +13,7 @@ import { parse, parseExpression, parseFunctionArguments, parseStatement, parseTy
 import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
 import {
 	AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement,
-	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements
+	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import {
@@ -1162,6 +1162,54 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 		],
 		"error"
 	],
+	typePointer: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["operator.pointer", "^"],
+			["name", "INTEGER"],
+		],
+		[TypePointerStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["operator.pointer", "^"],
+			["name", "INTEGER"],
+		]]
+	],
+	typeEnum: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["parentheses.open", "("],
+			["name", "amogus"],
+			["punctuation.comma", ","],
+			["name", "sugoma"],
+			["parentheses.close", ")"],
+		],
+		[TypeEnumStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["parentheses.open", "("],
+			["name", "amogus"],
+			["punctuation.comma", ","],
+			["name", "sugoma"],
+			["parentheses.close", ")"],
+		]]
+	],
+	typeRecord: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+		],
+		[TypeRecordStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+		]]
+	],
 	assign: [
 		[
 			["name", "amogus"],
@@ -1573,6 +1621,52 @@ const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST |
 				]],
 			}
 		],
+	],
+	typeRecord1: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["newline", "\n"],
+			["keyword.declare", "DECLARE"],
+			["name", "prop1"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["newline", "\n"],
+			["keyword.declare", "DECLARE"],
+			["name", "prop2"],
+			["punctuation.colon", ":"],
+			["name", "udt"],
+			["newline", "\n"],
+			["keyword.type_end", "ENDTYPE"],
+		],
+		[
+			{
+				type: "type",
+				controlStatements: [
+					[TypeRecordStatement, [
+						["keyword.type", "TYPE"],
+						["name", "amogus"],
+					]],
+					[statements.byType["type.end"], [
+						["keyword.type_end", "ENDTYPE"],
+					]],
+				],
+				nodeGroups: [[
+					[DeclarationStatement, [
+						["keyword.declare", "DECLARE"],
+						["name", "prop1"],
+						["punctuation.colon", ":"],
+						["name", "INTEGER"],
+					]],
+					[DeclarationStatement, [
+						["keyword.declare", "DECLARE"],
+						["name", "prop2"],
+						["punctuation.colon", ":"],
+						["name", "udt"],
+					]],
+				]]
+			}
+		]
 	]
 }).map<[name:string, program:TokenizedProgram, output:jasmine.Expected<ProgramAST> | "error"]>(([name, [program, output]]) =>
 	[

@@ -42,7 +42,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { Runtime } from "./runtime.js";
+import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTBranchNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
@@ -144,6 +144,7 @@ let DeclarationStatement = (() => {
             super(tokens);
             this.variables = [];
             //parse the variable list
+            //TODO replace with splitArray or somehow refactor this code
             let expected = "name";
             for (const token of tokens.slice(1, -2)) {
                 if (expected == "name") {
@@ -226,6 +227,102 @@ let ConstantStatement = (() => {
     return ConstantStatement = _classThis;
 })();
 export { ConstantStatement };
+let TypePointerStatement = (() => {
+    let _classDecorators = [statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var TypePointerStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            //TODO should I allow arrays here?
+            let targetType;
+            [, { text: this.name }, , , { text: targetType }] = tokens;
+            if (isPrimitiveType(targetType))
+                this.targetType = targetType;
+            else
+                this.targetType = ["unresolved", targetType];
+        }
+        run(runtime) {
+            runtime.getCurrentScope().types[this.name] = new PointerVariableType(this.name, runtime.resolveVariableType(this.targetType));
+        }
+    };
+    __setFunctionName(_classThis, "TypePointerStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        TypePointerStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return TypePointerStatement = _classThis;
+})();
+export { TypePointerStatement };
+let TypeEnumStatement = (() => {
+    let _classDecorators = [statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".+", "parentheses.close")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var TypeEnumStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1];
+            this.values = splitTokensOnComma(tokens.slice(4, -1)).map(group => {
+                if (group.length > 1)
+                    fail(`All enum values must be separated by commas`, group);
+                return group[0];
+            });
+        }
+        run(runtime) {
+            runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(this.name.text, this.values.map(t => t.text));
+        }
+    };
+    __setFunctionName(_classThis, "TypeEnumStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        TypeEnumStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return TypeEnumStatement = _classThis;
+})();
+export { TypeEnumStatement };
+let TypeRecordStatement = (() => {
+    let _classDecorators = [statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var TypeRecordStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1];
+        }
+        runBlock(runtime, node) {
+            const fields = {};
+            for (const statement of node.nodeGroups[0]) {
+                if (!(statement instanceof DeclarationStatement))
+                    fail(`Statements in a record type block can only be declaration statements`);
+                const type = runtime.resolveVariableType(statement.varType);
+                statement.variables.forEach(v => fields[v] = type);
+            }
+            runtime.getCurrentScope().types[this.name.text] = new RecordVariableType(this.name.text, fields);
+        }
+    };
+    __setFunctionName(_classThis, "TypeRecordStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        TypeRecordStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return TypeRecordStatement = _classThis;
+})();
+export { TypeRecordStatement };
 let AssignmentStatement = (() => {
     let _classDecorators = [statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")];
     let _classDescriptor;
@@ -247,6 +344,7 @@ let AssignmentStatement = (() => {
         }
         run(runtime) {
             if (this.name instanceof ExpressionASTBranchNode) {
+                //TODO handle access operator being here
                 runtime.processArrayAccess(this.name, "set", this.expr);
             }
             else {

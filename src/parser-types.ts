@@ -106,4 +106,4 @@ export class ProgramASTBranchNode implements TextRanged {
 	}
 }
 /** The valid types for a branch node in a program AST. */
-export type ProgramASTBranchNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure" | "switch";
+export type ProgramASTBranchNodeType = "if" | "for" | "while" | "dowhile" | "function" | "procedure" | "switch" | "type";

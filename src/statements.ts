@@ -6,7 +6,7 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import { FunctionData, Runtime, UnresolvedVariableType, VariableValue } from "./runtime.js";
+import { EnumeratedVariableType, FunctionData, PointerVariableType, RecordVariableType, Runtime, UnresolvedVariableType, VariableType, VariableValue } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
 	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
@@ -22,6 +22,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 
 export type StatementType =
 	| "declaration" | "constant" | "assignment" | "output" | "input" | "return" | "call"
+	| "type" | "type.pointer" | "type.enum" | "type.end"
 	| "if" | "if.end" | "else"
 	| "switch" | "switch.end" | "case"
 	| "for" | "for.end"
@@ -148,6 +149,7 @@ export class DeclarationStatement extends Statement {
 		super(tokens);
 
 		//parse the variable list
+		//TODO replace with splitArray or somehow refactor this code
 		let expected:"name" | "commaOrColon" = "name";
 		for(const token of tokens.slice(1, -2) as Token[]){
 			if(expected == "name"){
@@ -198,6 +200,59 @@ export class ConstantStatement extends Statement {
 		};
 	}
 }
+@statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "name")
+export class TypePointerStatement extends Statement {
+	name: string;
+	targetType: UnresolvedVariableType;
+	constructor(tokens:[Token, Token, Token, Token, Token]){
+		super(tokens);
+		//TODO should I allow arrays here?
+		let targetType;
+		[, {text: this.name},,, {text: targetType}] = tokens;
+		if(isPrimitiveType(targetType)) this.targetType = targetType;
+		else this.targetType = ["unresolved", targetType];
+	}
+	run(runtime:Runtime){
+		runtime.getCurrentScope().types[this.name] = new PointerVariableType(
+			this.name, runtime.resolveVariableType(this.targetType)
+		);
+	}
+}
+@statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".+", "parentheses.close")
+export class TypeEnumStatement extends Statement {
+	name: Token;
+	values: Token[];
+	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
+		super(tokens);
+		this.name = tokens[1];
+		this.values = splitTokensOnComma(tokens.slice(4, -1)).map(group => {
+			if(group.length > 1) fail(`All enum values must be separated by commas`, group);
+			return group[0];
+		});
+	}
+	run(runtime:Runtime){
+		runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(
+			this.name.text, this.values.map(t => t.text)
+		);
+	}
+}
+@statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
+export class TypeRecordStatement extends Statement {
+	name: Token;
+	constructor(tokens:[Token, Token]){
+		super(tokens);
+		this.name = tokens[1];
+	}
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+		const fields:Record<string, VariableType> = {};
+		for(const statement of node.nodeGroups[0]){
+			if(!(statement instanceof DeclarationStatement)) fail(`Statements in a record type block can only be declaration statements`);
+			const type = runtime.resolveVariableType(statement.varType);
+			statement.variables.forEach(v => fields[v] = type);
+		}
+		runtime.getCurrentScope().types[this.name.text] = new RecordVariableType(this.name.text, fields);
+	}
+}
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
@@ -214,6 +269,7 @@ export class AssignmentStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(this.name instanceof ExpressionASTBranchNode){
+			//TODO handle access operator being here
 			runtime.processArrayAccess(this.name, "set", this.expr);
 		} else {
 			const variable = runtime.getVariable(this.name.text);

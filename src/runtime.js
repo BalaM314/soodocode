@@ -71,7 +71,7 @@ export class RecordVariableType {
         return fquote `record type ${this.name}`;
     }
     getInitValue(runtime) {
-        return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, runtime.resolveVariableType(v)]).map(([k, v]) => [k,
+        return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
             typeof v == "string" ? null : v.getInitValue(runtime)
         ]));
     }
@@ -194,7 +194,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                             if (!(expr.nodes[1] instanceof Token))
                                 impossible();
                             const property = expr.nodes[1].text;
-                            const outputType = objType.fields[property] ? this.resolveVariableType(objType.fields[property]) : fail(`Property ${property} does not exist on value of type ${objType}`);
+                            const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
                             const value = obj[property];
                             if (value === null)
                                 fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);

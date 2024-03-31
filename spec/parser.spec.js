@@ -8,7 +8,7 @@ import "jasmine";
 import { token } from "../src/lexer-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { ArrayVariableType } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, statements } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -1139,6 +1139,54 @@ const parseStatementTests = Object.entries({
         ],
         "error"
     ],
+    typePointer: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["operator.pointer", "^"],
+            ["name", "INTEGER"],
+        ],
+        [TypePointerStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amogus"],
+                ["operator.equal_to", "="],
+                ["operator.pointer", "^"],
+                ["name", "INTEGER"],
+            ]]
+    ],
+    typeEnum: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["parentheses.open", "("],
+            ["name", "amogus"],
+            ["punctuation.comma", ","],
+            ["name", "sugoma"],
+            ["parentheses.close", ")"],
+        ],
+        [TypeEnumStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amogus"],
+                ["operator.equal_to", "="],
+                ["parentheses.open", "("],
+                ["name", "amogus"],
+                ["punctuation.comma", ","],
+                ["name", "sugoma"],
+                ["parentheses.close", ")"],
+            ]]
+    ],
+    typeRecord: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+        ],
+        [TypeRecordStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amogus"],
+            ]]
+    ],
     assign: [
         [
             ["name", "amogus"],
@@ -1546,6 +1594,52 @@ const parseProgramTests = Object.entries({
                     ]],
             }
         ],
+    ],
+    typeRecord1: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["newline", "\n"],
+            ["keyword.declare", "DECLARE"],
+            ["name", "prop1"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["newline", "\n"],
+            ["keyword.declare", "DECLARE"],
+            ["name", "prop2"],
+            ["punctuation.colon", ":"],
+            ["name", "udt"],
+            ["newline", "\n"],
+            ["keyword.type_end", "ENDTYPE"],
+        ],
+        [
+            {
+                type: "type",
+                controlStatements: [
+                    [TypeRecordStatement, [
+                            ["keyword.type", "TYPE"],
+                            ["name", "amogus"],
+                        ]],
+                    [statements.byType["type.end"], [
+                            ["keyword.type_end", "ENDTYPE"],
+                        ]],
+                ],
+                nodeGroups: [[
+                        [DeclarationStatement, [
+                                ["keyword.declare", "DECLARE"],
+                                ["name", "prop1"],
+                                ["punctuation.colon", ":"],
+                                ["name", "INTEGER"],
+                            ]],
+                        [DeclarationStatement, [
+                                ["keyword.declare", "DECLARE"],
+                                ["name", "prop2"],
+                                ["punctuation.colon", ":"],
+                                ["name", "udt"],
+                            ]],
+                    ]]
+            }
+        ]
     ]
 }).map(([name, [program, output]]) => [
     name,

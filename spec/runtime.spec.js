@@ -1,7 +1,7 @@
 import "jasmine";
 import { token } from "../src/lexer-types.js";
 import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, OutputStatement } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, OutputStatement, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 const tokenTests = Object.entries({
@@ -225,7 +225,48 @@ const statementTests = Object.entries({
             type: "DATE",
             value: null
         })
-    ]
+    ],
+    typePointer1: [
+        [TypePointerStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amogus"],
+                ["operator.equal_to", "="],
+                ["operator.pointer", "^"],
+                ["name", "INTEGER"],
+            ]],
+        r => { },
+        r => {
+            expect(r.getType("amogus")).toEqual(new PointerVariableType("amogus", "INTEGER"));
+        }
+    ],
+    typePointer_invalid_nonexistent: [
+        [TypePointerStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amogus"],
+                ["operator.equal_to", "="],
+                ["operator.pointer", "^"],
+                ["name", "sussy"],
+            ]],
+        r => { },
+        "error"
+    ],
+    typeEnum1: [
+        [TypeEnumStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amog"],
+                ["operator.equal_to", "="],
+                ["parentheses.open", "("],
+                ["name", "amogus"],
+                ["punctuation.comma", ","],
+                ["name", "sugoma"],
+                ["parentheses.close", ")"],
+            ]],
+        r => { },
+        r => {
+            expect(r.getType("amog"))
+                .toEqual(new EnumeratedVariableType("amog", ["amogus", "sugoma"]));
+        }
+    ],
 }).map(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 const programTests = Object.entries({
     simpleProgram: [

@@ -2,7 +2,7 @@ import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
 import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
@@ -241,7 +241,48 @@ const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:R
 			type: "DATE",
 			value: null
 		})
-	]
+	],
+	typePointer1: [
+		[TypePointerStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["operator.pointer", "^"],
+			["name", "INTEGER"],
+		]],
+		r => {},
+		r => {
+			expect(r.getType("amogus")).toEqual(new PointerVariableType("amogus", "INTEGER"));
+		}
+	],
+	typePointer_invalid_nonexistent: [
+		[TypePointerStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["operator.pointer", "^"],
+			["name", "sussy"],
+		]],
+		r => {},
+		"error"
+	],
+	typeEnum1: [
+		[TypeEnumStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amog"],
+			["operator.equal_to", "="],
+			["parentheses.open", "("],
+			["name", "amogus"],
+			["punctuation.comma", ","],
+			["name", "sugoma"],
+			["parentheses.close", ")"],
+		]],
+		r => {},
+		r => {
+			expect(r.getType("amog"))
+				.toEqual(new EnumeratedVariableType("amog", ["amogus", "sugoma"]));
+		}
+	],
 }).map<[name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs:string[]]>(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 
 const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?:string[]]>({
