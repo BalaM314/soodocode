@@ -1,7 +1,7 @@
 import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
-import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
@@ -156,7 +156,78 @@ const expressionTests = Object.entries<[expression:_ExpressionAST, type:Variable
 			}
 		}
 	],
-	propertyAccess_invalid_nonexistent: [
+	propertyAccess_nested: [
+		["tree", "access", [
+			["tree", "access", [
+				["name", "aaa"],
+				["name", "bbb"],
+			]],
+			["name", "ccc"],
+		]],
+		"INTEGER",
+		["INTEGER", 123],
+		r => {
+			const innerType = new RecordVariableType("innerType", {
+				ccc: "INTEGER"
+			});
+			const outerType = new RecordVariableType("outerType", {
+				bbb: innerType
+			});
+			r.getCurrentScope().types["innerType"] = innerType;
+			r.getCurrentScope().types["outerType"] = outerType;
+			r.getCurrentScope().variables["aaa"] = {
+				type: outerType,
+				declaration: null!,
+				mutable: true,
+				value: {
+					bbb: {
+						ccc: 123
+					}
+				}
+			}
+		}
+	],
+	propertyAccess_nested_array: [
+		["tree", "access", [
+			["tree", ["array access", "aaa"], [
+				["number.decimal", "2"],
+			]],
+			["name", "ccc"],
+		]],
+		"INTEGER",
+		["INTEGER", 124],
+		r => {
+			const innerType = new RecordVariableType("innerType", {
+				ccc: "INTEGER"
+			});
+			r.getCurrentScope().types["innerType"] = innerType;
+			r.getCurrentScope().variables["aaa"] = {
+				type: new ArrayVariableType([[1, 5]], ["unresolved", "innerType"]),
+				declaration: null!,
+				mutable: true,
+				value: [null, {
+					ccc: 124
+				}, null, null, null]
+			}
+		}
+	],
+	propertyAccess_invalid_not_record: [
+		["tree", "access", [
+			["name", "aaa"],
+			["name", "bbb"],
+		]],
+		"INTEGER",
+		["error"],
+		r => {
+			r.getCurrentScope().variables["aaa"] = {
+				type: "DATE",
+				declaration: null!,
+				mutable: true,
+				value: Date.now()
+			}
+		}
+	],
+	propertyAccess_invalid_nonexistent_property: [
 		["tree", "access", [
 			["name", "amogus"],
 			["name", "sussy"],
@@ -192,6 +263,46 @@ const expressionTests = Object.entries<[expression:_ExpressionAST, type:Variable
 			]],
 			intPointer,
 			[intPointer, intVar],
+			r => {
+				r.getCurrentScope().types["intPtr"] = intPointer;
+				r.getCurrentScope().variables["amogus"] = intVar;
+			}
+		]
+	})(),
+	pointerRef_invalid_bad_target: (() => {
+		const intPointer = new PointerVariableType("intPtr", "INTEGER");
+		const intVar:VariableData<"INTEGER"> = {
+			type: "INTEGER",
+			declaration: null!,
+			mutable: true,
+			value: 19
+		};
+		return [
+			["tree", "pointer_reference", [
+				["number.decimal", "5"],
+			]],
+			intPointer,
+			["error"],
+			r => {
+				r.getCurrentScope().types["intPtr"] = intPointer;
+				r.getCurrentScope().variables["amogus"] = intVar;
+			}
+		]
+	})(),
+	pointerRef_invalid_undeclared_variable: (() => {
+		const intPointer = new PointerVariableType("intPtr", "INTEGER");
+		const intVar:VariableData<"INTEGER"> = {
+			type: "INTEGER",
+			declaration: null!,
+			mutable: true,
+			value: 19
+		};
+		return [
+			["tree", "pointer_reference", [
+				["name", "sussybaka"],
+			]],
+			intPointer,
+			["error"],
 			r => {
 				r.getCurrentScope().types["intPtr"] = intPointer;
 				r.getCurrentScope().variables["amogus"] = intVar;
