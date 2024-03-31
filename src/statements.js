@@ -81,9 +81,6 @@ export class Statement {
     static supportsSplit(block, statement) {
         return fquote `current block of type ${block.type} cannot be split by ${statement.toString()}`;
     }
-    getTypes() {
-        return []; //TODO call this function by prototype shenanigans-ing in the decorator
-    }
     run(runtime) {
         crash(`Missing runtime implementation for statement ${this.stype}`);
     }
@@ -228,7 +225,7 @@ let ConstantStatement = (() => {
 })();
 export { ConstantStatement };
 let TypePointerStatement = (() => {
-    let _classDecorators = [statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "name")];
+    let _classDecorators = [statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -236,13 +233,9 @@ let TypePointerStatement = (() => {
     var TypePointerStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            //TODO should I allow arrays here?
             let targetType;
-            [, { text: this.name }, , , { text: targetType }] = tokens;
-            if (isPrimitiveType(targetType))
-                this.targetType = targetType;
-            else
-                this.targetType = ["unresolved", targetType];
+            [, { text: this.name }, , , targetType] = tokens;
+            this.targetType = processTypeData(targetType);
         }
         run(runtime) {
             runtime.getCurrentScope().types[this.name] = new PointerVariableType(this.name, runtime.resolveVariableType(this.targetType));

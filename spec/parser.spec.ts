@@ -1240,6 +1240,34 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 			["name", "RecordThing"],
 		]]
 	],
+	typePointer_array: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "sussy"],
+			["operator.equal_to", "="],
+			["operator.pointer", "^"],
+			["keyword.array", "ARRAY"],
+			["bracket.open", "["],
+			["number.decimal", "1"],
+			["punctuation.colon", ":"],
+			["number.decimal", "10"],
+			["bracket.close", "]"],
+			["keyword.of", "OF"],
+			["name", "INTEGER"],
+		],
+		[TypePointerStatement, [
+			["keyword.type", "TYPE"],
+			["name", "sussy"],
+			["operator.equal_to", "="],
+			["operator.pointer", "^"],
+			[
+				[
+					[1, 10]
+				],
+				["name", "INTEGER"],
+			],
+		]]
+	],
 	typePointer_invalid: [
 		[
 			["keyword.type", "TYPE"],

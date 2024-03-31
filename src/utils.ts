@@ -183,7 +183,6 @@ export function escapeHTML(input:string):string {
 	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
-//TODO move to runtime, user defined types
 export function isPrimitiveType(input:string):input is PrimitiveVariableTypeName {
 	return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }

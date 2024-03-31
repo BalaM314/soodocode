@@ -185,7 +185,6 @@ export function errorBoundary(func, ctx) {
 export function escapeHTML(input) {
     return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
-//TODO move to runtime, user defined types
 export function isPrimitiveType(input) {
     return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 }

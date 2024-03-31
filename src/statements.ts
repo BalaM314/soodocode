@@ -15,7 +15,7 @@ import {
 	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode,
 	ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
-import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { isLiteral, parseExpression, parseFunctionArguments, parseType, processTypeData } from "./parser.js";
 import {
 	displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange,
 	SoodocodeError, fquote,
@@ -83,9 +83,6 @@ export class Statement implements TextRanged {
 	/** Warning: block will not include the usual end statement. */
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
 		return fquote`current block of type ${block.type} cannot be split by ${statement.toString()}`;
-	}
-	getTypes():UnresolvedVariableType[] {
-		return []; //TODO call this function by prototype shenanigans-ing in the decorator
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -174,7 +171,7 @@ export class DeclarationStatement extends Statement {
 		for(const variable of this.variables){
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
-				type: varType, //TODO user defined types
+				type: varType,
 				value: typeof varType == "string" ? null : varType.getInitValue(runtime),
 				declaration: this,
 				mutable: true,
@@ -203,17 +200,15 @@ export class ConstantStatement extends Statement {
 		};
 	}
 }
-@statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "name")
+@statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")
 export class TypePointerStatement extends Statement {
 	name: string;
 	targetType: UnresolvedVariableType;
-	constructor(tokens:[Token, Token, Token, Token, Token]){
+	constructor(tokens:[Token, Token, Token, Token, ExpressionASTTypeNode]){
 		super(tokens);
-		//TODO should I allow arrays here?
 		let targetType;
-		[, {text: this.name},,, {text: targetType}] = tokens;
-		if(isPrimitiveType(targetType)) this.targetType = targetType;
-		else this.targetType = ["unresolved", targetType];
+		[, {text: this.name},,, targetType] = tokens;
+		this.targetType = processTypeData(targetType);
 	}
 	run(runtime:Runtime){
 		runtime.getCurrentScope().types[this.name] = new PointerVariableType(

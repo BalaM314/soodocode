@@ -543,7 +543,13 @@ help: try using DIV instead of / to produce an integer as the result`
 	getPointerTypeFor(type:VariableType):PointerVariableType | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			const data = Object.values(this.scopes[i].types)
-				.find((data):data is PointerVariableType => data instanceof PointerVariableType && data.target === type) //TODO .equals() for array types
+				.find((data):data is PointerVariableType => data instanceof PointerVariableType && (
+					data.target === type ||
+					//Array types
+					data.target instanceof ArrayVariableType && type instanceof ArrayVariableType &&
+					data.target.arraySizes.join(" ") == type.arraySizes.join(" ") &&
+					data.target.type.toString() == type.type.toString()
+				))
 			if(data) return data;
 		}
 		return null;

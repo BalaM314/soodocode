@@ -91,7 +91,7 @@ export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):Un
 	} else return typeNode.toData();
 });
 
-export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | ExpressionASTArrayTypeNode => {
+export const parseType = errorBoundary((tokens:Token[]):ExpressionASTTypeNode => {
 	if(tokens.length == 1){
 		if(tokens[0].type == "name") return tokens[0];
 		else fail(`Token ${tokens[0]} is not a valid type`);

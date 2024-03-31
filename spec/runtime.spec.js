@@ -254,6 +254,58 @@ const expressionTests = Object.entries({
             }
         ];
     })(),
+    pointerRef_array_udt: (() => {
+        const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
+            [1, 10]
+        ], ["unresolved", "foo"]));
+        const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
+        const arrayVar = {
+            type: new ArrayVariableType([
+                [1, 10]
+            ], ["unresolved", "foo"]),
+            declaration: null,
+            mutable: true,
+            value: Array(10).fill(null)
+        };
+        return [
+            ["tree", "pointer_reference", [
+                    ["name", "amogus"],
+                ]],
+            null,
+            [arrayPointer, arrayVar],
+            r => {
+                r.getCurrentScope().types["foo"] = foo;
+                r.getCurrentScope().types["arrayPointer"] = arrayPointer;
+                r.getCurrentScope().variables["amogus"] = arrayVar;
+            }
+        ];
+    })(),
+    pointerRef_array_udt_invalid: (() => {
+        const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
+            [1, 10]
+        ], ["unresolved", "foo"]));
+        const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
+        const arrayVar = {
+            type: new ArrayVariableType([
+                [1, 10]
+            ], ["unresolved", "foo"]),
+            declaration: null,
+            mutable: true,
+            value: Array(10).fill(null)
+        };
+        return [
+            ["tree", "pointer_reference", [
+                    ["name", "amogus"],
+                ]],
+            null,
+            ["error"],
+            r => {
+                r.getCurrentScope().types["foo"] = foo;
+                //r.getCurrentScope().types["arrayPointer"] = arrayPointer;
+                r.getCurrentScope().variables["amogus"] = arrayVar;
+            }
+        ];
+    })(),
     pointerRef_invalid_bad_target: (() => {
         const intPointer = new PointerVariableType("intPtr", "INTEGER");
         const intVar = {
