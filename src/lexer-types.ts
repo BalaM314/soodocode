@@ -74,7 +74,7 @@ export const tokenTypes = [
 	"brace.open", "brace.close",
 	"bracket.open", "bracket.close",
 	"parentheses.open", "parentheses.close",
-	"punctuation.colon", "punctuation.semicolon", "punctuation.comma",
+	"punctuation.colon", "punctuation.semicolon", "punctuation.comma", "punctuation.period",
 	"comment",
 	"name",
 	"boolean.true", "boolean.false",

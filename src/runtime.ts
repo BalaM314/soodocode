@@ -17,7 +17,7 @@ import {
 	ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement,
 	FunctionStatement, FunctionArguments
 } from "./statements.js";
-import { crash, errorBoundary, fail, fquote } from "./utils.js";
+import { crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> =
@@ -232,7 +232,7 @@ but found ${expr.nodes.length} indices`,
 
 		//Branch node
 
-		//Special cases
+		//Special cases where the operator isn't a normal operator
 		switch(expr.operator){
 			case "array access":
 				return this.processArrayAccess(expr, "get", type);
@@ -249,6 +249,23 @@ but found ${expr.nodes.length} indices`,
 					if(type) return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
 					else return [this.resolveVariableType(statement.returnType), output];
 				}
+		}
+
+		//Operator that returns a result of unknown type
+		if(expr.operator.category == "special"){
+			switch(expr.operator){
+				case operators.access:
+					const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
+					if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+					if(!(expr.nodes[1] instanceof Token)) impossible();
+					const property = expr.nodes[1].text;
+					const outputType = objType.fields[property] ? this.resolveVariableType(objType.fields[property]) : fail(`Property ${property} does not exist on value of type ${objType}`);
+					if(type)
+						return [type, this.coerceValue((obj as Record<string, VariableValue>)[property], outputType, type)];
+					else
+						return [outputType, (obj as Record<string, VariableValue>)[property]];
+				default: impossible();
+			}
 		}
 
 		//arithmetic
@@ -297,7 +314,7 @@ help: try using DIV instead of / to produce an integer as the result`
 					value = left % right;
 					break;
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
 			}
 			return [guessedType, value];
 		}
@@ -340,7 +357,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				case operators.less_than_equal:
 					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] <= this.evaluateExpr(expr.nodes[1], "REAL")[1]];
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
 			}
 		}
 
@@ -352,10 +369,11 @@ help: try using DIV instead of / to produce an integer as the result`
 				case operators.string_concatenate:
 					return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING")[1] + this.evaluateExpr(expr.nodes[1], "STRING")[1]];
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
 			}
 		}
 
+		expr.operator.category satisfies never;
 		crash(`This should not be possible`);
 	}
 	evaluateToken(token:Token, type?:VariableType):[type:VariableType, value:VariableValue] {

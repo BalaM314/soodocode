@@ -42,7 +42,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
-import { crash, errorBoundary, fail, fquote } from "./utils.js";
+import { crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType {
     constructor(lengthInformation, type) {
@@ -161,7 +161,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                 if (expr instanceof Token)
                     return this.evaluateToken(expr, type);
                 //Branch node
-                //Special cases
+                //Special cases where the operator isn't a normal operator
                 switch (expr.operator) {
                     case "array access":
                         return this.processArrayAccess(expr, "get", type);
@@ -184,6 +184,24 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                             else
                                 return [this.resolveVariableType(statement.returnType), output];
                         }
+                }
+                //Operator that returns a result of unknown type
+                if (expr.operator.category == "special") {
+                    switch (expr.operator) {
+                        case operators.access:
+                            const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
+                            if (!(objType instanceof RecordVariableType))
+                                fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+                            if (!(expr.nodes[1] instanceof Token))
+                                impossible();
+                            const property = expr.nodes[1].text;
+                            const outputType = objType.fields[property] ? this.resolveVariableType(objType.fields[property]) : fail(`Property ${property} does not exist on value of type ${objType}`);
+                            if (type)
+                                return [type, this.coerceValue(obj[property], outputType, type)];
+                            else
+                                return [outputType, obj[property]];
+                        default: impossible();
+                    }
                 }
                 //arithmetic
                 if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
@@ -231,7 +249,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                             value = left % right;
                             break;
                         default:
-                            fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+                            fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
                     }
                     return [guessedType, value];
                 }
@@ -273,7 +291,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         case operators.less_than_equal:
                             return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] <= this.evaluateExpr(expr.nodes[1], "REAL")[1]];
                         default:
-                            fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+                            fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
                     }
                 }
                 //string
@@ -284,9 +302,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                         case operators.string_concatenate:
                             return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING")[1] + this.evaluateExpr(expr.nodes[1], "STRING")[1]];
                         default:
-                            fail(`Cannot evaluate expression starting with ${expr.operator}: expected the expression to evaluate to a value of type ${type}`);
+                            fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
                     }
                 }
+                expr.operator.category;
                 crash(`This should not be possible`);
             }
             evaluateToken(token, type) {

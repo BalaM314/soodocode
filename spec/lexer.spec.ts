@@ -383,8 +383,11 @@ const tokenizerTests:[name:string, input:SymbolizedProgram, output:Token[] | "er
 			["punctuation.period", "."],
 			["numeric_fragment", "12345"],
 			["numeric_fragment", "12345"],
-		],
-		"error"
+		], [
+			["punctuation.period", "."],
+			["number.decimal", "12345"],
+			["number.decimal", "12345"],
+		]
 	],
 
 	keywords: [

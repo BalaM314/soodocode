@@ -279,7 +279,6 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
 		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`, symbol);
-		else if(symbol.type === "punctuation.period") fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`, symbol);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);

@@ -280,8 +280,9 @@ export type Operator = {
 	name: string;
 	unary: boolean;
 	overloadedUnary: boolean;
-	category: "arithmetic" | "logical" | "string";
+	category: "arithmetic" | "logical" | "string" | "special";
 }
+
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export const operatorsByPriority = ((input:(PartialKey<Operator, "unary" | "name" | "overloadedUnary">)[][]):Operator[][] =>
 	input.map(row => row.map(o =>
@@ -367,6 +368,13 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "unary" | "name
 			unary: true,
 		}
 	],
+	[
+		{
+			token: "punctuation.period",
+			name: "operator.access",
+			category: "special",
+		}
+	]
 	//(function call)
 	//(array access)
 ]);
@@ -376,7 +384,7 @@ export const operators = Object.fromEntries(
 	.map(o => [
 		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name
 	, o] as const)
-) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
+) as Omit<Record<OperatorType | "access", Operator>, "assignment" | "pointer">;
 
 function cannotEndExpression(token:Token){
 	//TODO is this the best way?
@@ -472,6 +480,9 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 					if(operator.overloadedUnary){
 						if(cannotEndExpression(input[i - 1])) continue; //Binary operator can't fit here, this must be the unary operator
 					}
+					if(operator == operators.access){
+						if(!(right.length == 1 && right[0].type == "name")) fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+					} 
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,

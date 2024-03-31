@@ -291,8 +291,6 @@ export function tokenize(input) {
             void 0;
         else if (symbol.type === "unknown")
             fail(`Invalid symbol ${symbol.text}`, symbol);
-        else if (symbol.type === "punctuation.period")
-            fail(`Invalid symbol ${symbol.text}, periods are only allowed within numbers`, symbol);
         else if (symbol.type === "numeric_fragment") {
             state.decimalNumber = "allowDecimal";
             if (isNaN(Number(symbol.text)))

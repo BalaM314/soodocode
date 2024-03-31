@@ -354,6 +354,13 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
             unary: true,
         }
     ],
+    [
+        {
+            token: "punctuation.period",
+            name: "operator.access",
+            category: "special",
+        }
+    ]
     //(function call)
     //(array access)
 ]);
@@ -458,6 +465,10 @@ export const parseExpression = errorBoundary((input) => {
                     if (operator.overloadedUnary) {
                         if (cannotEndExpression(input[i - 1]))
                             continue; //Binary operator can't fit here, this must be the unary operator
+                    }
+                    if (operator == operators.access) {
+                        if (!(right.length == 1 && right[0].type == "name"))
+                            fail(`Access operator can only have a single token to the right, which must be a property name`, right);
                     }
                     return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left), parseExpression(right)], input);
                 }
