@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayTypeNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 export function stringifyExpressionASTArrayTypeNode(input) {
     return `ARRAY[${input.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${input.elementType.text}`;
 }
@@ -14,17 +14,17 @@ export function displayExpression(node, expand = false, html = false) {
         return escapeHTML(node.text);
     if (node instanceof ExpressionASTArrayTypeNode)
         return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
+    if (node instanceof ExpressionASTFunctionCallNode) {
+        const text = `${escapeHTML(node.functionName.text)}(${node.args.map(n => displayExpression(n, expand, html)).join(", ")})`;
+        return html ? `<span class="expression-display-block">${text}</span>` : text;
+    }
+    if (node instanceof ExpressionASTArrayAccessNode) {
+        const text = `${displayExpression(node.target)}[${node.indices.map(n => displayExpression(n, expand, html)).join(", ")}]`;
+        return html ? `<span class="expression-display-block">${text}</span>` : text;
+    }
     const compressed = !expand || node.nodes.every(n => n instanceof Token);
     //TODO fix this function: needs to handle unary postfix correctly, also fix the display block code which breaks on switch statements
-    if (node.operator == "function call") {
-        const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")})`;
-        return html ? `<span class="expression-display-block">${text}</span>` : text;
-    }
-    else if (node.operator == "array access") {
-        const text = `${node.operatorToken.text}[${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")}]`;
-        return html ? `<span class="expression-display-block">${text}</span>` : text;
-    }
-    else if (!node.operator.type.startsWith("unary") && compressed) {
+    if (!node.operator.type.startsWith("unary") && compressed) {
         //Not a unary operator and, argument says don't expand or all child nodes are leaf nodes.
         const text = `(${displayExpression(node.nodes[0], expand, html)} ${node.operatorToken.text} ${displayExpression(node.nodes[1], expand, html)})`;
         return html ? `<span class="expression-display-block">${text}</span>` : text;

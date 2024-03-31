@@ -1,6 +1,6 @@
 import { SymbolType, Token, TokenType, symbol, token } from "../src/lexer-types.js";
 import {
-	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
+	ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
 } from "../src/parser-types.js";
 import { Operator, operators, OperatorType } from "../src/parser.js";
 import { Statement } from "../src/statements.js";
@@ -17,7 +17,7 @@ export type _ExpressionASTLeafNode = _Token;
 export type _ExpressionASTNode = _ExpressionASTLeafNode | _ExpressionASTBranchNode;
 export type _ExpressionASTBranchNode = [
 	"tree",
-	operator: _Operator | [type: "function call", name:string] | [type: "array access", name:string],
+	operator: _Operator | [type: "function call", name:string] | [type: "array access", name:_ExpressionASTNode],
 	nodes: _ExpressionASTNode[],
 ];
 export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
@@ -88,24 +88,26 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 	if(input.length == 2){
 		return token(...input);
 	} else {
-		let operator:Operator | "array access" | "function call";
-		let operatorToken:Token;
 		if(Array.isArray(input[1]) && input[1][0] == "array access"){
-			operator = input[1][0];
-			operatorToken = token("name", input[1][1]);
+			return new ExpressionASTArrayAccessNode(
+				process_ExpressionAST(input[1][1]),
+				input[2].map(process_ExpressionAST),
+				[token("name", "_")] //SPECNULL
+			);
 		} else if(Array.isArray(input[1]) && input[1][0] == "function call"){
-			operator = input[1][0];
-			operatorToken = token("name", input[1][1]);
+			return new ExpressionASTFunctionCallNode(
+				token("name", input[1][1]),
+				input[2].map(process_ExpressionAST),
+				[token("name", "_")] //SPECNULL
+			);
 		} else {
-			operator = operators[input[1]];
-			operatorToken = operatorTokens[input[1]];
+			return new ExpressionASTBranchNode(
+				operatorTokens[input[1]],
+				operators[input[1]],
+				input[2].map(process_ExpressionAST),
+				[operatorTokens[input[1]]] //SPECNULL
+			);
 		}
-		return new ExpressionASTBranchNode(
-			operatorToken,
-			operator,
-			input[2].map(process_ExpressionAST),
-			[operatorToken] //SPECNULL
-		);
 	}
 }
 
@@ -146,6 +148,20 @@ export function applyAnyRange<TIn extends
 		(input as any).allTokens = jasmine.any(Array);
 		applyAnyRange(input.operatorToken)
 		input.nodes.forEach(applyAnyRange);
+	} else if(input instanceof ExpressionASTArrayAccessNode){
+		input.range;
+		(input as any).range = anyRange;
+		input.allTokens;
+		(input as any).allTokens = jasmine.any(Array);
+		applyAnyRange(input.target)
+		input.indices.forEach(applyAnyRange);
+	} else if(input instanceof ExpressionASTFunctionCallNode){
+		input.range;
+		(input as any).range = anyRange;
+		input.allTokens;
+		(input as any).allTokens = jasmine.any(Array);
+		applyAnyRange(input.functionName)
+		input.args.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTArrayTypeNode){
 		input.range;
 		(input as any).range = anyRange;

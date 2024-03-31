@@ -40,6 +40,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
@@ -123,22 +124,20 @@ let Runtime = (() => {
             }
             processArrayAccess(expr, operation, arg2) {
                 //Make sure the variable exists and is an array
-                const _variable = this.getVariable(expr.operatorToken.text);
-                if (!_variable)
-                    fail(`Undeclared variable ${expr.operatorToken.text}`, expr.operatorToken);
+                const _variable = this.evaluateExpr(expr.target, "variable");
                 if (!(_variable.type instanceof ArrayVariableType))
-                    fail(`Cannot convert variable of type ${_variable.type} to an array`, expr.operatorToken);
+                    fail(`Cannot convert variable of type ${_variable.type} to an array`, expr.target);
                 const variable = _variable;
                 const varTypeData = variable.type;
                 //TODO is there any way of getting a 1D array out of a 2D array?
                 //Forbids getting any arrays from arrays
                 if (arg2 instanceof ArrayVariableType)
-                    fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.operatorToken);
-                if (expr.nodes.length != variable.type.lengthInformation.length)
+                    fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.target);
+                if (expr.indices.length != variable.type.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
 ${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
-but found ${expr.nodes.length} indices`, expr.nodes);
-                const indexes = expr.nodes.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
+but found ${expr.indices.length} indices`, expr.indices);
+                const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([expr, value], index) => value > varTypeData.lengthInformation[index][1] ||
                     value < varTypeData.lengthInformation[index][0])) != -1)
@@ -160,7 +159,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                     }
                     const output = variable.value[index];
                     if (output == null)
-                        fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
+                        fail(`Cannot use the value of uninitialized variable ${expr.target.getText()}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.target);
                     if (type)
                         return [type, this.coerceValue(output, this.resolveVariableType(varTypeData.type), type)];
                     else
@@ -216,31 +215,30 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                     return this.evaluateToken(expr, type);
                 //Branch node
                 //Special cases where the operator isn't a normal operator
-                switch (expr.operator) {
-                    case "array access":
-                        return this.processArrayAccess(expr, "get", type);
-                    case "function call":
-                        if (type == "variable")
-                            fail(fquote `Cannot evaluate the result of a function call as a variable`);
-                        ;
-                        const fn = this.getFunction(expr.operatorToken.text);
-                        if ("name" in fn) {
-                            const output = this.callBuiltinFunction(fn, expr.nodes);
-                            if (type)
-                                return [type, this.coerceValue(output[1], output[0], type)];
-                            else
-                                return output;
-                        }
-                        else {
-                            if (fn.type == "procedure")
-                                fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
-                            const statement = fn.controlStatements[0];
-                            const output = this.callFunction(fn, expr.nodes, true);
-                            if (type)
-                                return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
-                            else
-                                return [this.resolveVariableType(statement.returnType), output];
-                        }
+                if (expr instanceof ExpressionASTArrayAccessNode)
+                    return this.processArrayAccess(expr, "get", type);
+                if (expr instanceof ExpressionASTFunctionCallNode) {
+                    if (type == "variable")
+                        fail(fquote `Cannot evaluate the result of a function call as a variable`);
+                    ;
+                    const fn = this.getFunction(expr.functionName.text);
+                    if ("name" in fn) {
+                        const output = this.callBuiltinFunction(fn, expr.args);
+                        if (type)
+                            return [type, this.coerceValue(output[1], output[0], type)];
+                        else
+                            return output;
+                    }
+                    else {
+                        if (fn.type == "procedure")
+                            fail(`Procedure ${expr.functionName.text} does not return a value.`);
+                        const statement = fn.controlStatements[0];
+                        const output = this.callFunction(fn, expr.args, true);
+                        if (type)
+                            return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
+                        else
+                            return [this.resolveVariableType(statement.returnType), output];
+                    }
                 }
                 //Operator that returns a result of unknown type
                 if (expr.operator.category == "special") {

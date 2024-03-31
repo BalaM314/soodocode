@@ -10,7 +10,8 @@ which is the preferred representation of the program.
 
 import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
-	ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
+	ExpressionASTArrayAccessNode,
+	ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode,
 	ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode,
 	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
@@ -556,9 +557,8 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 
 	//Special case: function call
 	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
-		return new ExpressionASTBranchNode(
+		return new ExpressionASTFunctionCallNode(
 			input[0],
-			"function call",
 			input.length == 3
 				? [] //If there are no arguments, don't generate a blank argument group
 				: splitTokensOnComma(input.slice(2, -1)).map(parseExpression),
@@ -568,9 +568,8 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 
 	//Special case: array access
 	if(input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3){
-		return new ExpressionASTBranchNode(
+		return new ExpressionASTArrayAccessNode(
 			input[0],
-			"array access",
 			splitTokensOnComma(input.slice(2, -1)).map(parseExpression),
 			input
 		);

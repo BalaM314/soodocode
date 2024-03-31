@@ -8,7 +8,7 @@ import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode; //TODO make this a class too, OR put a "root" property in ExpressionASTBranchNode
 /** Represents a single node in an expression AST. */
-export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode;
+export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode;
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
@@ -16,7 +16,7 @@ export class ExpressionASTBranchNode implements TextRanged {
 	range: TextRange;
 	constructor(
 		public operatorToken: Token,
-		public operator: Operator | "function call" | "array access",
+		public operator: Operator,
 		public nodes: ExpressionASTNode[],
 		public allTokens: Token[],
 	){
@@ -24,6 +24,41 @@ export class ExpressionASTBranchNode implements TextRanged {
 	}
 	toString(){
 		return this.allTokens.map(t => t.text).join(" ");
+	}
+	getText():string {
+		return this.allTokens.map(t => t.getText()).join(" ");
+	}
+}
+export class ExpressionASTFunctionCallNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public functionName: Token,
+		public args: ExpressionASTNode[],
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
+	toString(){
+		return this.allTokens.map(t => t.text).join(" ");
+	}
+	getText():string {
+		return this.allTokens.map(t => t.getText()).join(" ");
+	}
+}
+export class ExpressionASTArrayAccessNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public target: ExpressionASTNode,
+		public indices: ExpressionASTNode[],
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
+	toString(){
+		return this.allTokens.map(t => t.text).join(" ");
+	}
+	getText():string {
+		return this.allTokens.map(t => t.getText()).join(" ");
 	}
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */

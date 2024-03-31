@@ -86,6 +86,9 @@ export class Token {
     toString() {
         return `[${this.type} ${this.text}]`;
     }
+    getText() {
+        return this.text;
+    }
     clone() {
         return new Token(this.type, this.text, this.range);
     }

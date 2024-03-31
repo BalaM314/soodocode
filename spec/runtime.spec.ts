@@ -189,7 +189,7 @@ const expressionTests = Object.entries<[expression:_ExpressionAST, type:Variable
 	],
 	propertyAccess_nested_array: [
 		["tree", "access", [
-			["tree", ["array access", "aaa"], [
+			["tree", ["array access", ["name", "aaa"]], [
 				["number.decimal", "2"],
 			]],
 			["name", "ccc"],

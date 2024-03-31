@@ -107,6 +107,9 @@ export class Token implements TextRanged {
 	toString(){
 		return `[${this.type} ${this.text}]`;
 	}
+	getText(){
+		return this.text;
+	}
 	clone():Token {
 		return new Token(this.type, this.text, this.range);
 	}

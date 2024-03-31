@@ -7,7 +7,7 @@ and processes it into an abstract syntax tree (AST),
 which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ProgramASTBranchNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { CaseBranchStatement, statements } from "./statements.js";
 import { crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
@@ -539,13 +539,13 @@ export const parseExpression = errorBoundary((input) => {
         return parseExpression(input.slice(1, -1));
     //Special case: function call
     if (input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
-        return new ExpressionASTBranchNode(input[0], "function call", input.length == 3
+        return new ExpressionASTFunctionCallNode(input[0], input.length == 3
             ? [] //If there are no arguments, don't generate a blank argument group
             : splitTokensOnComma(input.slice(2, -1)).map(parseExpression), input);
     }
     //Special case: array access
     if (input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3) {
-        return new ExpressionASTBranchNode(input[0], "array access", splitTokensOnComma(input.slice(2, -1)).map(parseExpression), input);
+        return new ExpressionASTArrayAccessNode(input[0], splitTokensOnComma(input.slice(2, -1)).map(parseExpression), input);
     }
     //No operators found at all, something went wrong
     fail(`No operators found`);

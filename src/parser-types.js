@@ -12,6 +12,37 @@ export class ExpressionASTBranchNode {
     toString() {
         return this.allTokens.map(t => t.text).join(" ");
     }
+    getText() {
+        return this.allTokens.map(t => t.getText()).join(" ");
+    }
+}
+export class ExpressionASTFunctionCallNode {
+    constructor(functionName, args, allTokens) {
+        this.functionName = functionName;
+        this.args = args;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+    toString() {
+        return this.allTokens.map(t => t.text).join(" ");
+    }
+    getText() {
+        return this.allTokens.map(t => t.getText()).join(" ");
+    }
+}
+export class ExpressionASTArrayAccessNode {
+    constructor(target, indices, allTokens) {
+        this.target = target;
+        this.indices = indices;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+    toString() {
+        return this.allTokens.map(t => t.text).join(" ");
+    }
+    getText() {
+        return this.allTokens.map(t => t.getText()).join(" ");
+    }
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
 export class ExpressionASTArrayTypeNode {

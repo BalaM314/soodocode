@@ -44,8 +44,9 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 };
 import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
+import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote, } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -498,20 +499,20 @@ let CallStatement = (() => {
     var CallStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            if (!(tokens[1] instanceof Token) && tokens[1].operator == "function call") {
+            if (tokens[1] instanceof ExpressionASTFunctionCallNode) {
                 this.func = tokens[1];
             }
             else
-                crash(`CALL can only be used to call functions or procedures`);
+                fail(`CALL can only be used to call functions or procedures`);
         }
         run(runtime) {
-            const name = this.func.operatorToken.text;
+            const name = this.func.functionName.text;
             const func = runtime.getFunction(name);
             if ("name" in func)
                 fail(`CALL cannot be used on builtin functions, because they have no side effects`);
             if (func.controlStatements[0] instanceof FunctionStatement)
                 fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
-            runtime.callFunction(func, this.func.nodes);
+            runtime.callFunction(func, this.func.args);
         }
     };
     __setFunctionName(_classThis, "CallStatement");

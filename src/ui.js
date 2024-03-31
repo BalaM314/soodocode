@@ -63,11 +63,11 @@ export function evaluateExpressionDemo(node) {
         else
             fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
     }
-    else if (node.operator == "function call") {
-        fail(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
+    else if (node instanceof parserTypes.ExpressionASTFunctionCallNode) {
+        fail(`Cannot evaluate expression ${node.getText()}: function call result unknown`);
     }
-    else if (node.operator == "array access") {
-        fail(`Cannot evaluate expression ${node.operatorToken.text}(...): array contents unknown`);
+    else if (node instanceof parserTypes.ExpressionASTArrayAccessNode) {
+        fail(`Cannot evaluate expression ${node.getText()}: array contents unknown`);
     }
     else
         switch (node.operator.name) {

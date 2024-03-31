@@ -63,10 +63,10 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 		if(node.type == "number.decimal") return Number(node.text);
 		else if(node.type == "name") fail(`Cannot evaluate expression: variable content unknown`);
 		else fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
-	} else if(node.operator == "function call"){
-		fail(`Cannot evaluate expression ${node.operatorToken.text}(...): function call result unknown`);
-	} else if(node.operator == "array access"){
-		fail(`Cannot evaluate expression ${node.operatorToken.text}(...): array contents unknown`);
+	} else if(node instanceof parserTypes.ExpressionASTFunctionCallNode){
+		fail(`Cannot evaluate expression ${node.getText()}: function call result unknown`);
+	} else if(node instanceof parserTypes.ExpressionASTArrayAccessNode){
+		fail(`Cannot evaluate expression ${node.getText()}: array contents unknown`);
 	} else switch(node.operator.name){
 		case "operator.negate": return - evaluateExpressionDemo(node.nodes[0]);
 		case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);

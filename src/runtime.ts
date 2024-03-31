@@ -10,7 +10,9 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import {
 	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST,
-	ExpressionASTNode
+	ExpressionASTNode,
+	ExpressionASTArrayAccessNode,
+	ExpressionASTFunctionCallNode
 } from "./parser-types.js";
 import { operators } from "./parser.js";
 import {
@@ -130,10 +132,10 @@ interface FileData {
 	mode: FileMode | null;
 }
 
-export type VariableData<T extends VariableType = VariableType, Initialized = false> = {
+export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
 	type: T;
 	/** Null indicates that the variable has not been initialized */
-	value: VariableTypeMapping<T> | (Initialized extends false ? null : never);
+	value: VariableTypeMapping<T> | Uninitialized;
 	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement;
 	mutable: true;
 }
@@ -180,33 +182,32 @@ export class Runtime {
 		public _input: (message:string) => string,
 		public _output: (message:string) => void,
 	){}
-	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
-	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get", type:"variable"):VariableData;
-	processArrayAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
-	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type:"variable"):VariableData;
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"set", value:ExpressionAST):void;
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
 	@errorBoundary
-	processArrayAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | void {
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | void {
 
 		//Make sure the variable exists and is an array
-		const _variable = this.getVariable(expr.operatorToken.text);
-		if(!_variable) fail(`Undeclared variable ${expr.operatorToken.text}`, expr.operatorToken);
-		if(!(_variable.type instanceof ArrayVariableType)) fail(`Cannot convert variable of type ${_variable.type} to an array`, expr.operatorToken);
-		const variable = _variable as VariableData<ArrayVariableType, true>;
+		const _variable = this.evaluateExpr(expr.target, "variable");
+		if(!(_variable.type instanceof ArrayVariableType)) fail(`Cannot convert variable of type ${_variable.type} to an array`, expr.target);
+		const variable = _variable as VariableData<ArrayVariableType, never>;
 		const varTypeData = variable.type;
 
 		//TODO is there any way of getting a 1D array out of a 2D array?
 		//Forbids getting any arrays from arrays
 		if(arg2 instanceof ArrayVariableType)
-			fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.operatorToken);
+			fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.target);
 
-		if(expr.nodes.length != variable.type.lengthInformation.length)
+		if(expr.indices.length != variable.type.lengthInformation.length)
 			fail(
 `Cannot evaluate expression starting with "array access": \
 ${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
-but found ${expr.nodes.length} indices`,
-				expr.nodes
+but found ${expr.indices.length} indices`,
+				expr.indices
 			);
-		const indexes:[ExpressionASTNode, number][] = expr.nodes.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
+		const indexes:[ExpressionASTNode, number][] = expr.indices.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
 		let invalidIndexIndex;
 		if(
 			(invalidIndexIndex = indexes.findIndex(([expr, value], index) =>
@@ -229,7 +230,7 @@ but found ${expr.nodes.length} indices`,
 				};
 			}
 			const output = variable.value[index];
-			if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
+			if(output == null) fail(`Cannot use the value of uninitialized variable ${expr.target.getText()}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.target);
 			if(type) return [type, this.coerceValue(output, this.resolveVariableType(varTypeData.type), type)];
 			else return [this.resolveVariableType(varTypeData.type), output];
 		} else {
@@ -288,23 +289,22 @@ but found ${expr.nodes.length} indices`,
 		//Branch node
 
 		//Special cases where the operator isn't a normal operator
-		switch(expr.operator){
-			case "array access":
-				return this.processArrayAccess(expr, "get", type);
-			case "function call":
-				if(type == "variable") fail(fquote`Cannot evaluate the result of a function call as a variable`);;
-				const fn = this.getFunction(expr.operatorToken.text);
-				if("name" in fn){
-					const output = this.callBuiltinFunction(fn, expr.nodes);
-					if(type) return [type, this.coerceValue(output[1], output[0], type)];
-					else return output;
-				} else {
-					if(fn.type == "procedure") fail(`Procedure ${expr.operatorToken.text} does not return a value.`);
-					const statement = fn.controlStatements[0];
-					const output = this.callFunction(fn, expr.nodes, true);
-					if(type) return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
-					else return [this.resolveVariableType(statement.returnType), output];
-				}
+		if(expr instanceof ExpressionASTArrayAccessNode)
+			return this.processArrayAccess(expr, "get", type);
+		if(expr instanceof ExpressionASTFunctionCallNode) {
+			if(type == "variable") fail(fquote`Cannot evaluate the result of a function call as a variable`);;
+			const fn = this.getFunction(expr.functionName.text);
+			if("name" in fn){
+				const output = this.callBuiltinFunction(fn, expr.args);
+				if(type) return [type, this.coerceValue(output[1], output[0], type)];
+				else return output;
+			} else {
+				if(fn.type == "procedure") fail(`Procedure ${expr.functionName.text} does not return a value.`);
+				const statement = fn.controlStatements[0];
+				const output = this.callFunction(fn, expr.args, true);
+				if(type) return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
+				else return [this.resolveVariableType(statement.returnType), output];
+			}
 		}
 
 		//Operator that returns a result of unknown type
