@@ -1,6 +1,6 @@
 import "jasmine";
 import { token } from "../src/lexer-types.js";
-import { EnumeratedVariableType, RecordVariableType, Runtime } from "../src/runtime.js";
+import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, OutputStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
@@ -163,6 +163,52 @@ const expressionTests = Object.entries({
             };
         }
     ],
+    pointerRef1: (() => {
+        const intPointer = new PointerVariableType("intPtr", "INTEGER");
+        const intVar = {
+            type: "INTEGER",
+            declaration: null,
+            mutable: true,
+            value: 19
+        };
+        return [
+            ["tree", "pointer_reference", [
+                    ["name", "amogus"],
+                ]],
+            intPointer,
+            [intPointer, intVar],
+            r => {
+                r.getCurrentScope().types["intPtr"] = intPointer;
+                r.getCurrentScope().variables["amogus"] = intVar;
+            }
+        ];
+    })(),
+    pointerDeref1: (() => {
+        return [
+            ["tree", "pointer_dereference", [
+                    ["name", "amogusPtr"],
+                ]],
+            "INTEGER",
+            ["INTEGER", 20],
+            r => {
+                const intPointer = new PointerVariableType("intPtr", "INTEGER");
+                const amogusVar = {
+                    type: "INTEGER",
+                    declaration: null,
+                    mutable: true,
+                    value: 20
+                };
+                r.getCurrentScope().types["intPtr"] = intPointer;
+                r.getCurrentScope().variables["amogus"] = amogusVar;
+                r.getCurrentScope().variables["amogusPtr"] = {
+                    declaration: null,
+                    mutable: true,
+                    type: intPointer,
+                    value: amogusVar
+                };
+            }
+        ];
+    })(),
 }).map(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => { })]);
 const statementTests = Object.entries({
     declare1: [
