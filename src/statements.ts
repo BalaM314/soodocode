@@ -12,10 +12,10 @@ import {
 	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
 	ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
-import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { isLiteral, operators, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import {
 	displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange,
-	SoodocodeError, fquote
+	SoodocodeError, fquote, impossible
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
@@ -256,25 +256,36 @@ export class TypeRecordStatement extends Statement {
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
-	name: ExpressionAST;
+	target: ExpressionAST;
 	expr: ExpressionAST;
 	constructor(tokens:[ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
-		[this.name, , this.expr] = tokens;
-		if(this.name instanceof ExpressionASTBranchNode){
-			if(this.name.operator != "array access") fail(`Expression ${displayExpression(this.name)} cannot be assigned to`, this.name, this);
+		[this.target, , this.expr] = tokens;
+		if(this.target instanceof ExpressionASTBranchNode){
+			if(!(this.target.operator == "array access" || this.target.operator == operators.access)) fail(`Expression ${displayExpression(this.target)} cannot be assigned to`, this.target, this);
 		} else {
-			if(isLiteral(this.name.type)) fail(fquote`Cannot assign to literal token ${this.name.text}`, this.name, this);
+			if(isLiteral(this.target.type)) fail(fquote`Cannot assign to literal token ${this.target.text}`, this.target, this);
 		}
 	}
 	run(runtime:Runtime){
-		if(this.name instanceof ExpressionASTBranchNode){
-			//TODO handle access operator being here
-			runtime.processArrayAccess(this.name, "set", this.expr);
+		if(this.target instanceof ExpressionASTBranchNode){
+			switch(this.target.operator){
+				case "array access":
+					runtime.processArrayAccess(this.target, "set", this.expr); break;
+				case operators.access:
+					//TODO improve implementation, use evaluateExpression and have it pass back a reference to the variable data, this is repeated code
+					if(!(this.target.nodes[0] instanceof Token)) fail(`Assigning to nested access expressions is currently not implemented`);
+					const variable = runtime.getVariable(this.target.nodes[0].text);
+					if(!variable) fail(`Undeclared variable ${this.target.nodes[0].text}`);
+					const property = (this.target.nodes[1] as Token).text;
+					if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
+					(variable.value as Record<string, unknown>)[property] = runtime.evaluateExpr(this.expr, variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`))[1];
+				default: impossible();
+			}
 		} else {
-			const variable = runtime.getVariable(this.name.text);
-			if(!variable) fail(`Undeclared variable ${this.name.text}`);
-			if(!variable.mutable) fail(`Cannot assign to constant ${this.name.text}`);
+			const variable = runtime.getVariable(this.target.text);
+			if(!variable) fail(`Undeclared variable ${this.target.text}`);
+			if(!variable.mutable) fail(`Cannot assign to constant ${this.target.text}`);
 			variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
 		}
 	}

@@ -45,8 +45,8 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTBranchNode } from "./parser-types.js";
-import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
+import { isLiteral, operators, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote, impossible } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -332,27 +332,42 @@ let AssignmentStatement = (() => {
     var AssignmentStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            [this.name, , this.expr] = tokens;
-            if (this.name instanceof ExpressionASTBranchNode) {
-                if (this.name.operator != "array access")
-                    fail(`Expression ${displayExpression(this.name)} cannot be assigned to`, this.name, this);
+            [this.target, , this.expr] = tokens;
+            if (this.target instanceof ExpressionASTBranchNode) {
+                if (!(this.target.operator == "array access" || this.target.operator == operators.access))
+                    fail(`Expression ${displayExpression(this.target)} cannot be assigned to`, this.target, this);
             }
             else {
-                if (isLiteral(this.name.type))
-                    fail(fquote `Cannot assign to literal token ${this.name.text}`, this.name, this);
+                if (isLiteral(this.target.type))
+                    fail(fquote `Cannot assign to literal token ${this.target.text}`, this.target, this);
             }
         }
         run(runtime) {
-            if (this.name instanceof ExpressionASTBranchNode) {
-                //TODO handle access operator being here
-                runtime.processArrayAccess(this.name, "set", this.expr);
+            if (this.target instanceof ExpressionASTBranchNode) {
+                switch (this.target.operator) {
+                    case "array access":
+                        runtime.processArrayAccess(this.target, "set", this.expr);
+                        break;
+                    case operators.access:
+                        //TODO improve implementation, use evaluateExpression and have it pass back a reference to the variable data, this is repeated code
+                        if (!(this.target.nodes[0] instanceof Token))
+                            fail(`Assigning to nested access expressions is currently not implemented`);
+                        const variable = runtime.getVariable(this.target.nodes[0].text);
+                        if (!variable)
+                            fail(`Undeclared variable ${this.target.nodes[0].text}`);
+                        const property = this.target.nodes[1].text;
+                        if (!(variable.type instanceof RecordVariableType))
+                            fail(fquote `Cannot access property ${property} on variable of type ${variable.type}`);
+                        variable.value[property] = runtime.evaluateExpr(this.expr, variable.type.fields[property] ?? fail(fquote `Property ${property} does not exist on type ${variable.type}`))[1];
+                    default: impossible();
+                }
             }
             else {
-                const variable = runtime.getVariable(this.name.text);
+                const variable = runtime.getVariable(this.target.text);
                 if (!variable)
-                    fail(`Undeclared variable ${this.name.text}`);
+                    fail(`Undeclared variable ${this.target.text}`);
                 if (!variable.mutable)
-                    fail(`Cannot assign to constant ${this.name.text}`);
+                    fail(`Cannot assign to constant ${this.target.text}`);
                 variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
             }
         }
