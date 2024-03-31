@@ -603,7 +603,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			const value = this.evaluateExpr(args[i], rType)[1];
 			scope.variables[name] = {
 				declaration: func,
-				mutable: passMode == "reference",
+				mutable: passMode == "reference", //TODO properly handle pass mode
 				type: rType,
 				get value(){ return value },
 				set value(value){ crash(`Attempted assignment to constant`); }
