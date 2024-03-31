@@ -105,6 +105,7 @@ let Runtime = (() => {
     var _a;
     let _instanceExtraInitializers = [];
     let _processArrayAccess_decorators;
+    let _processRecordAccess_decorators;
     return _a = class Runtime {
             constructor(_input, _output) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
@@ -156,6 +157,25 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                     variable.value[index] = this.evaluateExpr(arg2, this.resolveVariableType(varTypeData.type))[1];
                 }
             }
+            processRecordAccess(expr, operation, arg2) {
+                crash(`Not yet implemented`);
+                // if(!(expr.nodes[1] instanceof Token)) impossible();
+                // const property = expr.nodes[1].text;
+                // if(!(expr.nodes[0] instanceof Token)) fail(`Assigning to nested access expressions is currently not implemented`);
+                // const variable = this.getVariable(expr.nodes[0].text);
+                // if(!variable) fail(`Undeclared variable ${expr.nodes[0].text}`);
+                // if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
+                // (variable.value as Record<string, unknown>)[property] = this.evaluateExpr(arg2, variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`))[1];
+                // const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
+                // if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+                // const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
+                // const value = (obj as Record<string, VariableValue>)[property];
+                // if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
+                // if(type)
+                // 	return [type, this.coerceValue(value, outputType, type)];
+                // else
+                // 	return [outputType, value];
+            }
             evaluateExpr(expr, type) {
                 if (expr instanceof Token)
                     return this.evaluateToken(expr, type);
@@ -188,20 +208,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                 if (expr.operator.category == "special") {
                     switch (expr.operator) {
                         case operators.access:
-                            const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-                            if (!(objType instanceof RecordVariableType))
-                                fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
-                            if (!(expr.nodes[1] instanceof Token))
-                                impossible();
-                            const property = expr.nodes[1].text;
-                            const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
-                            const value = obj[property];
-                            if (value === null)
-                                fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
-                            if (type)
-                                return [type, this.coerceValue(value, outputType, type)];
-                            else
-                                return [outputType, value];
+                            return this.processRecordAccess(expr, "get", type);
                         case operators.pointer_reference:
                             //TODO improve implementation, allow evaluateExpression to pass back a reference to the variable data
                             if (!(expr.nodes[0] instanceof Token))
@@ -565,7 +572,9 @@ help: try using DIV instead of / to produce an integer as the result`);
         (() => {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
             _processArrayAccess_decorators = [errorBoundary];
+            _processRecordAccess_decorators = [errorBoundary];
             __esDecorate(_a, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(_a, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         })(),
         _a.NotStaticError = class extends Error {

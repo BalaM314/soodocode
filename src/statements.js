@@ -349,16 +349,8 @@ let AssignmentStatement = (() => {
                         runtime.processArrayAccess(this.target, "set", this.expr);
                         break;
                     case operators.access:
-                        //TODO improve implementation, use evaluateExpression and have it pass back a reference to the variable data, this is repeated code
-                        if (!(this.target.nodes[0] instanceof Token))
-                            fail(`Assigning to nested access expressions is currently not implemented`);
-                        const variable = runtime.getVariable(this.target.nodes[0].text);
-                        if (!variable)
-                            fail(`Undeclared variable ${this.target.nodes[0].text}`);
-                        const property = this.target.nodes[1].text;
-                        if (!(variable.type instanceof RecordVariableType))
-                            fail(fquote `Cannot access property ${property} on variable of type ${variable.type}`);
-                        variable.value[property] = runtime.evaluateExpr(this.expr, variable.type.fields[property] ?? fail(fquote `Property ${property} does not exist on type ${variable.type}`))[1];
+                        runtime.processRecordAccess(this.target, "set", this.expr);
+                        break;
                     default: impossible();
                 }
             }

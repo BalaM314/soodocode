@@ -222,6 +222,30 @@ but found ${expr.nodes.length} indices`,
 			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, this.resolveVariableType(varTypeData.type))[1];
 		}
 	}
+	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
+	processRecordAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
+	@errorBoundary
+	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | ExpressionAST):[type:VariableType, value:VariableValue] | void {
+		crash(`Not yet implemented`);
+		// if(!(expr.nodes[1] instanceof Token)) impossible();
+		// const property = expr.nodes[1].text;
+
+		// if(!(expr.nodes[0] instanceof Token)) fail(`Assigning to nested access expressions is currently not implemented`);
+		// const variable = this.getVariable(expr.nodes[0].text);
+		// if(!variable) fail(`Undeclared variable ${expr.nodes[0].text}`);
+		// if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
+		// (variable.value as Record<string, unknown>)[property] = this.evaluateExpr(arg2, variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`))[1];
+
+		// const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
+		// if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+		// const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
+		// const value = (obj as Record<string, VariableValue>)[property];
+		// if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
+		// if(type)
+		// 	return [type, this.coerceValue(value, outputType, type)];
+		// else
+		// 	return [outputType, value];
+	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):[type:T & {}, value:VariableTypeMapping<T>];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType):[type:VariableType, value:VariableValue] {
@@ -254,17 +278,7 @@ but found ${expr.nodes.length} indices`,
 		if(expr.operator.category == "special"){
 			switch(expr.operator){
 				case operators.access:
-					const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-					if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
-					if(!(expr.nodes[1] instanceof Token)) impossible();
-					const property = expr.nodes[1].text;
-					const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
-					const value = (obj as Record<string, VariableValue>)[property];
-					if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
-					if(type)
-						return [type, this.coerceValue(value, outputType, type)];
-					else
-						return [outputType, value];
+					return this.processRecordAccess(expr, "get", type);
 				case operators.pointer_reference:
 					//TODO improve implementation, allow evaluateExpression to pass back a reference to the variable data
 					if(!(expr.nodes[0] instanceof Token)) fail(`Referencing expressions is not yet implemented, please use a simple variable`, expr.nodes[0]);
