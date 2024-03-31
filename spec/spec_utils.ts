@@ -56,6 +56,8 @@ export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointe
 	"string_concatenate": token("operator.string_concatenate", "&"),
 	"negate": token("operator.minus", "-"),
 	"access": token("punctuation.period", "."),
+	"pointer_reference": token("operator.pointer", "^"),
+	"pointer_dereference": token("operator.pointer", "^"),
 }
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {

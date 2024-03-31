@@ -22,6 +22,8 @@ export const operatorTokens = {
     "string_concatenate": token("operator.string_concatenate", "&"),
     "negate": token("operator.minus", "-"),
     "access": token("punctuation.period", "."),
+    "pointer_reference": token("operator.pointer", "^"),
+    "pointer_dereference": token("operator.pointer", "^"),
 };
 export function is_ExpressionASTArrayTypeNode(input) {
     return Array.isArray(input[1]);

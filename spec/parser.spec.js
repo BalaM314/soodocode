@@ -729,6 +729,61 @@ const sampleExpressions = Object.entries({
         ],
         "error"
     ],
+    access1: [
+        [
+            ["name", "amogus"],
+            ["punctuation.period", "."],
+            ["name", "sussy"],
+        ],
+        ["tree", "access", [
+                ["name", "amogus"],
+                ["name", "sussy"],
+            ]]
+    ],
+    access2: [
+        [
+            ["name", "amogus"],
+            ["punctuation.period", "."],
+            ["name", "sussy"],
+            ["punctuation.period", "."],
+            ["name", "baka"],
+        ],
+        ["tree", "access", [
+                ["tree", "access", [
+                        ["name", "amogus"],
+                        ["name", "sussy"],
+                    ]],
+                ["name", "baka"],
+            ]]
+    ],
+    access3: [
+        [
+            ["name", "amogus"],
+            ["punctuation.period", "."],
+            ["parentheses.open", "("],
+            ["name", "sussy"],
+            ["parentheses.close", ")"],
+        ],
+        "error"
+    ],
+    pointerRef1: [
+        [
+            ["operator.pointer", "^"],
+            ["name", "amogus"],
+        ],
+        ["tree", "pointer_reference", [
+                ["name", "amogus"]
+            ]]
+    ],
+    pointerDeref1: [
+        [
+            ["name", "amogus"],
+            ["operator.pointer", "^"],
+        ],
+        ["tree", "pointer_dereference", [
+                ["name", "amogus"]
+            ]]
+    ],
     SussyBaka: [
         [
             ["parentheses.open", "("],

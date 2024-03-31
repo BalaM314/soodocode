@@ -15,6 +15,7 @@ export function displayExpression(node, expand = false, html = false) {
     if (node instanceof ExpressionASTArrayTypeNode)
         return escapeHTML(stringifyExpressionASTArrayTypeNode(node));
     const compressed = !expand || node.nodes.every(n => n instanceof Token);
+    //TODO fix this function: needs to handle unary postfix correctly, also fix the display block code which breaks on switch statements
     if (node.operator == "function call") {
         const text = `${node.operatorToken.text}(${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")})`;
         return html ? `<span class="expression-display-block">${text}</span>` : text;
@@ -23,17 +24,17 @@ export function displayExpression(node, expand = false, html = false) {
         const text = `${node.operatorToken.text}[${node.nodes.map(n => displayExpression(n, expand, html)).join(", ")}]`;
         return html ? `<span class="expression-display-block">${text}</span>` : text;
     }
-    else if (!node.operator.unary && compressed) {
+    else if (!node.operator.type.startsWith("unary") && compressed) {
         //Not a unary operator and, argument says don't expand or all child nodes are leaf nodes.
         const text = `(${displayExpression(node.nodes[0], expand, html)} ${node.operatorToken.text} ${displayExpression(node.nodes[1], expand, html)})`;
         return html ? `<span class="expression-display-block">${text}</span>` : text;
     }
-    else if (node.operator.unary && compressed) {
+    else if (node.operator.type.startsWith("unary") && compressed) {
         //Is a unary operator and, argument says don't expand or all child nodes are leaf nodes.
         const text = `(${node.operatorToken.text} ${displayExpression(node.nodes[0], expand, html)})`;
         return html ? `<span class="expression-display-block">${text}</span>` : text;
     }
-    else if (node.operator.unary) {
+    else if (node.operator.type.startsWith("unary")) {
         return (`(
 ${node.operatorToken.text}
 ${displayExpression(node.nodes[0], expand).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}

@@ -274,11 +274,11 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 	return output;
 });
 
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access") : never;
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type Operator = {
 	token: TokenType;
 	name: string;
-	type: "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_postfix";
+	type: "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 	category: "arithmetic" | "logical" | "string" | "special";
 }
 
@@ -356,6 +356,12 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "type" | "name"
 	//no exponentiation operator?
 	[
 		{
+			token: "operator.pointer",
+			name: "operator.pointer_reference",
+			category: "special",
+			type: "unary_prefix_o_postfix"
+		},
+		{
 			token: "operator.not",
 			category: "logical",
 			type: "unary_prefix"
@@ -365,6 +371,14 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "type" | "name"
 			name: "operator.negate",
 			category: "arithmetic",
 			type: "unary_prefix"
+		},
+	],
+	[
+		{
+			token: "operator.pointer",
+			name: "operator.pointer_dereference",
+			category: "special",
+			type: "unary_postfix_o_prefix"
 		}
 	],
 	[
@@ -434,10 +448,11 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 				operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for
 			){
 				//this is the lowest priority operator in the expression and should become the root node
-				if(operator.type == "unary_prefix"){
+				if(operator.type.startsWith("unary_prefix")){
 					//Make sure there is only something on right side of the operator
 					const right = input.slice(i + 1);
 					if(i != 0){ //if there are tokens to the left of a unary operator
+						if(operator.type == "unary_prefix_o_postfix" && right.length == 0) continue; //this is the postfix operator
 						//Binary operators
 						//  1 / 2 / 3
 						// (1 / 2)/ 3
@@ -465,6 +480,21 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 						input[i],
 						operator,
 						[parseExpression(right)],
+						input
+					);
+				} else if(operator.type.startsWith("unary_postfix")){
+					//Make sure there is only something on left side of the operator
+					const left = input.slice(0, i);
+					if(i != input.length - 1){ //if there are tokens to the right of a unary postfix operator
+						if(operator.type == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
+						//No need to worry about operator priority changing for postfix
+						fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
+					}
+					if(left.length == 0) fail(`Mo expression on left side of operator ${input[i].text}`, input[i].rangeAfter());
+					return new ExpressionASTBranchNode(
+						input[i],
+						operator,
+						[parseExpression(left)],
 						input
 					);
 				} else {
