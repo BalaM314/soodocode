@@ -83,7 +83,7 @@ export class PointerVariableType {
         this.target = target;
     }
     toString() {
-        return fquote `pointer type ${this.name} (^${this.target})`;
+        return `pointer type "${this.name}" (^${this.target})`;
     }
     getInitValue(runtime) {
         return null;
@@ -202,6 +202,22 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                                 return [type, this.coerceValue(value, outputType, type)];
                             else
                                 return [outputType, value];
+                        case operators.pointer_reference:
+                            //TODO improve implementation, allow evaluateExpression to pass back a reference to the variable data
+                            if (!(expr.nodes[0] instanceof Token))
+                                fail(`Referencing expressions is not yet implemented, please use a simple variable`, expr.nodes[0]);
+                            const variable = this.getVariable(expr.nodes[0].text) ?? fail(`Undeclared variable ${expr.nodes[0].text}`, expr.nodes[0]);
+                            //Guess the type
+                            const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
+                            return [pointerType, variable];
+                        case operators.pointer_dereference:
+                            const [ptrType, _value] = this.evaluateExpr(expr.nodes[0]);
+                            if (!(ptrType instanceof PointerVariableType))
+                                fail(`Cannot dereference value of type ${ptrType} because it is not a pointer`, expr.nodes[0]);
+                            const ptr = _value;
+                            if (ptr.value == null)
+                                fail(`Cannot dereference ${expr.nodes[0]} because it has not been initialized`, expr.nodes[0]);
+                            return [ptrType.target, ptr.value];
                         default: impossible();
                     }
                 }
@@ -419,6 +435,15 @@ help: try using DIV instead of / to produce an integer as the result`);
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     const data = Object.values(this.scopes[i].types)
                         .find((data) => data instanceof EnumeratedVariableType && data.values.includes(name));
+                    if (data)
+                        return data;
+                }
+                return null;
+            }
+            getPointerTypeFor(type) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    const data = Object.values(this.scopes[i].types)
+                        .find((data) => data instanceof PointerVariableType && data.target === type); //TODO .equals() for array types
                     if (data)
                         return data;
                 }
