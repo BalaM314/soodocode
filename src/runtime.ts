@@ -318,11 +318,22 @@ but found ${expr.nodes.length} indices`,
 					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote`Cannot find a pointer type for ${variable.type}`);
 					return [pointerType, variable];
 				case operators.pointer_dereference:
-					const [ptrType, _value] = this.evaluateExpr(expr.nodes[0]);
-					if(!(ptrType instanceof PointerVariableType)) fail(`Cannot dereference value of type ${ptrType} because it is not a pointer`, expr.nodes[0]);
-					const ptr = _value as VariableTypeMapping<PointerVariableType>;
-					if(ptr.value == null) fail(`Cannot dereference ${expr.nodes[0]} because it has not been initialized`, expr.nodes[0]);
-					return [ptrType.target, ptr.value];
+					let pointerVariableType, variableValue;
+					if(type == "variable"){
+						({type:pointerVariableType, value:variableValue} = this.evaluateExpr(expr.nodes[0], "variable"));
+					} else {
+						[pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0]);
+					}
+					if(variableValue == null) fail(`Cannot dereference value because it has not been initialized`);
+					if(!(pointerVariableType instanceof PointerVariableType)) fail(`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
+					const pointerVariableData = variableValue as VariableTypeMapping<PointerVariableType>;
+					if(type == "variable"){
+						if(!pointerVariableData.mutable) fail(`Cannot assign to constant`, expr);
+						return pointerVariableData;
+					} else {
+						if(pointerVariableData.value == null) fail(`Cannot dereference ${expr.nodes[0]} because the underlying value has not been initialized`, expr.nodes[0]);
+						return [pointerVariableType.target, pointerVariableData.value];
+					}
 				default: impossible();
 			}
 		}

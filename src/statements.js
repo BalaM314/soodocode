@@ -44,9 +44,8 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 };
 import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTBranchNode } from "./parser-types.js";
-import { isLiteral, operators, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote, impossible } from "./utils.js";
+import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -339,35 +338,14 @@ let AssignmentStatement = (() => {
         constructor(tokens) {
             super(tokens);
             [this.target, , this.expr] = tokens;
-            if (this.target instanceof ExpressionASTBranchNode) {
-                if (!(this.target.operator == "array access" || this.target.operator == operators.access))
-                    fail(`Expression ${displayExpression(this.target)} cannot be assigned to`, this.target, this);
-            }
-            else {
-                if (isLiteral(this.target.type))
-                    fail(fquote `Cannot assign to literal token ${this.target.text}`, this.target, this);
-            }
+            if (this.target instanceof Token && isLiteral(this.target.type))
+                fail(fquote `Cannot assign to literal token ${this.target.text}`, this.target, this);
         }
         run(runtime) {
-            if (this.target instanceof ExpressionASTBranchNode) {
-                switch (this.target.operator) {
-                    case "array access":
-                        runtime.processArrayAccess(this.target, "set", this.expr);
-                        break;
-                    case operators.access:
-                        runtime.processRecordAccess(this.target, "set", this.expr);
-                        break;
-                    default: impossible();
-                }
-            }
-            else {
-                const variable = runtime.getVariable(this.target.text);
-                if (!variable)
-                    fail(`Undeclared variable ${this.target.text}`);
-                if (!variable.mutable)
-                    fail(`Cannot assign to constant ${this.target.text}`);
-                variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
-            }
+            const variable = runtime.evaluateExpr(this.target, "variable");
+            if (!variable.mutable)
+                fail(`Cannot assign to constant ${this.target.toString()}`);
+            variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");

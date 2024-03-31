@@ -267,27 +267,13 @@ export class AssignmentStatement extends Statement {
 	constructor(tokens:[ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
 		[this.target, , this.expr] = tokens;
-		if(this.target instanceof ExpressionASTBranchNode){
-			if(!(this.target.operator == "array access" || this.target.operator == operators.access)) fail(`Expression ${displayExpression(this.target)} cannot be assigned to`, this.target, this);
-		} else {
-			if(isLiteral(this.target.type)) fail(fquote`Cannot assign to literal token ${this.target.text}`, this.target, this);
-		}
+		if(this.target instanceof Token && isLiteral(this.target.type))
+			fail(fquote`Cannot assign to literal token ${this.target.text}`, this.target, this);
 	}
 	run(runtime:Runtime){
-		if(this.target instanceof ExpressionASTBranchNode){
-			switch(this.target.operator){
-				case "array access":
-					runtime.processArrayAccess(this.target, "set", this.expr); break;
-				case operators.access:
-					runtime.processRecordAccess(this.target, "set", this.expr); break;
-				default: impossible();
-			}
-		} else {
-			const variable = runtime.getVariable(this.target.text);
-			if(!variable) fail(`Undeclared variable ${this.target.text}`);
-			if(!variable.mutable) fail(`Cannot assign to constant ${this.target.text}`);
-			variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
-		}
+		const variable = runtime.evaluateExpr(this.target, "variable");
+		if(!variable.mutable) fail(`Cannot assign to constant ${this.target.toString()}`);
+		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
