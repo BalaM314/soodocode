@@ -58,8 +58,11 @@ export class ArrayVariableType {
     toString() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
     }
-    getInitValue() {
-        return Array(this.totalLength).fill(null);
+    getInitValue(runtime) {
+        const type = runtime.resolveVariableType(this.type);
+        if (type instanceof ArrayVariableType)
+            crash(`Attempted to initialize array of arrays`);
+        return Array.from({ length: this.totalLength }, () => typeof type == "string" ? null : type.getInitValue(runtime));
     }
 }
 export class RecordVariableType {
@@ -146,7 +149,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                 if (operation == "get") {
                     const type = arg2;
                     if (type == "variable") {
-                        //TODO remove this horribly bodged fake variable data
+                        //i see nothing wrong with this bodged variable data
                         return {
                             type: this.resolveVariableType(varTypeData.type),
                             declaration: variable.declaration,
@@ -168,23 +171,45 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                 }
             }
             processRecordAccess(expr, operation, arg2) {
-                crash(`Not yet implemented`);
-                // if(!(expr.nodes[1] instanceof Token)) impossible();
-                // const property = expr.nodes[1].text;
-                // if(!(expr.nodes[0] instanceof Token)) fail(`Assigning to nested access expressions is currently not implemented`);
-                // const variable = this.getVariable(expr.nodes[0].text);
-                // if(!variable) fail(`Undeclared variable ${expr.nodes[0].text}`);
-                // if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
-                // (variable.value as Record<string, unknown>)[property] = this.evaluateExpr(arg2, variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`))[1];
-                // const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-                // if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
-                // const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
-                // const value = (obj as Record<string, VariableValue>)[property];
-                // if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
-                // if(type)
-                // 	return [type, this.coerceValue(value, outputType, type)];
-                // else
-                // 	return [outputType, value];
+                //this code is terrible
+                //note to self:
+                //do not use typescript overloads like this
+                //the extra code DRYness is not worth it
+                if (!(expr.nodes[1] instanceof Token))
+                    impossible();
+                const property = expr.nodes[1].text;
+                if (operation == "set" || arg2 == "variable") {
+                    const variable = this.evaluateExpr(expr.nodes[0], "variable");
+                    if (!(variable.type instanceof RecordVariableType))
+                        fail(fquote `Cannot access property ${property} on variable of type ${variable.type}`);
+                    const outputType = variable.type.fields[property] ?? fail(fquote `Property ${property} does not exist on type ${variable.type}`);
+                    if (arg2 == "variable") {
+                        //i see nothing wrong with this bodged variable data
+                        return {
+                            type: outputType,
+                            declaration: variable.declaration,
+                            mutable: true,
+                            get value() { return variable.value[property]; },
+                            set value(val) { variable.value[property] = val; }
+                        };
+                    }
+                    const value = arg2;
+                    variable.value[property] = this.evaluateExpr(value, outputType)[1];
+                }
+                else {
+                    const type = arg2;
+                    const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
+                    if (!(objType instanceof RecordVariableType))
+                        fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+                    const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
+                    const value = obj[property];
+                    if (value === null)
+                        fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`);
+                    if (type)
+                        return [type, this.coerceValue(value, outputType, type)];
+                    else
+                        return [outputType, value];
+                }
             }
             evaluateExpr(expr, type) {
                 if (expr instanceof Token)

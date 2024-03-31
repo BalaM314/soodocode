@@ -27,7 +27,7 @@ export type VariableTypeMapping<T> =
 	T extends "CHAR" ? string :
 	T extends "BOOLEAN" ? boolean :
 	T extends "DATE" ? Date :
-	T extends ArrayVariableType ? Array<VariableTypeMapping<T["type"]> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
+	T extends ArrayVariableType ? Array<VariableTypeMapping<Exclude<VariableType, ArrayVariableType>> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
 	T extends RecordVariableType ? Record<string, unknown> :
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
@@ -61,8 +61,10 @@ export class ArrayVariableType {
 	toString(){
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
 	}
-	getInitValue():VariableValue & unknown[] {
-		return Array(this.totalLength).fill(null);
+	getInitValue(runtime:Runtime):VariableTypeMapping<ArrayVariableType> {
+		const type = runtime.resolveVariableType(this.type);
+		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
+		return Array.from({length: this.totalLength}, () => typeof type == "string" ? null : type.getInitValue(runtime) as VariableTypeMapping<Exclude<VariableType, ArrayVariableType>> | null);
 	}
 }
 export class RecordVariableType {
@@ -217,7 +219,7 @@ but found ${expr.nodes.length} indices`,
 		if(operation == "get"){
 			const type = arg2 as VariableType | "variable";
 			if(type == "variable"){
-				//TODO remove this horribly bodged fake variable data
+				//i see nothing wrong with this bodged variable data
 				return {
 					type: this.resolveVariableType(varTypeData.type),
 					declaration: variable.declaration,
@@ -240,25 +242,40 @@ but found ${expr.nodes.length} indices`,
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
 	@errorBoundary
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | void {
-		crash(`Not yet implemented`);
-		// if(!(expr.nodes[1] instanceof Token)) impossible();
-		// const property = expr.nodes[1].text;
+		//this code is terrible
+		//note to self:
+		//do not use typescript overloads like this
+		//the extra code DRYness is not worth it
+		if(!(expr.nodes[1] instanceof Token)) impossible();
+		const property = expr.nodes[1].text;
+		
+		if(operation == "set" || arg2 == "variable"){
+			const variable = this.evaluateExpr(expr.nodes[0], "variable");
+			if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
+			const outputType = variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`);
+			if(arg2 == "variable"){
+				//i see nothing wrong with this bodged variable data
+				return {
+					type: outputType,
+					declaration: variable.declaration,
+					mutable: true,
+					get value(){ return (variable.value as Record<string, VariableValue>)[property]; },
+					set value(val){ (variable.value as Record<string, VariableValue>)[property] = val; }
+				};
+			}
+			const value = arg2 as ExpressionAST;
+			(variable.value as Record<string, unknown>)[property] = this.evaluateExpr(value, outputType)[1];
+		} else {
+			const type = arg2 as VariableType;
+			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
+			if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+			const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
+			const value = (obj as Record<string, VariableValue>)[property];
+			if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`);
+			if(type) return [type, this.coerceValue(value, outputType, type)];
+			else return [outputType, value];
+		}
 
-		// if(!(expr.nodes[0] instanceof Token)) fail(`Assigning to nested access expressions is currently not implemented`);
-		// const variable = this.getVariable(expr.nodes[0].text);
-		// if(!variable) fail(`Undeclared variable ${expr.nodes[0].text}`);
-		// if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
-		// (variable.value as Record<string, unknown>)[property] = this.evaluateExpr(arg2, variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`))[1];
-
-		// const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-		// if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
-		// const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
-		// const value = (obj as Record<string, VariableValue>)[property];
-		// if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
-		// if(type)
-		// 	return [type, this.coerceValue(value, outputType, type)];
-		// else
-		// 	return [outputType, value];
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
 	evaluateExpr(expr:ExpressionAST, type:"variable"):VariableData;

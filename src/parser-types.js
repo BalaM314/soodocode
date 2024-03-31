@@ -10,7 +10,7 @@ export class ExpressionASTBranchNode {
         this.range = getTotalRange(allTokens);
     }
     toString() {
-        return this.allTokens.join(" ");
+        return this.allTokens.map(t => t.text).join(" ");
     }
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
