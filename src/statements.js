@@ -44,7 +44,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 };
 import { Runtime } from "./runtime.js";
 import { Token } from "./lexer-types.js";
-import { ArrayVariableType, ExpressionASTBranchNode } from "./parser-types.js";
+import { ExpressionASTBranchNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
@@ -80,6 +80,9 @@ export class Statement {
     /** Warning: block will not include the usual end statement. */
     static supportsSplit(block, statement) {
         return fquote `current block of type ${block.type} cannot be split by ${statement.toString()}`;
+    }
+    getTypes() {
+        return []; //TODO call this function by prototype shenanigans-ing in the decorator
     }
     run(runtime) {
         crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -163,12 +166,13 @@ let DeclarationStatement = (() => {
             this.varType = processTypeData(tokens.at(-1));
         }
         run(runtime) {
+            const varType = runtime.resolveVariableType(this.varType);
             for (const variable of this.variables) {
                 if (runtime.getVariable(variable))
                     fail(`Variable ${variable} was already declared`);
                 runtime.getCurrentScope().variables[variable] = {
-                    type: this.varType,
-                    value: this.varType instanceof ArrayVariableType ? Array(this.varType.totalLength).fill(null) : null,
+                    type: varType,
+                    value: typeof varType == "string" ? null : varType.getInitValue(runtime),
                     declaration: this,
                     mutable: true,
                 };
@@ -381,7 +385,7 @@ let ReturnStatement = (() => {
                 fail(`Procedures cannot return a value.`);
             return {
                 type: "function_return",
-                value: runtime.evaluateExpr(this.expr, statement.returnType)[1]
+                value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(statement.returnType))[1]
             };
         }
     };

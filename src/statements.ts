@@ -6,7 +6,7 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import { FunctionData, Runtime, VariableType, VariableValue } from "./runtime.js";
+import { FunctionData, Runtime, UnresolvedVariableType, VariableValue } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
 	ArrayVariableType, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
@@ -38,9 +38,9 @@ export const statements = {
 };
 
 export type PassMode = "value" | "reference";
-export type FunctionArguments = Map<string, {type:VariableType, passMode:PassMode}>
-export type FunctionArgumentData = [name:string, {type:VariableType, passMode:PassMode}];
-export type FunctionArgumentDataPartial = [nameToken:Token, {type:VariableType | null, passMode:PassMode | null}];
+export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:PassMode}>
+export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:PassMode}];
+export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:PassMode | null}];
 
 export type StatementExecutionResult = {
 	type: "function_return";
@@ -79,6 +79,9 @@ export class Statement implements TextRanged {
 	/** Warning: block will not include the usual end statement. */
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
 		return fquote`current block of type ${block.type} cannot be split by ${statement.toString()}`;
+	}
+	getTypes():UnresolvedVariableType[] {
+		return []; //TODO call this function by prototype shenanigans-ing in the decorator
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -140,7 +143,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 @statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclarationStatement extends Statement {
 	variables:string[] = [];
-	varType:VariableType;
+	varType:UnresolvedVariableType;
 	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
 		super(tokens);
 
@@ -162,11 +165,12 @@ export class DeclarationStatement extends Statement {
 		this.varType = processTypeData(tokens.at(-1)!);
 	}
 	run(runtime:Runtime){
+		const varType = runtime.resolveVariableType(this.varType);
 		for(const variable of this.variables){
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
-				type: this.varType, //TODO user defined types
-				value: this.varType instanceof ArrayVariableType ? Array(this.varType.totalLength).fill(null) : null,
+				type: varType, //TODO user defined types
+				value: typeof varType == "string" ? null : varType.getInitValue(runtime),
 				declaration: this,
 				mutable: true,
 			};
@@ -287,7 +291,7 @@ export class ReturnStatement extends Statement {
 		if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`);
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateExpr(this.expr, statement.returnType)[1]
+			value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(statement.returnType))[1]
 		};
 	}
 }
@@ -485,7 +489,7 @@ export class DoWhileEndStatement extends Statement {
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
-	returnType:VariableType;
+	returnType:UnresolvedVariableType;
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);

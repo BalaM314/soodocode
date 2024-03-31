@@ -52,6 +52,11 @@ export class RecordVariableType {
     toString() {
         return fquote `record type ${this.name}`;
     }
+    getInitValue(runtime) {
+        return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, runtime.resolveVariableType(v)]).map(([k, v]) => [k,
+            typeof v == "string" ? null : v.getInitValue(runtime)
+        ]));
+    }
 }
 ;
 export class PointerVariableType {
@@ -62,6 +67,9 @@ export class PointerVariableType {
     toString() {
         return fquote `pointer type ${this.name} (^${this.target})`;
     }
+    getInitValue(runtime) {
+        return null;
+    }
 }
 export class EnumeratedVariableType {
     constructor(name, values) {
@@ -70,6 +78,9 @@ export class EnumeratedVariableType {
     }
     toString() {
         return fquote `enumerated type ${this.name}`;
+    }
+    getInitValue(runtime) {
+        return null;
     }
 }
 let Runtime = (() => {
@@ -120,12 +131,12 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                     if (output == null)
                         fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
                     if (type)
-                        return [type, this.coerceValue(output, variable.type.type, type)];
+                        return [type, this.coerceValue(output, this.resolveVariableType(varTypeData.type), type)];
                     else
-                        return [variable.type.type, output];
+                        return [this.resolveVariableType(varTypeData.type), output];
                 }
                 else {
-                    variable.value[index] = this.evaluateExpr(arg2, varTypeData.type)[1];
+                    variable.value[index] = this.evaluateExpr(arg2, this.resolveVariableType(varTypeData.type))[1];
                 }
             }
             evaluateExpr(expr, type) {
@@ -151,9 +162,9 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                             const statement = fn.controlStatements[0];
                             const output = this.callFunction(fn, expr.nodes, true);
                             if (type)
-                                return [type, this.coerceValue(output, statement.returnType, type)];
+                                return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
                             else
-                                return [statement.returnType, output];
+                                return [this.resolveVariableType(statement.returnType), output];
                         }
                 }
                 //arithmetic
@@ -307,7 +318,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         else
                             fail(`Cannot convert value ${token.text} to ${type}`);
                     case "name":
-                        const enumType = this.getEnum(token.text);
+                        const enumType = this.getEnumFromValue(token.text);
                         if (enumType) {
                             if (!type || type === enumType)
                                 return [enumType, token.text];
@@ -342,6 +353,14 @@ help: try using DIV instead of / to produce an integer as the result`);
                         throw err;
                 }
             }
+            resolveVariableType(type) {
+                if (typeof type == "string")
+                    return type;
+                else if (type instanceof ArrayVariableType)
+                    return type;
+                else
+                    return this.getType(type[1]) ?? fail(fquote `Type ${type[1]} does not exist`);
+            }
             /** Returned variable may not be initialized */
             getVariable(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
@@ -350,7 +369,14 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 return null;
             }
-            getEnum(name) {
+            getType(name) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    if (this.scopes[i].types[name])
+                        return this.scopes[i].types[name];
+                }
+                return null;
+            }
+            getEnumFromValue(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     const data = Object.values(this.scopes[i].types)
                         .find((data) => data instanceof EnumeratedVariableType && data.values.includes(name));
@@ -410,11 +436,12 @@ help: try using DIV instead of / to produce an integer as the result`);
                 };
                 let i = 0;
                 for (const [name, { type, passMode }] of func.args) {
+                    const rType = this.resolveVariableType(type);
                     scope.variables[name] = {
                         declaration: func,
                         mutable: passMode == "reference",
-                        type,
-                        value: this.evaluateExpr(args[i], type)[1]
+                        type: rType,
+                        value: this.evaluateExpr(args[i], rType)[1]
                     };
                     i++;
                 }
@@ -436,7 +463,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 const processedArgs = [];
                 let i = 0;
                 for (const { type } of fn.args.values()) {
-                    processedArgs.push(this.evaluateExpr(args[i], type)[1]);
+                    processedArgs.push(this.evaluateExpr(args[i], this.resolveVariableType(type))[1]);
                     i++;
                 }
                 //TODO maybe coerce the value?

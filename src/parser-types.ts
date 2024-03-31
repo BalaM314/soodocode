@@ -1,6 +1,6 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
-import { EnumeratedVariableType, PointerVariableType, VariableType } from "./runtime.js";
+import { EnumeratedVariableType, PointerVariableType, UnresolvedVariableType, VariableValue } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
 
@@ -111,7 +111,7 @@ export class ArrayVariableType {
 	arraySizes:number[];
 	constructor(
 		public lengthInformation: [low:number, high:number][],
-		public type: Exclude<VariableType, ArrayVariableType>,
+		public type: Exclude<UnresolvedVariableType, ArrayVariableType>,
 	){
 		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
 		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
@@ -120,5 +120,8 @@ export class ArrayVariableType {
 	}
 	toString(){
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+	}
+	getInitValue():VariableValue & unknown[] {
+		return Array(this.totalLength).fill(null);
 	}
 }

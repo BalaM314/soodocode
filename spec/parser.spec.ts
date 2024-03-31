@@ -10,14 +10,14 @@ import "jasmine";
 import { Token, TokenizedProgram, token } from "../src/lexer-types.js";
 import { ArrayVariableType, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
-import { VariableType } from "../src/runtime.js";
+import { UnresolvedVariableType } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
 	applyAnyRange,
-	process_ExpressionAST, process_ExpressionASTArrayTypeNode, process_ExpressionASTExt, process_ProgramAST, process_Statement,
+	process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement,
 } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -1528,7 +1528,7 @@ const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST |
 	]
 );
 
-const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {type:VariableType; passMode:jasmine.ExpectedRecursive<PassMode>}> | "error";}[] = Object.entries<[input:_Token[], output:Record<string, [type:VariableType, passMode?:PassMode]> | "error"]>({
+const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}> | "error";}[] = Object.entries<[input:_Token[], output:Record<string, [type:UnresolvedVariableType, passMode?:PassMode]> | "error"]>({
 	blank: [[
 
 	],{

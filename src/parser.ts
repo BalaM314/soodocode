@@ -10,11 +10,11 @@ which is the preferred representation of the program.
 
 import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
-	ArrayVariableType, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
+	ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTLeafNode,
 	ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode,
 	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
-import type { VariableType } from "./runtime.js";
+import type { UnresolvedVariableType } from "./runtime.js";
 import {
 	CaseBranchStatement,
 	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
@@ -33,12 +33,12 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 	if(tokens.length == 0) return new Map();
 
 	let passMode:PassMode = "value";
-	let type:VariableType | null = null;
+	let type:UnresolvedVariableType | null = null;
 	//Split the array on commas (no paren handling necessary)
 	const argumentz = splitTokens(tokens, "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:PassMode | null;
-		let type:VariableType | null;
+		let type:UnresolvedVariableType | null;
 
 		//Increase the offset by 1 to ignore the pass mode specifier if present
 		let offset = 0;
@@ -65,7 +65,7 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 			section[offset + 0], //pass the token through so we can use it to generate errors
 			{ passMode, type }
 		];
-	}).map<[name:Token, {type:VariableType | null, passMode:PassMode}]>(([name, data]) => [name, {
+	}).map<[name:Token, {type:UnresolvedVariableType | null, passMode:PassMode}]>(([name, data]) => [name, {
 		passMode: data.passMode ? passMode = data.passMode : passMode,
 		type: data.type
 	}])
@@ -81,9 +81,13 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 	return argumentsMap;
 });
 
-export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):VariableType => {
-	if(typeNode instanceof Token) return isPrimitiveType(typeNode.text) ? typeNode.text : fail(fquote`Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
-	else return typeNode.toData();
+export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):UnresolvedVariableType => {
+	if(typeNode instanceof Token){
+		if(isPrimitiveType(typeNode.text))
+			return typeNode.text;
+		else
+			return ["unresolved", typeNode.text];
+	} else return typeNode.toData();
 });
 
 export const parseType = errorBoundary((tokens:Token[]):ExpressionASTLeafNode | ExpressionASTArrayTypeNode => {

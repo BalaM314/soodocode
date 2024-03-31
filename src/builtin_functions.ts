@@ -6,13 +6,13 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import type { BuiltinFunctionData, VariableType, VariableValue } from "./runtime.js";
+import type { BuiltinFunctionData, PrimitiveVariableType, VariableValue } from "./runtime.js";
 import { fail } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
-	args: [name:string, type:VariableType][];
-	returnType: VariableType;
+	args: [name:string, type:PrimitiveVariableType][];
+	returnType: PrimitiveVariableType;
 	impl(...args:VariableValue[]):VariableValue;
 };
 export const builtinFunctions = (

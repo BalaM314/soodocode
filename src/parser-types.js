@@ -73,4 +73,7 @@ export class ArrayVariableType {
     toString() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
     }
+    getInitValue() {
+        return Array(this.totalLength).fill(null);
+    }
 }

@@ -67,8 +67,12 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
     return argumentsMap;
 });
 export const processTypeData = errorBoundary((typeNode) => {
-    if (typeNode instanceof Token)
-        return isPrimitiveType(typeNode.text) ? typeNode.text : fail(fquote `Invalid variable type ${typeNode.text}`, typeNode); //TODO remove this error and have it fail at runtime due to user defined types, also the one 4 lines below
+    if (typeNode instanceof Token) {
+        if (isPrimitiveType(typeNode.text))
+            return typeNode.text;
+        else
+            return ["unresolved", typeNode.text];
+    }
     else
         return typeNode.toData();
 });
