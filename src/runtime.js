@@ -145,6 +145,16 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                     crash(`Array index bounds check failed`);
                 if (operation == "get") {
                     const type = arg2;
+                    if (type == "variable") {
+                        //TODO remove this horribly bodged fake variable data
+                        return {
+                            type: this.resolveVariableType(varTypeData.type),
+                            declaration: variable.declaration,
+                            mutable: true,
+                            get value() { return variable.value[index]; },
+                            set value(val) { variable.value[index] = val; }
+                        };
+                    }
                     const output = variable.value[index];
                     if (output == null)
                         fail(`Cannot use the value of uninitialized variable ${expr.operatorToken.text}[${indexes.map(([name, val]) => val).join(", ")}]`, expr.operatorToken);
@@ -185,6 +195,9 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                     case "array access":
                         return this.processArrayAccess(expr, "get", type);
                     case "function call":
+                        if (type == "variable")
+                            fail(fquote `Cannot evaluate the result of a function call as a variable`);
+                        ;
                         const fn = this.getFunction(expr.operatorToken.text);
                         if ("name" in fn) {
                             const output = this.callBuiltinFunction(fn, expr.nodes);
@@ -210,10 +223,7 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                         case operators.access:
                             return this.processRecordAccess(expr, "get", type);
                         case operators.pointer_reference:
-                            //TODO improve implementation, allow evaluateExpression to pass back a reference to the variable data
-                            if (!(expr.nodes[0] instanceof Token))
-                                fail(`Referencing expressions is not yet implemented, please use a simple variable`, expr.nodes[0]);
-                            const variable = this.getVariable(expr.nodes[0].text) ?? fail(`Undeclared variable ${expr.nodes[0].text}`, expr.nodes[0]);
+                            const variable = this.evaluateExpr(expr.nodes[0], "variable");
                             //Guess the type
                             const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
                             return [pointerType, variable];
@@ -334,6 +344,33 @@ help: try using DIV instead of / to produce an integer as the result`);
                 crash(`This should not be possible`);
             }
             evaluateToken(token, type) {
+                if (token.type == "name") {
+                    const enumType = this.getEnumFromValue(token.text);
+                    if (enumType) {
+                        if (!type || type === enumType)
+                            return [enumType, token.text];
+                        else
+                            fail(fquote `Cannot convert value of type ${enumType} to ${type}`);
+                    }
+                    else {
+                        const variable = this.getVariable(token.text);
+                        if (!variable)
+                            fail(`Undeclared variable ${token.text}`);
+                        if (type == "variable") {
+                            if (!variable.mutable)
+                                fail(fquote `Cannot evaluate token ${token.text} as a variable because it is a constant`);
+                            return variable;
+                        }
+                        if (variable.value == null)
+                            fail(`Cannot use the value of uninitialized variable ${token.text}`);
+                        if (type !== undefined)
+                            return [type, this.coerceValue(variable.value, variable.type, type)];
+                        else
+                            return [variable.type, variable.value];
+                    }
+                }
+                if (type == "variable")
+                    fail(fquote `Cannot evaluate token ${token.text} as a variable`);
                 switch (token.type) {
                     case "boolean.false":
                         if (!type || type == "BOOLEAN")
@@ -379,25 +416,6 @@ help: try using DIV instead of / to produce an integer as the result`);
                             return ["CHAR", token.text.slice(1, -1)]; //remove the quotes
                         else
                             fail(`Cannot convert value ${token.text} to ${type}`);
-                    case "name":
-                        const enumType = this.getEnumFromValue(token.text);
-                        if (enumType) {
-                            if (!type || type === enumType)
-                                return [enumType, token.text];
-                            else
-                                fail(fquote `Cannot convert value of type ${enumType} to ${type}`);
-                        }
-                        else {
-                            const variable = this.getVariable(token.text);
-                            if (!variable)
-                                fail(`Undeclared variable ${token.text}`);
-                            if (variable.value == null)
-                                fail(`Cannot use the value of uninitialized variable ${token.text}`);
-                            if (type)
-                                return [type, this.coerceValue(variable.value, variable.type, type)];
-                            else
-                                return [variable.type, variable.value];
-                        }
                     default: fail(`Cannot evaluate token of type ${token.type}`);
                 }
             }
