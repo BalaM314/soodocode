@@ -194,7 +194,8 @@ export class ConstantStatement extends Statement {
 		const [type, value] = Runtime.evaluateToken(this.expr);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
-			value,
+			get value(){ return value; },
+			set value(value){ crash(`Attempted assignment to constant`); },
 			declaration: this,
 			mutable: false,
 		};
@@ -474,7 +475,8 @@ export class ForStatement extends Statement {
 						declaration: this,
 						mutable: false,
 						type: "INTEGER",
-						value: i
+						get value(){ return i; },
+						set value(value){ crash(`Attempted assignment to constant`) },
 					}
 				},
 				types: {}

@@ -238,11 +238,11 @@ but found ${expr.indices.length} indices`,
 		}
 	}
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type:"variable"):VariableData;
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
+	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type:"variable"):VariableData | ConstantData;
+	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData | ConstantData;
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
 	@errorBoundary
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | void {
+	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | ConstantData | void {
 		//this code is terrible
 		//note to self:
 		//do not use typescript overloads like this
@@ -259,10 +259,12 @@ but found ${expr.indices.length} indices`,
 				return {
 					type: outputType,
 					declaration: variable.declaration,
-					mutable: true,
+					mutable: true, //Even if the record is immutable, the property is mutable
 					get value(){ return (variable.value as Record<string, VariableValue>)[property]; },
-					set value(val){ (variable.value as Record<string, VariableValue>)[property] = val; }
-				};
+					set value(val){
+						(variable.value as Record<string, VariableValue>)[property] = val;
+					}
+				} as (VariableData | ConstantData);
 			}
 			const value = arg2 as ExpressionAST;
 			(variable.value as Record<string, unknown>)[property] = this.evaluateExpr(value, outputType)[1];
@@ -279,9 +281,9 @@ but found ${expr.indices.length} indices`,
 
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
-	evaluateExpr(expr:ExpressionAST, type:"variable"):VariableData;
+	evaluateExpr(expr:ExpressionAST, type:"variable"):VariableData | ConstantData;
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):[type:T & {}, value:VariableTypeMapping<T>];
-	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData {
+	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData | ConstantData {
 
 		if(expr instanceof Token)
 			return this.evaluateToken(expr, type as never);
@@ -447,9 +449,9 @@ help: try using DIV instead of / to produce an integer as the result`
 		crash(`This should not be possible`);
 	}
 	evaluateToken(token:Token):[type:VariableType, value:VariableValue];
-	evaluateToken(token:Token, type:"variable"):VariableData;
+	evaluateToken(token:Token, type:"variable"):VariableData | ConstantData;
 	evaluateToken<T extends VariableType | undefined>(token:Token, type:T):[type:T & {}, value:VariableTypeMapping<T>];
-	evaluateToken(token:Token, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData {
+	evaluateToken(token:Token, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData | ConstantData {
 		if(token.type == "name"){
 			const enumType = this.getEnumFromValue(token.text);
 			if(enumType){
@@ -458,10 +460,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			} else {
 				const variable = this.getVariable(token.text);
 				if(!variable) fail(`Undeclared variable ${token.text}`);
-				if(type == "variable"){
-					if(!variable.mutable) fail(fquote`Cannot evaluate token ${token.text} as a variable because it is a constant`);
-					return variable;
-				}
+				if(type == "variable") return variable;
 				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`);
 				if(type !== undefined) return [type, this.coerceValue(variable.value, variable.type, type)];
 				else return [variable.type, variable.value];
@@ -601,11 +600,13 @@ help: try using DIV instead of / to produce an integer as the result`
 		let i = 0;
 		for(const [name, {type, passMode}] of func.args){
 			const rType = this.resolveVariableType(type);
+			const value = this.evaluateExpr(args[i], rType)[1];
 			scope.variables[name] = {
 				declaration: func,
 				mutable: passMode == "reference",
 				type: rType,
-				value: this.evaluateExpr(args[i], rType)[1]
+				get value(){ return value },
+				set value(value){ crash(`Attempted assignment to constant`); }
 			}
 			i ++;
 		}

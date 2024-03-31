@@ -75,7 +75,7 @@ const tokenTests = Object.entries({
         "INTEGER",
         ["INTEGER", 5],
         r => r.getCurrentScope().variables["x"] = {
-            mutable: false,
+            mutable: true,
             declaration: null,
             type: "INTEGER",
             value: 5

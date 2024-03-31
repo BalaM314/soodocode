@@ -77,7 +77,7 @@ const tokenTests = Object.entries<[token:_Token, type:VariableType | null, outpu
 		"INTEGER",
 		["INTEGER", 5],
 		r => r.getCurrentScope().variables["x"] = {
-			mutable: false,
+			mutable: true,
 			declaration: null!,
 			type: "INTEGER",
 			value: 5

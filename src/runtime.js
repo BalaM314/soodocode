@@ -189,7 +189,9 @@ but found ${expr.indices.length} indices`, expr.indices);
                             declaration: variable.declaration,
                             mutable: true,
                             get value() { return variable.value[property]; },
-                            set value(val) { variable.value[property] = val; }
+                            set value(val) {
+                                variable.value[property] = val;
+                            }
                         };
                     }
                     const value = arg2;
@@ -394,11 +396,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                         const variable = this.getVariable(token.text);
                         if (!variable)
                             fail(`Undeclared variable ${token.text}`);
-                        if (type == "variable") {
-                            if (!variable.mutable)
-                                fail(fquote `Cannot evaluate token ${token.text} as a variable because it is a constant`);
+                        if (type == "variable")
                             return variable;
-                        }
                         if (variable.value == null)
                             fail(`Cannot use the value of uninitialized variable ${token.text}`);
                         if (type !== undefined)
@@ -568,11 +567,13 @@ help: try using DIV instead of / to produce an integer as the result`);
                 let i = 0;
                 for (const [name, { type, passMode }] of func.args) {
                     const rType = this.resolveVariableType(type);
+                    const value = this.evaluateExpr(args[i], rType)[1];
                     scope.variables[name] = {
                         declaration: func,
                         mutable: passMode == "reference",
                         type: rType,
-                        value: this.evaluateExpr(args[i], rType)[1]
+                        get value() { return value; },
+                        set value(value) { crash(`Attempted assignment to constant`); }
                     };
                     i++;
                 }
