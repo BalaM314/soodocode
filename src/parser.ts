@@ -274,7 +274,7 @@ export const checkStatement = errorBoundary((statement:typeof Statement, input:T
 	return output;
 });
 
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract") : never;
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access") : never;
 export type Operator = {
 	token: TokenType;
 	name: string;
@@ -384,7 +384,7 @@ export const operators = Object.fromEntries(
 	.map(o => [
 		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name
 	, o] as const)
-) as Omit<Record<OperatorType | "access", Operator>, "assignment" | "pointer">;
+) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
 function cannotEndExpression(token:Token){
 	//TODO is this the best way?

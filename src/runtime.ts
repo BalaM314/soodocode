@@ -173,7 +173,6 @@ export class Runtime {
 		types: {}
 	}];
 	functions: Record<string, FunctionData> = {};
-	types: Record<string, VariableData> = {};
 	files: Record<string, FileData> = {};
 	constructor(
 		public _input: (message:string) => string,
@@ -260,10 +259,12 @@ but found ${expr.nodes.length} indices`,
 					if(!(expr.nodes[1] instanceof Token)) impossible();
 					const property = expr.nodes[1].text;
 					const outputType = objType.fields[property] ? this.resolveVariableType(objType.fields[property]) : fail(`Property ${property} does not exist on value of type ${objType}`);
+					const value = (obj as Record<string, VariableValue>)[property];
+					if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
 					if(type)
-						return [type, this.coerceValue((obj as Record<string, VariableValue>)[property], outputType, type)];
+						return [type, this.coerceValue(value, outputType, type)];
 					else
-						return [outputType, (obj as Record<string, VariableValue>)[property]];
+						return [outputType, value];
 				default: impossible();
 			}
 		}

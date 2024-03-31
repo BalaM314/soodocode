@@ -115,7 +115,6 @@ let Runtime = (() => {
                         types: {}
                     }];
                 this.functions = {};
-                this.types = {};
                 this.files = {};
             }
             processArrayAccess(expr, operation, arg2) {
@@ -196,10 +195,13 @@ but found ${expr.nodes.length} indices`, expr.nodes);
                                 impossible();
                             const property = expr.nodes[1].text;
                             const outputType = objType.fields[property] ? this.resolveVariableType(objType.fields[property]) : fail(`Property ${property} does not exist on value of type ${objType}`);
+                            const value = obj[property];
+                            if (value === null)
+                                fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}`);
                             if (type)
-                                return [type, this.coerceValue(obj[property], outputType, type)];
+                                return [type, this.coerceValue(value, outputType, type)];
                             else
-                                return [outputType, obj[property]];
+                                return [outputType, value];
                         default: impossible();
                     }
                 }

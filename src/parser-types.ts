@@ -22,6 +22,9 @@ export class ExpressionASTBranchNode implements TextRanged {
 	){
 		this.range = getTotalRange(allTokens);
 	}
+	toString(){
+		return this.allTokens.join(" ");
+	}
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
 export class ExpressionASTArrayTypeNode implements TextRanged {
