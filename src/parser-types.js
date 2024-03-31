@@ -22,7 +22,7 @@ export class ExpressionASTArrayTypeNode {
         this.range = getTotalRange(allTokens);
     }
     toData() {
-        return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isPrimitiveType(this.elementType.text) ? this.elementType.text : fail(fquote `Invalid variable type ${this.elementType.text}`));
+        return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isPrimitiveType(this.elementType.text) ? this.elementType.text : ["unresolved", this.elementType.text]);
     }
 }
 export class ExpressionASTPointerTypeNode {

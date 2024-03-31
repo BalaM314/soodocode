@@ -39,7 +39,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged {
 	toData():ArrayVariableType {
 		return new ArrayVariableType(
 			this.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
-			isPrimitiveType(this.elementType.text) ? this.elementType.text : fail(fquote`Invalid variable type ${this.elementType.text}`)
+			isPrimitiveType(this.elementType.text) ? this.elementType.text : ["unresolved", this.elementType.text]
 		);
 	}
 }
