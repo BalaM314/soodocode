@@ -277,7 +277,7 @@ but found ${expr.nodes.length} indices`,
 			const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
 			let value:number;
 			//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
-			if(expr.operator.unary){
+			if(expr.operator.type == "unary_prefix"){
 				const [operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType);
 				switch(expr.operator){
 					case operators.negate:
@@ -325,7 +325,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(type && !(type == "BOOLEAN"))
 				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a boolean result`);
 
-			if(expr.operator.unary){
+			if(expr.operator.type == "unary_prefix"){
 				switch(expr.operator){
 					case operators.not:
 						return ["BOOLEAN", !this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1]];

@@ -275,10 +275,10 @@ export const checkStatement = errorBoundary((statement, input) => {
 });
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
-    ...o,
-    unary: o.unary ?? false,
+    token: o.token,
+    category: o.category,
+    type: o.type ?? "binary",
     name: o.name ?? o.token,
-    overloadedUnary: o.overloadedUnary ?? false,
 }))))([
     [
         {
@@ -320,7 +320,7 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
             name: "operator.subtract",
             token: "operator.minus",
             category: "arithmetic",
-            overloadedUnary: true,
+            type: "binary_o_unary_prefix"
         }, {
             token: "operator.string_concatenate",
             category: "string"
@@ -345,13 +345,13 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
         {
             token: "operator.not",
             category: "logical",
-            unary: true,
+            type: "unary_prefix"
         },
         {
             token: "operator.minus",
             name: "operator.negate",
             category: "arithmetic",
-            unary: true,
+            type: "unary_prefix"
         }
     ],
     [
@@ -375,7 +375,7 @@ function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
 function canBeUnaryOperator(token) {
-    return Object.values(operators).find(o => o.unary && o.token == token.type);
+    return Object.values(operators).find(o => o.type == "unary_prefix" && o.token == token.type);
 }
 export const parseExpressionLeafNode = errorBoundary((input) => {
     //Number, string, char, boolean, and variables can be parsed as-is
@@ -419,7 +419,7 @@ export const parseExpression = errorBoundary((input) => {
                 operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for
             ) {
                 //this is the lowest priority operator in the expression and should become the root node
-                if (operator.unary) {
+                if (operator.type == "unary_prefix") {
                     //Make sure there is only something on right side of the operator
                     const right = input.slice(i + 1);
                     if (i != 0) { //if there are tokens to the left of a unary operator
@@ -455,14 +455,14 @@ export const parseExpression = errorBoundary((input) => {
                     const left = input.slice(0, i);
                     const right = input.slice(i + 1);
                     if (left.length == 0) {
-                        if (operator.overloadedUnary)
+                        if (operator.type == "binary_o_unary_prefix")
                             continue; //this is the unary operator, try again
                         else
                             fail(`No expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
                     }
                     if (right.length == 0)
                         fail(`No expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
-                    if (operator.overloadedUnary) {
+                    if (operator.type == "binary_o_unary_prefix") {
                         if (cannotEndExpression(input[i - 1]))
                             continue; //Binary operator can't fit here, this must be the unary operator
                     }
