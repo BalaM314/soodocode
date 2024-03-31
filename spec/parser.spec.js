@@ -794,6 +794,24 @@ const sampleExpressions = Object.entries({
         ],
         "error"
     ],
+    access_invalid_property2: [
+        [
+            ["name", "amogus"],
+            ["punctuation.period", "."],
+            ["number.decimal", "5"],
+        ],
+        "error"
+    ],
+    access_invalid_property3: [
+        [
+            ["name", "amogus"],
+            ["punctuation.period", "."],
+            ["number.decimal", "5"],
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+        ],
+        "error"
+    ],
     pointerRef1: [
         [
             ["operator.pointer", "^"],

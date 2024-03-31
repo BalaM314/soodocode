@@ -497,7 +497,8 @@ export const parseExpression = errorBoundary((input) => {
                     }
                     if (operator == operators.access) {
                         if (!(right.length == 1 && right[0].type == "name"))
-                            fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+                            continue;
+                        //fail(`Access operator can only have a single token to the right, which must be a property name`, right);
                     }
                     return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left), parseExpression(right)], input);
                 }
@@ -544,8 +545,16 @@ export const parseExpression = errorBoundary((input) => {
             : splitTokensOnComma(input.slice(2, -1)).map(parseExpression), input);
     }
     //Special case: array access
-    if (input[0]?.type == "name" && input[1]?.type == "bracket.open" && input.at(-1)?.type == "bracket.close" && input.length > 3) {
-        return new ExpressionASTArrayAccessNode(input[0], splitTokensOnComma(input.slice(2, -1)).map(parseExpression), input);
+    let bracketIndex = input.findIndex(t => t.type == "bracket.open");
+    if (bracketIndex != -1 && input.at(-1)?.type == "bracket.close") {
+        let target = input.slice(0, bracketIndex);
+        let indicesTokens = input.slice(bracketIndex + 1, -1);
+        if (target.length == 0)
+            fail(`Missing target in array index expression`);
+        if (indicesTokens.length == 0)
+            fail(`Missing indices in array index expression`);
+        const parsedTarget = parseExpression(target);
+        return new ExpressionASTArrayAccessNode(parsedTarget, splitTokensOnComma(indicesTokens).map(parseExpression), input);
     }
     //No operators found at all, something went wrong
     fail(`No operators found`);
