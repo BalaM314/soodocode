@@ -21,6 +21,7 @@ export const operatorTokens = {
     "greater_than_equal": token("operator.greater_than_equal", ">="),
     "string_concatenate": token("operator.string_concatenate", "&"),
     "negate": token("operator.minus", "-"),
+    "access": token("punctuation.period", "."),
 };
 export function is_ExpressionASTArrayTypeNode(input) {
     return Array.isArray(input[1]);

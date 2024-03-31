@@ -1,6 +1,6 @@
 import "jasmine";
 import { token } from "../src/lexer-types.js";
-import { EnumeratedVariableType, Runtime } from "../src/runtime.js";
+import { EnumeratedVariableType, RecordVariableType, Runtime } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, OutputStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
@@ -118,8 +118,52 @@ const expressionTests = Object.entries({
             ]],
         "INTEGER",
         ["INTEGER", 11]
-    ]
-}).map(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2]]);
+    ],
+    propertyAccess_simple: [
+        ["tree", "access", [
+                ["name", "amogus"],
+                ["name", "sus"],
+            ]],
+        "INTEGER",
+        ["INTEGER", 18],
+        r => {
+            const amogusType = new RecordVariableType("amogusType", {
+                sus: "INTEGER"
+            });
+            r.getCurrentScope().types["amogusType"] = amogusType;
+            r.getCurrentScope().variables["amogus"] = {
+                type: amogusType,
+                declaration: null,
+                mutable: true,
+                value: {
+                    sus: 18
+                }
+            };
+        }
+    ],
+    propertyAccess_invalid_nonexistent: [
+        ["tree", "access", [
+                ["name", "amogus"],
+                ["name", "sussy"],
+            ]],
+        "INTEGER",
+        ["error"],
+        r => {
+            const amogusType = new RecordVariableType("amogusType", {
+                sus: "INTEGER"
+            });
+            r.getCurrentScope().types["amogusType"] = amogusType;
+            r.getCurrentScope().variables["amogus"] = {
+                type: amogusType,
+                declaration: null,
+                mutable: true,
+                value: {
+                    sus: 18
+                }
+            };
+        }
+    ],
+}).map(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => { })]);
 const statementTests = Object.entries({
     declare1: [
         [DeclarationStatement, [
@@ -172,9 +216,10 @@ describe("runtime's token evaluator", () => {
     }
 });
 describe("runtime's expression evaluator", () => {
-    for (const [name, expression, type, output] of expressionTests) {
+    for (const [name, expression, type, output, setup] of expressionTests) {
         it(`should produce the expected output for ${name}`, () => {
             const runtime = new Runtime(() => fail(`Cannot input`), () => fail(`Cannot output`));
+            setup(runtime);
             if (output[0] == "error")
                 expect(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
             else
