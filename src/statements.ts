@@ -225,10 +225,16 @@ export class TypeEnumStatement extends Statement {
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
 		super(tokens);
 		this.name = tokens[1];
-		this.values = splitTokensOnComma(tokens.slice(4, -1)).map(group => {
-			if(group.length > 1) fail(`All enum values must be separated by commas`, group);
+		const valuesTokens = tokens.slice(4, -1);
+		this.values = splitTokensOnComma(valuesTokens).map(group => {
+			if(group.length != 1) fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
 			return group[0];
 		});
+		if(new Set(this.values.map(t => t.text)).size !== this.values.length){
+			//duplicate value
+			const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
+			fail(fquote`Duplicate enum value ${duplicateToken.text}`, duplicateToken);
+		}
 	}
 	run(runtime:Runtime){
 		runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(

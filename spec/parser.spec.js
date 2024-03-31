@@ -1155,6 +1155,31 @@ const parseStatementTests = Object.entries({
                 ["name", "INTEGER"],
             ]]
     ],
+    typePointer2: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "sussy"],
+            ["operator.equal_to", "="],
+            ["operator.pointer", "^"],
+            ["name", "RecordThing"],
+        ],
+        [TypePointerStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "sussy"],
+                ["operator.equal_to", "="],
+                ["operator.pointer", "^"],
+                ["name", "RecordThing"],
+            ]]
+    ],
+    typePointer_invalid: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "sussy"],
+            ["operator.equal_to", "="],
+            ["name", "RecordThing"],
+        ],
+        "error"
+    ],
     typeEnum: [
         [
             ["keyword.type", "TYPE"],
@@ -1176,6 +1201,42 @@ const parseStatementTests = Object.entries({
                 ["name", "sugoma"],
                 ["parentheses.close", ")"],
             ]]
+    ],
+    typeEnum_invalid_extra_comma: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["parentheses.open", "("],
+            ["name", "amogus"],
+            ["punctuation.comma", ","],
+            ["parentheses.close", ")"],
+        ],
+        "error"
+    ],
+    typeEnum_invalid_missing_parens: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["name", "amogus"],
+            ["punctuation.comma", ","],
+            ["name", "sugoma"],
+        ],
+        "error"
+    ],
+    typeEnum_invalid_duplicate: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["parentheses.open", "("],
+            ["name", "amogus"],
+            ["punctuation.comma", ","],
+            ["name", "amogus"],
+            ["parentheses.close", ")"],
+        ],
+        "error"
     ],
     typeRecord: [
         [
@@ -1640,7 +1701,29 @@ const parseProgramTests = Object.entries({
                     ]]
             }
         ]
-    ]
+    ],
+    typeRecord_invalid_extraneous: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["newline", "\n"],
+            ["keyword.declare", "DECLARE"],
+            ["name", "prop1"],
+            ["punctuation.colon", ":"],
+            ["name", "INTEGER"],
+            ["newline", "\n"],
+            ["keyword.declare", "DECLARE"],
+            ["name", "prop2"],
+            ["punctuation.colon", ":"],
+            ["name", "udt"],
+            ["newline", "\n"],
+            ["name", "sussybaka"],
+            ["operator.assignment", "<-"],
+            ["number.decimal", "9"],
+            ["keyword.type_end", "ENDTYPE"],
+        ],
+        "error"
+    ],
 }).map(([name, [program, output]]) => [
     name,
     {
