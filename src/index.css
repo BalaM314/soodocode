@@ -184,6 +184,16 @@ h2 {
 	color: #EE0;
 }
 
+a {
+	color: #00C400;
+}
+a:hover {
+	color: #00EC00;
+}
+a:active {
+	color: #0F0;
+}
+
 div.horizontal {
 	display: flex;
 	gap: 10px;
