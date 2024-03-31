@@ -8,14 +8,16 @@ This file contains unit tests for the parser.
 
 import "jasmine";
 import { Token, TokenizedProgram, token } from "../src/lexer-types.js";
-import { ArrayVariableType, ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
-import { UnresolvedVariableType } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement,
+import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
+import {
+	AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
-import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
+import {
+	_ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
 	applyAnyRange,
 	process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement,
 } from "./spec_utils.js";

@@ -6,8 +6,8 @@ This file contains unit tests for the parser.
 */
 import "jasmine";
 import { token } from "../src/lexer-types.js";
-import { ArrayVariableType } from "../src/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
+import { ArrayVariableType } from "../src/runtime.js";
 import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";

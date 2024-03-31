@@ -40,10 +40,28 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ArrayVariableType } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { crash, errorBoundary, fail, fquote } from "./utils.js";
+/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
+export class ArrayVariableType {
+    constructor(lengthInformation, type) {
+        this.lengthInformation = lengthInformation;
+        this.type = type;
+        if (this.lengthInformation.some(b => b[1] < b[0]))
+            fail(`Invalid length information: upper bound cannot be less than lower bound`);
+        if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
+            fail(`Invalid length information: bound was not an integer`);
+        this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
+        this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+    }
+    toString() {
+        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+    }
+    getInitValue() {
+        return Array(this.totalLength).fill(null);
+    }
+}
 export class RecordVariableType {
     constructor(name, fields) {
         this.name = name;

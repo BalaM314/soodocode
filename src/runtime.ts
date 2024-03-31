@@ -9,7 +9,7 @@ This file contains the runtime, which executes the program AST.
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import {
-	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ArrayVariableType,
+	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST,
 	ExpressionASTNode
 } from "./parser-types.js";
 import { operators } from "./parser.js";
@@ -45,6 +45,26 @@ export type PrimitiveVariableTypeName =
 ;
 
 export type PrimitiveVariableType = PrimitiveVariableTypeName;
+/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
+export class ArrayVariableType {
+	totalLength:number;
+	arraySizes:number[];
+	constructor(
+		public lengthInformation: [low:number, high:number][],
+		public type: Exclude<UnresolvedVariableType, ArrayVariableType>,
+	){
+		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
+		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
+		this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
+		this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+	}
+	toString(){
+		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+	}
+	getInitValue():VariableValue & unknown[] {
+		return Array(this.totalLength).fill(null);
+	}
+}
 export class RecordVariableType {
 	constructor(
 		public name: string,

@@ -9,7 +9,7 @@ This file contains the definitions for every statement type supported by Soodoco
 import { FunctionData, Runtime, UnresolvedVariableType, VariableValue } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
-	ArrayVariableType, ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
+	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
 	ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
