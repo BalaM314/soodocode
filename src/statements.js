@@ -589,7 +589,7 @@ let SwitchStatement = (() => {
             [, , this.expression] = tokens;
         }
         static supportsSplit(block, statement) {
-            if (statement.stype != "case")
+            if (!(statement instanceof CaseBranchStatement))
                 return `${statement.stype} statements are not valid in CASE OF blocks`;
             if (block.nodeGroups.at(-1).length == 0 && block.nodeGroups.length != 1)
                 return `Previous case branch was empty.`;
@@ -599,34 +599,18 @@ let SwitchStatement = (() => {
             const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
             if (nodeGroups[0].length > 0)
                 fail(`Statements are not allowed before the first case branch`, nodeGroups[0]); //TODO this is a syntax error and should error at parse
-            for (let i = 1; i < controlStatements.length; i++) {
+            for (const [i, statement] of controlStatements.entries()) {
+                if (i == 0)
+                    continue;
                 //skip the first one as that is the switch statement
-                if (controlStatements[i] instanceof SwitchEndStatement)
+                if (statement instanceof SwitchEndStatement)
                     break; //end of statements
-                else if (controlStatements[i] instanceof CaseBranchStatement) {
-                    const caseToken = controlStatements[i].value;
+                else if (statement instanceof CaseBranchStatement) {
+                    const caseToken = statement.value;
                     //Ensure that OTHERWISE is the last branch
                     if (caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
-                        fail(`OTHERWISE case branch must be the last case branch`, controlStatements[i]);
-                    if ((function branchMatches() {
-                        if (caseToken.type == "keyword.otherwise")
-                            return true;
-                        try {
-                            //Try to evaluate the case token with the same type as the switch target
-                            const [caseType, caseValue] = Runtime.evaluateToken(caseToken, switchType);
-                            return switchValue == caseValue;
-                        }
-                        catch (err) {
-                            if (err instanceof SoodocodeError) {
-                                //type error (TODO make sure it is actually a type error)
-                                //try again leaving the type blank, this will probably evaluate to false and it will try the next branch
-                                const [caseType, caseValue] = Runtime.evaluateToken(caseToken);
-                                return switchType == caseType && switchValue == caseValue;
-                            }
-                            else
-                                throw err;
-                        }
-                    })()) {
+                        fail(`OTHERWISE case branch must be the last case branch`, statement);
+                    if (statement.branchMatches(switchType, switchValue)) {
                         runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
                         break;
                     }
@@ -679,6 +663,25 @@ let CaseBranchStatement = (() => {
             super(tokens);
             [this.value] = tokens;
         }
+        branchMatches(switchType, switchValue) {
+            if (this.value.type == "keyword.otherwise")
+                return true;
+            try {
+                //Try to evaluate the case token with the same type as the switch target
+                const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+                return switchValue == caseValue;
+            }
+            catch (err) {
+                if (err instanceof SoodocodeError) {
+                    //type error (TODO make sure it is actually a type error)
+                    //try again leaving the type blank, this will probably evaluate to false and it will try the next branch
+                    const [caseType, caseValue] = Runtime.evaluateToken(this.value);
+                    return switchType == caseType && switchValue == caseValue;
+                }
+                else
+                    throw err;
+            }
+        }
     };
     __setFunctionName(_classThis, "CaseBranchStatement");
     (() => {
@@ -691,6 +694,37 @@ let CaseBranchStatement = (() => {
     return CaseBranchStatement = _classThis;
 })();
 export { CaseBranchStatement };
+let CaseBranchRangeStatement = (() => {
+    let _classDecorators = [statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal|otherwise", "keyword.to", "literal|otherwise", "punctuation.colon")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = CaseBranchStatement;
+    var CaseBranchRangeStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens.slice(0, 2));
+            this.upperBound = tokens[2];
+        }
+        branchMatches(switchType, switchValue) {
+            if (this.value.type == "keyword.otherwise")
+                return true;
+            //Evaluate the case tokens with the same type as the switch target
+            const [lType, lValue] = Runtime.evaluateToken(this.value, switchType);
+            const [uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
+            return lValue <= switchValue && switchValue <= uValue;
+        }
+    };
+    __setFunctionName(_classThis, "CaseBranchRangeStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        CaseBranchRangeStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return CaseBranchRangeStatement = _classThis;
+})();
+export { CaseBranchRangeStatement };
 let ForStatement = (() => {
     let _classDecorators = [statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")];
     let _classDescriptor;

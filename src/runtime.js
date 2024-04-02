@@ -141,7 +141,9 @@ but found ${expr.indices.length} indices`, expr.indices);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([expr, value], index) => value > varTypeData.lengthInformation[index][1] ||
                     value < varTypeData.lengthInformation[index][0])) != -1)
-                    fail(`Array index out of bounds: value ${indexes[invalidIndexIndex][1]} was not in range (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, indexes[invalidIndexIndex][0]);
+                    fail(`Array index out of bounds: \
+value ${indexes[invalidIndexIndex][1]} was not in range \
+(${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, indexes[invalidIndexIndex][0]);
                 const index = indexes.reduce((acc, [e, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index]), 0);
                 if (index >= variable.value.length)
                     crash(`Array index bounds check failed`);

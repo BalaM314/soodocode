@@ -27,7 +27,7 @@ export type StatementType =
 	| "declaration" | "constant" | "assignment" | "output" | "input" | "return" | "call"
 	| "type" | "type.pointer" | "type.enum" | "type.end"
 	| "if" | "if.end" | "else"
-	| "switch" | "switch.end" | "case"
+	| "switch" | "switch.end" | "case" | "case.range"
 	| "for" | "for.end"
 	| "while" | "while.end"
 	| "dowhile" | "dowhile.end"
@@ -398,37 +398,24 @@ export class SwitchStatement extends Statement {
 		[,, this.expression] = tokens;
 	}
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
-		if(statement.stype != "case") return `${statement.stype} statements are not valid in CASE OF blocks`;
+		if(!(statement instanceof CaseBranchStatement)) return `${statement.stype} statements are not valid in CASE OF blocks`;
 		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty.`;
 		return true;
 	}
 	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
 		const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
 		if(nodeGroups[0].length > 0) fail(`Statements are not allowed before the first case branch`, nodeGroups[0]); //TODO this is a syntax error and should error at parse
-		for(let i = 1; i < controlStatements.length; i ++){
+		for(const [i, statement] of controlStatements.entries()){
+			if(i == 0) continue;
 			//skip the first one as that is the switch statement
-			if(controlStatements[i] instanceof SwitchEndStatement) break; //end of statements
-			else if(controlStatements[i] instanceof CaseBranchStatement){
-				const caseToken = (controlStatements[i] as CaseBranchStatement).value;
+			if(statement instanceof SwitchEndStatement) break; //end of statements
+			else if(statement instanceof CaseBranchStatement){
+				const caseToken = statement.value;
 				//Ensure that OTHERWISE is the last branch
 				if(caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
-					fail(`OTHERWISE case branch must be the last case branch`, controlStatements[i]);
+					fail(`OTHERWISE case branch must be the last case branch`, statement);
 
-				if((function branchMatches(){
-					if(caseToken.type == "keyword.otherwise") return true;
-					try {
-						//Try to evaluate the case token with the same type as the switch target
-						const [caseType, caseValue] = Runtime.evaluateToken(caseToken, switchType);
-						return switchValue == caseValue;
-					} catch(err){
-						if(err instanceof SoodocodeError){
-							//type error (TODO make sure it is actually a type error)
-							//try again leaving the type blank, this will probably evaluate to false and it will try the next branch
-							const [caseType, caseValue] = Runtime.evaluateToken(caseToken);
-							return switchType == caseType && switchValue == caseValue;
-						} else throw err;
-					}
-				})()){
+				if(statement.branchMatches(switchType, switchValue)){
 					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
 					break;
 				}
@@ -447,6 +434,36 @@ export class CaseBranchStatement extends Statement {
 	constructor(tokens:[Token, Token]){
 		super(tokens);
 		[this.value] = tokens;
+	}
+	branchMatches(switchType:VariableType, switchValue:VariableValue){
+		if(this.value.type == "keyword.otherwise") return true;
+		try {
+			//Try to evaluate the case token with the same type as the switch target
+			const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+			return switchValue == caseValue;
+		} catch(err){
+			if(err instanceof SoodocodeError){
+				//type error (TODO make sure it is actually a type error)
+				//try again leaving the type blank, this will probably evaluate to false and it will try the next branch
+				const [caseType, caseValue] = Runtime.evaluateToken(this.value);
+				return switchType == caseType && switchValue == caseValue;
+			} else throw err;
+		}
+	}
+}
+@statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal|otherwise", "keyword.to", "literal|otherwise", "punctuation.colon")
+export class CaseBranchRangeStatement extends CaseBranchStatement {
+	upperBound:Token;
+	constructor(tokens:[Token, Token, Token, Token]){
+		super(tokens.slice(0, 2) as [Token, Token]);
+		this.upperBound = tokens[2];
+	}
+	branchMatches(switchType:VariableType, switchValue:VariableValue){
+		if(this.value.type == "keyword.otherwise") return true;
+		//Evaluate the case tokens with the same type as the switch target
+		const [lType, lValue] = Runtime.evaluateToken(this.value, switchType);
+		const [uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
+		return lValue <= switchValue && switchValue <= uValue;
 	}
 }
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
