@@ -26,7 +26,8 @@
 	"devDependencies": {
 		"@types/jasmine": "^4.3.1",
 		"@types/node": "^18.15.11",
-		"jasmine": "^4.6.0"
+		"jasmine": "^4.6.0",
+		"typescript": "^5.4.3"
 	},
 	"type": "module"
 }
