@@ -21,8 +21,8 @@ import {
 } from "./statements.js";
 import { PartialKey } from "./types.js";
 import {
-	crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma,
-	splitTokensWithSplitter
+	SoodocodeError, crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens,
+	splitTokensOnComma, splitTokensWithSplitter
 } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
@@ -194,7 +194,20 @@ export const parseStatement = errorBoundary((tokens:Token[]):Statement => {
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
-			return new possibleStatement(result.map(x => x instanceof Token ? x : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
+			try {
+				return new possibleStatement(result.map(x =>
+					x instanceof Token
+						? x
+						: (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))
+				));
+			} catch(err){
+				if(err instanceof SoodocodeError) errors.push({
+					message: err.message,
+					priority: 10,
+					range: err.rangeSpecific ?? null
+				});
+				else throw err;
+			}
 		} else errors.push(result);
 	}
 	let maxError:StatementCheckFailResult = errors[0];
@@ -216,7 +229,7 @@ export function isLiteral(type:TokenType){
 
 /** start and end are inclusive */
 type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
-type StatementCheckFailResult = { message: string; priority: number; range: TextRange; };
+type StatementCheckFailResult = { message: string; priority: number; range: TextRange | null; };
 /**
  * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.

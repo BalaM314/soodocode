@@ -9,7 +9,7 @@ which is the preferred representation of the program.
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary((tokens) => {
@@ -183,7 +183,21 @@ export const parseStatement = errorBoundary((tokens) => {
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
-            return new possibleStatement(result.map(x => x instanceof Token ? x : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
+            try {
+                return new possibleStatement(result.map(x => x instanceof Token
+                    ? x
+                    : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
+            }
+            catch (err) {
+                if (err instanceof SoodocodeError)
+                    errors.push({
+                        message: err.message,
+                        priority: 10,
+                        range: err.rangeSpecific ?? null
+                    });
+                else
+                    throw err;
+            }
         }
         else
             errors.push(result);
