@@ -28,7 +28,7 @@ export type StatementType =
 	| "type" | "type.pointer" | "type.enum" | "type.end"
 	| "if" | "if.end" | "else"
 	| "switch" | "switch.end" | "case" | "case.range"
-	| "for" | "for.end"
+	| "for" | "for.step" | "for.end"
 	| "while" | "while.end"
 	| "dowhile" | "dowhile.end"
 	| "function" | "function.end"
@@ -477,13 +477,17 @@ export class ForStatement extends Statement {
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
 	}
+	step(runtime:Runtime):number {
+		return 1;
+	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
 		const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
 		if(upper < lower) return;
 		const end = node.controlStatements[1] as ForEndStatement;
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
-		for(let i = lower; i <= upper; i++){
+		const step = this.step(runtime);
+		for(let i = lower; i <= upper; i += step){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				variables: {
@@ -500,6 +504,17 @@ export class ForStatement extends Statement {
 			});
 			if(result) return result;
 		}
+	}
+}
+@statement("for.step", "FOR x <- 1 TO 20 STEP 2", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+", "keyword.step", "expr+")
+export class ForStepStatement extends ForStatement {
+	stepToken: ExpressionAST;
+	constructor(tokens:[Token, Token, Token, ExpressionAST, Token, ExpressionAST, Token, ExpressionAST]){
+		super(tokens.slice(0, 6) as [Token, Token, Token, ExpressionAST, Token, ExpressionAST]);
+		this.stepToken = tokens[7];
+	}
+	step(runtime:Runtime):number {
+		return runtime.evaluateExpr(this.stepToken, "INTEGER")[1];
 	}
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")

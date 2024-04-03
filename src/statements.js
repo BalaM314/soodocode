@@ -738,6 +738,9 @@ let ForStatement = (() => {
             this.lowerBound = tokens[3];
             this.upperBound = tokens[5];
         }
+        step(runtime) {
+            return 1;
+        }
         runBlock(runtime, node) {
             const lower = runtime.evaluateExpr(this.lowerBound, "INTEGER")[1];
             const upper = runtime.evaluateExpr(this.upperBound, "INTEGER")[1];
@@ -746,7 +749,8 @@ let ForStatement = (() => {
             const end = node.controlStatements[1];
             if (end.name !== this.name)
                 fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
-            for (let i = lower; i <= upper; i++) {
+            const step = this.step(runtime);
+            for (let i = lower; i <= upper; i += step) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     variables: {
@@ -777,6 +781,32 @@ let ForStatement = (() => {
     return ForStatement = _classThis;
 })();
 export { ForStatement };
+let ForStepStatement = (() => {
+    let _classDecorators = [statement("for.step", "FOR x <- 1 TO 20 STEP 2", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+", "keyword.step", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = ForStatement;
+    var ForStepStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens.slice(0, 6));
+            this.stepToken = tokens[7];
+        }
+        step(runtime) {
+            return runtime.evaluateExpr(this.stepToken, "INTEGER")[1];
+        }
+    };
+    __setFunctionName(_classThis, "ForStepStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ForStepStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ForStepStatement = _classThis;
+})();
+export { ForStepStatement };
 let ForEndStatement = (() => {
     let _classDecorators = [statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")];
     let _classDescriptor;
