@@ -10,15 +10,14 @@ which is the preferred representation of the program.
 
 import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
-	ExpressionASTArrayAccessNode,
-	ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode,
-	ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode,
-	ProgramASTBranchNodeType, ProgramASTNode
+	ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
+	ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode,
+	ProgramAST, ProgramASTBranchNode,	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime.js";
 import {
-	CaseBranchStatement,
-	FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements
+	CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments,
+	PassMode, Statement, statements
 } from "./statements.js";
 import { PartialKey } from "./types.js";
 import {
@@ -124,11 +123,17 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTTypeNode =>
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	//TODO remove hardcoded special handling for case branch statement
 	let lines:Token[][] = splitTokens(tokens, "newline").map(ts =>
-		//Horrible bodge
-		ts.length > 3 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2)))//if the first two tokens are valid for a case branch
+		//TODO fix this horrible bodge
+		ts.length >= 3 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2)))//if the first two tokens are valid for a case branch
 			? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
-		: ts.length > 4 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
+		: ts.length >= 4 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
 			? [ts.slice(0, 3), ts.slice(3)]
+		: ts.length >= 5 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 4))) //Repeat the check with the first four tokens due to range case statement
+			? [ts.slice(0, 4), ts.slice(4)]
+		: ts.length >= 6 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 5))) //Repeat the check with the first five tokens due to negative numbers
+			? [ts.slice(0, 5), ts.slice(5)]
+		: ts.length >= 7 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 6))) //Repeat the check with the first six tokens due to negative numbers
+			? [ts.slice(0, 6), ts.slice(6)]
 			: [ts] //nothing, but put it in an array anyway so it gets flattened again
 	).flat(1).filter(ts => ts.length > 0); //remove blank lines
 	const statements = lines.map(parseStatement);

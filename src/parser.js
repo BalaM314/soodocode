@@ -8,7 +8,7 @@ which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
-import { CaseBranchStatement, statements } from "./statements.js";
+import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
 import { crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
@@ -105,12 +105,18 @@ export const parseType = errorBoundary((tokens) => {
 export function parse({ program, tokens }) {
     //TODO remove hardcoded special handling for case branch statement
     let lines = splitTokens(tokens, "newline").map(ts => 
-    //Horrible bodge
-    ts.length > 3 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
+    //TODO fix this horrible bodge
+    ts.length >= 3 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
         ? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
-        : ts.length > 4 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
+        : ts.length >= 4 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
             ? [ts.slice(0, 3), ts.slice(3)]
-            : [ts] //nothing, but put it in an array anyway so it gets flattened again
+            : ts.length >= 5 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 4))) //Repeat the check with the first four tokens due to range case statement
+                ? [ts.slice(0, 4), ts.slice(4)]
+                : ts.length >= 6 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 5))) //Repeat the check with the first five tokens due to negative numbers
+                    ? [ts.slice(0, 5), ts.slice(5)]
+                    : ts.length >= 7 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 6))) //Repeat the check with the first six tokens due to negative numbers
+                        ? [ts.slice(0, 6), ts.slice(6)]
+                        : [ts] //nothing, but put it in an array anyway so it gets flattened again
     ).flat(1).filter(ts => ts.length > 0); //remove blank lines
     const statements = lines.map(parseStatement);
     const programNodes = [];

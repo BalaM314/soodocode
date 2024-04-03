@@ -695,7 +695,7 @@ let CaseBranchStatement = (() => {
 })();
 export { CaseBranchStatement };
 let CaseBranchRangeStatement = (() => {
-    let _classDecorators = [statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal|otherwise", "keyword.to", "literal|otherwise", "punctuation.colon")];
+    let _classDecorators = [statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal", "keyword.to", "literal", "punctuation.colon")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;

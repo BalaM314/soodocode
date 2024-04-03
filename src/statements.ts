@@ -451,7 +451,7 @@ export class CaseBranchStatement extends Statement {
 		}
 	}
 }
-@statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal|otherwise", "keyword.to", "literal|otherwise", "punctuation.colon")
+@statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal", "keyword.to", "literal", "punctuation.colon")
 export class CaseBranchRangeStatement extends CaseBranchStatement {
 	upperBound:Token;
 	constructor(tokens:[Token, Token, Token, Token]){
