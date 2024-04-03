@@ -8,7 +8,7 @@ import "jasmine";
 import { token } from "../src/lexer-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { ArrayVariableType } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, DoWhileEndStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements } from "../src/statements.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -1371,6 +1371,146 @@ const parseStatementTests = Object.entries({
                 ["keyword.then", "THEN"],
             ]]
     ],
+    switch1: [
+        [
+            ["keyword.case", "CASE"],
+            ["keyword.of", "OF"],
+            ["name", "x"],
+        ],
+        [SwitchStatement, [
+                ["keyword.case", "CASE"],
+                ["keyword.of", "OF"],
+                ["name", "x"],
+            ]]
+    ],
+    switch2: [
+        [
+            ["keyword.case", "CASE"],
+            ["keyword.of", "OF"],
+            ["string", `"hello"`],
+        ],
+        [SwitchStatement, [
+                ["keyword.case", "CASE"],
+                ["keyword.of", "OF"],
+                ["string", `"hello"`],
+            ]]
+    ],
+    casebranch1: [
+        [
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchStatement, [
+                ["number.decimal", "5"],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranch2: [
+        [
+            ["string", `"hello"`],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchStatement, [
+                ["string", `"hello"`],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranch3: [
+        [
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchStatement, [
+                ["number.decimal", "-5"],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranch4: [
+        [
+            ["keyword.otherwise", "OTHERWISE"],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchStatement, [
+                ["keyword.otherwise", "OTHERWISE"],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranch_invalid_expr: [
+        [
+            ["operator.minus", "-"],
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        "error"
+    ],
+    casebranch_invalid_notstatic: [
+        [
+            ["name", "x"],
+            ["punctuation.colon", ":"],
+        ],
+        "error"
+    ],
+    casebranchrange_1: [
+        [
+            ["number.decimal", "5"],
+            ["keyword.to", "TO"],
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchRangeStatement, [
+                ["number.decimal", "5"],
+                ["keyword.to", "TO"],
+                ["number.decimal", "5"],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranchrange_2: [
+        [
+            ["char", 'c'],
+            ["keyword.to", "TO"],
+            ["char", 'e'],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchRangeStatement, [
+                ["char", 'c'],
+                ["keyword.to", "TO"],
+                ["char", 'e'],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranchrange_3: [
+        [
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+            ["keyword.to", "TO"],
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchRangeStatement, [
+                ["number.decimal", "-5"],
+                ["keyword.to", "TO"],
+                ["number.decimal", "5"],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
+    casebranchrange_4: [
+        [
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+            ["keyword.to", "TO"],
+            ["operator.minus", "-"],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+        ],
+        [CaseBranchRangeStatement, [
+                ["number.decimal", "-5"],
+                ["keyword.to", "TO"],
+                ["number.decimal", "-1"],
+                ["punctuation.colon", ":"],
+            ]]
+    ],
     until1: [
         [
             ["keyword.dowhile_end", "UNTIL"],
@@ -1556,6 +1696,7 @@ const parseStatementTests = Object.entries({
     program.map(token),
     output == "error" ? "error" : applyAnyRange(process_Statement(output))
 ]);
+//TODO convert to IIFE for intellisense
 const parseProgramTests = Object.entries({
     output: [
         [
@@ -1797,6 +1938,219 @@ const parseProgramTests = Object.entries({
             ["keyword.type_end", "ENDTYPE"],
         ],
         "error"
+    ],
+    case_simple: [
+        [
+            ["keyword.case", "CASE"],
+            ["keyword.of", "OF"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["keyword.output", "OUTPUT"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["keyword.output", "OUTPUT"],
+            ["string", `"amogus"`],
+            ["newline", "\n"],
+            ["number.decimal", "2"],
+            ["punctuation.colon", ":"],
+            ["newline", "\n"],
+            ["keyword.output", "OUTPUT"],
+            ["string", `"sussy"`],
+            ["newline", "\n"],
+            ["keyword.case_end", "ENDCASE"],
+        ],
+        [{
+                type: "switch",
+                controlStatements: [
+                    [SwitchStatement, [
+                            ["keyword.case", "CASE"],
+                            ["keyword.of", "OF"],
+                            ["name", "x"],
+                        ]],
+                    [CaseBranchStatement, [
+                            ["number.decimal", "1"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [CaseBranchStatement, [
+                            ["number.decimal", "2"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [statements.byType["switch.end"], [
+                            ["keyword.case_end", "ENDCASE"],
+                        ]],
+                ],
+                nodeGroups: [
+                    [],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["string", `"amogus"`],
+                            ]]
+                    ],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["string", `"sussy"`],
+                            ]]
+                    ],
+                ]
+            }]
+    ],
+    case_complex: [
+        [
+            ["keyword.case", "CASE"],
+            ["keyword.of", "OF"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["keyword.dowhile", "REPEAT"],
+            ["newline", "\n"],
+            ["keyword.output", "OUTPUT"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["keyword.dowhile_end", "UNTIL"],
+            ["boolean.true", "TRUE"],
+            ["newline", "\n"],
+            ["operator.minus", "-"],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["keyword.output", "OUTPUT"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["number.decimal", "1"],
+            ["keyword.to", "TO"],
+            ["number.decimal", "2"],
+            ["punctuation.colon", ":"],
+            ["keyword.output", "OUTPUT"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["operator.minus", "-"],
+            ["number.decimal", "1"],
+            ["keyword.to", "TO"],
+            ["number.decimal", "2"],
+            ["punctuation.colon", ":"],
+            ["keyword.output", "OUTPUT"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["operator.minus", "-"],
+            ["number.decimal", "2"],
+            ["keyword.to", "TO"],
+            ["operator.minus", "-"],
+            ["number.decimal", "1"],
+            ["punctuation.colon", ":"],
+            ["keyword.output", "OUTPUT"],
+            ["name", "x"],
+            ["newline", "\n"],
+            ["keyword.otherwise", "OTHERWISE"],
+            ["punctuation.colon", ":"],
+            ["keyword.output", "OUTPUT"],
+            ["string", `"nope"`],
+            ["newline", "\n"],
+            ["keyword.case_end", "ENDCASE"],
+        ],
+        [{
+                type: "switch",
+                controlStatements: [
+                    [SwitchStatement, [
+                            ["keyword.case", "CASE"],
+                            ["keyword.of", "OF"],
+                            ["name", "x"],
+                        ]],
+                    [CaseBranchStatement, [
+                            ["number.decimal", "1"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [CaseBranchStatement, [
+                            ["number.decimal", "-1"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [CaseBranchRangeStatement, [
+                            ["number.decimal", "1"],
+                            ["keyword.to", "TO"],
+                            ["number.decimal", "2"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [CaseBranchRangeStatement, [
+                            ["number.decimal", "-1"],
+                            ["keyword.to", "TO"],
+                            ["number.decimal", "2"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [CaseBranchRangeStatement, [
+                            ["number.decimal", "-2"],
+                            ["keyword.to", "TO"],
+                            ["number.decimal", "-1"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [CaseBranchStatement, [
+                            ["keyword.otherwise", "OTHERWISE"],
+                            ["punctuation.colon", ":"],
+                        ]],
+                    [statements.byType["switch.end"], [
+                            ["keyword.case_end", "ENDCASE"],
+                        ]],
+                ],
+                nodeGroups: [
+                    [],
+                    [
+                        {
+                            type: "dowhile",
+                            controlStatements: [
+                                [DoWhileStatement, [
+                                        ["keyword.dowhile", "REPEAT"],
+                                    ]],
+                                [DoWhileEndStatement, [
+                                        ["keyword.dowhile_end", "UNTIL"],
+                                        ["boolean.true", "TRUE"],
+                                    ]],
+                            ],
+                            nodeGroups: [[
+                                    [OutputStatement, [
+                                            ["keyword.output", "OUTPUT"],
+                                            ["name", "x"],
+                                        ]],
+                                ]]
+                        },
+                    ],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                    ],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                    ],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                    ],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                    ],
+                    [
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["string", `"nope"`],
+                            ]]
+                    ]
+                ]
+            }]
     ],
 }).map(([name, [program, output]]) => [
     name,
