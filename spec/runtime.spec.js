@@ -1,7 +1,7 @@
 import "jasmine";
 import { token } from "../src/lexer-types.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, OutputStatement, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 const tokenTests = Object.entries({
@@ -432,7 +432,7 @@ const statementTests = Object.entries({
     ],
 }).map(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 const programTests = Object.entries({
-    simpleProgram: [
+    declare_assign_output: [
         [
             [DeclarationStatement, [
                     ["keyword.declare", "DECLARE"],
@@ -451,7 +451,61 @@ const programTests = Object.entries({
                 ]],
         ],
         `amogus`
-    ]
+    ],
+    for_simple: [
+        [{
+                type: "for",
+                controlStatements: [
+                    [ForStatement, [
+                            ["keyword.for", "FOR"],
+                            ["name", "x"],
+                            ["operator.assignment", "<-"],
+                            ["number.decimal", "1"],
+                            ["keyword.to", "TO"],
+                            ["number.decimal", "10"],
+                        ]],
+                    [ForEndStatement, [
+                            ["keyword.for_end", "NEXT"],
+                            ["name", "x"],
+                        ]]
+                ],
+                nodeGroups: [[
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                    ]],
+            }],
+        `1\n2\n3\n4\n5\n6\n7\n8\n9\n10`
+    ],
+    for_step: [
+        [{
+                type: "for",
+                controlStatements: [
+                    [ForStepStatement, [
+                            ["keyword.for", "FOR"],
+                            ["name", "x"],
+                            ["operator.assignment", "<-"],
+                            ["number.decimal", "1"],
+                            ["keyword.to", "TO"],
+                            ["number.decimal", "15"],
+                            ["keyword.step", "STEP"],
+                            ["number.decimal", "2"],
+                        ]],
+                    [ForEndStatement, [
+                            ["keyword.for_end", "NEXT"],
+                            ["name", "x"],
+                        ]]
+                ],
+                nodeGroups: [[
+                        [OutputStatement, [
+                                ["keyword.output", "OUTPUT"],
+                                ["name", "x"],
+                            ]],
+                    ]],
+            }],
+        `1\n3\n5\n7\n9\n11\n13\n15`
+    ],
 }).map(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
 describe("runtime's token evaluator", () => {
     for (const [name, token, type, output, setup] of tokenTests) {

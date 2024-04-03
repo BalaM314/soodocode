@@ -2,7 +2,7 @@ import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
+import { AssignmentStatement, DeclarationStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
@@ -449,7 +449,7 @@ const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:R
 }).map<[name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs:string[]]>(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 
 const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?:string[]]>({
-	simpleProgram: [
+	declare_assign_output: [
 		[
 			[DeclarationStatement, [
 				["keyword.declare", "DECLARE"],
@@ -468,7 +468,61 @@ const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?
 			]],
 		],
 		`amogus`
-	]
+	],
+	for_simple: [
+		[{
+			type: "for",
+			controlStatements: [
+				[ForStatement, [
+					["keyword.for", "FOR"],
+					["name", "x"],
+					["operator.assignment", "<-"],
+					["number.decimal", "1"],
+					["keyword.to", "TO"],
+					["number.decimal", "10"],
+				]],
+				[ForEndStatement, [
+					["keyword.for_end", "NEXT"],
+					["name", "x"],
+				]]
+			],
+			nodeGroups: [[
+				[OutputStatement, [
+					["keyword.output", "OUTPUT"],
+					["name", "x"],
+				]],
+			]],
+		}],
+		`1\n2\n3\n4\n5\n6\n7\n8\n9\n10`
+	],
+	for_step: [
+		[{
+			type: "for",
+			controlStatements: [
+				[ForStepStatement, [
+					["keyword.for", "FOR"],
+					["name", "x"],
+					["operator.assignment", "<-"],
+					["number.decimal", "1"],
+					["keyword.to", "TO"],
+					["number.decimal", "15"],
+					["keyword.step", "STEP"],
+					["number.decimal", "2"],
+				]],
+				[ForEndStatement, [
+					["keyword.for_end", "NEXT"],
+					["name", "x"],
+				]]
+			],
+			nodeGroups: [[
+				[OutputStatement, [
+					["keyword.output", "OUTPUT"],
+					["name", "x"],
+				]],
+			]],
+		}],
+		`1\n3\n5\n7\n9\n11\n13\n15`
+	],
 }).map<[name:string, program:ProgramAST, output:string, inputs:string[]]>(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
 
 

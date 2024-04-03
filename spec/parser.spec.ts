@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/pa
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
 import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, IfStatement,
+	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
@@ -1532,6 +1532,74 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 			["keyword.to", "TO"],
 			["number.decimal", "-1"],
 			["punctuation.colon", ":"],
+		]]
+	],
+	for_simple: [
+		[
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["number.decimal", "1"],
+			["keyword.to", "TO"],
+			["number.decimal", "10"],
+		],
+		[ForStatement, [
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["number.decimal", "1"],
+			["keyword.to", "TO"],
+			["number.decimal", "10"],
+		]]
+	],
+	for_expr: [
+		[
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["name", "y"],
+			["keyword.to", "TO"],
+			["name", "y"],
+			["operator.add", "+"],
+			["name", "14"],
+		],
+		[ForStatement, [
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["name", "y"],
+			["keyword.to", "TO"],
+			["tree", "add", [
+				["name", "y"],
+				["name", "14"],
+			]]
+		]]
+	],
+	for_step: [
+		[
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["name", "y"],
+			["keyword.to", "TO"],
+			["name", "y"],
+			["operator.add", "+"],
+			["name", "14"],
+			["keyword.step", "STEP"],
+			["number.decimal", "2"],
+		],
+		[ForStepStatement, [
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["name", "y"],
+			["keyword.to", "TO"],
+			["tree", "add", [
+				["name", "y"],
+				["name", "14"],
+			]],
+			["keyword.step", "STEP"],
+			["number.decimal", "2"],
 		]]
 	],
 	until1: [
