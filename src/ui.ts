@@ -79,6 +79,17 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	}
 }
 
+export function download(filename:string, data:BlobPart){
+	//Self explanatory.
+	const el = document.createElement("a");
+	el.setAttribute("href", URL.createObjectURL(new Blob([data])));
+	el.setAttribute("download", filename);
+	el.style.display = "none";
+	document.body.appendChild(el);
+	el.click();
+	document.body.removeChild(el);
+}
+
 const headerText = getElement("header-text", HTMLSpanElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
@@ -89,6 +100,13 @@ const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
 const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
 const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
+
+window.addEventListener("keydown", e => {
+	if(e.key == "s" && e.ctrlKey){
+		e.preventDefault();
+		download("program.sc", soodocodeInput.value);
+	}
+});
 
 evaluateExpressionButton.addEventListener("click", e => {
 	try {
@@ -210,6 +228,9 @@ soodocodeInput.onkeydown = e => {
 			soodocodeInput.selectionStart = start + 1;
 			soodocodeInput.selectionEnd = end + 1 + numNewlinesWithin;
 		}
+	} else if(e.key == "Enter" && e.ctrlKey){
+		e.preventDefault();
+		executeSoodocode();
 	}
 	//Update text
 	const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2190", "<-").replaceAll("\u2013", "-").replaceAll("\u2011", "-");
@@ -265,7 +286,8 @@ ${displayProgram(program)}`
 });
 
 let shouldDump = false;
-executeSoodocodeButton.addEventListener("click", e => {
+executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
+function executeSoodocode(){
 	try {
 		const symbols = lexer.symbolize(soodocodeInput.value);
 		const tokens = lexer.tokenize(symbols);
@@ -296,7 +318,7 @@ executeSoodocodeButton.addEventListener("click", e => {
 			outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
 		}
 	}
-});
+}
 
 let flashing = false;
 let bouncing = false;
