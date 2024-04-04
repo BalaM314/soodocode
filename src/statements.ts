@@ -7,8 +7,8 @@ This file contains the definitions for every statement type supported by Soodoco
 
 
 import {
-	EnumeratedVariableType, FunctionData, PointerVariableType, RecordVariableType, Runtime,
-	UnresolvedVariableType, VariableType, VariableValue
+	EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, Runtime,
+	SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue
 } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
@@ -23,9 +23,9 @@ import {
 import { builtinFunctions } from "./builtin_functions.js";
 
 
-export type StatementType =
-	| "declaration" | "constant" | "assignment" | "output" | "input" | "return" | "call"
-	| "type" | "type.pointer" | "type.enum" | "type.end"
+export type StatementType = //TODO clean up these names
+	| "declaration" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call"
+	| "type" | "type.pointer" | "type.enum" | "type.set" | "type.end"
 	| "if" | "if.end" | "else"
 	| "switch" | "switch.end" | "case" | "case.range"
 	| "for" | "for.step" | "for.end"
@@ -204,6 +204,39 @@ export class ConstantStatement extends Statement {
 		};
 	}
 }
+@statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".+", "parentheses.close", "punctuation.colon", "name")
+export class DefineStatement extends Statement {
+	name: Token;
+	variableType: Token;
+	values: Token[];
+	constructor(tokens:[Token, Token, Token, ...Token[], Token, Token, Token]){
+		super(tokens);
+		this.name = tokens[1];
+		this.variableType = tokens.at(-1)!;
+		const valuesTokens = tokens.slice(3, -3);
+		//TODO duped code: getUniqueTextFromCommaSeparatedTokenList
+		this.values = splitTokensOnComma(valuesTokens).map(group => {
+			if(group.length != 1) fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
+			return group[0];
+		});
+		if(new Set(this.values.map(t => t.text)).size !== this.values.length){
+			//duplicate value
+			const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
+			fail(fquote`Duplicate enum value ${duplicateToken.text}`, duplicateToken);
+		}
+	}
+	run(runtime:Runtime){
+		const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
+		if(!(type instanceof SetVariableType)) fail(`DEFINE can only be used on set types, please use a declare statement instead`, this.variableType);
+		runtime.getCurrentScope().variables[this.name.text] = {
+			type,
+			declaration: this,
+			mutable: false,
+			value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1] as VariableTypeMapping<PrimitiveVariableType>)
+		};
+	}
+}
+
 @statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")
 export class TypePointerStatement extends Statement {
 	name: string;
@@ -241,6 +274,23 @@ export class TypeEnumStatement extends Statement {
 	run(runtime:Runtime){
 		runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(
 			this.name.text, this.values.map(t => t.text)
+		);
+	}
+}
+@statement("type.set", "TYPE myIntegerSet = SET OF INTEGER", "keyword.type", "name", "operator.equal_to", "keyword.set", "keyword.of", "name")
+export class TypeSetStatement extends Statement {
+	name: Token;
+	setType: PrimitiveVariableType;
+	constructor(tokens:[Token, Token, Token, Token, Token, Token]){
+		super(tokens);
+		this.name = tokens[1];
+		if(isPrimitiveType(tokens[5].text))
+			this.setType = tokens[5].text;
+		else fail(`Sets of non-primitive types are not supported.`);
+	}
+	run(runtime:Runtime){
+		runtime.getCurrentScope().types[this.name.text] = new SetVariableType(
+			this.name.text, this.setType
 		);
 	}
 }

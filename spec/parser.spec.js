@@ -8,7 +8,7 @@ import "jasmine";
 import { token } from "../src/lexer-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { ArrayVariableType } from "../src/runtime.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements } from "../src/statements.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, OutputStatement, ProcedureStatement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -1185,6 +1185,34 @@ const parseStatementTests = Object.entries({
         ],
         "error"
     ],
+    define: [
+        [
+            ["keyword.define", "DEFINE"],
+            ["name", "amogus"],
+            ["parentheses.open", "("],
+            ["number.decimal", "1"],
+            ["punctuation.comma", ","],
+            ["number.decimal", "2"],
+            ["punctuation.comma", ","],
+            ["number.decimal", "3"],
+            ["parentheses.close", ")"],
+            ["punctuation.colon", ":"],
+            ["name", "setofinteger"],
+        ],
+        [DefineStatement, [
+                ["keyword.define", "DEFINE"],
+                ["name", "amogus"],
+                ["parentheses.open", "("],
+                ["number.decimal", "1"],
+                ["punctuation.comma", ","],
+                ["number.decimal", "2"],
+                ["punctuation.comma", ","],
+                ["number.decimal", "3"],
+                ["parentheses.close", ")"],
+                ["punctuation.colon", ":"],
+                ["name", "setofinteger"],
+            ]]
+    ],
     typePointer: [
         [
             ["keyword.type", "TYPE"],
@@ -1309,6 +1337,35 @@ const parseStatementTests = Object.entries({
             ["punctuation.comma", ","],
             ["name", "amogus"],
             ["parentheses.close", ")"],
+        ],
+        "error"
+    ],
+    typeSet: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["keyword.set", "SET"],
+            ["keyword.of", "OF"],
+            ["name", "INTEGER"],
+        ],
+        [TypeSetStatement, [
+                ["keyword.type", "TYPE"],
+                ["name", "amogus"],
+                ["operator.equal_to", "="],
+                ["keyword.set", "SET"],
+                ["keyword.of", "OF"],
+                ["name", "INTEGER"],
+            ]]
+    ],
+    typeSet_invalid_nonprimitive: [
+        [
+            ["keyword.type", "TYPE"],
+            ["name", "amogus"],
+            ["operator.equal_to", "="],
+            ["keyword.set", "SET"],
+            ["keyword.of", "OF"],
+            ["name", "amogusType"],
         ],
         "error"
     ],

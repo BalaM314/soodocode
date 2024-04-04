@@ -13,8 +13,8 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax.
 * [x] Enums
 * [x] Pointers
 * [x] Records
+* [x] Sets
 * [x] Shortened forms (for variable declaration and function arguments)
-* [ ] Sets
 * [ ] Files
 * [ ] Classes
 

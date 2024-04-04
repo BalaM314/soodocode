@@ -42,7 +42,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime } from "./runtime.js";
+import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
@@ -227,6 +227,53 @@ let ConstantStatement = (() => {
     return ConstantStatement = _classThis;
 })();
 export { ConstantStatement };
+let DefineStatement = (() => {
+    let _classDecorators = [statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".+", "parentheses.close", "punctuation.colon", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var DefineStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1];
+            this.variableType = tokens.at(-1);
+            const valuesTokens = tokens.slice(3, -3);
+            //TODO duped code: getUniqueTextFromCommaSeparatedTokenList
+            this.values = splitTokensOnComma(valuesTokens).map(group => {
+                if (group.length != 1)
+                    fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
+                return group[0];
+            });
+            if (new Set(this.values.map(t => t.text)).size !== this.values.length) {
+                //duplicate value
+                const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
+                fail(fquote `Duplicate enum value ${duplicateToken.text}`, duplicateToken);
+            }
+        }
+        run(runtime) {
+            const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
+            if (!(type instanceof SetVariableType))
+                fail(`DEFINE can only be used on set types, please use a declare statement instead`, this.variableType);
+            runtime.getCurrentScope().variables[this.name.text] = {
+                type,
+                declaration: this,
+                mutable: false,
+                value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1])
+            };
+        }
+    };
+    __setFunctionName(_classThis, "DefineStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        DefineStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return DefineStatement = _classThis;
+})();
+export { DefineStatement };
 let TypePointerStatement = (() => {
     let _classDecorators = [statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")];
     let _classDescriptor;
@@ -292,6 +339,36 @@ let TypeEnumStatement = (() => {
     return TypeEnumStatement = _classThis;
 })();
 export { TypeEnumStatement };
+let TypeSetStatement = (() => {
+    let _classDecorators = [statement("type.set", "TYPE myIntegerSet = SET OF INTEGER", "keyword.type", "name", "operator.equal_to", "keyword.set", "keyword.of", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var TypeSetStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.name = tokens[1];
+            if (isPrimitiveType(tokens[5].text))
+                this.setType = tokens[5].text;
+            else
+                fail(`Sets of non-primitive types are not supported.`);
+        }
+        run(runtime) {
+            runtime.getCurrentScope().types[this.name.text] = new SetVariableType(this.name.text, this.setType);
+        }
+    };
+    __setFunctionName(_classThis, "TypeSetStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        TypeSetStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return TypeSetStatement = _classThis;
+})();
+export { TypeSetStatement };
 let TypeRecordStatement = (() => {
     let _classDecorators = [statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")];
     let _classDescriptor;

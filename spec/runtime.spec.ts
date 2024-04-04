@@ -1,8 +1,8 @@
 import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement } from "../src/statements.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../src/runtime.js";
+import { AssignmentStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement, TypeSetStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
@@ -446,9 +446,24 @@ const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:R
 				.toEqual(new EnumeratedVariableType("amog", ["amogus", "sugoma"]));
 		}
 	],
+	typeSet1: [
+		[TypeSetStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amog"],
+			["operator.equal_to", "="],
+			["keyword.set", "SET"],
+			["keyword.of", "OF"],
+			["name", "INTEGER"],
+		]],
+		r => {},
+		r => {
+			expect(r.getType("amog"))
+				.toEqual(new SetVariableType("amog", "INTEGER"));
+		}
+	],
 }).map<[name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs:string[]]>(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
 
-const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?:string[]]>({
+const programTests = Object.entries<[program:_ProgramAST, output:string | ["error"], inputs?:string[]]>({
 	declare_assign_output: [
 		[
 			[DeclarationStatement, [
@@ -468,6 +483,54 @@ const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?
 			]],
 		],
 		`amogus`
+	],
+	define: [
+		[
+			[TypeSetStatement, [
+				["keyword.type", "TYPE"],
+				["name", "setofinteger"],
+				["operator.equal_to", "="],
+				["keyword.set", "SET"],
+				["keyword.of", "OF"],
+				["name", "INTEGER"],
+			]],
+			[DefineStatement, [
+				["keyword.define", "DEFINE"],
+				["name", "amogus"],
+				["parentheses.open", "("],
+				["number.decimal", "1"],
+				["punctuation.comma", ","],
+				["number.decimal", "2"],
+				["punctuation.comma", ","],
+				["number.decimal", "3"],
+				["parentheses.close", ")"],
+				["punctuation.colon", ":"],
+				["name", "setofinteger"],
+			]]
+		],
+		``
+	],
+	define_invalid_type: [
+		[
+			[TypeSetStatement, [
+				["keyword.type", "TYPE"],
+				["name", "setofinteger"],
+				["operator.equal_to", "="],
+				["keyword.set", "SET"],
+				["keyword.of", "OF"],
+				["name", "INTEGER"],
+			]],
+			[DefineStatement, [
+				["keyword.define", "DEFINE"],
+				["name", "amogus"],
+				["parentheses.open", "("],
+				["char", "'c'"],
+				["parentheses.close", ")"],
+				["punctuation.colon", ":"],
+				["name", "setofinteger"],
+			]]
+		],
+		["error"]
 	],
 	for_simple: [
 		[{
@@ -523,7 +586,7 @@ const programTests = Object.entries<[program:_ProgramAST, output:string, inputs?
 		}],
 		`1\n3\n5\n7\n9\n11\n13\n15`
 	],
-}).map<[name:string, program:ProgramAST, output:string, inputs:string[]]>(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
+}).map<[name:string, program:ProgramAST, output:string | ["error"], inputs:string[]]>(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
 
 
 describe("runtime's token evaluator", () => {
@@ -561,9 +624,9 @@ describe("runtime's statement executor", () => {
 				message => output = message
 			);
 			setup(runtime);
-			if(test == "error")
-				expect(() => statement.run(runtime)).toThrowMatching(e => e instanceof SoodocodeError)
-			else {
+			if(test == "error"){
+				expect(() => statement.run(runtime)).toThrowMatching(e => e instanceof SoodocodeError);
+			} else {
 				const result = statement.run(runtime);
 				test(runtime, result, output);
 			}
@@ -579,8 +642,12 @@ describe("runtime's program execution", () => {
 				() => inputs.shift() ?? fail(`Program required input, but none was available`),
 				str => outputs.push(str)
 			);
-			runtime.runBlock(program.nodes);
-			expect(outputs.join("\n")).toEqual(output);
+			if(Array.isArray(output)){
+				expect(() => runtime.runBlock(program.nodes)).toThrowMatching(e => e instanceof SoodocodeError);
+			} else {
+				runtime.runBlock(program.nodes);
+				expect(outputs.join("\n")).toEqual(output);
+			}
 		});
 	}
 });

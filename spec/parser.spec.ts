@@ -12,8 +12,8 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/pa
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
 import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
-	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements
+	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
+	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
 import {
@@ -1208,6 +1208,34 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 		],
 		"error"
 	],
+	define: [
+		[
+			["keyword.define", "DEFINE"],
+			["name", "amogus"],
+			["parentheses.open", "("],
+			["number.decimal", "1"],
+			["punctuation.comma", ","],
+			["number.decimal", "2"],
+			["punctuation.comma", ","],
+			["number.decimal", "3"],
+			["parentheses.close", ")"],
+			["punctuation.colon", ":"],
+			["name", "setofinteger"],
+		],
+		[DefineStatement, [
+			["keyword.define", "DEFINE"],
+			["name", "amogus"],
+			["parentheses.open", "("],
+			["number.decimal", "1"],
+			["punctuation.comma", ","],
+			["number.decimal", "2"],
+			["punctuation.comma", ","],
+			["number.decimal", "3"],
+			["parentheses.close", ")"],
+			["punctuation.colon", ":"],
+			["name", "setofinteger"],
+		]]
+	],
 	typePointer: [
 		[
 			["keyword.type", "TYPE"],
@@ -1332,6 +1360,35 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 			["punctuation.comma", ","],
 			["name", "amogus"],
 			["parentheses.close", ")"],
+		],
+		"error"
+	],
+	typeSet: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["keyword.set", "SET"],
+			["keyword.of", "OF"],
+			["name", "INTEGER"],
+		],
+		[TypeSetStatement, [
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["keyword.set", "SET"],
+			["keyword.of", "OF"],
+			["name", "INTEGER"],
+		]]
+	],
+	typeSet_invalid_nonprimitive: [
+		[
+			["keyword.type", "TYPE"],
+			["name", "amogus"],
+			["operator.equal_to", "="],
+			["keyword.set", "SET"],
+			["keyword.of", "OF"],
+			["name", "amogusType"],
 		],
 		"error"
 	],

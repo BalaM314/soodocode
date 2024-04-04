@@ -105,6 +105,18 @@ export class EnumeratedVariableType {
         return null;
     }
 }
+export class SetVariableType {
+    constructor(name, baseType) {
+        this.name = name;
+        this.baseType = baseType;
+    }
+    toString() {
+        return fquote `set type ${this.name} of ${this.baseType}`;
+    }
+    getInitValue(runtime) {
+        fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
+    }
+}
 let Runtime = (() => {
     var _a;
     let _instanceExtraInitializers = [];

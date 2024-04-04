@@ -17,7 +17,8 @@ import {
 import { operators } from "./parser.js";
 import {
 	ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement,
-	FunctionStatement, FunctionArguments
+	FunctionStatement, FunctionArguments,
+	DefineStatement
 } from "./statements.js";
 import { crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 
@@ -29,10 +30,11 @@ export type VariableTypeMapping<T> =
 	T extends "CHAR" ? string :
 	T extends "BOOLEAN" ? boolean :
 	T extends "DATE" ? Date :
-	T extends ArrayVariableType ? Array<VariableTypeMapping<Exclude<VariableType, ArrayVariableType>> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
+	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
 	T extends RecordVariableType ? Record<string, unknown> :
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
+	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
 	never
 ;
 
@@ -66,7 +68,7 @@ export class ArrayVariableType {
 	getInitValue(runtime:Runtime):VariableTypeMapping<ArrayVariableType> {
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		return Array.from({length: this.totalLength}, () => typeof type == "string" ? null : type.getInitValue(runtime) as VariableTypeMapping<Exclude<VariableType, ArrayVariableType>> | null);
+		return Array.from({length: this.totalLength}, () => typeof type == "string" ? null : type.getInitValue(runtime) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 }
 export class RecordVariableType {
@@ -107,6 +109,18 @@ export class EnumeratedVariableType {
 		return null;
 	}
 }
+export class SetVariableType {
+	constructor(
+		public name: string,
+		public baseType: PrimitiveVariableType,
+	){}
+	toString(){
+		return fquote`set type ${this.name} of ${this.baseType}`
+	}
+	getInitValue(runtime:Runtime):VariableValue | null {
+		fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
+	}
+}
 
 //TODO refactor this to support pointers, user defined records, etc
 export type UnresolvedVariableType =
@@ -120,7 +134,9 @@ export type VariableType =
 	| RecordVariableType
 	| PointerVariableType
 	| EnumeratedVariableType
+	| SetVariableType
 ;
+export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<VariableType>;
 
 type FileMode = "READ" | "WRITE" | "APPEND";
@@ -143,7 +159,7 @@ export type ConstantData<T extends VariableType = VariableType> = {
 	type: T;
 	/** Cannot be null */
 	value: VariableTypeMapping<T>;
-	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
+	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement | DefineStatement;
 	mutable: false;
 }
 /** Either a function or a procedure TODO cleanup */
