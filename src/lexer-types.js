@@ -58,7 +58,7 @@ export const tokenTypes = [
     "comment",
     "name",
     "boolean.true", "boolean.false",
-    "keyword.declare", "keyword.constant", "keyword.output", "keyword.input", "keyword.call",
+    "keyword.declare", "keyword.define", "keyword.constant", "keyword.output", "keyword.input", "keyword.call",
     "keyword.if", "keyword.then", "keyword.else", "keyword.if_end",
     "keyword.for", "keyword.to", "keyword.for_end", "keyword.step",
     "keyword.while", "keyword.while_end", "keyword.dowhile", "keyword.dowhile_end",
@@ -70,7 +70,7 @@ export const tokenTypes = [
     "keyword.case", "keyword.of", "keyword.case_end", "keyword.otherwise",
     "keyword.class", "keyword.class_end", "keyword.new", "keyword.super", "keyword.inherits",
     "keyword.class-modifier.private", "keyword.class-modifier.public",
-    "keyword.array",
+    "keyword.array", "keyword.set",
     "newline",
     "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ];
