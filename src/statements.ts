@@ -56,8 +56,8 @@ export class Statement implements TextRanged {
 	stype:StatementType;
 	static type:StatementType;
 	category:StatementCategory;
-	static category:StatementCategory;
-	static example:string;
+	static category:StatementCategory = null!; //Assigned in the decorator
+	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
 	range: TextRange;
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
@@ -73,9 +73,12 @@ export class Statement implements TextRanged {
 			return this.tokens.map(t => displayExpression(t, false)).join(" ");
 		}
 	}
-	blockEndStatement(){
-		if(this.category != "block") crash(`Statement ${this.stype} has no block end statement because it is not a block statement`);
-		return statements.byType[this.stype + ".end" as StatementType]; //REFACTOR CHECK
+	static blockEndStatement<
+		/** use Function to prevent narrowing, leave blank otherwise */
+		TOut extends typeof Statement | Function = typeof Statement
+	>():typeof Statement extends TOut ? TOut : unknown { //hack
+		if(this.category != "block") crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
+		return statements.byType[this.type.split(".")[0] + ".end" as StatementType] as never; //REFACTOR CHECK
 	}
 	example(){
 		return this.type.example;

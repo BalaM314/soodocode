@@ -2349,7 +2349,7 @@ const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST |
 			["name", "x"],
 		],
 		[{
-			type: "for",
+			type: "for.step",
 			controlStatements: [
 				[ForStepStatement, [
 					["keyword.for", "FOR"],

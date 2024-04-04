@@ -140,7 +140,7 @@ export function parse({ program, tokens }) {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
                 fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement);
-            else if (lastNode.controlStatements[0].stype == statement.stype.split(".")[0]) { //probably bad code
+            else if (statement instanceof lastNode.controlStatements[0].type.blockEndStatement()) {
                 lastNode.controlStatements.push(statement);
                 blockStack.pop();
             }
@@ -161,7 +161,7 @@ export function parse({ program, tokens }) {
             statement.category;
     }
     if (blockStack.length)
-        fail(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].blockEndStatement().type}" statement`, blockStack.at(-1).controlStatements[0], null);
+        fail(`There were unclosed blocks: "${blockStack.at(-1).controlStatements[0].toString()}" requires a matching "${blockStack.at(-1).controlStatements[0].type.blockEndStatement().type}" statement`, blockStack.at(-1).controlStatements[0], null);
     return {
         program,
         nodes: programNodes

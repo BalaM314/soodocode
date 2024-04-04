@@ -69,10 +69,10 @@ export class Statement {
             return this.tokens.map(t => displayExpression(t, false)).join(" ");
         }
     }
-    blockEndStatement() {
+    static blockEndStatement() {
         if (this.category != "block")
-            crash(`Statement ${this.stype} has no block end statement because it is not a block statement`);
-        return statements.byType[this.stype + ".end"]; //REFACTOR CHECK
+            crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
+        return statements.byType[this.type.split(".")[0] + ".end"]; //REFACTOR CHECK
     }
     example() {
         return this.type.example;
@@ -91,6 +91,8 @@ export class Statement {
             crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
     }
 }
+Statement.category = null; //Assigned in the decorator
+Statement.example = null; //Assigned in the decorator
 Statement.tokens = null; //Assigned in the decorator
 function statement(type, example, ...args) {
     return function (input) {

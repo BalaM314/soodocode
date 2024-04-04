@@ -2323,7 +2323,7 @@ const parseProgramTests = Object.entries({
             ["name", "x"],
         ],
         [{
-                type: "for",
+                type: "for.step",
                 controlStatements: [
                     [ForStepStatement, [
                             ["keyword.for", "FOR"],
