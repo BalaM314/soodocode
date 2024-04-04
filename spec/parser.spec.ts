@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/pa
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
 import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement,
+	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
@@ -2244,6 +2244,137 @@ const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST |
 					]]
 				]
 			]
+		}]
+	],
+	for_simple: [
+		[
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["number.decimal", "1"],
+			["keyword.to", "TO"],
+			["number.decimal", "10"],
+			["newline", "\n"],
+			["keyword.output", "OUTPUT"],
+			["name", "x"],
+			["newline", "\n"],
+			["keyword.for_end", "NEXT"],
+			["name", "x"],
+		],
+		[{
+			type: "for",
+			controlStatements: [
+				[ForStatement, [
+					["keyword.for", "FOR"],
+					["name", "x"],
+					["operator.assignment", "<-"],
+					["number.decimal", "1"],
+					["keyword.to", "TO"],
+					["number.decimal", "10"],
+				]],
+				[ForEndStatement, [
+					["keyword.for_end", "NEXT"],
+					["name", "x"],
+				]]
+			],
+			nodeGroups: [[
+				[OutputStatement, [
+					["keyword.output", "OUTPUT"],
+					["name", "x"],
+				]]
+			]],
+		}]
+	],
+	for_expr: [
+		[
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["name", "y"],
+			["keyword.to", "TO"],
+			["name", "y"],
+			["operator.add", "+"],
+			["name", "14"],
+			["newline", "\n"],
+			["keyword.output", "OUTPUT"],
+			["name", "x"],
+			["newline", "\n"],
+			["keyword.for_end", "NEXT"],
+			["name", "x"],
+		],
+		[{
+			type: "for",
+			controlStatements: [
+				[ForStatement, [
+					["keyword.for", "FOR"],
+					["name", "x"],
+					["operator.assignment", "<-"],
+					["name", "y"],
+					["keyword.to", "TO"],
+					["tree", "add", [
+						["name", "y"],
+						["name", "14"],
+					]]
+				]],
+				[ForEndStatement, [
+					["keyword.for_end", "NEXT"],
+					["name", "x"],
+				]]
+			],
+			nodeGroups: [[
+				[OutputStatement, [
+					["keyword.output", "OUTPUT"],
+					["name", "x"],
+				]]
+			]],
+		}]
+	],
+	for_step: [
+		[
+			["keyword.for", "FOR"],
+			["name", "x"],
+			["operator.assignment", "<-"],
+			["name", "y"],
+			["keyword.to", "TO"],
+			["name", "y"],
+			["operator.add", "+"],
+			["name", "14"],
+			["keyword.step", "STEP"],
+			["number.decimal", "2"],
+			["newline", "\n"],
+			["keyword.output", "OUTPUT"],
+			["name", "x"],
+			["newline", "\n"],
+			["keyword.for_end", "NEXT"],
+			["name", "x"],
+		],
+		[{
+			type: "for",
+			controlStatements: [
+				[ForStepStatement, [
+					["keyword.for", "FOR"],
+					["name", "x"],
+					["operator.assignment", "<-"],
+					["name", "y"],
+					["keyword.to", "TO"],
+					["tree", "add", [
+						["name", "y"],
+						["name", "14"],
+					]],
+					["keyword.step", "STEP"],
+					["number.decimal", "2"],
+				]],
+				[ForEndStatement, [
+					["keyword.for_end", "NEXT"],
+					["name", "x"],
+				]]
+			],
+			nodeGroups: [[
+				[OutputStatement, [
+					["keyword.output", "OUTPUT"],
+					["name", "x"],
+				]]
+			]],
 		}]
 	],
 }).map<[name:string, program:TokenizedProgram, output:jasmine.Expected<ProgramAST> | "error"]>(([name, [program, output]]) =>
