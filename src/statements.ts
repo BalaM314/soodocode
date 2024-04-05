@@ -490,25 +490,21 @@ export class CaseBranchStatement extends Statement {
 	}
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
-		try {
-			//Try to evaluate the case token with the same type as the switch target
-			const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
-			return switchValue == caseValue;
-		} catch(err){
-			if(err instanceof SoodocodeError){
-				//type error (TODO make sure it is actually a type error)
-				//try again leaving the type blank, this will probably evaluate to false and it will try the next branch
-				const [caseType, caseValue] = Runtime.evaluateToken(this.value);
-				return switchType == caseType && switchValue == caseValue;
-			} else throw err;
-		}
+		//Try to evaluate the case token with the same type as the switch target
+		const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+		return switchValue == caseValue;
 	}
 }
 @statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal", "keyword.to", "literal", "punctuation.colon")
 export class CaseBranchRangeStatement extends CaseBranchStatement {
 	upperBound:Token;
+	static allowedTypes:TokenType[] = ["number.decimal", "char"];
 	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens.slice(0, 2) as [Token, Token]);
+		if(!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
+			fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number of character`, tokens[0]);
+		if(tokens[2].type != tokens[0].type)
+			fail(`Token of type ${tokens[2].type} does not match the other range bound: expected a ${tokens[0].type}`, tokens[2]);
 		this.upperBound = tokens[2];
 	}
 	branchMatches(switchType:VariableType, switchValue:VariableValue){

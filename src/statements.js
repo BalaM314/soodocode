@@ -46,7 +46,7 @@ import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtim
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, SoodocodeError, fquote, } from "./utils.js";
+import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote, } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -745,21 +745,9 @@ let CaseBranchStatement = (() => {
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
                 return true;
-            try {
-                //Try to evaluate the case token with the same type as the switch target
-                const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
-                return switchValue == caseValue;
-            }
-            catch (err) {
-                if (err instanceof SoodocodeError) {
-                    //type error (TODO make sure it is actually a type error)
-                    //try again leaving the type blank, this will probably evaluate to false and it will try the next branch
-                    const [caseType, caseValue] = Runtime.evaluateToken(this.value);
-                    return switchType == caseType && switchValue == caseValue;
-                }
-                else
-                    throw err;
-            }
+            //Try to evaluate the case token with the same type as the switch target
+            const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+            return switchValue == caseValue;
         }
     };
     __setFunctionName(_classThis, "CaseBranchStatement");
@@ -782,6 +770,10 @@ let CaseBranchRangeStatement = (() => {
     var CaseBranchRangeStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens.slice(0, 2));
+            if (!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
+                fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number of character`, tokens[0]);
+            if (tokens[2].type != tokens[0].type)
+                fail(`Token of type ${tokens[2].type} does not match the other range bound: expected a ${tokens[0].type}`, tokens[2]);
             this.upperBound = tokens[2];
         }
         branchMatches(switchType, switchValue) {
@@ -799,6 +791,9 @@ let CaseBranchRangeStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         CaseBranchRangeStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.allowedTypes = ["number.decimal", "char"];
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return CaseBranchRangeStatement = _classThis;
