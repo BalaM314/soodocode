@@ -216,7 +216,11 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 	]
 }).map(([name, [input, output]]) => [name, input, output == "error" ? output : output.map(symbol)]);
 
-const tokenizerTests:[name:string, input:SymbolizedProgram, output:Token[] | "error"][] = Object.entries<[input:_Symbol[], output:_Token[] | "error"]>({
+const tokenizerTests = ((data:Record<string, [input:_Symbol[], output:_Token[] | "error"]>) =>
+	Object.entries(data).map<[name:string, input:SymbolizedProgram, output:Token[] | "error"]>(([name, [input, output]]) =>
+		[name, {program: "", symbols: input.map(symbol)}, output == "error" ? "error" : output.map(token)]
+	)
+)({
 	simple: [
 		[
 			["punctuation.semicolon", ";"],
@@ -569,7 +573,7 @@ const tokenizerTests:[name:string, input:SymbolizedProgram, output:Token[] | "er
 			["keyword.writefile", "WRITEFILE"],
 		]
 	],
-}).map(([name, [input, output]]) => [name, {program: "" /* SPECNULL TODO replace with matcher */, symbols: input.map(symbol)}, output == "error" ? "error" : output.map(token)]);
+});
 describe("symbolizer", () => {
 	for(const [name, input, output] of symbolTests){
 		if(output == "error"){

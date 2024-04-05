@@ -2,7 +2,7 @@ import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../src/runtime.js";
-import { AssignmentStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, StatementExecutionResult, TypeEnumStatement, TypePointerStatement, TypeSetStatement } from "../src/statements.js";
+import { AssignmentStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
@@ -563,6 +563,131 @@ const programTests = ((data:Record<string,
 			]]
 		],
 		["error"]
+	],
+	case_simple: [
+		[
+			[DeclarationStatement, [
+				["keyword.declare", "DECLARE"],
+				["name", "x"],
+				["punctuation.colon", ":"],
+				["name", "INTEGER"],
+			]],
+			[AssignmentStatement, [
+				["name", "x"],
+				["operator.assignment", "<-"],
+				["number.decimal", `2`],
+			]],
+			{
+				type: "switch",
+				controlStatements: [
+					[SwitchStatement, [
+						["keyword.case", "CASE"],
+						["keyword.of", "OF"],
+						["name", "x"],
+					]],
+					[CaseBranchStatement, [
+						["number.decimal", "1"],
+						["punctuation.colon", ":"],
+					]],
+					[CaseBranchStatement, [
+						["number.decimal", "2"],
+						["punctuation.colon", ":"],
+					]],
+					[statements.byType["switch.end"], [
+						["keyword.case_end", "ENDCASE"],
+					]],
+				],
+				nodeGroups: [
+					[],
+					[
+						[OutputStatement, [
+							["keyword.output", "OUTPUT"],
+							["string", `"a"`],
+						]],
+					],
+					[
+						[OutputStatement, [
+							["keyword.output", "OUTPUT"],
+							["string", `"b"`],	
+						]]
+					],
+				]
+			}
+		],
+		`b`
+	],
+	case_variable_input_type_mismatch: [
+		[
+			[DeclarationStatement, [
+				["keyword.declare", "DECLARE"],
+				["name", "x"],
+				["punctuation.colon", ":"],
+				["name", "INTEGER"],
+			]],
+			[AssignmentStatement, [
+				["name", "x"],
+				["operator.assignment", "<-"],
+				["number.decimal", `2`],
+			]],
+			{
+				type: "switch",
+				controlStatements: [
+					[SwitchStatement, [
+						["keyword.case", "CASE"],
+						["keyword.of", "OF"],
+						["name", "x"],
+					]],
+					[CaseBranchStatement, [
+						["number.decimal", "2.1"],
+						["punctuation.colon", ":"],
+					]],
+					[statements.byType["switch.end"], [
+						["keyword.case_end", "ENDCASE"],
+					]],
+				],
+				nodeGroups: [
+					[],
+					[
+						[OutputStatement, [
+							["keyword.output", "OUTPUT"],
+							["string", `"a"`],
+						]],
+					],
+				]
+			}
+		],
+		["error"]
+	],
+	case_literal_input_type_mismatch: [
+		[
+			{
+				type: "switch",
+				controlStatements: [
+					[SwitchStatement, [
+						["keyword.case", "CASE"],
+						["keyword.of", "OF"],
+						["number.decimal", "2"],
+					]],
+					[CaseBranchStatement, [
+						["number.decimal", "2.1"],
+						["punctuation.colon", ":"],
+					]],
+					[statements.byType["switch.end"], [
+						["keyword.case_end", "ENDCASE"],
+					]],
+				],
+				nodeGroups: [
+					[],
+					[
+						[OutputStatement, [
+							["keyword.output", "OUTPUT"],
+							["string", `"a"`],
+						]],
+					],
+				]
+			}
+		],
+		``
 	],
 	for_simple: [
 		[{

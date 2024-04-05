@@ -1572,6 +1572,45 @@ const parseStatementTests = ((data) => Object.entries(data).map(([name, [program
                 ["punctuation.colon", ":"],
             ]]
     ],
+    casebranchrange_invalid_notstatic: [
+        [
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+            ["keyword.to", "TO"],
+            ["operator.minus", "-"],
+            ["name", "x"],
+            ["punctuation.colon", ":"],
+        ],
+        "error"
+    ],
+    casebranchrange_invalid_type_1: [
+        [
+            ["operator.minus", "-"],
+            ["number.decimal", "5"],
+            ["keyword.to", "TO"],
+            ["boolean.true", "TRUE"],
+            ["punctuation.colon", ":"],
+        ],
+        "error"
+    ],
+    casebranchrange_invalid_type_2: [
+        [
+            ["string", `"amogus"`],
+            ["keyword.to", "TO"],
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        "error"
+    ],
+    casebranchrange_invalid_type_3: [
+        [
+            ["char", `'a'`],
+            ["keyword.to", "TO"],
+            ["number.decimal", "5"],
+            ["punctuation.colon", ":"],
+        ],
+        "error"
+    ],
     for_simple: [
         [
             ["keyword.for", "FOR"],

@@ -211,7 +211,7 @@ const symbolTests = Object.entries({
         ].map(w => [w, ["space", " "]]).flat(1)
     ]
 }).map(([name, [input, output]]) => [name, input, output == "error" ? output : output.map(symbol)]);
-const tokenizerTests = Object.entries({
+const tokenizerTests = ((data) => Object.entries(data).map(([name, [input, output]]) => [name, { program: "", symbols: input.map(symbol) }, output == "error" ? "error" : output.map(token)]))({
     simple: [
         [
             ["punctuation.semicolon", ";"],
@@ -558,7 +558,7 @@ const tokenizerTests = Object.entries({
             ["keyword.writefile", "WRITEFILE"],
         ]
     ],
-}).map(([name, [input, output]]) => [name, { program: "" /* SPECNULL TODO replace with matcher */, symbols: input.map(symbol) }, output == "error" ? "error" : output.map(token)]);
+});
 describe("symbolizer", () => {
     for (const [name, input, output] of symbolTests) {
         if (output == "error") {
