@@ -4,7 +4,7 @@ import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordV
 import { AssignmentStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
-const tokenTests = Object.entries({
+const tokenTests = ((data) => Object.entries(data).map(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => { })]))({
     boolean_true: [
         ["boolean.true", "true"],
         "BOOLEAN",
@@ -109,8 +109,10 @@ const tokenTests = Object.entries({
             r => r.getCurrentScope().types["amogusType"] = type
         ];
     })(),
-}).map(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => { })]);
-const expressionTests = Object.entries({
+});
+const expressionTests = ((data) => Object.entries(data).map(([k, v]) => [
+    k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => { })
+]))({
     addNumbers: [
         ["tree", "add", [
                 ["number.decimal", "5"],
@@ -372,8 +374,8 @@ const expressionTests = Object.entries({
             }
         ];
     })(),
-}).map(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => { })]);
-const statementTests = Object.entries({
+});
+const statementTests = ((data) => Object.entries(data).map(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]))({
     declare1: [
         [DeclarationStatement, [
                 ["keyword.declare", "DECLARE"],
@@ -445,8 +447,8 @@ const statementTests = Object.entries({
                 .toEqual(new SetVariableType("amog", "INTEGER"));
         }
     ],
-}).map(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
-const programTests = Object.entries({
+});
+const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]))({
     declare_assign_output: [
         [
             [DeclarationStatement, [
@@ -569,7 +571,7 @@ const programTests = Object.entries({
             }],
         `1\n3\n5\n7\n9\n11\n13\n15`
     ],
-}).map(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
+});
 describe("runtime's token evaluator", () => {
     for (const [name, token, type, output, setup] of tokenTests) {
         it(`should produce the expected output for ${name}`, () => {

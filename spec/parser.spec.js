@@ -13,7 +13,11 @@ import { SoodocodeError } from "../src/utils.js";
 import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 //i miss rust macros
-const sampleExpressions = Object.entries({
+const sampleExpressions = ((d) => Object.entries(d).map(([name, [program, output]]) => [
+    name,
+    program.map(token),
+    output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
+]))({
     number: [
         [
             ["number.decimal", "5"],
@@ -1005,12 +1009,12 @@ const sampleExpressions = Object.entries({
         //yet another huge tree
         ["tree", "add", [["tree", ["function call", "amogus"], [["tree", "and", [["tree", "greater_than", [["tree", "greater_than", [["tree", "subtract", [["tree", "add", [["number.decimal", "1"], ["number.decimal", "2"]]], ["tree", "integer_divide", [["tree", "mod", [["tree", "divide", [["tree", "multiply", [["number.decimal", "3"], ["number.decimal", "4"]]], ["number.decimal", "5"]]], ["number.decimal", "6"]]], ["number.decimal", "7"]]]]], ["number.decimal", "8"]]], ["tree", "equal_to", [["number.decimal", "9"], ["number.decimal", "10"]]]]], ["tree", "not", [["number.decimal", "12"]]]]], ["string", "\"sus\""], ["tree", ["array access", ["name", "x"]], [["number.decimal", "5"]]], ["tree", ["function call", "amogus"], [["tree", ["array access", ["name", "arr"]], [["number.decimal", "1"], ["number.decimal", "5"]]], ["tree", ["array access", ["name", "bigarr"]], [["tree", ["function call", "sussy"], []], ["tree", ["function call", "sussier"], [["number.decimal", "37"], ["tree", ["array access", ["name", "y"]], [["tree", "add", [["number.decimal", "5"], ["tree", ["array access", ["name", "z"]], [["number.decimal", "0"], ["number.decimal", "0"]]]]]]]]]]], ["number.decimal", "5"]]]]], ["number.decimal", "0"]]]
     ]
-}).map(([name, [program, output]]) => [
+});
+const parseStatementTests = ((data) => Object.entries(data).map(([name, [program, output]]) => [
     name,
     program.map(token),
-    output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
-]);
-const parseStatementTests = Object.entries({
+    output == "error" ? "error" : applyAnyRange(process_Statement(output))
+]))({
     output1: [
         [
             ["keyword.output", "OUTPUT"],
@@ -1816,13 +1820,15 @@ const parseStatementTests = Object.entries({
         ],
         "error"
     ],
-}).map(([name, [program, output]]) => [
+});
+const parseProgramTests = ((data) => Object.entries(data).map(([name, [program, output]]) => [
     name,
-    program.map(token),
-    output == "error" ? "error" : applyAnyRange(process_Statement(output))
-]);
-//TODO convert to IIFE for intellisense
-const parseProgramTests = Object.entries({
+    {
+        program: "",
+        tokens: program.map(token)
+    },
+    output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
+]))({
     output: [
         [
             ["keyword.output", "OUTPUT"],
@@ -2408,15 +2414,13 @@ const parseProgramTests = Object.entries({
                     ]],
             }]
     ],
-}).map(([name, [program, output]]) => [
+});
+const functionArgumentTests = ((data) => Object.entries(data).map(([name, [input, output]]) => ({
     name,
-    {
-        program: "",
-        tokens: program.map(token)
-    },
-    output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
-]);
-const functionArgumentTests = Object.entries({
+    input: input.map(token),
+    output: output == "error" ? "error" :
+        Object.fromEntries(Object.entries(output).map(([name, [type, passMode]]) => [name, { type, passMode: passMode ? passMode : jasmine.any(String) }]))
+})))({
     blank: [[], {}],
     oneArg: [[
             ["name", "arg"],
@@ -2665,12 +2669,7 @@ const functionArgumentTests = Object.entries({
             ["punctuation.colon", ":"],
             ["name", "STRING"],
         ], "error"],
-}).map(([name, [input, output]]) => ({
-    name,
-    input: input.map(token),
-    output: output == "error" ? "error" :
-        Object.fromEntries(Object.entries(output).map(([name, [type, passMode]]) => [name, { type, passMode: passMode ? passMode : jasmine.any(String) }]))
-}));
+});
 const parseTypeTests = Object.entries({
     simpleType1: [[
             ["name", "INTEGER"],

@@ -6,7 +6,12 @@ import { AssignmentStatement, DeclarationStatement, DefineStatement, ForEndState
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
-const tokenTests = Object.entries<[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]>({
+const tokenTests = ((data:Record<string,
+	[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
+>) => Object.entries(data).map<[
+		name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup:(r:Runtime) => unknown
+	]>(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => {})])
+)({
 	boolean_true: [
 		["boolean.true", "true"],
 		"BOOLEAN",
@@ -123,9 +128,20 @@ const tokenTests = Object.entries<[token:_Token, type:VariableType | null, outpu
 			r => r.getCurrentScope().types["amogusType"] = type
 		];
 	})(),
-}).map<[name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup:(r:Runtime) => unknown]>(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => {})]);
+});
 
-const expressionTests = Object.entries<[expression:_ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]>({
+const expressionTests = ((data:Record<string, [
+	expression:_ExpressionAST, type:VariableType | null,
+	output:[type:VariableType, value:VariableValue] | ["error"],
+	setup?:(r:Runtime) => unknown
+]>) =>
+	Object.entries(data).map<[
+	name:string, expression:ExpressionAST, type:VariableType | null,
+	output:[type:VariableType, value:VariableValue] | ["error"],
+	setup:(r:Runtime) => unknown
+]>(([k, v]) => [
+	k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => {})
+]))({
 	addNumbers: [
 		["tree", "add", [
 			["number.decimal", "5"],
@@ -387,9 +403,19 @@ const expressionTests = Object.entries<[expression:_ExpressionAST, type:Variable
 			}
 		]
 	})(),
-}).map<[name:string, expression:ExpressionAST, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup:(r:Runtime) => unknown]>(([k, v]) => [k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => {})]);
+});
 
-const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs?:string[]]>({
+const statementTests = ((data:Record<string, [
+	statement:_ProgramASTLeafNode, setup:(r:Runtime) => unknown,
+	test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown),
+	inputs?:string[]
+]>) => Object.entries(data).map<[
+	name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown,
+	test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown),
+	inputs:string[]
+]>(([k, v]) =>
+	[k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]
+))({
 	declare1: [
 		[DeclarationStatement, [
 			["keyword.declare", "DECLARE"],
@@ -461,9 +487,15 @@ const statementTests = Object.entries<[statement:_ProgramASTLeafNode, setup:(r:R
 				.toEqual(new SetVariableType("amog", "INTEGER"));
 		}
 	],
-}).map<[name:string, statement:ProgramASTLeafNode, setup:(r:Runtime) => unknown, test:"error" | ((r:Runtime, result:StatementExecutionResult | void, message:string | null) => unknown), inputs:string[]]>(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]);
+});
 
-const programTests = Object.entries<[program:_ProgramAST, output:string | ["error"], inputs?:string[]]>({
+const programTests = ((data:Record<string,
+	[program:_ProgramAST, output:string | ["error"], inputs?:string[]]
+>) => Object.entries(data).map<
+	[name:string, program:ProgramAST, output:string | ["error"], inputs:string[]]
+>(([k, v]) =>
+	[k, process_ProgramAST(v[0]), v[1], v[2] ?? []]
+))({
 	declare_assign_output: [
 		[
 			[DeclarationStatement, [
@@ -586,7 +618,7 @@ const programTests = Object.entries<[program:_ProgramAST, output:string | ["erro
 		}],
 		`1\n3\n5\n7\n9\n11\n13\n15`
 	],
-}).map<[name:string, program:ProgramAST, output:string | ["error"], inputs:string[]]>(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]);
+});
 
 
 describe("runtime's token evaluator", () => {

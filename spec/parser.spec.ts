@@ -27,7 +27,15 @@ import {
 //i miss rust macros
 
 
-const sampleExpressions = Object.entries<[program:_Token[], output:_ExpressionAST | "error"]>({
+const sampleExpressions = ((d:Record<string, [program:_Token[], output:_ExpressionAST | "error"]>) =>
+	Object.entries(d).map<
+		[name:string, expression:Token[], output:jasmine.Expected<ExpressionAST> | "error"]
+	>(([name, [program, output]]) => [
+		name,
+		program.map(token),
+		output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
+	]
+))({
 	number: [
 		[
 			["number.decimal", "5"],
@@ -1025,15 +1033,17 @@ const sampleExpressions = Object.entries<[program:_Token[], output:_ExpressionAS
 		//yet another huge tree
 		["tree","add",[["tree",["function call","amogus"],[["tree","and",[["tree","greater_than",[["tree","greater_than",[["tree","subtract",[["tree","add",[["number.decimal","1"],["number.decimal","2"]]],["tree","integer_divide",[["tree","mod",[["tree","divide",[["tree","multiply",[["number.decimal","3"],["number.decimal","4"]]],["number.decimal","5"]]],["number.decimal","6"]]],["number.decimal","7"]]]]],["number.decimal","8"]]],["tree","equal_to",[["number.decimal","9"],["number.decimal","10"]]]]],["tree","not",[["number.decimal","12"]]]]],["string","\"sus\""],["tree",["array access",["name","x"]],[["number.decimal","5"]]],["tree",["function call","amogus"],[["tree",["array access",["name","arr"]],[["number.decimal","1"],["number.decimal","5"]]],["tree",["array access",["name","bigarr"]],[["tree",["function call","sussy"],[]],["tree",["function call","sussier"],[["number.decimal","37"],["tree",["array access",["name","y"]],[["tree","add",[["number.decimal","5"],["tree",["array access",["name","z"]],[["number.decimal","0"],["number.decimal","0"]]]]]]]]]]],["number.decimal","5"]]]]],["number.decimal","0"]]]
 	]
-}).map<[name:string, expression:Token[], output:jasmine.Expected<ExpressionAST> | "error"]>(([name, [program, output]]) =>
-	[
+});
+
+const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Statement | "error"]>) =>
+	Object.entries(data).map<
+		[name:string, program:Token[], output:jasmine.Expected<Statement> | "error"]
+	>(([name, [program, output]]) => [
 		name,
 		program.map(token),
-		output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
+		output == "error" ? "error" : applyAnyRange(process_Statement(output))
 	]
-);
-
-const parseStatementTests = Object.entries<[program:_Token[], output:_Statement | "error"]>({
+))({
 	output1: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -1839,16 +1849,20 @@ const parseStatementTests = Object.entries<[program:_Token[], output:_Statement 
 		],
 		"error"
 	],
-}).map<[name:string, program:Token[], output:jasmine.Expected<Statement> | "error"]>(([name, [program, output]]) =>
-	[
-		name,
-		program.map(token),
-		output == "error" ? "error" : applyAnyRange(process_Statement(output))
-	]
-);
+});
 
-//TODO convert to IIFE for intellisense
-const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST | "error"]>({
+const parseProgramTests = ((data:Record<string, [program:_Token[], output:_ProgramAST | "error"]>) =>
+	Object.entries(data).map<
+		[name:string, program:TokenizedProgram, output:jasmine.Expected<ProgramAST> | "error"]
+	>(([name, [program, output]]) => [
+		name,
+		{
+			program: "", //SPECNULL
+			tokens: program.map(token)
+		},
+		output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
+	]
+))({
 	output: [
 		[
 			["keyword.output", "OUTPUT"],
@@ -2434,18 +2448,22 @@ const parseProgramTests = Object.entries<[program:_Token[], output:_ProgramAST |
 			]],
 		}]
 	],
-}).map<[name:string, program:TokenizedProgram, output:jasmine.Expected<ProgramAST> | "error"]>(([name, [program, output]]) =>
-	[
-		name,
-		{
-			program: "", //SPECNULL
-			tokens: program.map(token)
-		},
-		output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
-	]
-);
+});
 
-const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}> | "error";}[] = Object.entries<[input:_Token[], output:Record<string, [type:UnresolvedVariableType, passMode?:PassMode]> | "error"]>({
+const functionArgumentTests = ((data:Record<string,
+	[input:_Token[], output:Record<string, [type:UnresolvedVariableType, passMode?:PassMode]
+> | "error"]>) => Object.entries(data).map<
+	{name:string; input:Token[]; output:Record<string,
+		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}
+	> | "error";}
+>(([name, [input, output]]) => ({
+	name,
+	input: input.map(token),
+	output: output == "error" ? "error" :
+		Object.fromEntries(Object.entries(output).map(
+			([name, [type, passMode]]) => [name, {type, passMode: passMode ? passMode : jasmine.any(String)}]
+		))
+})))({
 	blank: [[
 
 	],{
@@ -2698,14 +2716,7 @@ const functionArgumentTests:{name:string; input:Token[]; output:Record<string, {
 		["punctuation.colon", ":"],
 		["name", "STRING"],
 	], "error"],
-}).map(([name, [input, output]]) => ({
-	name,
-	input: input.map(token),
-	output: output == "error" ? "error" :
-		Object.fromEntries(Object.entries(output).map(
-			([name, [type, passMode]]) => [name, {type, passMode: passMode ? passMode : jasmine.any(String)}]
-		))
-}));
+});
 
 
 const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _ExpressionASTArrayTypeNode | "error"]>({
