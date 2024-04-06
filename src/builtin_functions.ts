@@ -27,6 +27,7 @@ export const builtinFunctions = (
 		))
 )({
 	//TODO commit fish-commands type shenanigans and obtain the type of impl's arguments from args
+	//Source: s23 P22 insert
 	LEFT: {
 		args: [
 			["ThisString", "STRING"],
@@ -39,6 +40,7 @@ export const builtinFunctions = (
 			return str.slice(0, num);
 		},
 	},
+	//source: spec 5.5
 	RIGHT: {
 		args: [
 			["ThisString", "STRING"],
@@ -51,6 +53,7 @@ export const builtinFunctions = (
 			return str.slice(-num);
 		},
 	},
+	//source: spec 5.5
 	MID: {
 		args: [
 			["ThisString", "STRING"],
@@ -65,6 +68,7 @@ export const builtinFunctions = (
 			return str.slice(start - 1, start + length - 1);
 		},
 	},
+	//source: spec 5.5
 	LENGTH: {
 		args: [
 			["ThisString", "STRING"],
@@ -74,50 +78,72 @@ export const builtinFunctions = (
 			return str.length;
 		},
 	},
+	//Source: s23 P22 insert
 	TO_UPPER: {
 		args: [
-			["x", "STRING"],
+			["x", "STRING"], //TODO string or char
 		],
-		returnType: "STRING",
+		returnType: "STRING", //string or char
 		impl(str:string){
 			return str.toUpperCase();
 		},
 	},
+	//Source: s23 P22 insert
 	TO_LOWER: {
 		args: [
-			["x", "STRING"],
+			["x", "STRING"], //TODO string or char
 		],
-		returnType: "STRING",
+		returnType: "STRING", //string or char
 		impl(str:string){
 			return str.toLowerCase();
 		},
 	},
+	//source: spec 5.5
+	UCASE: {
+		args: [
+			["x", "CHAR"],
+		],
+		returnType: "CHAR",
+		impl(str:string){
+			return str.toUpperCase();
+		},
+	},
+	//source: spec 5.5
+	LCASE: {
+		args: [
+			["x", "CHAR"],
+		],
+		returnType: "CHAR",
+		impl(str:string){
+			return str.toLowerCase();
+		},
+	},
+	//Source: s23 P22 insert
 	NUM_TO_STR: {
 		args: [
-			//TODO proper generics
-			["x", "REAL"],
+			["x", "REAL"], //TODO real or integer
 		],
-		returnType: "STRING",
+		returnType: "STRING", //string or char
 		impl(num:number){
 			return num.toString();
 		},
 	},
+	//Source: s23 P22 insert
 	STR_TO_NUM: {
 		args: [
-			//TODO proper generics
-			["x", "STRING"],
+			["x", "STRING"], //TODO string or char
 		],
-		returnType: "REAL",
+		returnType: "REAL", //real or integer
 		impl(str:string){
 			const out = Number(str);
 			if(isNaN(out) || !Number.isSafeInteger(out)) fail(`Cannot convert "${out}" to a number`);
 			return out;
 		},
 	},
+	//Source: s23 P22 insert
 	IS_NUM: {
 		args: [
-			//TODO proper generics
-			["ThisString", "STRING"],
+			["ThisString", "STRING"], //TODO proper generics: string or char
 		],
 		returnType: "BOOLEAN",
 		impl(str:string){
@@ -125,6 +151,7 @@ export const builtinFunctions = (
 			return !isNaN(out) && Number.isFinite(out);
 		},
 	},
+	//Source: s23 P22 insert
 	ASC: {
 		args: [
 			["ThisChar", "CHAR"],
@@ -143,7 +170,7 @@ export const builtinFunctions = (
 			return String.fromCharCode(x);
 		},
 	},
-
+	//source: spec 5.6
 	INT: {
 		args: [
 			["x", "REAL"],
@@ -153,6 +180,7 @@ export const builtinFunctions = (
 			return Math.trunc(x);
 		},
 	},
+	//source: spec 5.6
 	RAND: {
 		args: [
 			["x", "INTEGER"],
@@ -163,6 +191,7 @@ export const builtinFunctions = (
 		},
 	},
 
+	//Source: s23 P22 insert
 	DAY: {
 		args: [
 			["ThisDate", "DATE"],
@@ -172,6 +201,7 @@ export const builtinFunctions = (
 			return x.getDate();
 		}
 	},
+	//Source: s23 P22 insert
 	MONTH: {
 		args: [
 			["ThisDate", "DATE"],
@@ -181,6 +211,7 @@ export const builtinFunctions = (
 			return x.getMonth();
 		}
 	},
+	//Source: s23 P22 insert
 	YEAR: {
 		args: [
 			["ThisDate", "DATE"],
@@ -190,6 +221,7 @@ export const builtinFunctions = (
 			return x.getFullYear();
 		}
 	},
+	//Source: s23 P22 insert
 	DAYINDEX: {
 		args: [
 			["ThisDate", "DATE"],
@@ -199,6 +231,7 @@ export const builtinFunctions = (
 			return x.getDay() + 1;
 		}
 	},
+	//Source: s23 P22 insert
 	SETDATE: {
 		args: [
 			["Day", "INTEGER"],
@@ -210,6 +243,7 @@ export const builtinFunctions = (
 			return new Date(y, m, d);
 		}
 	},
+	//Source: s23 P22 insert
 	TODAY: {
 		args: [],
 		returnType: "DATE",

@@ -12,6 +12,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
         returnType: data.returnType
     }])))({
     //TODO commit fish-commands type shenanigans and obtain the type of impl's arguments from args
+    //Source: s23 P22 insert
     LEFT: {
         args: [
             ["ThisString", "STRING"],
@@ -26,6 +27,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return str.slice(0, num);
         },
     },
+    //source: spec 5.5
     RIGHT: {
         args: [
             ["ThisString", "STRING"],
@@ -40,6 +42,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return str.slice(-num);
         },
     },
+    //source: spec 5.5
     MID: {
         args: [
             ["ThisString", "STRING"],
@@ -57,6 +60,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return str.slice(start - 1, start + length - 1);
         },
     },
+    //source: spec 5.5
     LENGTH: {
         args: [
             ["ThisString", "STRING"],
@@ -66,38 +70,60 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return str.length;
         },
     },
+    //Source: s23 P22 insert
     TO_UPPER: {
         args: [
-            ["x", "STRING"],
+            ["x", "STRING"], //TODO string or char
         ],
         returnType: "STRING",
         impl(str) {
             return str.toUpperCase();
         },
     },
+    //Source: s23 P22 insert
     TO_LOWER: {
         args: [
-            ["x", "STRING"],
+            ["x", "STRING"], //TODO string or char
         ],
         returnType: "STRING",
         impl(str) {
             return str.toLowerCase();
         },
     },
+    //source: spec 5.5
+    UCASE: {
+        args: [
+            ["x", "CHAR"],
+        ],
+        returnType: "CHAR",
+        impl(str) {
+            return str.toUpperCase();
+        },
+    },
+    //source: spec 5.5
+    LCASE: {
+        args: [
+            ["x", "CHAR"],
+        ],
+        returnType: "CHAR",
+        impl(str) {
+            return str.toLowerCase();
+        },
+    },
+    //Source: s23 P22 insert
     NUM_TO_STR: {
         args: [
-            //TODO proper generics
-            ["x", "REAL"],
+            ["x", "REAL"], //TODO real or integer
         ],
         returnType: "STRING",
         impl(num) {
             return num.toString();
         },
     },
+    //Source: s23 P22 insert
     STR_TO_NUM: {
         args: [
-            //TODO proper generics
-            ["x", "STRING"],
+            ["x", "STRING"], //TODO string or char
         ],
         returnType: "REAL",
         impl(str) {
@@ -107,10 +133,10 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return out;
         },
     },
+    //Source: s23 P22 insert
     IS_NUM: {
         args: [
-            //TODO proper generics
-            ["ThisString", "STRING"],
+            ["ThisString", "STRING"], //TODO proper generics: string or char
         ],
         returnType: "BOOLEAN",
         impl(str) {
@@ -118,6 +144,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return !isNaN(out) && Number.isFinite(out);
         },
     },
+    //Source: s23 P22 insert
     ASC: {
         args: [
             ["ThisChar", "CHAR"],
@@ -136,6 +163,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return String.fromCharCode(x);
         },
     },
+    //source: spec 5.6
     INT: {
         args: [
             ["x", "REAL"],
@@ -145,6 +173,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return Math.trunc(x);
         },
     },
+    //source: spec 5.6
     RAND: {
         args: [
             ["x", "INTEGER"],
@@ -154,6 +183,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return Math.random() * x;
         },
     },
+    //Source: s23 P22 insert
     DAY: {
         args: [
             ["ThisDate", "DATE"],
@@ -163,6 +193,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return x.getDate();
         }
     },
+    //Source: s23 P22 insert
     MONTH: {
         args: [
             ["ThisDate", "DATE"],
@@ -172,6 +203,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return x.getMonth();
         }
     },
+    //Source: s23 P22 insert
     YEAR: {
         args: [
             ["ThisDate", "DATE"],
@@ -181,6 +213,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return x.getFullYear();
         }
     },
+    //Source: s23 P22 insert
     DAYINDEX: {
         args: [
             ["ThisDate", "DATE"],
@@ -190,6 +223,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return x.getDay() + 1;
         }
     },
+    //Source: s23 P22 insert
     SETDATE: {
         args: [
             ["Day", "INTEGER"],
@@ -201,6 +235,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return new Date(y, m, d);
         }
     },
+    //Source: s23 P22 insert
     TODAY: {
         args: [],
         returnType: "DATE",
