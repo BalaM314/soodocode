@@ -696,6 +696,152 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
             }],
         `1\n3\n5\n7\n9\n11\n13\n15`
     ],
+    builtin_function_left: [
+        [
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "LEFT"],
+                    ["parentheses.open", "("],
+                    ["string", `"amogus sussy"`],
+                    ["punctuation.comma", ","],
+                    ["number.decimal", "5"],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        `amogu`
+    ],
+    builtin_function_left_invalid_negative: [
+        [
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "LEFT"],
+                    ["parentheses.open", "("],
+                    ["string", `"amogus sussy"`],
+                    ["punctuation.comma", ","],
+                    ["number.decimal", "-5"],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        ["error"],
+    ],
+    builtin_function_left_invalid_too_large: [
+        [
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "LEFT"],
+                    ["parentheses.open", "("],
+                    ["string", `"amogus sussy"`],
+                    ["punctuation.comma", ","],
+                    ["number.decimal", "55"],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        ["error"],
+    ],
+    builtin_function_to_upper_string: [
+        [
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "TO_UPPER"],
+                    ["parentheses.open", "("],
+                    ["string", `"amogus SUssy"`],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        `AMOGUS SUSSY`
+    ],
+    builtin_function_to_upper_char: [
+        [
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "TO_UPPER"],
+                    ["parentheses.open", "("],
+                    ["char", `'a'`],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        `A`
+    ],
+    builtin_function_num_to_str_literal: [
+        [
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "NUM_TO_STR"],
+                    ["parentheses.open", "("],
+                    ["number.decimal", "571"],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        `571`
+    ],
+    builtin_function_num_to_str_integer_string: [
+        [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "INTEGER"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["number.decimal", `2`],
+                ]],
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "NUM_TO_STR"],
+                    ["parentheses.open", "("],
+                    ["name", "x"],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        `2`
+    ],
+    builtin_function_num_to_str_real_string: [
+        [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "REAL"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["number.decimal", `2.21`],
+                ]],
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "NUM_TO_STR"],
+                    ["parentheses.open", "("],
+                    ["name", "x"],
+                    ["parentheses.close", ")"],
+                ]]
+        ],
+        `2.21`
+    ],
+    builtin_function_num_to_str_int_char: [
+        [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "CHAR"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["tree", ["function call", "NUM_TO_STR"], [
+                            ["number.decimal", "2"],
+                        ]],
+                ]],
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "x"],
+                ]]
+        ],
+        `2`
+    ],
 });
 describe("runtime's token evaluator", () => {
     for (const [name, token, type, output, setup] of tokenTests) {
