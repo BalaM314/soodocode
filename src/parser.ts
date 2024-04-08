@@ -159,17 +159,18 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 			blockStack.push(node);
 		} else if(statement.category == "block_end"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement);
+			if(!lastNode) fail(`Unexpected statement: no open blocks`, statement);
 			else if(statement instanceof lastNode.controlStatements[0].type.blockEndStatement<Function>()){
 				lastNode.controlStatements.push(statement);
+				lastNode.controlStatements[0].type.checkBlock(lastNode);
 				blockStack.pop();
-			} else fail(`Unexpected statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
+			} else fail(`Unexpected statement: current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
 		} else if(statement.category == "block_multi_split"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) fail(`Unexpected statement "${statement.toString()}": this statement must be inside a block`, statement, null);
+			if(!lastNode) fail(`Unexpected statement: this statement must be inside a block`, statement, null);
 			let errorMessage:true | string;
 			if((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
-				fail(`Unexpected statement "${statement.toString()}": ${errorMessage}`, statement, null);
+				fail(`Unexpected statement: ${errorMessage}`, statement, null);
 			lastNode.controlStatements.push(statement);
 			lastNode.nodeGroups.push([]);
 		} else statement.category satisfies never;
@@ -429,10 +430,12 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.type == "unary_prefix" && o.token == token.type);
 }
 
-export const parseExpressionLeafNode = errorBoundary((input:Token):ExpressionASTLeafNode => {
+export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+
+export const parseExpressionLeafNode = errorBoundary((token:Token):ExpressionASTLeafNode => {
 	//Number, string, char, boolean, and variables can be parsed as-is
-	if(input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
-		return input;
+	if(expressionLeafNodeTypes.includes(token.type))
+		return token;
 	else
 		fail(`Invalid expression leaf node`);
 });

@@ -161,14 +161,14 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	type: T;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
-	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement;
+	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement | DefineStatement;
 	mutable: true;
 }
 export type ConstantData<T extends VariableType = VariableType> = {
 	type: T;
 	/** Cannot be null */
 	value: VariableTypeMapping<T>;
-	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement | DefineStatement;
+	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
 	mutable: false;
 }
 /** Either a function or a procedure */

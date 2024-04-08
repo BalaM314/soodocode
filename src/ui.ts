@@ -306,7 +306,7 @@ function executeSoodocode(){
 			});
 		}
 		outputDiv.style.color = "white";
-		runtime.runBlock(program.nodes); //TODO runProgram() ?
+		runtime.runBlock(program.nodes);
 		outputDiv.innerText = output.join("\n") || "<no output>";
 	} catch(err){
 		outputDiv.style.color = "red";

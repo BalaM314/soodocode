@@ -61,7 +61,7 @@ export class ExpressionASTArrayAccessNode implements TextRanged {
 		return this.allTokens.map(t => t.getText()).join(" ");
 	}
 }
-/** Represents a special node that represents an array type, such as `ARRAY[1:!0, 1:20] OF INTEGER` */
+/** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
 export class ExpressionASTArrayTypeNode implements TextRanged {
 	range: TextRange;
 	constructor(

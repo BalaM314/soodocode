@@ -141,21 +141,22 @@ export function parse({ program, tokens }) {
         else if (statement.category == "block_end") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Unexpected statement "${statement.toString()}": no open blocks`, statement);
+                fail(`Unexpected statement: no open blocks`, statement);
             else if (statement instanceof lastNode.controlStatements[0].type.blockEndStatement()) {
                 lastNode.controlStatements.push(statement);
+                lastNode.controlStatements[0].type.checkBlock(lastNode);
                 blockStack.pop();
             }
             else
-                fail(`Unexpected statement "${statement.toString()}": current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
+                fail(`Unexpected statement: current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
         }
         else if (statement.category == "block_multi_split") {
             const lastNode = blockStack.at(-1);
             if (!lastNode)
-                fail(`Unexpected statement "${statement.toString()}": this statement must be inside a block`, statement, null);
+                fail(`Unexpected statement: this statement must be inside a block`, statement, null);
             let errorMessage;
             if ((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
-                fail(`Unexpected statement "${statement.toString()}": ${errorMessage}`, statement, null);
+                fail(`Unexpected statement: ${errorMessage}`, statement, null);
             lastNode.controlStatements.push(statement);
             lastNode.nodeGroups.push([]);
         }
@@ -413,10 +414,11 @@ function cannotEndExpression(token) {
 function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.type == "unary_prefix" && o.token == token.type);
 }
-export const parseExpressionLeafNode = errorBoundary((input) => {
+export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+export const parseExpressionLeafNode = errorBoundary((token) => {
     //Number, string, char, boolean, and variables can be parsed as-is
-    if (input.type.startsWith("number.") || input.type == "name" || input.type == "string" || input.type == "char" || input.type.startsWith("boolean."))
-        return input;
+    if (expressionLeafNodeTypes.includes(token.type))
+        return token;
     else
         fail(`Invalid expression leaf node`);
 });
