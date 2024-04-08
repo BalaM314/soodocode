@@ -419,7 +419,8 @@ let AssignmentStatement = (() => {
             const variable = runtime.evaluateExpr(this.target, "variable");
             if (!variable.mutable)
                 fail(`Cannot assign to constant ${this.target.toString()}`);
-            variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+            //CONFIG allow copying arrays/records by assignment?
+            variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");

@@ -612,18 +612,18 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 		fail(fquote`Cannot coerce value of type ${from} to ${to}`);
 	}
-	cloneValue<T extends VariableType>(value:VariableTypeMapping<T> | null, type:T):VariableTypeMapping<T> | null {
+	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
 		if(value == null) return value;
 		if(typeof value == "string") return value;
 		if(typeof value == "number") return value;
 		if(typeof value == "boolean") return value;
 		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
 		if(Array.isArray(value)) return value.slice().map(v =>
-			this.cloneValue(v, this.resolveVariableType((type as ArrayVariableType).type))
+			this.cloneValue(this.resolveVariableType((type as ArrayVariableType).type), v)
 		) as VariableTypeMapping<T>;
 		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)
-			.map(([k, v]) => [k, this.cloneValue(v as any, type.fields[k])])
+			.map(([k, v]) => [k, this.cloneValue(type.fields[k], v as any)])
 		) as VariableTypeMapping<T>;
 		crash(`cannot clone value of type ${type}`);
 	}
@@ -663,7 +663,7 @@ help: try using DIV instead of / to produce an integer as the result`
 					declaration: func,
 					mutable: true,
 					type: rType,
-					value: this.cloneValue(value, rType)
+					value: this.cloneValue(rType, value)
 				}
 			}
 			i ++;

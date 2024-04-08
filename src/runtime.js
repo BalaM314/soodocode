@@ -568,7 +568,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 fail(fquote `Cannot coerce value of type ${from} to ${to}`);
             }
-            cloneValue(value, type) {
+            cloneValue(type, value) {
                 if (value == null)
                     return value;
                 if (typeof value == "string")
@@ -580,12 +580,12 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (value instanceof Date)
                     return new Date(value);
                 if (Array.isArray(value))
-                    return value.slice().map(v => this.cloneValue(v, this.resolveVariableType(type.type)));
+                    return value.slice().map(v => this.cloneValue(this.resolveVariableType(type.type), v));
                 if (type instanceof PointerVariableType)
                     return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
                 if (type instanceof RecordVariableType)
                     return Object.fromEntries(Object.entries(value)
-                        .map(([k, v]) => [k, this.cloneValue(v, type.fields[k])]));
+                        .map(([k, v]) => [k, this.cloneValue(type.fields[k], v)]));
                 crash(`cannot clone value of type ${type}`);
             }
             callFunction(funcNode, args, requireReturnValue = false) {
@@ -628,7 +628,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                             declaration: func,
                             mutable: true,
                             type: rType,
-                            value: this.cloneValue(value, rType)
+                            value: this.cloneValue(rType, value)
                         };
                     }
                     i++;

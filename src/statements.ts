@@ -232,7 +232,7 @@ export class DefineStatement extends Statement {
 		runtime.getCurrentScope().variables[this.name.text] = {
 			type,
 			declaration: this,
-			mutable: false,
+			mutable: false, //TODO true
 			value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1] as VariableTypeMapping<PrimitiveVariableType>)
 		};
 	}
@@ -326,7 +326,8 @@ export class AssignmentStatement extends Statement {
 	run(runtime:Runtime){
 		const variable = runtime.evaluateExpr(this.target, "variable");
 		if(!variable.mutable) fail(`Cannot assign to constant ${this.target.toString()}`);
-		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+		//CONFIG allow copying arrays/records by assignment?
+		variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
