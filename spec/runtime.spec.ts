@@ -2,7 +2,7 @@ import "jasmine";
 import { Token, token } from "../src/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../src/runtime.js";
-import { AssignmentStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, OutputStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../src/statements.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
@@ -968,6 +968,205 @@ const programTests = ((data:Record<string,
 			]]
 		],
 		`1.2345`
+	],
+	procedure_1: [
+		[
+			{
+				type: "procedure",
+				controlStatements: [
+					[ProcedureStatement, [
+						["keyword.procedure", "PROCEDURE"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["parentheses.close", ")"],
+					]]
+				],
+				nodeGroups: [[
+					[OutputStatement, [
+						["keyword.output", "OUTPUT"],
+						["string", `"hi"`]
+					]]
+				]]
+			},
+			[CallStatement, [
+				["keyword.call", "CALL"],
+				["tree", ["function call", "amogus"], [
+				]]
+			]]
+		],
+		`hi`
+	],
+	function_1: [
+		[
+			{
+				type: "function",
+				controlStatements: [
+					[FunctionStatement, [
+						["keyword.function", "FUNCTION"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["parentheses.close", ")"],
+						["keyword.returns", "RETURNS"],
+						["name", "INTEGER"]
+					]]
+				],
+				nodeGroups: [[
+					[ReturnStatement, [
+						["keyword.return", "RETURN"],
+						["number.decimal", "5"]
+					]]
+				]]
+			},
+			[OutputStatement, [
+				["keyword.output", "OUTPUT"],
+				["name", "amogus"],
+				["parentheses.open", "("],
+				["parentheses.close", ")"],
+			]]
+		],
+		`5`
+	],
+	procedure_byval_array: [
+		[
+			{
+				type: "procedure",
+				controlStatements: [
+					[ProcedureStatement, [
+						["keyword.procedure", "PROCEDURE"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["keyword.by-value", "BYVAL"],
+						["name", "arr"],
+						["punctuation.colon", ":"],
+						["keyword.array", "ARRAY"],
+						["bracket.open", "["],
+						["number.decimal", "1"],
+						["punctuation.colon", ":"],
+						["number.decimal", "10"],
+						["bracket.close", "]"],
+						["keyword.of", "OF"],
+						["name", "INTEGER"],
+						["parentheses.close", ")"],
+					]]
+				],
+				nodeGroups: [[
+					[AssignmentStatement, [
+						["tree", ["array access", ["name", "arr"]], [
+							["number.decimal", "1"],
+						]],
+						["operator.assignment", "<-"],
+						["number.decimal", "6"]
+					]],
+					[OutputStatement, [
+						["keyword.output", "OUTPUT"],
+						["name", "arr"],
+						["bracket.open", "["],
+						["number.decimal", "1"],
+						["bracket.close", "]"],
+					]],
+				]]
+			},
+			[DeclarationStatement, [
+				["keyword.declare", "DECLARE"],
+				["name", "foo"],
+				["punctuation.colon", ":"],
+				[[
+					[1, 10]
+				], ["name", "INTEGER"]]
+			]],
+			[AssignmentStatement, [
+				["tree", ["array access", ["name", "foo"]], [
+					["number.decimal", "1"],
+				]],
+				["operator.assignment", "<-"],
+				["number.decimal", "5"]
+			]],
+			[CallStatement, [
+				["keyword.call", "CALL"],
+				["tree", ["function call", "amogus"], [
+					["name", "foo"]
+				]]
+			]],
+			[OutputStatement, [
+				["keyword.output", "OUTPUT"],
+				["name", "foo"],
+				["bracket.open", "["],
+				["number.decimal", "1"],
+				["bracket.close", "]"],
+			]],
+		],
+		`6\n5`
+	],
+	procedure_byref_array: [
+		[
+			{
+				type: "procedure",
+				controlStatements: [
+					[ProcedureStatement, [
+						["keyword.procedure", "PROCEDURE"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["keyword.by-reference", "BYREF"],
+						["name", "arr"],
+						["punctuation.colon", ":"],
+						["keyword.array", "ARRAY"],
+						["bracket.open", "["],
+						["number.decimal", "1"],
+						["punctuation.colon", ":"],
+						["number.decimal", "10"],
+						["bracket.close", "]"],
+						["keyword.of", "OF"],
+						["name", "INTEGER"],
+						["parentheses.close", ")"],
+					]]
+				],
+				nodeGroups: [[
+					[AssignmentStatement, [
+						["tree", ["array access", ["name", "arr"]], [
+							["number.decimal", "1"],
+						]],
+						["operator.assignment", "<-"],
+						["number.decimal", "6"]
+					]],
+					[OutputStatement, [
+						["keyword.output", "OUTPUT"],
+						["name", "arr"],
+						["bracket.open", "["],
+						["number.decimal", "1"],
+						["bracket.close", "]"],
+					]],
+				]]
+			},
+			[DeclarationStatement, [
+				["keyword.declare", "DECLARE"],
+				["name", "foo"],
+				["punctuation.colon", ":"],
+				[[
+					[1, 10]
+				], ["name", "INTEGER"]]
+			]],
+			[AssignmentStatement, [
+				["tree", ["array access", ["name", "foo"]], [
+					["number.decimal", "1"],
+				]],
+				["operator.assignment", "<-"],
+				["number.decimal", "5"]
+			]],
+			[CallStatement, [
+				["keyword.call", "CALL"],
+				["tree", ["function call", "amogus"], [
+					["name", "foo"]
+				]]
+			]],
+			[OutputStatement, [
+				["keyword.output", "OUTPUT"],
+				["name", "foo"],
+				["bracket.open", "["],
+				["number.decimal", "1"],
+				["bracket.close", "]"],
+			]],
+		],
+		`6\n6`
 	],
 });
 

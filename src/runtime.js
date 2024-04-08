@@ -117,6 +117,13 @@ export class SetVariableType {
         fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
     }
 }
+export function typesEqual(a, b) {
+    return a == b ||
+        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (a.type == b.type ||
+            Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1])) ||
+        (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
+        (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
+}
 let Runtime = (() => {
     var _a;
     let _instanceExtraInitializers = [];
@@ -545,7 +552,7 @@ help: try using DIV instead of / to produce an integer as the result`);
             }
             coerceValue(value, from, to) {
                 //typescript really hates this function, beware
-                if (from == to)
+                if (typesEqual(from, to))
                     return value;
                 if (from == "STRING" && to == "CHAR")
                     return value;
@@ -560,6 +567,26 @@ help: try using DIV instead of / to produce an integer as the result`);
                         return `[${value.join(",")}]`;
                 }
                 fail(fquote `Cannot coerce value of type ${from} to ${to}`);
+            }
+            cloneValue(value, type) {
+                if (value == null)
+                    return value;
+                if (typeof value == "string")
+                    return value;
+                if (typeof value == "number")
+                    return value;
+                if (typeof value == "boolean")
+                    return value;
+                if (value instanceof Date)
+                    return new Date(value);
+                if (Array.isArray(value))
+                    return value.slice().map(v => this.cloneValue(v, this.resolveVariableType(type.type)));
+                if (type instanceof PointerVariableType)
+                    return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
+                if (type instanceof RecordVariableType)
+                    return Object.fromEntries(Object.entries(value)
+                        .map(([k, v]) => [k, this.cloneValue(v, type.fields[k])]));
+                crash(`cannot clone value of type ${type}`);
             }
             callFunction(funcNode, args, requireReturnValue = false) {
                 const func = funcNode.controlStatements[0];
@@ -583,14 +610,27 @@ help: try using DIV instead of / to produce an integer as the result`);
                 let i = 0;
                 for (const [name, { type, passMode }] of func.args) {
                     const rType = this.resolveVariableType(type);
-                    const value = this.evaluateExpr(args[i], rType)[1];
-                    scope.variables[name] = {
-                        declaration: func,
-                        mutable: passMode == "reference",
-                        type: rType,
-                        get value() { return value; },
-                        set value(value) { crash(`Attempted assignment to constant`); }
-                    };
+                    if (passMode == "reference") {
+                        const varData = this.evaluateExpr(args[i], "variable");
+                        if (!typesEqual(varData.type, rType))
+                            fail(fquote `Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type.`);
+                        scope.variables[name] = {
+                            declaration: func,
+                            mutable: true,
+                            type: rType,
+                            get value() { return varData.value ?? fail(`Variable (passed by reference) has not been initialized`); },
+                            set value(value) { varData.value = value; }
+                        };
+                    }
+                    else {
+                        const value = this.evaluateExpr(args[i], rType)[1];
+                        scope.variables[name] = {
+                            declaration: func,
+                            mutable: true,
+                            type: rType,
+                            value: this.cloneValue(value, rType)
+                        };
+                    }
                     i++;
                 }
                 const output = this.runBlock(funcNode.nodeGroups[0], scope);

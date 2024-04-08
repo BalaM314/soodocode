@@ -121,7 +121,17 @@ export class SetVariableType {
 	}
 }
 
-//TODO refactor this to support pointers, user defined records, etc
+export function typesEqual(a:VariableType, b:VariableType):boolean {
+	return a == b ||
+		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (
+			a.type == b.type ||
+			Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1]
+		)) ||
+		(a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
+		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
+	;
+}
+
 export type UnresolvedVariableType =
 	| PrimitiveVariableType
 	| ArrayVariableType
@@ -591,7 +601,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	}
 	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S):VariableTypeMapping<S> {
 		//typescript really hates this function, beware
-		if(from as any == to) return value as any;
+		if(typesEqual(from, to)) return value as any;
 		if(from == "STRING" && to == "CHAR") return value as any;
 		if(from == "INTEGER" && to == "REAL") return value as any;
 		if(from == "REAL" && to == "INTEGER") return Math.trunc(value as any) as any;
@@ -601,6 +611,21 @@ help: try using DIV instead of / to produce an integer as the result`
 			else if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as any;
 		}
 		fail(fquote`Cannot coerce value of type ${from} to ${to}`);
+	}
+	cloneValue<T extends VariableType>(value:VariableTypeMapping<T> | null, type:T):VariableTypeMapping<T> | null {
+		if(value == null) return value;
+		if(typeof value == "string") return value;
+		if(typeof value == "number") return value;
+		if(typeof value == "boolean") return value;
+		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
+		if(Array.isArray(value)) return value.slice().map(v =>
+			this.cloneValue(v, this.resolveVariableType((type as ArrayVariableType).type))
+		) as VariableTypeMapping<T>;
+		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
+		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)
+			.map(([k, v]) => [k, this.cloneValue(v as any, type.fields[k])])
+		) as VariableTypeMapping<T>;
+		crash(`cannot clone value of type ${type}`);
 	}
 	callFunction(funcNode:FunctionData, args:ExpressionAST[]):VariableValue | null;
 	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue:true):VariableValue;
@@ -622,13 +647,24 @@ help: try using DIV instead of / to produce an integer as the result`
 		let i = 0;
 		for(const [name, {type, passMode}] of func.args){
 			const rType = this.resolveVariableType(type);
-			const value = this.evaluateExpr(args[i], rType)[1];
-			scope.variables[name] = {
-				declaration: func,
-				mutable: passMode == "reference", //TODO properly handle pass mode
-				type: rType,
-				get value(){ return value },
-				set value(value){ crash(`Attempted assignment to constant`); }
+			if(passMode == "reference"){
+				const varData = this.evaluateExpr(args[i], "variable");
+				if(!typesEqual(varData.type, rType)) fail(fquote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type.`);
+				scope.variables[name] = {
+					declaration: func,
+					mutable: true,
+					type: rType,
+					get value(){ return varData.value ?? fail(`Variable (passed by reference) has not been initialized`); },
+					set value(value){ varData.value = value; }
+				}
+			} else {
+				const value = this.evaluateExpr(args[i], rType)[1];
+				scope.variables[name] = {
+					declaration: func,
+					mutable: true,
+					type: rType,
+					value: this.cloneValue(value, rType)
+				}
 			}
 			i ++;
 		}
