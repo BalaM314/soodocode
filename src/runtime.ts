@@ -10,17 +10,16 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import {
 	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST,
-	ExpressionASTNode,
-	ExpressionASTArrayAccessNode,
-	ExpressionASTFunctionCallNode
+	ExpressionASTNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode
 } from "./parser-types.js";
 import { operators } from "./parser.js";
 import {
 	ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement,
-	FunctionStatement, FunctionArguments,
-	DefineStatement
+	FunctionStatement, DefineStatement, BuiltinFunctionArguments
 } from "./statements.js";
-import { crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
+
+//TODO: fix coercion
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> =
@@ -173,7 +172,7 @@ export type FunctionData = ProgramASTBranchNode & {
 	controlStatements: [start:ProcedureStatement, end:Statement];
 });
 export type BuiltinFunctionData = {
-	args:FunctionArguments;
+	args:BuiltinFunctionArguments;
 	returnType:VariableType | null;
 	name:string;
 	impl: (...args:VariableValue[]) => VariableValue;
@@ -306,6 +305,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 	evaluateExpr(expr:ExpressionAST, type:"variable"):VariableData | ConstantData;
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):[type:T & {}, value:VariableTypeMapping<T>];
 	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData | ConstantData {
+		if(expr == undefined) crash(`expr was ${expr}`);
 
 		if(expr instanceof Token)
 			return this.evaluateToken(expr, type as never);
@@ -643,11 +643,23 @@ help: try using DIV instead of / to produce an integer as the result`
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {
 		if(fn.args.size != args.length) fail(`Incorrect number of arguments for function ${fn.name}`);
 		if(!fn.returnType) fail(`Builtin function ${fn.name} did not return a value`);
+		//TODO check return type
 		const processedArgs:VariableValue[] = [];
 		let i = 0;
+		nextArg:
 		for(const {type} of fn.args.values()){
-			processedArgs.push(this.evaluateExpr(args[i], this.resolveVariableType(type))[1]);
-			i ++;
+			let errors:SoodocodeError[] = [];
+			for(const possibleType of type){
+				try {
+					processedArgs.push(this.evaluateExpr(args[i], possibleType)[1]);
+					i ++;
+					continue nextArg;
+				} catch(err){
+					if(err instanceof SoodocodeError) errors.push(err);
+					else throw err;
+				}
+			}
+			throw errors.at(-1);
 		}
 		//TODO maybe coerce the value?
 		return [fn.returnType, fn.impl(...processedArgs) as VariableValue];

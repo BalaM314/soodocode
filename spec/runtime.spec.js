@@ -738,26 +738,62 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
         ],
         ["error"],
     ],
-    builtin_function_to_upper_string: [
+    builtin_function_mid: [
         [
             [OutputStatement, [
                     ["keyword.output", "OUTPUT"],
-                    ["name", "TO_UPPER"],
+                    ["name", "MID"],
                     ["parentheses.open", "("],
-                    ["string", `"amogus SUssy"`],
+                    ["string", `"amogus sussy"`],
+                    ["punctuation.comma", ","],
+                    ["number.decimal", "2"],
+                    ["punctuation.comma", ","],
+                    ["number.decimal", "3"],
                     ["parentheses.close", ")"],
+                ]]
+        ],
+        `mog`
+    ],
+    builtin_function_to_upper_string: [
+        [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "STRING"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["tree", ["function call", "TO_UPPER"], [
+                            ["string", `"amogus SUssy"`],
+                        ]]
+                ]],
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "x"],
                 ]]
         ],
         `AMOGUS SUSSY`
     ],
     builtin_function_to_upper_char: [
         [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "CHAR"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["tree", ["function call", "TO_UPPER"], [
+                            ["char", `'a'`],
+                        ]]
+                ]],
             [OutputStatement, [
                     ["keyword.output", "OUTPUT"],
-                    ["name", "TO_UPPER"],
-                    ["parentheses.open", "("],
-                    ["char", `'a'`],
-                    ["parentheses.close", ")"],
+                    ["name", "x"],
                 ]]
         ],
         `A`
@@ -841,6 +877,50 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
                 ]]
         ],
         `2`
+    ],
+    builtin_function_str_to_num_char_int: [
+        [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "INTEGER"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["tree", ["function call", "STR_TO_NUM"], [
+                            ["char", "'2'"],
+                        ]],
+                ]],
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "x"],
+                ]]
+        ],
+        `2`
+    ],
+    builtin_function_str_to_num_string_real: [
+        [
+            [DeclarationStatement, [
+                    ["keyword.declare", "DECLARE"],
+                    ["name", "x"],
+                    ["punctuation.colon", ":"],
+                    ["name", "REAL"],
+                ]],
+            [AssignmentStatement, [
+                    ["name", "x"],
+                    ["operator.assignment", "<-"],
+                    ["tree", ["function call", "STR_TO_NUM"], [
+                            ["string", `"1.2345"`],
+                        ]],
+                ]],
+            [OutputStatement, [
+                    ["keyword.output", "OUTPUT"],
+                    ["name", "x"],
+                ]]
+        ],
+        `1.2345`
     ],
 });
 describe("runtime's token evaluator", () => {

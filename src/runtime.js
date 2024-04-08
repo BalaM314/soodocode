@@ -43,7 +43,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
-import { crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType {
     constructor(lengthInformation, type) {
@@ -227,6 +227,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 }
             }
             evaluateExpr(expr, type) {
+                if (expr == undefined)
+                    crash(`expr was ${expr}`);
                 if (expr instanceof Token)
                     return this.evaluateToken(expr, type);
                 //Branch node
@@ -606,11 +608,25 @@ help: try using DIV instead of / to produce an integer as the result`);
                     fail(`Incorrect number of arguments for function ${fn.name}`);
                 if (!fn.returnType)
                     fail(`Builtin function ${fn.name} did not return a value`);
+                //TODO check return type
                 const processedArgs = [];
                 let i = 0;
-                for (const { type } of fn.args.values()) {
-                    processedArgs.push(this.evaluateExpr(args[i], this.resolveVariableType(type))[1]);
-                    i++;
+                nextArg: for (const { type } of fn.args.values()) {
+                    let errors = [];
+                    for (const possibleType of type) {
+                        try {
+                            processedArgs.push(this.evaluateExpr(args[i], possibleType)[1]);
+                            i++;
+                            continue nextArg;
+                        }
+                        catch (err) {
+                            if (err instanceof SoodocodeError)
+                                errors.push(err);
+                            else
+                                throw err;
+                        }
+                    }
+                    throw errors.at(-1);
                 }
                 //TODO maybe coerce the value?
                 return [fn.returnType, fn.impl(...processedArgs)];

@@ -11,7 +11,7 @@ import { fail } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
-	args: [name:string, type:PrimitiveVariableType][];
+	args: [name:string, type:PrimitiveVariableType | PrimitiveVariableType[]][];
 	returnType: PrimitiveVariableType;
 	impl(...args:VariableValue[]):VariableValue;
 };
@@ -19,14 +19,13 @@ export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
 		Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
-				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: a[1]}])),
+				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: Array.isArray(a[1]) ? a[1] : [a[1]]}])),
 				name,
 				impl: data.impl,
 				returnType: data.returnType
 			}]
 		))
 )({
-	//TODO commit fish-commands type shenanigans and obtain the type of impl's arguments from args
 	//Source: s23 P22 insert
 	LEFT: {
 		args: [
@@ -81,7 +80,7 @@ export const builtinFunctions = (
 	//Source: s23 P22 insert
 	TO_UPPER: {
 		args: [
-			["x", "STRING"], //TODO string or char
+			["x", ["STRING", "CHAR"]],
 		],
 		returnType: "STRING", //string or char
 		impl(str:string){
@@ -91,7 +90,7 @@ export const builtinFunctions = (
 	//Source: s23 P22 insert
 	TO_LOWER: {
 		args: [
-			["x", "STRING"], //TODO string or char
+			["x", ["STRING", "CHAR"]],
 		],
 		returnType: "STRING", //string or char
 		impl(str:string){
@@ -121,9 +120,9 @@ export const builtinFunctions = (
 	//Source: s23 P22 insert
 	NUM_TO_STR: {
 		args: [
-			["x", "REAL"], //TODO real or integer
+			["x", "REAL"], //real or integer, but ints coerce to reals
 		],
-		returnType: "STRING", //string or char
+		returnType: "STRING", //string or char, overflow handled automatically by coercion
 		impl(num:number){
 			return num.toString();
 		},
@@ -131,19 +130,19 @@ export const builtinFunctions = (
 	//Source: s23 P22 insert
 	STR_TO_NUM: {
 		args: [
-			["x", "STRING"], //TODO string or char
+			["x", ["STRING", "CHAR"]],
 		],
-		returnType: "REAL", //real or integer
+		returnType: "REAL", //real or integer, but ints coerce to reals
 		impl(str:string){
 			const out = Number(str);
-			if(isNaN(out) || !Number.isSafeInteger(out)) fail(`Cannot convert "${out}" to a number`);
+			if(isNaN(out) || !Number.isFinite(out)) fail(`Cannot convert "${out}" to a number`);
 			return out;
 		},
 	},
 	//Source: s23 P22 insert
 	IS_NUM: {
 		args: [
-			["ThisString", "STRING"], //TODO proper generics: string or char
+			["ThisString", ["STRING", "CHAR"]],
 		],
 		returnType: "BOOLEAN",
 		impl(str:string){
