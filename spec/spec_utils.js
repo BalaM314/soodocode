@@ -26,7 +26,7 @@ export const operatorTokens = {
     "pointer_dereference": token("operator.pointer", "^"),
 };
 export function is_ExpressionASTArrayTypeNode(input) {
-    return Array.isArray(input[1]);
+    return Array.isArray(input[0]);
 }
 export function process_Statement(input) {
     return new input[0](input[1].map(process_ExpressionASTExt));
@@ -39,7 +39,7 @@ export function process_ExpressionASTExt(input) {
     if (is_ExpressionASTArrayTypeNode(input))
         return process_ExpressionASTArrayTypeNode(input);
     else
-        return process_ExpressionAST(input); //unsafe
+        return process_ExpressionAST(input);
 }
 export function process_ExpressionAST(input) {
     if (input.length == 2) {

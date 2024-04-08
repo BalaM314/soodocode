@@ -42,7 +42,8 @@ export const statements = {
 };
 
 export type PassMode = "value" | "reference";
-export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:PassMode}>
+export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:PassMode}>;
+export type BuiltinFunctionArguments = Map<string, {type:PrimitiveVariableType[], passMode:PassMode}>;
 export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:PassMode}];
 export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:PassMode | null}];
 
@@ -331,7 +332,7 @@ export class AssignmentStatement extends Statement {
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
 	outMessage: (Token | ExpressionAST)[];
-	constructor(tokens:Token[]){
+	constructor(tokens:[Token, ...Token[]]){
 		super(tokens);
 		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
 	}

@@ -61,7 +61,7 @@ export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointe
 }
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
-	return Array.isArray(input[1]);
+	return Array.isArray(input[0]);
 }
 
 export function process_Statement(input:_Statement):Statement {
@@ -76,12 +76,12 @@ export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayType
 	);
 }
 
-export function process_ExpressionASTExt<TIn extends _ExpressionASTExt>(input:TIn):
+export function process_ExpressionASTExt<TIn extends _ExpressionASTLeafNode | _ExpressionASTArrayTypeNode | _ExpressionASTBranchNode>(input:TIn):
 	TIn extends (_ExpressionASTArrayTypeNode | _ExpressionASTLeafNode)
 		? (ExpressionASTArrayTypeNode | ExpressionASTLeafNode)
 		: (ExpressionASTNodeExt) {
 	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
-	else return process_ExpressionAST(input) as any; //unsafe
+	else return process_ExpressionAST(input) as ExpressionASTLeafNode;
 }
 
 export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
