@@ -102,22 +102,24 @@ export const parseType = errorBoundary((tokens) => {
         return [group[0], group[2]];
     }), tokens.at(-1), tokens);
 });
+export function splitTokensToStatements(tokens) {
+    const statementData = [
+        [CaseBranchStatement, 2],
+        [CaseBranchStatement, 3],
+        [CaseBranchRangeStatement, 4],
+        [CaseBranchRangeStatement, 5],
+        [CaseBranchRangeStatement, 6],
+    ];
+    return splitTokens(tokens, "newline").map(ts => {
+        for (const [statement, length] of statementData) {
+            if (ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length))))
+                return [ts.slice(0, length), ts.slice(length)];
+        }
+        return [ts];
+    }).flat(1).filter(ts => ts.length > 0); //remove blank lines
+}
 export function parse({ program, tokens }) {
-    //TODO remove hardcoded special handling for case branch statement
-    let lines = splitTokens(tokens, "newline").map(ts => 
-    //TODO fix this horrible bodge
-    ts.length >= 3 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 2))) //if the first two tokens are valid for a case branch
-        ? [ts.slice(0, 2), ts.slice(2)] //split the case branch statement from whatever comes after
-        : ts.length >= 4 && Array.isArray(checkStatement(CaseBranchStatement, ts.slice(0, 3))) //Repeat the check with the first three tokens due to negative numbers
-            ? [ts.slice(0, 3), ts.slice(3)]
-            : ts.length >= 5 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 4))) //Repeat the check with the first four tokens due to range case statement
-                ? [ts.slice(0, 4), ts.slice(4)]
-                : ts.length >= 6 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 5))) //Repeat the check with the first five tokens due to negative numbers
-                    ? [ts.slice(0, 5), ts.slice(5)]
-                    : ts.length >= 7 && Array.isArray(checkStatement(CaseBranchRangeStatement, ts.slice(0, 6))) //Repeat the check with the first six tokens due to negative numbers
-                        ? [ts.slice(0, 6), ts.slice(6)]
-                        : [ts] //nothing, but put it in an array anyway so it gets flattened again
-    ).flat(1).filter(ts => ts.length > 0); //remove blank lines
+    let lines = splitTokensToStatements(tokens);
     const statements = lines.map(parseStatement);
     const programNodes = [];
     function getActiveBuffer() {

@@ -443,7 +443,7 @@ export class IfStatement extends Statement {
 }
 @statement("else", "ELSE", "block_multi_split", "keyword.else")
 export class ElseStatement extends Statement {}
-@statement("switch", "CASE OF x", "block", "keyword.case", "keyword.of", "expr+")
+@statement("switch", "CASE OF x", "block", "auto", "keyword.case", "keyword.of", "expr+")
 export class SwitchStatement extends Statement {
 	//First node group is blank, because a blank node group is created and then the block is split by the first case branch
 	expression:ExpressionAST;
@@ -462,7 +462,7 @@ export class SwitchStatement extends Statement {
 		for(const [i, statement] of controlStatements.entries()){
 			if(i == 0) continue;
 			//skip the first one as that is the switch statement
-			if(statement instanceof SwitchEndStatement) break; //end of statements
+			if(statement instanceof this.type.blockEndStatement<Function>()) break; //end of statements
 			else if(statement instanceof CaseBranchStatement){
 				const caseToken = statement.value;
 				//Ensure that OTHERWISE is the last branch
@@ -480,8 +480,6 @@ export class SwitchStatement extends Statement {
 		}
 	}
 }
-@statement("switch.end", "ENDCASE", "block_end", "keyword.case_end")
-export class SwitchEndStatement extends Statement {}
 @statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")
 export class CaseBranchStatement extends Statement {
 	value:Token;

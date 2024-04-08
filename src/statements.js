@@ -657,7 +657,7 @@ let ElseStatement = (() => {
 })();
 export { ElseStatement };
 let SwitchStatement = (() => {
-    let _classDecorators = [statement("switch", "CASE OF x", "block", "keyword.case", "keyword.of", "expr+")];
+    let _classDecorators = [statement("switch", "CASE OF x", "block", "auto", "keyword.case", "keyword.of", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -682,7 +682,7 @@ let SwitchStatement = (() => {
                 if (i == 0)
                     continue;
                 //skip the first one as that is the switch statement
-                if (statement instanceof SwitchEndStatement)
+                if (statement instanceof this.type.blockEndStatement())
                     break; //end of statements
                 else if (statement instanceof CaseBranchStatement) {
                     const caseToken = statement.value;
@@ -712,25 +712,6 @@ let SwitchStatement = (() => {
     return SwitchStatement = _classThis;
 })();
 export { SwitchStatement };
-let SwitchEndStatement = (() => {
-    let _classDecorators = [statement("switch.end", "ENDCASE", "block_end", "keyword.case_end")];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = Statement;
-    var SwitchEndStatement = _classThis = class extends _classSuper {
-    };
-    __setFunctionName(_classThis, "SwitchEndStatement");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        SwitchEndStatement = _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return SwitchEndStatement = _classThis;
-})();
-export { SwitchEndStatement };
 let CaseBranchStatement = (() => {
     let _classDecorators = [statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")];
     let _classDescriptor;

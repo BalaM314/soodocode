@@ -30,7 +30,7 @@ export type VariableTypeMapping<T> =
 	T extends "BOOLEAN" ? boolean :
 	T extends "DATE" ? Date :
 	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
-	T extends RecordVariableType ? Record<string, unknown> :
+	T extends RecordVariableType ? Record<string, unknown> : //TODO should be VariableValue not VariableTypeMapping, but that causes huge lag
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
@@ -73,7 +73,7 @@ export class ArrayVariableType {
 export class RecordVariableType {
 	constructor(
 		public name: string,
-		public fields: Record<string, VariableType>, //TODO forbid recursive types
+		public fields: Record<string, VariableType>,
 	){}
 	toString(){
 		return fquote`record type ${this.name}`;
@@ -161,7 +161,7 @@ export type ConstantData<T extends VariableType = VariableType> = {
 	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement | DefineStatement;
 	mutable: false;
 }
-/** Either a function or a procedure TODO cleanup */
+/** Either a function or a procedure */
 export type FunctionData = ProgramASTBranchNode & {
 	nodeGroups: [body:ProgramASTNode[]];
 } & ({
