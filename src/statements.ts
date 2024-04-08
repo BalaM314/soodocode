@@ -7,18 +7,21 @@ This file contains the definitions for every statement type supported by Soodoco
 
 
 import {
-	EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, Runtime,
-	SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue
+	EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType,
+	RecordVariableType, Runtime, SetVariableType, UnresolvedVariableType, VariableType,
+	VariableTypeMapping, VariableValue
 } from "./runtime.js";
 import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
 import {
 	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode,
 	ProgramASTBranchNode, TokenMatcher
 } from "./parser-types.js";
-import { isLiteral, parseExpression, parseFunctionArguments, parseType, processTypeData } from "./parser.js";
+import {
+	expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData
+} from "./parser.js";
 import {
 	displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange,
-	SoodocodeError, fquote,
+	fquote, getUniqueNamesFromCommaSeparatedTokenList,
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
@@ -88,6 +91,9 @@ export class Statement implements TextRanged {
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
 		return fquote`current block of type ${block.type} cannot be split by ${statement.toString()}`;
 	}
+	static checkBlock(block:ProgramASTBranchNode){
+		//crash if the block is invalid or incomplete
+	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
@@ -153,21 +159,7 @@ export class DeclarationStatement extends Statement {
 		super(tokens);
 
 		//parse the variable list
-		//TODO replace with splitArray or somehow refactor this code
-		let expected:"name" | "commaOrColon" = "name";
-		for(const token of tokens.slice(1, -2) as Token[]){
-			if(expected == "name"){
-				if(token.type == "name"){
-					this.variables.push(token.text);
-					expected = "commaOrColon";
-				} else fail(`Expected name, got ${token}`);
-			} else {
-				if(token.type == "punctuation.comma") expected = "name";
-				else fail(`Expected comma, got ${token}`);
-			}
-		}
-		if(expected == "name") fail(`Expected name, found ${tokens.at(-2)}`);
-
+		this.variables = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(1, -2) as Token[], tokens.at(-2) as Token).map(t => t.text);
 		this.varType = processTypeData(tokens.at(-1)!);
 	}
 	run(runtime:Runtime){
@@ -214,17 +206,7 @@ export class DefineStatement extends Statement {
 		super(tokens);
 		this.name = tokens[1];
 		this.variableType = tokens.at(-1)!;
-		const valuesTokens = tokens.slice(3, -3);
-		//TODO duped code: getUniqueTextFromCommaSeparatedTokenList
-		this.values = splitTokensOnComma(valuesTokens).map(group => {
-			if(group.length != 1) fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
-			return group[0];
-		});
-		if(new Set(this.values.map(t => t.text)).size !== this.values.length){
-			//duplicate value
-			const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
-			fail(fquote`Duplicate enum value ${duplicateToken.text}`, duplicateToken);
-		}
+		this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(3, -3), tokens.at(-3), expressionLeafNodeTypes);
 	}
 	run(runtime:Runtime){
 		const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
@@ -232,7 +214,7 @@ export class DefineStatement extends Statement {
 		runtime.getCurrentScope().variables[this.name.text] = {
 			type,
 			declaration: this,
-			mutable: false, //TODO true
+			mutable: true,
 			value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1] as VariableTypeMapping<PrimitiveVariableType>)
 		};
 	}
@@ -261,16 +243,7 @@ export class TypeEnumStatement extends Statement {
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
 		super(tokens);
 		this.name = tokens[1];
-		const valuesTokens = tokens.slice(4, -1);
-		this.values = splitTokensOnComma(valuesTokens).map(group => {
-			if(group.length != 1) fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
-			return group[0];
-		});
-		if(new Set(this.values.map(t => t.text)).size !== this.values.length){
-			//duplicate value
-			const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
-			fail(fquote`Duplicate enum value ${duplicateToken.text}`, duplicateToken);
-		}
+		this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
 	}
 	run(runtime:Runtime){
 		runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(
@@ -457,9 +430,11 @@ export class SwitchStatement extends Statement {
 		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty.`;
 		return true;
 	}
+	static checkBlock({nodeGroups}:ProgramASTBranchNode){
+		if(nodeGroups[0].length > 0) fail(`Statements are not allowed before the first case branch`, nodeGroups[0]);
+	}
 	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
 		const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
-		if(nodeGroups[0].length > 0) fail(`Statements are not allowed before the first case branch`, nodeGroups[0]); //TODO this is a syntax error and should error at parse
 		for(const [i, statement] of controlStatements.entries()){
 			if(i == 0) continue;
 			//skip the first one as that is the switch statement

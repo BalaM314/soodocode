@@ -45,8 +45,8 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType } from "./runtime.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode } from "./parser-types.js";
-import { isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote, } from "./utils.js";
+import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote, getUniqueNamesFromCommaSeparatedTokenList, } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -80,6 +80,9 @@ export class Statement {
     /** Warning: block will not include the usual end statement. */
     static supportsSplit(block, statement) {
         return fquote `current block of type ${block.type} cannot be split by ${statement.toString()}`;
+    }
+    static checkBlock(block) {
+        //crash if the block is invalid or incomplete
     }
     run(runtime) {
         crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -143,26 +146,7 @@ let DeclarationStatement = (() => {
             super(tokens);
             this.variables = [];
             //parse the variable list
-            //TODO replace with splitArray or somehow refactor this code
-            let expected = "name";
-            for (const token of tokens.slice(1, -2)) {
-                if (expected == "name") {
-                    if (token.type == "name") {
-                        this.variables.push(token.text);
-                        expected = "commaOrColon";
-                    }
-                    else
-                        fail(`Expected name, got ${token}`);
-                }
-                else {
-                    if (token.type == "punctuation.comma")
-                        expected = "name";
-                    else
-                        fail(`Expected comma, got ${token}`);
-                }
-            }
-            if (expected == "name")
-                fail(`Expected name, found ${tokens.at(-2)}`);
+            this.variables = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(1, -2), tokens.at(-2)).map(t => t.text);
             this.varType = processTypeData(tokens.at(-1));
         }
         run(runtime) {
@@ -238,18 +222,7 @@ let DefineStatement = (() => {
             super(tokens);
             this.name = tokens[1];
             this.variableType = tokens.at(-1);
-            const valuesTokens = tokens.slice(3, -3);
-            //TODO duped code: getUniqueTextFromCommaSeparatedTokenList
-            this.values = splitTokensOnComma(valuesTokens).map(group => {
-                if (group.length != 1)
-                    fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
-                return group[0];
-            });
-            if (new Set(this.values.map(t => t.text)).size !== this.values.length) {
-                //duplicate value
-                const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
-                fail(fquote `Duplicate enum value ${duplicateToken.text}`, duplicateToken);
-            }
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(3, -3), tokens.at(-3), expressionLeafNodeTypes);
         }
         run(runtime) {
             const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
@@ -258,7 +231,7 @@ let DefineStatement = (() => {
             runtime.getCurrentScope().variables[this.name.text] = {
                 type,
                 declaration: this,
-                mutable: false,
+                mutable: true,
                 value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1])
             };
         }
@@ -312,17 +285,7 @@ let TypeEnumStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1];
-            const valuesTokens = tokens.slice(4, -1);
-            this.values = splitTokensOnComma(valuesTokens).map(group => {
-                if (group.length != 1)
-                    fail(`All enum values must be separated by commas`, group.length > 0 ? group : valuesTokens);
-                return group[0];
-            });
-            if (new Set(this.values.map(t => t.text)).size !== this.values.length) {
-                //duplicate value
-                const duplicateToken = valuesTokens.find((a, i) => valuesTokens.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate enum value in ${valuesTokens.join(" ")}`);
-                fail(fquote `Duplicate enum value ${duplicateToken.text}`, duplicateToken);
-            }
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
         }
         run(runtime) {
             runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(this.name.text, this.values.map(t => t.text));
@@ -675,10 +638,12 @@ let SwitchStatement = (() => {
                 return `Previous case branch was empty.`;
             return true;
         }
+        static checkBlock({ nodeGroups }) {
+            if (nodeGroups[0].length > 0)
+                fail(`Statements are not allowed before the first case branch`, nodeGroups[0]);
+        }
         runBlock(runtime, { controlStatements, nodeGroups }) {
             const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
-            if (nodeGroups[0].length > 0)
-                fail(`Statements are not allowed before the first case branch`, nodeGroups[0]); //TODO this is a syntax error and should error at parse
             for (const [i, statement] of controlStatements.entries()) {
                 if (i == 0)
                     continue;

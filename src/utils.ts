@@ -108,6 +108,30 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 	}
 	return output;
 }
+export function getUniqueNamesFromCommaSeparatedTokenList(tokens:Token[], nextToken?:Token, validNames:TokenType[] = ["name"]):Token[] {
+	const names:Token[] = [];
+
+	let expected:"name" | "commaOrColon" = "name";
+	for(const token of tokens){
+		if(expected == "name"){
+			if(validNames.includes(token.type)){
+				names.push(token);
+				expected = "commaOrColon";
+			} else fail(fquote`Expected a name, got ${token.text}`, token);
+		} else {
+			if(token.type == "punctuation.comma"){
+				expected = "name";
+			} else fail(fquote`Expected a comma, got ${token.text}`, token);
+		}
+	}
+	if(expected == "name") fail(`Expected a name, found ${nextToken?.text ?? "end of input"}`, nextToken);
+	if(new Set(names.map(t => t.text)).size !== names.length){
+		//duplicate value
+		const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
+		fail(fquote`Duplicate name ${duplicateToken.text} in list`, duplicateToken, tokens);
+	}
+	return names;
+}
 
 export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {
 	if(tokens.length == 0) crash(`Cannot get range from an empty list of tokens`);

@@ -2356,6 +2356,33 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			]
 		}]
 	],
+	case_invalid_statements_before_first_branch: [
+		[
+			["keyword.case", "CASE"],
+			["keyword.of", "OF"],
+			["name", "x"],
+			["newline", "\n"],
+			["keyword.output", "OUTPUT"],
+			["name", "amogus"],
+			["newline", "\n"],
+			["number.decimal", "1"],
+			["punctuation.colon", ":"],
+			["keyword.output", "OUTPUT"],
+			["name", "x"],
+			["newline", "\n"],
+			["keyword.output", "OUTPUT"],
+			["string", `"amogus"`],
+			["newline", "\n"],
+			["number.decimal", "2"],
+			["punctuation.colon", ":"],
+			["newline", "\n"],
+			["keyword.output", "OUTPUT"],
+			["string", `"sussy"`],
+			["newline", "\n"],
+			["keyword.case_end", "ENDCASE"],
+		],
+		"error"
+	],
 	for_simple: [
 		[
 			["keyword.for", "FOR"],

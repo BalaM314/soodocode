@@ -112,6 +112,35 @@ export function splitTokensOnComma(arr) {
     }
     return output;
 }
+export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, validNames = ["name"]) {
+    const names = [];
+    let expected = "name";
+    for (const token of tokens) {
+        if (expected == "name") {
+            if (validNames.includes(token.type)) {
+                names.push(token);
+                expected = "commaOrColon";
+            }
+            else
+                fail(fquote `Expected a name, got ${token.text}`, token);
+        }
+        else {
+            if (token.type == "punctuation.comma") {
+                expected = "name";
+            }
+            else
+                fail(fquote `Expected a comma, got ${token.text}`, token);
+        }
+    }
+    if (expected == "name")
+        fail(`Expected a name, found ${nextToken?.text ?? "end of input"}`, nextToken);
+    if (new Set(names.map(t => t.text)).size !== names.length) {
+        //duplicate value
+        const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
+        fail(fquote `Duplicate name ${duplicateToken.text} in list`, duplicateToken, tokens);
+    }
+    return names;
+}
 export function getTotalRange(tokens) {
     if (tokens.length == 0)
         crash(`Cannot get range from an empty list of tokens`);
