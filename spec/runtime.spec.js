@@ -1,7 +1,7 @@
 import "jasmine";
 import { token } from "../src/lexer-types.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType } from "../src/runtime.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../src/statements.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../src/statements.js";
 import { SoodocodeError, fail } from "../src/utils.js";
 import { process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 const tokenTests = ((data) => Object.entries(data).map(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => { })]))({
@@ -377,7 +377,7 @@ const expressionTests = ((data) => Object.entries(data).map(([k, v]) => [
 });
 const statementTests = ((data) => Object.entries(data).map(([k, v]) => [k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]))({
     declare1: [
-        [DeclarationStatement, [
+        [DeclareStatement, [
                 ["keyword.declare", "DECLARE"],
                 ["name", "x"],
                 ["punctuation.colon", ":"],
@@ -385,7 +385,7 @@ const statementTests = ((data) => Object.entries(data).map(([k, v]) => [k, proce
             ]],
         r => { },
         r => expect(r.scopes[0]?.variables?.x).toEqual({
-            declaration: jasmine.any(DeclarationStatement),
+            declaration: jasmine.any(DeclareStatement),
             mutable: true,
             type: "DATE",
             value: null
@@ -451,7 +451,7 @@ const statementTests = ((data) => Object.entries(data).map(([k, v]) => [k, proce
 const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process_ProgramAST(v[0]), v[1], v[2] ?? []]))({
     declare_assign_output: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -519,7 +519,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     case_simple: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -571,7 +571,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     case_variable_input_type_mismatch: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -756,7 +756,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_to_upper_string: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -778,7 +778,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_to_upper_char: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -812,7 +812,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_num_to_str_integer_string: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -835,7 +835,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_num_to_str_real_string: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -858,7 +858,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_num_to_str_int_char: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -880,7 +880,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_str_to_num_char_int: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -902,7 +902,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
     ],
     builtin_function_str_to_num_string_real: [
         [
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "x"],
                     ["punctuation.colon", ":"],
@@ -987,7 +987,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
                             ["keyword.procedure", "PROCEDURE"],
                             ["name", "amogus"],
                             ["parentheses.open", "("],
-                            ["keyword.by-value", "BYVAL"],
+                            ["keyword.pass_mode.by_value", "BYVAL"],
                             ["name", "arr"],
                             ["punctuation.colon", ":"],
                             ["keyword.array", "ARRAY"],
@@ -1018,7 +1018,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
                             ]],
                     ]]
             },
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "foo"],
                     ["punctuation.colon", ":"],
@@ -1058,7 +1058,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
                             ["keyword.procedure", "PROCEDURE"],
                             ["name", "amogus"],
                             ["parentheses.open", "("],
-                            ["keyword.by-reference", "BYREF"],
+                            ["keyword.pass_mode.by_reference", "BYREF"],
                             ["name", "arr"],
                             ["punctuation.colon", ":"],
                             ["keyword.array", "ARRAY"],
@@ -1089,7 +1089,7 @@ const programTests = ((data) => Object.entries(data).map(([k, v]) => [k, process
                             ]],
                     ]]
             },
-            [DeclarationStatement, [
+            [DeclareStatement, [
                     ["keyword.declare", "DECLARE"],
                     ["name", "foo"],
                     ["punctuation.colon", ":"],

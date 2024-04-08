@@ -648,7 +648,6 @@ help: try using DIV instead of / to produce an integer as the result`);
                     fail(`Incorrect number of arguments for function ${fn.name}`);
                 if (!fn.returnType)
                     fail(`Builtin function ${fn.name} did not return a value`);
-                //TODO check return type
                 const processedArgs = [];
                 let i = 0;
                 nextArg: for (const { type } of fn.args.values()) {
@@ -668,8 +667,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                     }
                     throw errors.at(-1);
                 }
-                //TODO maybe coerce the value?
-                return [fn.returnType, fn.impl(...processedArgs)];
+                if (returnType)
+                    return [returnType, this.coerceValue(fn.impl(...processedArgs), fn.returnType, returnType)];
+                else
+                    return [fn.returnType, fn.impl(...processedArgs)];
             }
             runBlock(code, scope) {
                 if (scope)

@@ -14,7 +14,7 @@ import {
 } from "./parser-types.js";
 import { operators } from "./parser.js";
 import {
-	ProcedureStatement, Statement, ConstantStatement, DeclarationStatement, ForStatement,
+	ProcedureStatement, Statement, ConstantStatement, DeclareStatement, ForStatement,
 	FunctionStatement, DefineStatement, BuiltinFunctionArguments
 } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
@@ -29,7 +29,7 @@ export type VariableTypeMapping<T> =
 	T extends "CHAR" ? string :
 	T extends "BOOLEAN" ? boolean :
 	T extends "DATE" ? Date :
-	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> ://Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
+	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : //Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
 	T extends RecordVariableType ? Record<string, unknown> : //TODO should be VariableValue not VariableTypeMapping, but that causes huge lag
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
@@ -161,7 +161,7 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	type: T;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
-	declaration: DeclarationStatement | FunctionStatement | ProcedureStatement | DefineStatement;
+	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement;
 	mutable: true;
 }
 export type ConstantData<T extends VariableType = VariableType> = {
@@ -679,7 +679,6 @@ help: try using DIV instead of / to produce an integer as the result`
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {
 		if(fn.args.size != args.length) fail(`Incorrect number of arguments for function ${fn.name}`);
 		if(!fn.returnType) fail(`Builtin function ${fn.name} did not return a value`);
-		//TODO check return type
 		const processedArgs:VariableValue[] = [];
 		let i = 0;
 		nextArg:
@@ -697,8 +696,8 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 			throw errors.at(-1);
 		}
-		//TODO maybe coerce the value?
-		return [fn.returnType, fn.impl(...processedArgs) as VariableValue];
+		if(returnType) return [returnType, this.coerceValue(fn.impl(...processedArgs), fn.returnType, returnType)];
+		else return [fn.returnType, fn.impl(...processedArgs)];
 	}
 	runBlock(code:ProgramASTNode[], scope?:VariableScope):void | {
 		type: "function_return";

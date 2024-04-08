@@ -27,7 +27,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 
 
 export type StatementType = //TODO clean up these names
-	| "declaration" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call"
+	| "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call"
 	| "type" | "type.pointer" | "type.enum" | "type.set" | "type.end"
 	| "if" | "if.end" | "else"
 	| "switch" | "switch.end" | "case" | "case.range"
@@ -151,8 +151,8 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 	}
 }
 
-@statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
-export class DeclarationStatement extends Statement {
+@statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
+export class DeclareStatement extends Statement {
 	variables:string[] = [];
 	varType:UnresolvedVariableType;
 	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
@@ -278,7 +278,7 @@ export class TypeRecordStatement extends Statement {
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const fields:Record<string, VariableType> = {};
 		for(const statement of node.nodeGroups[0]){
-			if(!(statement instanceof DeclarationStatement)) fail(`Statements in a record type block can only be declaration statements`);
+			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`);
 			const type = runtime.resolveVariableType(statement.varType);
 			statement.variables.forEach(v => fields[v] = type);
 		}

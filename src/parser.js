@@ -24,11 +24,11 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
         let type;
         //Increase the offset by 1 to ignore the pass mode specifier if present
         let offset = 0;
-        if (section[0]?.type == "keyword.by-reference") {
+        if (section[0]?.type == "keyword.pass_mode.by_reference") {
             offset = 1;
             passMode = "reference";
         }
-        else if (section[0]?.type == "keyword.by-value") {
+        else if (section[0]?.type == "keyword.pass_mode.by_value") {
             offset = 1;
             passMode = "value";
         }

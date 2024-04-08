@@ -6,7 +6,7 @@ export const symbolTypes = [
     "bracket.open", "bracket.close",
     "parentheses.open", "parentheses.close",
     "punctuation.colon", "punctuation.semicolon", "punctuation.comma", "punctuation.period",
-    "comment.singleline", "comment.multiline_open", "comment.multiline_close",
+    "comment.singleline", "comment.multiline.open", "comment.multiline.close",
     "word",
     "unknown",
     "space",
@@ -48,7 +48,7 @@ export function symbol(type, text) {
         return new Symbol(type, text, [-1, -1]);
 }
 export const tokenTypes = [
-    //TODO fix the casing in names, decide on _ or - or concat
+    //use _ to join words
     "number.decimal",
     "string", "char",
     "brace.open", "brace.close",
@@ -62,14 +62,14 @@ export const tokenTypes = [
     "keyword.if", "keyword.then", "keyword.else", "keyword.if_end",
     "keyword.for", "keyword.to", "keyword.for_end", "keyword.step",
     "keyword.while", "keyword.while_end", "keyword.dowhile", "keyword.dowhile_end",
-    "keyword.function", "keyword.function_end", "keyword.procedure", "keyword.procedure_end", "keyword.return", "keyword.returns", "keyword.by-reference", "keyword.by-value",
+    "keyword.function", "keyword.function_end", "keyword.procedure", "keyword.procedure_end", "keyword.return", "keyword.returns", "keyword.pass_mode.by_reference", "keyword.pass_mode.by_value",
     "keyword.type", "keyword.type_end",
-    "keyword.openfile", "keyword.readfile", "keyword.writefile", "keyword.closefile",
-    "keyword.getrecord", "keyword.putrecord", "keyword.seek",
-    "keyword.file-mode.read", "keyword.file-mode.write", "keyword.file-mode.append", "keyword.file-mode.random",
+    "keyword.open_file", "keyword.read_file", "keyword.write_file", "keyword.close_file",
+    "keyword.get_record", "keyword.put_record", "keyword.seek",
+    "keyword.file_mode.read", "keyword.file_mode.write", "keyword.file_mode.append", "keyword.file_mode.random",
     "keyword.case", "keyword.of", "keyword.case_end", "keyword.otherwise",
     "keyword.class", "keyword.class_end", "keyword.new", "keyword.super", "keyword.inherits",
-    "keyword.class-modifier.private", "keyword.class-modifier.public",
+    "keyword.class_modifier.private", "keyword.class_modifier.public",
     "keyword.array", "keyword.set",
     "newline",
     "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"

@@ -135,13 +135,13 @@ function statement(type, example, ...args) {
         return input;
     };
 }
-let DeclarationStatement = (() => {
-    let _classDecorators = [statement("declaration", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")];
+let DeclareStatement = (() => {
+    let _classDecorators = [statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
-    var DeclarationStatement = _classThis = class extends _classSuper {
+    var DeclareStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
             this.variables = [];
@@ -163,17 +163,17 @@ let DeclarationStatement = (() => {
             }
         }
     };
-    __setFunctionName(_classThis, "DeclarationStatement");
+    __setFunctionName(_classThis, "DeclareStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        DeclarationStatement = _classThis = _classDescriptor.value;
+        DeclareStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         __runInitializers(_classThis, _classExtraInitializers);
     })();
-    return DeclarationStatement = _classThis;
+    return DeclareStatement = _classThis;
 })();
-export { DeclarationStatement };
+export { DeclareStatement };
 let ConstantStatement = (() => {
     let _classDecorators = [statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "literal")];
     let _classDescriptor;
@@ -346,7 +346,7 @@ let TypeRecordStatement = (() => {
         runBlock(runtime, node) {
             const fields = {};
             for (const statement of node.nodeGroups[0]) {
-                if (!(statement instanceof DeclarationStatement))
+                if (!(statement instanceof DeclareStatement))
                     fail(`Statements in a record type block can only be declaration statements`);
                 const type = runtime.resolveVariableType(statement.varType);
                 statement.variables.forEach(v => fields[v] = type);

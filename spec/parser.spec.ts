@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/pa
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
 import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
 import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclarationStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
+	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
 } from "../src/statements.js";
 import { SoodocodeError } from "../src/utils.js";
@@ -1139,7 +1139,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 			["name", "INTEGER"],
 		],
-		[DeclarationStatement, [
+		[DeclareStatement, [
 			["keyword.declare", "DECLARE"],
 			["name", "amogus"],
 			["punctuation.colon", ":"],
@@ -1155,7 +1155,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 			["name", "INTEGER"],
 		],
-		[DeclarationStatement, [
+		[DeclareStatement, [
 			["keyword.declare", "DECLARE"],
 			["name", "amogus"],
 			["punctuation.comma", ","],
@@ -1178,7 +1178,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["keyword.of", "OF"],
 			["name", "INTEGER"],
 		],
-		[DeclarationStatement, [
+		[DeclareStatement, [
 			["keyword.declare", "DECLARE"],
 			["name", "amogus"],
 			["punctuation.colon", ":"],
@@ -1939,7 +1939,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 				["keyword.input", "INPUT"],
 				["name", `amogus`],
 			]],
-			[DeclarationStatement, [
+			[DeclareStatement, [
 				["keyword.declare", "DECLARE"],
 				["name", "amogus"],
 				["punctuation.colon", ":"],
@@ -2105,13 +2105,13 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					]],
 				],
 				nodeGroups: [[
-					[DeclarationStatement, [
+					[DeclareStatement, [
 						["keyword.declare", "DECLARE"],
 						["name", "prop1"],
 						["punctuation.colon", ":"],
 						["name", "INTEGER"],
 					]],
-					[DeclarationStatement, [
+					[DeclareStatement, [
 						["keyword.declare", "DECLARE"],
 						["name", "prop2"],
 						["punctuation.colon", ":"],
@@ -2605,7 +2605,7 @@ const functionArgumentTests = ((data:Record<string,
 		arg: ["INTEGER", "value"],
 	}],
 	passModeSpecified1: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
@@ -2613,7 +2613,7 @@ const functionArgumentTests = ((data:Record<string,
 		arg: ["INTEGER", "reference"],
 	}],
 	passModeSpecified2: [[
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
@@ -2621,7 +2621,7 @@ const functionArgumentTests = ((data:Record<string,
 		arg: ["INTEGER", "value"],
 	}],
 	passModeSpecified3: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
@@ -2634,7 +2634,7 @@ const functionArgumentTests = ((data:Record<string,
 		arg2: ["BOOLEAN", "reference"],
 	}],
 	passModeSpecified4: [[
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
@@ -2647,12 +2647,12 @@ const functionArgumentTests = ((data:Record<string,
 		arg2: ["BOOLEAN", "value"],
 	}],
 	passModeSpecifiedTwice: [[
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
 		["punctuation.comma", ","],
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
@@ -2661,12 +2661,12 @@ const functionArgumentTests = ((data:Record<string,
 		arg2: ["BOOLEAN", "value"],
 	}],
 	passModeSpecifiedTwiceDifferently: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
 		["punctuation.comma", ","],
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
@@ -2675,12 +2675,12 @@ const functionArgumentTests = ((data:Record<string,
 		arg2: ["BOOLEAN", "value"],
 	}],
 	passModeSpecifiedTwiceDifferently2: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
 		["punctuation.comma", ","],
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
@@ -2694,10 +2694,10 @@ const functionArgumentTests = ((data:Record<string,
 		arg3: ["STRING", "value"],
 	}],
 	weirdCombination1: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
 		["punctuation.comma", ","],
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
@@ -2730,18 +2730,18 @@ const functionArgumentTests = ((data:Record<string,
 		["punctuation.comma", ","],
 	], "error"],
 	onlyPassMode: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 	], "error"],
 	onlyPassMode2: [[
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
 		["punctuation.comma", ","],
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 	], "error"],
 	doublePassMode: [[
-		["keyword.by-reference", "BYREF"],
-		["keyword.by-value", "BYVAL"],
+		["keyword.pass_mode.by_reference", "BYREF"],
+		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
@@ -2769,7 +2769,7 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "STRING"],
 	], "error"],
 	missingType2: [[
-		["keyword.by-reference", "BYREF"],
+		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg1"],
 		["punctuation.comma", ","],
 		["name", "arg2"],

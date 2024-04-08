@@ -22,8 +22,8 @@ const symbolTypeData: [
 	["<=", "operator.less_than_equal"],
 	["<>", "operator.not_equal_to"],
 	["//", "comment.singleline"],
-	["/*", "comment.multiline_open"],
-	["*/", "comment.multiline_close"],
+	["/*", "comment.multiline.open"],
+	["*/", "comment.multiline.close"],
 	["=", "operator.equal_to"],
 	[">", "operator.greater_than"],
 	["<", "operator.less_than"],
@@ -53,16 +53,16 @@ const symbolTypeData: [
 	[/^./u, "unknown"],
 ];
 
-const tokenNameTypeData = (<T>(d:T) => d as T & {[index:string]: TokenType | undefined;})({
+const tokenNameTypeData = (<T extends Record<string, TokenType>>(d:T) => d as T & {[index:string]: TokenType | undefined;})({
 	"AND": "operator.and",
-	"APPEND": "keyword.file-mode.append",
+	"APPEND": "keyword.file_mode.append",
 	"ARRAY": "keyword.array",
-	"BYREF": "keyword.by-reference",
-	"BYVAL": "keyword.by-value",
+	"BYREF": "keyword.pass_mode.by_reference",
+	"BYVAL": "keyword.pass_mode.by_value",
 	"CALL": "keyword.call",
 	"CASE": "keyword.case",
 	"CLASS": "keyword.class",
-	"CLOSEFILE": "keyword.closefile",
+	"CLOSEFILE": "keyword.close_file",
 	"CONSTANT": "keyword.constant",
 	"DECLARE": "keyword.declare",
 	"DEFINE": "keyword.define",
@@ -78,7 +78,7 @@ const tokenNameTypeData = (<T>(d:T) => d as T & {[index:string]: TokenType | und
 	"FALSE": "boolean.false",
 	"FOR": "keyword.for",
 	"FUNCTION": "keyword.function",
-	"GETRECORD": "keyword.getrecord",
+	"GETRECORD": "keyword.get_record",
 	"IF": "keyword.if",
 	"INHERITS": "keyword.inherits",
 	"INPUT": "keyword.input",
@@ -87,17 +87,17 @@ const tokenNameTypeData = (<T>(d:T) => d as T & {[index:string]: TokenType | und
 	"NEXT": "keyword.for_end",
 	"NOT": "operator.not",
 	"OF": "keyword.of",
-	"OPENFILE": "keyword.openfile",
+	"OPENFILE": "keyword.open_file",
 	"OR": "operator.or",
 	"OTHERWISE": "keyword.otherwise",
 	"OUTPUT": "keyword.output",
-	"PRIVATE": "keyword.class-modifier.private",
+	"PRIVATE": "keyword.class_modifier.private",
 	"PROCEDURE": "keyword.procedure",
-	"PUBLIC": "keyword.class-modifier.public",
-	"PUTRECORD": "keyword.putrecord",
-	"RANDOM": "keyword.file-mode.random",
-	"READ": "keyword.file-mode.read",
-	"READFILE": "keyword.readfile",
+	"PUBLIC": "keyword.class_modifier.public",
+	"PUTRECORD": "keyword.put_record",
+	"RANDOM": "keyword.file_mode.random",
+	"READ": "keyword.file_mode.read",
+	"READFILE": "keyword.read_file",
 	"REPEAT": "keyword.dowhile",
 	"RETURN": "keyword.return",
 	"RETURNS": "keyword.returns",
@@ -111,8 +111,8 @@ const tokenNameTypeData = (<T>(d:T) => d as T & {[index:string]: TokenType | und
 	"TYPE": "keyword.type",
 	"UNTIL": "keyword.dowhile_end",
 	"WHILE": "keyword.while",
-	"WRITE": "keyword.file-mode.write",
-	"WRITEFILE": "keyword.writefile",
+	"WRITE": "keyword.file_mode.write",
+	"WRITEFILE": "keyword.write_file",
 });
 
 
@@ -239,7 +239,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 				symbol.type satisfies TokenType;
 				tokens.push(symbol.toToken());
 			}
-		} else if(symbol.type === "comment.multiline_close"){
+		} else if(symbol.type === "comment.multiline.close"){
 			if(state.mComment) state.mComment = null;
 			else fail(`Cannot close multiline comment, no open multiline comment`, symbol);
 		} else if(state.mComment){
@@ -260,7 +260,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 				currentString = "";
 			}
 		} else if(symbol.type === "comment.singleline") state.sComment = symbol;
-		else if(symbol.type === "comment.multiline_open") state.mComment = symbol;
+		else if(symbol.type === "comment.multiline.open") state.mComment = symbol;
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
 			const num = tokens.at(-1) ?? crash(`impossible`);
