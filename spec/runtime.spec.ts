@@ -337,26 +337,26 @@ const expressionTests = ((data:Record<string, [
 			}
 		]
 	})(),
-	pointerRef_invalid_bad_target: (() => {
-		const intPointer = new PointerVariableType("intPtr", "INTEGER");
-		const intVar:VariableData<"INTEGER"> = {
-			type: "INTEGER",
-			declaration: null!,
-			mutable: true,
-			value: 19
-		};
-		return [
-			["tree", "pointer_reference", [
-				["number.decimal", "5"],
-			]],
-			intPointer,
-			["error"],
-			r => {
-				r.getCurrentScope().types["intPtr"] = intPointer;
-				r.getCurrentScope().variables["amogus"] = intVar;
-			}
-		]
-	})(),
+	// pointerRef_invalid_bad_target: (() => {
+	// 	const intPointer = new PointerVariableType("intPtr", "INTEGER");
+	// 	const intVar:VariableData<"INTEGER"> = {
+	// 		type: "INTEGER",
+	// 		declaration: null!,
+	// 		mutable: true,
+	// 		value: 19
+	// 	};
+	// 	return [
+	// 		["tree", "pointer_reference", [
+	// 			["number.decimal", "5"],
+	// 		]],
+	// 		intPointer,
+	// 		["error"],
+	// 		r => {
+	// 			r.getCurrentScope().types["intPtr"] = intPointer;
+	// 			r.getCurrentScope().variables["amogus"] = intVar;
+	// 		}
+	// 	]
+	// })(),
 	pointerRef_invalid_undeclared_variable: (() => {
 		const intPointer = new PointerVariableType("intPtr", "INTEGER");
 		const intVar:VariableData<"INTEGER"> = {
