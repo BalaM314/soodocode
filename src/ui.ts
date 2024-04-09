@@ -12,7 +12,7 @@ import * as parserTypes from "./parser-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
-import { fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
+import { fail, crash, SoodocodeError, escapeHTML, impossible, applyRangeTransformers } from "./utils.js";
 import { Token } from "./lexer-types.js";
 import {
 	ExpressionASTNode, ProgramAST, ProgramASTNode, ExpressionASTArrayTypeNode,
@@ -335,6 +335,45 @@ ${displayProgram(program)}`
 	}
 });
 
+export function showRange(text:string, error:SoodocodeError):string {
+	if(!error.rangeGeneral && !error.rangeSpecific) return ``; //can't show anything
+	if( //There is only one range, or the specific range is entirely inside the general range
+		(!error.rangeGeneral || !error.rangeSpecific || (
+			error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]
+		))
+	){
+		let range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
+		const beforeText = text.slice(0, range[0]);
+		const rangeText = text.slice(...range);
+		const beforeLines = beforeText.split("\n");
+		const lineNumber = beforeLines.length + 1;
+		const formattedPreviousLine = beforeLines.at(-2)
+			? `${" ".repeat(lineNumber.toString().length)}| ${escapeHTML(beforeLines.at(-2))}\n`
+			: "";
+		const startOfLine = beforeLines.at(-1)!;
+		const restOfLine = text.slice(range[1]).split("\n")[0];
+		const formattedRangeText = error.rangeSpecific ?
+			applyRangeTransformers(rangeText, [[
+				error.rangeSpecific.map(n => n - range[0]),
+				`<span style="text-decoration: underline wavy red;">`, "</span>", escapeHTML
+			]])
+			: escapeHTML(rangeText);
+		return `
+${formattedPreviousLine}\
+${lineNumber}| ${escapeHTML(startOfLine)}<span style="background-color: #FF03;">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
+		//TODO use CSS classes
+	} else {
+		//Drop the general range TODO fix
+		const trimEnd = text.slice(error.rangeSpecific[1]).indexOf("\n");
+		text = text.slice(0, trimEnd);
+		const fullText = applyRangeTransformers(text, [
+			[error.rangeSpecific!, `<span style="text-decoration: underline wavy red;">`, "</span>", escapeHTML]
+		]);
+		const trimStart = fullText.slice(0, error.rangeSpecific[0]).lastIndexOf("\n");
+		return fullText.slice(trimStart);
+	}
+}
+
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 function executeSoodocode(){
@@ -355,17 +394,15 @@ function executeSoodocode(){
 				symbols, tokens, program, runtime
 			});
 		}
-		outputDiv.style.color = "white";
 		runtime.runBlock(program.nodes);
 		outputDiv.innerText = output.join("\n") || "<no output>";
 	} catch(err){
-		outputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){
-			outputDiv.innerText = `Error: ${err.message}`;
-			if(err.rangeSpecific) outputDiv.innerText += `\n  at "${soodocodeInput.value.slice(...err.rangeSpecific)}"`;
-			if(err.rangeGeneral) outputDiv.innerText += `\n  at "${soodocodeInput.value.slice(...err.rangeGeneral)}"`;
+			outputDiv.innerHTML = `<span style="color: red;">Error: ${escapeHTML(err.message)}</span>\n`
+				+ showRange(soodocodeInput.value, err);
+			console.error(err);
 		} else {
-			outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
+			outputDiv.innerHTML = `<span style="color: red;">Soodocode crashed! ${escapeHTML(utils.parseError(err))}</span>`;
 			console.error(err);
 		}
 	}

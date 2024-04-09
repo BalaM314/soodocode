@@ -14,6 +14,19 @@ export function getText(tokens:Token[]){
 	return tokens.map(t => t.text).join(" ");
 }
 
+
+/** Ranges must telescope inwards */
+export function applyRangeTransformers(text:string, ranges:[range:TextRange, start:string, end:string, transformer?:(rangeText:string) => string][]){
+	let offset = 0;
+	for(const [range, start, end, transformer_] of ranges){
+		let transformer = transformer_ ?? (x => x);
+		let newRange = range.map(n => n + offset);
+		text = text.slice(0, newRange[0]) + start + transformer(text.slice(...newRange)) + end + text.slice(newRange[1]);
+		offset += start.length;
+	}
+	return text;
+}
+
 export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array:T[]) => boolean)):T[][] {
 	const output:T[][] = [[]];
 	if(typeof split == "function"){

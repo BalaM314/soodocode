@@ -8,6 +8,17 @@ import { Token } from "./lexer-types.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
+/** Ranges must telescope inwards */
+export function applyRangeTransformers(text, ranges) {
+    let offset = 0;
+    for (const [range, start, end, transformer_] of ranges) {
+        let transformer = transformer_ ?? (x => x);
+        let newRange = range.map(n => n + offset);
+        text = text.slice(0, newRange[0]) + start + transformer(text.slice(...newRange)) + end + text.slice(newRange[1]);
+        offset += start.length;
+    }
+    return text;
+}
 export function splitArray(arr, split) {
     const output = [[]];
     if (typeof split == "function") {
