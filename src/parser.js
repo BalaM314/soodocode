@@ -208,7 +208,7 @@ export const parseStatement = errorBoundary()((tokens) => {
     }
     let maxError = errors[0];
     for (const error of errors) {
-        if (error.priority > maxError.priority)
+        if (error.priority >= maxError.priority)
             maxError = error;
     }
     if (maxError.err)
@@ -427,7 +427,10 @@ export const parseExpressionLeafNode = errorBoundary()((token) => {
         fail(`Invalid expression leaf node`);
 });
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
-export const parseExpression = errorBoundary()((input) => {
+export const parseExpression = errorBoundary({
+    predicate: (input, recursive) => !recursive,
+    message: () => `Cannot parse expression "$r": `
+})((input, recursive = false) => {
     if (!Array.isArray(input))
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     //If there is only one token
@@ -498,7 +501,7 @@ export const parseExpression = errorBoundary()((input) => {
                         negativeNumber.text = input[i].text + negativeNumber.text;
                         return negativeNumber;
                     }
-                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(right)], input);
+                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(right, true)], input);
                 }
                 else if (operator.type.startsWith("unary_postfix")) {
                     //Make sure there is only something on left side of the operator
@@ -511,7 +514,7 @@ export const parseExpression = errorBoundary()((input) => {
                     }
                     if (left.length == 0)
                         fail(`Mo expression on left side of operator ${input[i].text}`, input[i].rangeAfter());
-                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left)], input);
+                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left, true)], input);
                 }
                 else {
                     //Make sure there is something on left and right of the operator
@@ -534,7 +537,7 @@ export const parseExpression = errorBoundary()((input) => {
                             continue;
                         //fail(`Access operator can only have a single token to the right, which must be a property name`, right);
                     }
-                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left), parseExpression(right)], input);
+                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left, true), parseExpression(right, true)], input);
                 }
             }
         }
@@ -571,12 +574,12 @@ export const parseExpression = errorBoundary()((input) => {
     //Must be after the main loop to avoid triggering on ( 2)+(2 )
     //Possible optimization: allow this to run before the loop if token length is <= 4
     if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
-        return parseExpression(input.slice(1, -1));
+        return parseExpression(input.slice(1, -1), true);
     //Special case: function call
     if (input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
         return new ExpressionASTFunctionCallNode(input[0], input.length == 3
             ? [] //If there are no arguments, don't generate a blank argument group
-            : splitTokensOnComma(input.slice(2, -1)).map(parseExpression), input);
+            : splitTokensOnComma(input.slice(2, -1)).map(e => parseExpression(e, true)), input);
     }
     //Special case: array access
     let bracketIndex = input.findIndex(t => t.type == "bracket.open");
@@ -587,8 +590,8 @@ export const parseExpression = errorBoundary()((input) => {
             fail(`Missing target in array index expression`);
         if (indicesTokens.length == 0)
             fail(`Missing indices in array index expression`);
-        const parsedTarget = parseExpression(target);
-        return new ExpressionASTArrayAccessNode(parsedTarget, splitTokensOnComma(indicesTokens).map(parseExpression), input);
+        const parsedTarget = parseExpression(target, true);
+        return new ExpressionASTArrayAccessNode(parsedTarget, splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
     }
     //No operators found at all, something went wrong
     fail(`No operators found`);

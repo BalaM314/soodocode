@@ -133,8 +133,16 @@ export function findRange(args:unknown[]):TextRange | undefined {
 }
 
 export class SoodocodeError extends Error {
+	modified = false;
 	constructor(message:string, public rangeSpecific?:TextRange | null, public rangeGeneral?:TextRange | null){
 		super(message);
+	}
+	formatMessage(text:string){
+		return this.message.replace("$r",
+			this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
+			this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
+			`(Internal compiler error, cannot format placeholder in error message because no ranges were set)`
+		);
 	}
 }
 
@@ -152,13 +160,17 @@ export function impossible():never {
  * Decorator to apply an error boundary to functions.
  * @param predicate Only sets the general range if this returns true.
  */
-export function errorBoundary(predicate:NoInfer<(...args:any[]) => boolean> = (() => true)){
+export function errorBoundary({predicate = (() => true), message}:Partial<{
+	predicate(...args:any[]): boolean;
+	message(...args:any[]): string;
+}> = {}){
 	return function decorator<T extends (...args:any[]) => unknown>(func:T, ctx?:ClassMethodDecoratorContext):T {
 		return function replacedFunction(this:ThisParameterType<T>, ...args:Parameters<T>){
 			try {
 				return func.apply(this, args);
 			} catch(err){
 				if(err instanceof SoodocodeError){
+					if(message && !err.modified) err.message = message(...args) + err.message;
 					//Try to find the range
 					if(err.rangeSpecific === undefined) err.rangeSpecific = findRange(args);
 					else if(err.rangeGeneral === undefined && predicate(...args)){
@@ -170,6 +182,7 @@ export function errorBoundary(predicate:NoInfer<(...args:any[]) => boolean> = ((
 						) err.rangeGeneral = null;
 						else err.rangeGeneral = _rangeGeneral;
 					}
+					err.modified = true;
 				}
 				throw err;
 			}

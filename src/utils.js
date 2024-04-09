@@ -145,6 +145,12 @@ export class SoodocodeError extends Error {
         super(message);
         this.rangeSpecific = rangeSpecific;
         this.rangeGeneral = rangeGeneral;
+        this.modified = false;
+    }
+    formatMessage(text) {
+        return this.message.replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
+            this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
+                `(Internal compiler error, cannot format placeholder in error message because no ranges were set)`);
     }
 }
 export function fail(message, rangeSpecific, rangeGeneral) {
@@ -160,7 +166,7 @@ export function impossible() {
  * Decorator to apply an error boundary to functions.
  * @param predicate Only sets the general range if this returns true.
  */
-export function errorBoundary(predicate = (() => true)) {
+export function errorBoundary({ predicate = (() => true), message } = {}) {
     return function decorator(func, ctx) {
         return function replacedFunction(...args) {
             try {
@@ -168,6 +174,8 @@ export function errorBoundary(predicate = (() => true)) {
             }
             catch (err) {
                 if (err instanceof SoodocodeError) {
+                    if (message && !err.modified)
+                        err.message = message(...args) + err.message;
                     //Try to find the range
                     if (err.rangeSpecific === undefined)
                         err.rangeSpecific = findRange(args);
@@ -179,6 +187,7 @@ export function errorBoundary(predicate = (() => true)) {
                         else
                             err.rangeGeneral = _rangeGeneral;
                     }
+                    err.modified = true;
                 }
                 throw err;
             }

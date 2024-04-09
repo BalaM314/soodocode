@@ -217,7 +217,7 @@ export const parseStatement = errorBoundary()((tokens:Token[]):Statement => {
 	}
 	let maxError = errors[0];
 	for(const error of errors){
-		if(error.priority > maxError.priority) maxError = error;
+		if(error.priority >= maxError.priority) maxError = error;
 	}
 	if(maxError.err) throw maxError.err;
 	else fail(maxError.message, maxError.range, tokens);
@@ -443,7 +443,10 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 });
 
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
-export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode => {
+export const parseExpression = errorBoundary({
+	predicate: (input, recursive) => !recursive,
+	message: () => `Cannot parse expression "$r": `
+})((input:Token[], recursive = false):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`);
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
@@ -513,7 +516,7 @@ export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						[parseExpression(right)],
+						[parseExpression(right, true)],
 						input
 					);
 				} else if(operator.type.startsWith("unary_postfix")){
@@ -528,7 +531,7 @@ export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						[parseExpression(left)],
+						[parseExpression(left, true)],
 						input
 					);
 				} else {
@@ -551,7 +554,7 @@ export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						[parseExpression(left), parseExpression(right)],
+						[parseExpression(left, true), parseExpression(right, true)],
 						input
 					);
 				}
@@ -588,7 +591,7 @@ export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode
 	//Must be after the main loop to avoid triggering on ( 2)+(2 )
 	//Possible optimization: allow this to run before the loop if token length is <= 4
 	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
-		return parseExpression(input.slice(1, -1));
+		return parseExpression(input.slice(1, -1), true);
 
 	//Special case: function call
 	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
@@ -596,7 +599,7 @@ export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode
 			input[0],
 			input.length == 3
 				? [] //If there are no arguments, don't generate a blank argument group
-				: splitTokensOnComma(input.slice(2, -1)).map(parseExpression),
+				: splitTokensOnComma(input.slice(2, -1)).map(e => parseExpression(e, true)),
 			input
 		);
 	}
@@ -608,10 +611,10 @@ export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode
 		let indicesTokens = input.slice(bracketIndex + 1, -1);
 		if(target.length == 0) fail(`Missing target in array index expression`);
 		if(indicesTokens.length == 0) fail(`Missing indices in array index expression`);
-		const parsedTarget = parseExpression(target);
+		const parsedTarget = parseExpression(target, true);
 		return new ExpressionASTArrayAccessNode(
 			parsedTarget,
-			splitTokensOnComma(indicesTokens).map(parseExpression),
+			splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
 			input
 		);
 	}

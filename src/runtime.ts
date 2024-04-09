@@ -303,8 +303,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		} else {
 			const type = arg2 as VariableType;
 			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-			if(!(objType instanceof RecordVariableType)) fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
-			const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
+			if(!(objType instanceof RecordVariableType)) fail(fquote`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+			const outputType = objType.fields[property] ?? fail(fquote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
 			const value = (obj as Record<string, VariableValue>)[property];
 			if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`);
 			if(type) return [type, this.coerceValue(value, outputType, type)];
@@ -316,7 +316,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):[type:VariableType, value:VariableValue];
 	evaluateExpr(expr:ExpressionAST, type:"variable", recursive?:boolean):VariableData | ConstantData;
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):[type:T & {}, value:VariableTypeMapping<T>];
-	@errorBoundary((expr, type, recursive) => !recursive)
+	@errorBoundary({
+		predicate: (expr, type, recursive) => !recursive,
+		message: () => `Cannot evaluate expression $r: `
+	})
 	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable", recursive = false):[type:VariableType, value:unknown] | VariableData | ConstantData {
 		if(expr == undefined) crash(`expr was ${expr}`);
 
@@ -329,7 +332,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		if(expr instanceof ExpressionASTArrayAccessNode)
 			return this.processArrayAccess(expr, "get", type);
 		if(expr instanceof ExpressionASTFunctionCallNode) {
-			if(type == "variable") fail(fquote`Cannot evaluate the result of a function call as a variable`);;
+			if(type == "variable") fail(fquote`Expected this expression to evaluate to a variable, but found a function call.`);
 			const fn = this.getFunction(expr.functionName.text);
 			if("name" in fn){
 				const output = this.callBuiltinFunction(fn, expr.args);

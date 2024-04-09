@@ -223,8 +223,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const type = arg2;
                     const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
                     if (!(objType instanceof RecordVariableType))
-                        fail(`Cannot access property on value of type ${objType}`, expr.nodes[0]);
-                    const outputType = objType.fields[property] ?? fail(`Property ${property} does not exist on value of type ${objType}`);
+                        fail(fquote `Cannot access property on value of type ${objType}`, expr.nodes[0]);
+                    const outputType = objType.fields[property] ?? fail(fquote `Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
                     const value = obj[property];
                     if (value === null)
                         fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`);
@@ -245,8 +245,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     return this.processArrayAccess(expr, "get", type);
                 if (expr instanceof ExpressionASTFunctionCallNode) {
                     if (type == "variable")
-                        fail(fquote `Cannot evaluate the result of a function call as a variable`);
-                    ;
+                        fail(fquote `Expected this expression to evaluate to a variable, but found a function call.`);
                     const fn = this.getFunction(expr.functionName.text);
                     if ("name" in fn) {
                         const output = this.callBuiltinFunction(fn, expr.args);
@@ -733,7 +732,10 @@ help: try using DIV instead of / to produce an integer as the result`);
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
             _processArrayAccess_decorators = [errorBoundary()];
             _processRecordAccess_decorators = [errorBoundary()];
-            _evaluateExpr_decorators = [errorBoundary((expr, type, recursive) => !recursive)];
+            _evaluateExpr_decorators = [errorBoundary({
+                    predicate: (expr, type, recursive) => !recursive,
+                    message: () => `Cannot evaluate expression $r: `
+                })];
             __esDecorate(_a, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
