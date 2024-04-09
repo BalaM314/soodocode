@@ -325,7 +325,7 @@ export function showRange(text, error) {
         const beforeText = text.slice(0, range[0]);
         const rangeText = text.slice(...range);
         const beforeLines = beforeText.split("\n");
-        const lineNumber = beforeLines.length + 1;
+        const lineNumber = beforeLines.length;
         const formattedPreviousLine = beforeLines.at(-2)
             ? `${" ".repeat(lineNumber.toString().length)}| ${escapeHTML(beforeLines.at(-2))}\n`
             : "";
