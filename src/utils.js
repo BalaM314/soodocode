@@ -141,14 +141,16 @@ export function findRange(args) {
     return undefined;
 }
 export class SoodocodeError extends Error {
-    constructor(message, rangeSpecific, rangeGeneral) {
+    constructor(message, rangeSpecific, rangeGeneral, rangeOther) {
         super(message);
         this.rangeSpecific = rangeSpecific;
         this.rangeGeneral = rangeGeneral;
+        this.rangeOther = rangeOther;
         this.modified = false;
     }
     formatMessage(text) {
-        return this.message.replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
+        return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther)
+            : `(Internal compiler error, cannot format placeholder in error message because no ranges were set)`).replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
             this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
                 `(Internal compiler error, cannot format placeholder in error message because no ranges were set)`);
     }
@@ -174,8 +176,10 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
             }
             catch (err) {
                 if (err instanceof SoodocodeError) {
-                    if (message && !err.modified)
+                    if (message && !err.modified) {
                         err.message = message(...args) + err.message;
+                        err.rangeOther = findRange(args);
+                    }
                     //Try to find the range
                     if (err.rangeSpecific === undefined)
                         err.rangeSpecific = findRange(args);
@@ -225,9 +229,15 @@ export function tagProcessor(transformer) {
     };
 }
 export const fquote = tagProcessor((chunk) => {
-    const str = Array.isArray(chunk) && chunk[0] && chunk[0] instanceof Token ? chunk.map(c => c.getText()).join(" ") :
-        chunk instanceof Token ? chunk.getText() :
-            chunk.toString();
-    return str.length == 0 ? "[empty]" : `"${str}"`;
+    let str;
+    if (Array.isArray(chunk) && chunk[0] && chunk[0] instanceof Token)
+        str = chunk.map(c => c.getText()).join(" ");
+    else if (chunk instanceof Token)
+        str = chunk.getText();
+    else if (typeof chunk == "object" && "toQuotedString" in chunk && typeof chunk.toQuotedString == "function")
+        return chunk.toQuotedString();
+    else
+        str = chunk.toString();
+    return str.length == 0 ? "<empty>" : `"${str}"`;
 });
 export function forceType(input) { }

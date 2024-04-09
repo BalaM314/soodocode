@@ -445,7 +445,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
 export const parseExpression = errorBoundary({
 	predicate: (input, recursive) => !recursive,
-	message: () => `Cannot parse expression "$r": `
+	message: () => `Cannot parse expression "$rc": `
 })((input:Token[], recursive = false):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`);
 	//If there is only one token
@@ -527,7 +527,7 @@ export const parseExpression = errorBoundary({
 						//No need to worry about operator priority changing for postfix
 						fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
 					}
-					if(left.length == 0) fail(`Mo expression on left side of operator ${input[i].text}`, input[i].rangeAfter());
+					if(left.length == 0) fail(`Mo expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,

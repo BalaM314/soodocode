@@ -65,6 +65,9 @@ export class ArrayVariableType {
 	toString(){
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
 	}
+	toQuotedString(){
+		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+	}
 	getInitValue(runtime:Runtime):VariableTypeMapping<ArrayVariableType> {
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
@@ -77,7 +80,10 @@ export class RecordVariableType {
 		public fields: Record<string, VariableType>,
 	){}
 	toString(){
-		return fquote`record type ${this.name}`;
+		return `${this.name} (user-defined record type)`;
+	}
+	toQuotedString(){
+		return fquote`${this.name} (user-defined record type)`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
@@ -91,7 +97,10 @@ export class PointerVariableType {
 		public target: VariableType
 	){}
 	toString():string {
-		return `pointer type "${this.name}" (^${this.target})`;
+		return `${this.name} (user-defined pointer type ^${this.target})`;
+	}
+	toQuotedString():string {
+		return fquote`${this.name} (user-defined pointer type ^${this.target})`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
@@ -103,7 +112,10 @@ export class EnumeratedVariableType {
 		public values: string[]
 	){}
 	toString(){
-		return fquote`enumerated type ${this.name}`;
+		return `${this.name} (user-defined enumerated type)`;
+	}
+	toQuotedString(){
+		return fquote`${this.name} (user-defined enumerated type)`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
@@ -115,7 +127,10 @@ export class SetVariableType {
 		public baseType: PrimitiveVariableType,
 	){}
 	toString(){
-		return fquote`set type ${this.name} of ${this.baseType}`
+		return `${this.name} (user-defined set type containing ${this.baseType})`
+	}
+	toQuotedString(){
+		return fquote`${this.name} (user-defined set type containing ${this.baseType})`
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
@@ -284,8 +299,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		
 		if(operation == "set" || arg2 == "variable"){
 			const variable = this.evaluateExpr(expr.nodes[0], "variable");
-			if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type}`);
-			const outputType = variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`);
+			if(!(variable.type instanceof RecordVariableType)) fail(fquote`Cannot access property ${property} on variable of type ${variable.type} because it is not a record type and cannot have proprties`, expr.nodes[0]);
+			const outputType = variable.type.fields[property] ?? fail(fquote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 			if(arg2 == "variable"){
 				//i see nothing wrong with this bodged variable data
 				return {
@@ -303,10 +318,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		} else {
 			const type = arg2 as VariableType;
 			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-			if(!(objType instanceof RecordVariableType)) fail(fquote`Cannot access property on value of type ${objType}`, expr.nodes[0]);
+			if(!(objType instanceof RecordVariableType)) fail(fquote`Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
 			const outputType = objType.fields[property] ?? fail(fquote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
 			const value = (obj as Record<string, VariableValue>)[property];
-			if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`);
+			if(value === null) fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`, expr.nodes[1]);
 			if(type) return [type, this.coerceValue(value, outputType, type)];
 			else return [outputType, value];
 		}
@@ -318,7 +333,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):[type:T & {}, value:VariableTypeMapping<T>];
 	@errorBoundary({
 		predicate: (expr, type, recursive) => !recursive,
-		message: () => `Cannot evaluate expression $r: `
+		message: () => `Cannot evaluate expression $rc: `
 	})
 	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable", recursive = false):[type:VariableType, value:unknown] | VariableData | ConstantData {
 		if(expr == undefined) crash(`expr was ${expr}`);
@@ -354,7 +369,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					return this.processRecordAccess(expr, "get", type);
 				case operators.pointer_reference:
 					if(type == "variable") fail(`Cannot evaluate a referencing expression as a variable`);
-					if(type && !(type instanceof PointerVariableType)) fail(`Expected result to be of type ${type}, but the expression will return a pointer`);
+					if(type && !(type instanceof PointerVariableType)) fail(`Expected result to be of type ${type}, but the refernce operator will return a pointer`);
 					try {
 						const variable = this.evaluateExpr(expr.nodes[0], "variable", true);
 						//Guess the type
@@ -395,12 +410,12 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			}
 		}
 
-		if(type == "variable") fail(`Cannot evaluate expression starting with ${expr.operator.name} as a variable`);
+		if(type == "variable") fail(`Cannot evaluate this expression as a variable`);
 
 		//arithmetic
 		if(type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic"){
 			if(type && !(type == "REAL" || type == "INTEGER"))
-				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a numeric result`);
+				fail(fquote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator.name} returns a number`);
 
 			const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
 			let value:number;
