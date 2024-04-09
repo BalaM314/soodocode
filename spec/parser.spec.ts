@@ -27,7 +27,7 @@ import {
 //i miss rust macros
 
 
-const sampleExpressions = ((d:Record<string, [program:_Token[], output:_ExpressionAST | "error"]>) =>
+const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_ExpressionAST | "error"]>) =>
 	Object.entries(d).map<
 		[name:string, expression:Token[], output:jasmine.Expected<ExpressionAST> | "error"]
 	>(([name, [program, output]]) => [
@@ -857,6 +857,54 @@ const sampleExpressions = ((d:Record<string, [program:_Token[], output:_Expressi
 		["tree", "pointer_dereference", [
 			["name", "amogus"]
 		]]
+	],
+	pointerRef2: [
+		[
+			["operator.pointer", "^"],
+			["operator.pointer", "^"],
+			["name", "amogus"],
+		],
+		["tree", "pointer_reference", [
+			["tree", "pointer_reference", [
+				["name", "amogus"]
+			]]
+		]]
+	],
+	pointerDeref2: [
+		[
+			["name", "amogus"],
+			["operator.pointer", "^"],
+			["operator.pointer", "^"],
+		],
+		["tree", "pointer_dereference", [
+			["tree", "pointer_dereference", [
+				["name", "amogus"]
+			]]
+		]]
+	],
+	pointerRefDerefTriple: [
+		[
+			["operator.pointer", "^"],
+			["operator.pointer", "^"],
+			["operator.pointer", "^"],
+			["name", "amogus"],
+			["operator.pointer", "^"],
+			["operator.pointer", "^"],
+			["operator.pointer", "^"],
+		],
+		["tree", "pointer_reference", [
+			["tree", "pointer_reference", [
+				["tree", "pointer_reference", [
+					["tree", "pointer_dereference", [
+						["tree", "pointer_dereference", [
+							["tree", "pointer_dereference", [
+								["name", "amogus"]
+							]],
+						]],
+					]],
+				]],
+			]],
+		]],
 	],
 	SussyBaka: [
 		[
@@ -2977,7 +3025,7 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 
 
 describe("parseExpression", () => {
-	for(const [name, program, output] of sampleExpressions){
+	for(const [name, program, output] of parseExpressionTests){
 		if(output === "error"){
 			it(`should not parse ${name} into an expression`, () => {
 				expect(() => parseExpression(program)).toThrowMatching(e => e instanceof SoodocodeError);

@@ -13,7 +13,7 @@ import { SoodocodeError } from "../src/utils.js";
 import { applyAnyRange, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, } from "./spec_utils.js";
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 //i miss rust macros
-const sampleExpressions = ((d) => Object.entries(d).map(([name, [program, output]]) => [
+const parseExpressionTests = ((d) => Object.entries(d).map(([name, [program, output]]) => [
     name,
     program.map(token),
     output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
@@ -833,6 +833,54 @@ const sampleExpressions = ((d) => Object.entries(d).map(([name, [program, output
         ["tree", "pointer_dereference", [
                 ["name", "amogus"]
             ]]
+    ],
+    pointerRef2: [
+        [
+            ["operator.pointer", "^"],
+            ["operator.pointer", "^"],
+            ["name", "amogus"],
+        ],
+        ["tree", "pointer_reference", [
+                ["tree", "pointer_reference", [
+                        ["name", "amogus"]
+                    ]]
+            ]]
+    ],
+    pointerDeref2: [
+        [
+            ["name", "amogus"],
+            ["operator.pointer", "^"],
+            ["operator.pointer", "^"],
+        ],
+        ["tree", "pointer_dereference", [
+                ["tree", "pointer_dereference", [
+                        ["name", "amogus"]
+                    ]]
+            ]]
+    ],
+    pointerRefDerefTriple: [
+        [
+            ["operator.pointer", "^"],
+            ["operator.pointer", "^"],
+            ["operator.pointer", "^"],
+            ["name", "amogus"],
+            ["operator.pointer", "^"],
+            ["operator.pointer", "^"],
+            ["operator.pointer", "^"],
+        ],
+        ["tree", "pointer_reference", [
+                ["tree", "pointer_reference", [
+                        ["tree", "pointer_reference", [
+                                ["tree", "pointer_dereference", [
+                                        ["tree", "pointer_dereference", [
+                                                ["tree", "pointer_dereference", [
+                                                        ["name", "amogus"]
+                                                    ]],
+                                            ]],
+                                    ]],
+                            ]],
+                    ]],
+            ]],
     ],
     SussyBaka: [
         [
@@ -2925,7 +2973,7 @@ const parseTypeTests = Object.entries({
     output: output == "error" ? output : applyAnyRange(process_ExpressionASTExt(output))
 }));
 describe("parseExpression", () => {
-    for (const [name, program, output] of sampleExpressions) {
+    for (const [name, program, output] of parseExpressionTests) {
         if (output === "error") {
             it(`should not parse ${name} into an expression`, () => {
                 expect(() => parseExpression(program)).toThrowMatching(e => e instanceof SoodocodeError);

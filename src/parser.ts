@@ -427,7 +427,7 @@ function cannotEndExpression(token:Token){
 	return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
 function canBeUnaryOperator(token:Token){
-	return Object.values(operators).find(o => o.type == "unary_prefix" && o.token == token.type);
+	return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
 }
 
 export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
@@ -476,8 +476,15 @@ export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode =
 				if(operator.type.startsWith("unary_prefix")){
 					//Make sure there is only something on right side of the operator
 					const right = input.slice(i + 1);
-					if(i != 0){ //if there are tokens to the left of a unary operator
-						if(operator.type == "unary_prefix_o_postfix" && right.length == 0) continue; //this is the postfix operator
+					if(i != 0){ //if there are tokens to the left of a unary prefix operator
+						if(operator.type == "unary_prefix_o_postfix" && (
+							//"^ x ^ ^"
+							//     ⬆: this should be allowed
+							//x^.prop"
+							// ⬆: this should NOT be allowed
+							//Make sure everything to the right is unary postfix operators of the same priority
+							right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.type == "unary_postfix_o_prefix" || o.type == "unary_prefix_o_postfix"))
+						)) continue; //this is the postfix operator
 						//Binary operators
 						//  1 / 2 / 3
 						// (1 / 2)/ 3
