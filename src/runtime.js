@@ -290,14 +290,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                                 fail(`Cannot evaluate a referencing expression as a variable`);
                             if (type && !(type instanceof PointerVariableType))
                                 fail(`Expected result to be of type ${type}, but the refernce operator will return a pointer`);
+                            let variable;
                             try {
-                                const variable = this.evaluateExpr(expr.nodes[0], "variable", true);
+                                variable = this.evaluateExpr(expr.nodes[0], "variable", true);
                                 //Guess the type
-                                const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
-                                if (type)
-                                    return [pointerType, this.coerceValue(variable, pointerType, type)];
-                                else
-                                    return [pointerType, variable];
                             }
                             catch (err) {
                                 //If the thing we're referencing couldn't be evaluated to a variable
@@ -317,11 +313,16 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                                 else
                                     throw err;
                             }
+                            const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
+                            if (type)
+                                return [pointerType, this.coerceValue(variable, pointerType, type)];
+                            else
+                                return [pointerType, variable];
                         case operators.pointer_dereference:
                             let pointerVariableType, variableValue;
                             [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
                             if (variableValue == null)
-                                fail(`Cannot dereference value because it has not been initialized`);
+                                fail(`Cannot dereference value because it has not been initialized`, expr.nodes[0]);
                             if (!(pointerVariableType instanceof PointerVariableType))
                                 fail(`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
                             const pointerVariableData = variableValue;
