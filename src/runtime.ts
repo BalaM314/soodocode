@@ -20,6 +20,7 @@ import {
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 
 //TODO: fix coercion
+//CONFIG: array initialization
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> =
@@ -29,8 +30,8 @@ export type VariableTypeMapping<T> =
 	T extends "CHAR" ? string :
 	T extends "BOOLEAN" ? boolean :
 	T extends "DATE" ? Date :
-	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : //Arrays are initialized to all nulls, TODO confirm: does cambridge use INTEGER[]s being initialized to zero?
-	T extends RecordVariableType ? Record<string, unknown> : //TODO should be VariableValue not VariableTypeMapping, but that causes huge lag
+	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
+	T extends RecordVariableType ? Record<string, unknown> : //replacing "unknown" with VariableTypeMapping<any> breaks ts
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
@@ -146,7 +147,7 @@ export type VariableType =
 	| SetVariableType
 ;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
-export type VariableValue = VariableTypeMapping<VariableType>;
+export type VariableValue = VariableTypeMapping<any>;
 
 type FileMode = "READ" | "WRITE" | "APPEND";
 
