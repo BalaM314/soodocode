@@ -129,6 +129,7 @@ let Runtime = (() => {
     let _instanceExtraInitializers = [];
     let _processArrayAccess_decorators;
     let _processRecordAccess_decorators;
+    let _evaluateExpr_decorators;
     return _a = class Runtime {
             constructor(_input, _output) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
@@ -271,18 +272,40 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         case operators.access:
                             return this.processRecordAccess(expr, "get", type);
                         case operators.pointer_reference:
-                            const variable = this.evaluateExpr(expr.nodes[0], "variable");
-                            //Guess the type
-                            const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
-                            return [pointerType, variable];
+                            if (type == "variable")
+                                fail(`Cannot evaluate a referencing expression as a variable`);
+                            if (type && !(type instanceof PointerVariableType))
+                                fail(`Expected result to be of type ${type}, but the expression will return a pointer`);
+                            try {
+                                const variable = this.evaluateExpr(expr.nodes[0], "variable");
+                                //Guess the type
+                                const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
+                                if (type)
+                                    return [pointerType, this.coerceValue(variable, pointerType, type)];
+                                else
+                                    return [pointerType, variable];
+                            }
+                            catch (err) {
+                                //If the thing we're referencing couldn't be evaluated to a variable
+                                //create a fake variable
+                                //CONFIG weird pointers to fake variables
+                                if (err instanceof SoodocodeError) {
+                                    const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target);
+                                    //Guess the type
+                                    const pointerType = this.getPointerTypeFor(targetType) ?? fail(fquote `Cannot find a pointer type for ${targetType}`);
+                                    return [pointerType, {
+                                            type: targetType,
+                                            declaration: "dynamic",
+                                            mutable: true,
+                                            value: targetValue
+                                        }];
+                                }
+                                else
+                                    throw err;
+                            }
                         case operators.pointer_dereference:
                             let pointerVariableType, variableValue;
-                            if (type == "variable") {
-                                ({ type: pointerVariableType, value: variableValue } = this.evaluateExpr(expr.nodes[0], "variable"));
-                            }
-                            else {
-                                [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0]);
-                            }
+                            [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0]);
                             if (variableValue == null)
                                 fail(`Cannot dereference value because it has not been initialized`);
                             if (!(pointerVariableType instanceof PointerVariableType))
@@ -296,11 +319,16 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             else {
                                 if (pointerVariableData.value == null)
                                     fail(`Cannot dereference ${expr.nodes[0]} because the underlying value has not been initialized`, expr.nodes[0]);
-                                return [pointerVariableType.target, pointerVariableData.value];
+                                if (type)
+                                    return [pointerVariableType.target, this.coerceValue(pointerVariableData.value, pointerVariableType.target, type)];
+                                else
+                                    return [pointerVariableType.target, pointerVariableData.value];
                             }
                         default: impossible();
                     }
                 }
+                if (type == "variable")
+                    fail(`Cannot evaluate expression starting with ${expr.operator.name} as a variable`);
                 //arithmetic
                 if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
                     if (type && !(type == "REAL" || type == "INTEGER"))
@@ -404,7 +432,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     }
                 }
                 expr.operator.category;
-                crash(`This should not be possible`);
+                impossible();
             }
             evaluateToken(token, type) {
                 if (token.type == "name") {
@@ -705,8 +733,10 @@ help: try using DIV instead of / to produce an integer as the result`);
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
             _processArrayAccess_decorators = [errorBoundary];
             _processRecordAccess_decorators = [errorBoundary];
+            _evaluateExpr_decorators = [errorBoundary];
             __esDecorate(_a, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(_a, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         })(),
         _a.NotStaticError = class extends Error {

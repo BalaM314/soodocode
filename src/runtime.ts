@@ -161,7 +161,7 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	type: T;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
-	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement;
+	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | "dynamic";
 	mutable: true;
 }
 export type ConstantData<T extends VariableType = VariableType> = {
@@ -314,6 +314,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
 	evaluateExpr(expr:ExpressionAST, type:"variable"):VariableData | ConstantData;
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):[type:T & {}, value:VariableTypeMapping<T>];
+	@errorBoundary
 	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData | ConstantData {
 		if(expr == undefined) crash(`expr was ${expr}`);
 
@@ -347,17 +348,33 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				case operators.access:
 					return this.processRecordAccess(expr, "get", type);
 				case operators.pointer_reference:
-					const variable = this.evaluateExpr(expr.nodes[0], "variable");
-					//Guess the type
-					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote`Cannot find a pointer type for ${variable.type}`);
-					return [pointerType, variable];
-				case operators.pointer_dereference:
-					let pointerVariableType, variableValue;
-					if(type == "variable"){
-						({type:pointerVariableType, value:variableValue} = this.evaluateExpr(expr.nodes[0], "variable"));
-					} else {
-						[pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0]);
+					if(type == "variable") fail(`Cannot evaluate a referencing expression as a variable`);
+					if(type && !(type instanceof PointerVariableType)) fail(`Expected result to be of type ${type}, but the expression will return a pointer`);
+					try {
+						const variable = this.evaluateExpr(expr.nodes[0], "variable");
+						//Guess the type
+						const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote`Cannot find a pointer type for ${variable.type}`);
+						if(type) return [pointerType, this.coerceValue(variable, pointerType, type)];
+						else return [pointerType, variable];
+					} catch(err){
+						//If the thing we're referencing couldn't be evaluated to a variable
+						//create a fake variable
+						//CONFIG weird pointers to fake variables
+						if(err instanceof SoodocodeError){
+							const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target);
+							//Guess the type
+							const pointerType = this.getPointerTypeFor(targetType) ?? fail(fquote`Cannot find a pointer type for ${targetType}`);
+							return [pointerType, {
+								type: targetType,
+								declaration: "dynamic",
+								mutable: true,
+								value: targetValue
+							} satisfies VariableData];
+						} else throw err;
 					}
+				case operators.pointer_dereference:
+					let pointerVariableType:VariableType, variableValue:VariableValue | null;
+					[pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0]);
 					if(variableValue == null) fail(`Cannot dereference value because it has not been initialized`);
 					if(!(pointerVariableType instanceof PointerVariableType)) fail(`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
 					const pointerVariableData = variableValue as VariableTypeMapping<PointerVariableType>;
@@ -366,11 +383,14 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 						return pointerVariableData;
 					} else {
 						if(pointerVariableData.value == null) fail(`Cannot dereference ${expr.nodes[0]} because the underlying value has not been initialized`, expr.nodes[0]);
-						return [pointerVariableType.target, pointerVariableData.value];
+						if(type) return [pointerVariableType.target, this.coerceValue(pointerVariableData.value, pointerVariableType.target, type)];
+						else return [pointerVariableType.target, pointerVariableData.value];
 					}
 				default: impossible();
 			}
 		}
+
+		if(type == "variable") fail(`Cannot evaluate expression starting with ${expr.operator.name} as a variable`);
 
 		//arithmetic
 		if(type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic"){
@@ -478,7 +498,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 
 		expr.operator.category satisfies never;
-		crash(`This should not be possible`);
+		impossible();
 	}
 	evaluateToken(token:Token):[type:VariableType, value:VariableValue];
 	evaluateToken(token:Token, type:"variable"):VariableData | ConstantData;
