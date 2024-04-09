@@ -12,7 +12,7 @@ import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./sta
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
-export const parseFunctionArguments = errorBoundary((tokens) => {
+export const parseFunctionArguments = errorBoundary()((tokens) => {
     //special case: blank
     if (tokens.length == 0)
         return new Map();
@@ -66,7 +66,7 @@ export const parseFunctionArguments = errorBoundary((tokens) => {
     }
     return argumentsMap;
 });
-export const processTypeData = errorBoundary((typeNode) => {
+export const processTypeData = errorBoundary()((typeNode) => {
     if (typeNode instanceof Token) {
         if (isPrimitiveType(typeNode.text))
             return typeNode.text;
@@ -76,7 +76,7 @@ export const processTypeData = errorBoundary((typeNode) => {
     else
         return typeNode.toData();
 });
-export const parseType = errorBoundary((tokens) => {
+export const parseType = errorBoundary()((tokens) => {
     if (tokens.length == 1) {
         if (tokens[0].type == "name")
             return tokens[0];
@@ -88,17 +88,17 @@ export const parseType = errorBoundary((tokens) => {
         tokens[1]?.type == "bracket.open" &&
         tokens.at(-2)?.type == "keyword.of" &&
         tokens.at(-1)?.type == "name"))
-        fail(fquote `Cannot parse type from ${tokens.join(" ")}`);
+        fail(fquote `Cannot parse type from ${tokens}`);
     return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma")
         .map(({ group, splitter }) => {
         if (group.length != 3)
-            fail(fquote `Invalid array range specifier ${group.join(" ")}`, group.length ? group : splitter);
+            fail(fquote `Invalid array range specifier ${group}`, group.length ? group : splitter);
         if (group[0].type != "number.decimal")
             fail(fquote `Expected a number, got ${group[0].text}`, group[0]);
         if (group[1].type != "punctuation.colon")
             fail(fquote `Expected a colon, got ${group[1].text}`, group[1]);
         if (group[2].type != "number.decimal")
-            fail(fquote `Expected a number, got ${group[2].text}`, group[1]);
+            fail(fquote `Expected a number, got ${group[2].text}`, group[2]);
         return [group[0], group[2]];
     }), tokens.at(-1), tokens);
 });
@@ -174,7 +174,7 @@ export function parse({ program, tokens }) {
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary((tokens) => {
+export const parseStatement = errorBoundary()((tokens) => {
     if (tokens.length < 1)
         crash("Empty statement");
     let possibleStatements = tokens[0].type in statements.byStartKeyword
@@ -196,7 +196,8 @@ export const parseStatement = errorBoundary((tokens) => {
                     errors.push({
                         message: err.message,
                         priority: 10,
-                        range: err.rangeSpecific ?? null
+                        range: err.rangeSpecific ?? null,
+                        err
                     });
                 else
                     throw err;
@@ -210,7 +211,10 @@ export const parseStatement = errorBoundary((tokens) => {
         if (error.priority > maxError.priority)
             maxError = error;
     }
-    fail(maxError.message, maxError.range, tokens);
+    if (maxError.err)
+        throw maxError.err;
+    else
+        fail(maxError.message, maxError.range, tokens);
 });
 export function isLiteral(type) {
     switch (type) {
@@ -228,7 +232,7 @@ export function isLiteral(type) {
  * This is to avoid duplicating the expression parsing logic.
  * `input` must not be empty.
  */
-export const checkStatement = errorBoundary((statement, input) => {
+export const checkStatement = errorBoundary()((statement, input) => {
     //warning: despite writing it, I do not fully understand this code
     //but it works
     if (input.length == 0)
@@ -415,7 +419,7 @@ function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
 }
 export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
-export const parseExpressionLeafNode = errorBoundary((token) => {
+export const parseExpressionLeafNode = errorBoundary()((token) => {
     //Number, string, char, boolean, and variables can be parsed as-is
     if (expressionLeafNodeTypes.includes(token.type))
         return token;
@@ -423,7 +427,7 @@ export const parseExpressionLeafNode = errorBoundary((token) => {
         fail(`Invalid expression leaf node`);
 });
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
-export const parseExpression = errorBoundary((input) => {
+export const parseExpression = errorBoundary()((input) => {
     if (!Array.isArray(input))
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     //If there is only one token

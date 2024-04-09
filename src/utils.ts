@@ -135,30 +135,37 @@ export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
 }
 
-export function errorBoundary<T extends (...args:any[]) => unknown>(func:T, ctx?:ClassMethodDecoratorContext):T {
-	return function(this:ThisParameterType<T>, ...args){
-		try {
-			return func.apply(this, args);
-		} catch(err){
-			if(err instanceof SoodocodeError){
-				//Try to find the range
-				if(err.rangeSpecific === undefined) err.rangeSpecific = findRange(args);
-				else if(err.rangeGeneral === undefined){
-					const _rangeGeneral = findRange(args);
-					if( //If the general range is unspecified, and when guessede is equal to the specific range, just set it to null
-						_rangeGeneral && err.rangeSpecific && (
-							_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]
-						)
-					) err.rangeGeneral = null;
-					else err.rangeGeneral = _rangeGeneral;
+/**
+ * Decorator to apply an error boundary to functions.
+ * @param predicate Only sets the general range if this returns true.
+ */
+export function errorBoundary(predicate:NoInfer<(...args:any[]) => boolean> = (() => true)){
+	return function decorator<T extends (...args:any[]) => unknown>(func:T, ctx?:ClassMethodDecoratorContext):T {
+		return function replacedFunction(this:ThisParameterType<T>, ...args:Parameters<T>){
+			try {
+				return func.apply(this, args);
+			} catch(err){
+				if(err instanceof SoodocodeError){
+					//Try to find the range
+					if(err.rangeSpecific === undefined) err.rangeSpecific = findRange(args);
+					else if(err.rangeGeneral === undefined && predicate(...args)){
+						const _rangeGeneral = findRange(args);
+						if( //If the general range is unspecified, and when guessed is equal to the specific range, just set it to null
+							_rangeGeneral && err.rangeSpecific && (
+								_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]
+							)
+						) err.rangeGeneral = null;
+						else err.rangeGeneral = _rangeGeneral;
+					}
 				}
+				throw err;
 			}
-			throw err;
-		}
-	} as T;
+		} as T;
+	}
 }
 
-export function escapeHTML(input:string):string {
+export function escapeHTML(input?:string):string {
+	if(input == undefined) return "";
 	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
@@ -190,7 +197,9 @@ export function tagProcessor<T>(
 }
 
 export const fquote = tagProcessor((chunk:string | Object) => {
-	const str = chunk.toString();
+	const str = Array.isArray(chunk) && chunk[0] && chunk[0] instanceof Token ? chunk.map(c => c.getText()).join(" ") :
+		chunk instanceof Token ? chunk.getText() :
+		chunk.toString();
 	return str.length == 0 ? "[empty]" : `"${str}"`
 });
 

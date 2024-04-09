@@ -6,7 +6,7 @@ import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
 
 
 /** Represents an expression tree. */
-export type ExpressionAST = ExpressionASTNode; //TODO make this a class too, OR put a "root" property in ExpressionASTBranchNode
+export type ExpressionAST = ExpressionASTNode;
 /** Represents a single node in an expression AST. */
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode;
 /** Represents a leaf node (node with no child nodes) in an expression AST. */

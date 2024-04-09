@@ -4,6 +4,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains utility functions.
 */
+import { Token } from "./lexer-types.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
@@ -144,30 +145,38 @@ export function crash(message) {
 export function impossible() {
     throw new Error(`this shouldn't be possible...`);
 }
-export function errorBoundary(func, ctx) {
-    return function (...args) {
-        try {
-            return func.apply(this, args);
-        }
-        catch (err) {
-            if (err instanceof SoodocodeError) {
-                //Try to find the range
-                if (err.rangeSpecific === undefined)
-                    err.rangeSpecific = findRange(args);
-                else if (err.rangeGeneral === undefined) {
-                    const _rangeGeneral = findRange(args);
-                    if ( //If the general range is unspecified, and when guessede is equal to the specific range, just set it to null
-                    _rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
-                        err.rangeGeneral = null;
-                    else
-                        err.rangeGeneral = _rangeGeneral;
-                }
+/**
+ * Decorator to apply an error boundary to functions.
+ * @param predicate Only sets the general range if this returns true.
+ */
+export function errorBoundary(predicate = (() => true)) {
+    return function decorator(func, ctx) {
+        return function replacedFunction(...args) {
+            try {
+                return func.apply(this, args);
             }
-            throw err;
-        }
+            catch (err) {
+                if (err instanceof SoodocodeError) {
+                    //Try to find the range
+                    if (err.rangeSpecific === undefined)
+                        err.rangeSpecific = findRange(args);
+                    else if (err.rangeGeneral === undefined && predicate(...args)) {
+                        const _rangeGeneral = findRange(args);
+                        if ( //If the general range is unspecified, and when guessed is equal to the specific range, just set it to null
+                        _rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
+                            err.rangeGeneral = null;
+                        else
+                            err.rangeGeneral = _rangeGeneral;
+                    }
+                }
+                throw err;
+            }
+        };
     };
 }
 export function escapeHTML(input) {
+    if (input == undefined)
+        return "";
     return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 export function isPrimitiveType(input) {
@@ -196,7 +205,9 @@ export function tagProcessor(transformer) {
     };
 }
 export const fquote = tagProcessor((chunk) => {
-    const str = chunk.toString();
+    const str = Array.isArray(chunk) && chunk[0] && chunk[0] instanceof Token ? chunk.map(c => c.getText()).join(" ") :
+        chunk instanceof Token ? chunk.getText() :
+            chunk.toString();
     return str.length == 0 ? "[empty]" : `"${str}"`;
 });
 export function forceType(input) { }

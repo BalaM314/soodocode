@@ -28,7 +28,7 @@ import {
 //TODO add a way to specify the range for an empty list of tokens
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
-export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArguments => {
+export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionArguments => {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
@@ -81,7 +81,7 @@ export const parseFunctionArguments = errorBoundary((tokens:Token[]):FunctionArg
 	return argumentsMap;
 });
 
-export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):UnresolvedVariableType => {
+export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):UnresolvedVariableType => {
 	if(typeNode instanceof Token){
 		if(isPrimitiveType(typeNode.text))
 			return typeNode.text;
@@ -90,7 +90,7 @@ export const processTypeData = errorBoundary((typeNode:ExpressionASTTypeNode):Un
 	} else return typeNode.toData();
 });
 
-export const parseType = errorBoundary((tokens:Token[]):ExpressionASTTypeNode => {
+export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode => {
 	if(tokens.length == 1){
 		if(tokens[0].type == "name") return tokens[0];
 		else fail(`Token ${tokens[0]} is not a valid type`);
@@ -102,17 +102,17 @@ export const parseType = errorBoundary((tokens:Token[]):ExpressionASTTypeNode =>
 		tokens[1]?.type == "bracket.open" &&
 		tokens.at(-2)?.type == "keyword.of" &&
 		tokens.at(-1)?.type == "name"
-	)) fail(fquote`Cannot parse type from ${tokens.join(" ")}`);
+	)) fail(fquote`Cannot parse type from ${tokens}`);
 	return new ExpressionASTArrayTypeNode(
 		splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma")
 		.map(({group, splitter}) => {
 			if(group.length != 3) fail(
-				fquote`Invalid array range specifier ${group.join(" ")}`,
+				fquote`Invalid array range specifier ${group}`,
 				group.length ? group : splitter
 			);
 			if(group[0].type != "number.decimal") fail(fquote`Expected a number, got ${group[0].text}`, group[0]);
 			if(group[1].type != "punctuation.colon") fail(fquote`Expected a colon, got ${group[1].text}`, group[1]);
-			if(group[2].type != "number.decimal") fail(fquote`Expected a number, got ${group[2].text}`, group[1]);
+			if(group[2].type != "number.decimal") fail(fquote`Expected a number, got ${group[2].text}`, group[2]);
 			return [group[0], group[2]] as [Token, Token];
 		}),
 		tokens.at(-1)!,
@@ -187,14 +187,14 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary((tokens:Token[]):Statement => {
+export const parseStatement = errorBoundary()((tokens:Token[]):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	let possibleStatements:(typeof Statement)[] =
 		tokens[0].type in statements.byStartKeyword
 			? statements.byStartKeyword[tokens[0].type]!
 			: statements.irregular;
 	if(possibleStatements.length == 0) fail(`No possible statements`, tokens);
-	let errors:StatementCheckFailResult[] = [];
+	let errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
@@ -208,17 +208,19 @@ export const parseStatement = errorBoundary((tokens:Token[]):Statement => {
 				if(err instanceof SoodocodeError) errors.push({
 					message: err.message,
 					priority: 10,
-					range: err.rangeSpecific ?? null
+					range: err.rangeSpecific ?? null,
+					err
 				});
 				else throw err;
 			}
 		} else errors.push(result);
 	}
-	let maxError:StatementCheckFailResult = errors[0];
+	let maxError = errors[0];
 	for(const error of errors){
 		if(error.priority > maxError.priority) maxError = error;
 	}
-	fail(maxError.message, maxError.range, tokens);
+	if(maxError.err) throw maxError.err;
+	else fail(maxError.message, maxError.range, tokens);
 });
 
 export function isLiteral(type:TokenType){
@@ -239,7 +241,7 @@ type StatementCheckFailResult = { message: string; priority: number; range: Text
  * This is to avoid duplicating the expression parsing logic.
  * `input` must not be empty.
  */
-export const checkStatement = errorBoundary((statement:typeof Statement, input:Token[]):
+export const checkStatement = errorBoundary()((statement:typeof Statement, input:Token[]):
 	StatementCheckFailResult | StatementCheckTokenRange[] => {
 	//warning: despite writing it, I do not fully understand this code
 	//but it works
@@ -432,7 +434,7 @@ function canBeUnaryOperator(token:Token){
 
 export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
 
-export const parseExpressionLeafNode = errorBoundary((token:Token):ExpressionASTLeafNode => {
+export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionASTLeafNode => {
 	//Number, string, char, boolean, and variables can be parsed as-is
 	if(expressionLeafNodeTypes.includes(token.type))
 		return token;
@@ -441,7 +443,7 @@ export const parseExpressionLeafNode = errorBoundary((token:Token):ExpressionAST
 });
 
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
-export const parseExpression = errorBoundary((input:Token[]):ExpressionASTNode => {
+export const parseExpression = errorBoundary()((input:Token[]):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`);
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);

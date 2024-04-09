@@ -212,7 +212,7 @@ export class Runtime {
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type:"variable"):VariableData;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"set", value:ExpressionAST):void;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
-	@errorBoundary
+	@errorBoundary()
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | void {
 
 		//Make sure the variable exists and is an array
@@ -273,7 +273,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type:"variable"):VariableData | ConstantData;
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData | ConstantData;
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
-	@errorBoundary
+	@errorBoundary()
 	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | ConstantData | void {
 		//this code is terrible
 		//note to self:
@@ -313,10 +313,11 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
-	evaluateExpr(expr:ExpressionAST, type:"variable"):VariableData | ConstantData;
-	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):[type:T & {}, value:VariableTypeMapping<T>];
-	@errorBoundary
-	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):[type:VariableType, value:unknown] | VariableData | ConstantData {
+	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):[type:VariableType, value:VariableValue];
+	evaluateExpr(expr:ExpressionAST, type:"variable", recursive?:boolean):VariableData | ConstantData;
+	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):[type:T & {}, value:VariableTypeMapping<T>];
+	@errorBoundary((expr, type, recursive) => !recursive)
+	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable", recursive = false):[type:VariableType, value:unknown] | VariableData | ConstantData {
 		if(expr == undefined) crash(`expr was ${expr}`);
 
 		if(expr instanceof Token)
@@ -352,7 +353,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					if(type == "variable") fail(`Cannot evaluate a referencing expression as a variable`);
 					if(type && !(type instanceof PointerVariableType)) fail(`Expected result to be of type ${type}, but the expression will return a pointer`);
 					try {
-						const variable = this.evaluateExpr(expr.nodes[0], "variable");
+						const variable = this.evaluateExpr(expr.nodes[0], "variable", true);
 						//Guess the type
 						const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote`Cannot find a pointer type for ${variable.type}`);
 						if(type) return [pointerType, this.coerceValue(variable, pointerType, type)];
@@ -362,7 +363,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 						//create a fake variable
 						//CONFIG weird pointers to fake variables
 						if(err instanceof SoodocodeError){
-							const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target);
+							const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
 							//Guess the type
 							const pointerType = this.getPointerTypeFor(targetType) ?? fail(fquote`Cannot find a pointer type for ${targetType}`);
 							return [pointerType, {
@@ -375,7 +376,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					}
 				case operators.pointer_dereference:
 					let pointerVariableType:VariableType, variableValue:VariableValue | null;
-					[pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0]);
+					[pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
 					if(variableValue == null) fail(`Cannot dereference value because it has not been initialized`);
 					if(!(pointerVariableType instanceof PointerVariableType)) fail(`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
 					const pointerVariableData = variableValue as VariableTypeMapping<PointerVariableType>;
@@ -402,15 +403,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			let value:number;
 			//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
 			if(expr.operator.type == "unary_prefix"){
-				const [operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType);
+				const [operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType, true);
 				switch(expr.operator){
 					case operators.negate:
 						return ["INTEGER", -operand];
 					default: crash("impossible");
 				}
 			}
-			const [leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType);
-			const [rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType);
+			const [leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
+			const [rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
 			switch(expr.operator){
 				case operators.add:
 					value = left + right;
@@ -452,20 +453,20 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(expr.operator.type == "unary_prefix"){
 				switch(expr.operator){
 					case operators.not:
-						return ["BOOLEAN", !this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1]];
+						return ["BOOLEAN", !this.evaluateExpr(expr.nodes[0], "BOOLEAN", true)[1]];
 					default: crash("impossible");
 				}
 			}
 			switch(expr.operator){
 				case operators.and:
-					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1] && this.evaluateExpr(expr.nodes[1], "BOOLEAN")[1]];
+					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN", true)[1] && this.evaluateExpr(expr.nodes[1], "BOOLEAN", true)[1]];
 				case operators.or:
-					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN")[1] || this.evaluateExpr(expr.nodes[1], "BOOLEAN")[1]];
+					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN", true)[1] || this.evaluateExpr(expr.nodes[1], "BOOLEAN", true)[1]];
 				case operators.equal_to:
 				case operators.not_equal_to:
 					//Type is unknown
-					const [leftType, left] = this.evaluateExpr(expr.nodes[0]);
-					const [rightType, right] = this.evaluateExpr(expr.nodes[1]);
+					const [leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
+					const [rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
 					const typesMatch =
 						(leftType == rightType) ||
 						(leftType == "INTEGER" && rightType == "REAL") ||
@@ -474,13 +475,13 @@ help: try using DIV instead of / to produce an integer as the result`
 					if(expr.operator == operators.equal_to) return ["BOOLEAN", is_equal];
 					else return ["BOOLEAN", !is_equal];
 				case operators.greater_than:
-					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] > this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] > this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
 				case operators.greater_than_equal:
-					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] >= this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] >= this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
 				case operators.less_than:
-					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] < this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] < this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
 				case operators.less_than_equal:
-					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL")[1] <= this.evaluateExpr(expr.nodes[1], "REAL")[1]];
+					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] <= this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
 				default:
 					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
 			}
@@ -492,7 +493,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a string result`);
 			switch(expr.operator){
 				case operators.string_concatenate:
-					return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING")[1] + this.evaluateExpr(expr.nodes[1], "STRING")[1]];
+					return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING", true)[1] + this.evaluateExpr(expr.nodes[1], "STRING", true)[1]];
 				default:
 					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
 			}
