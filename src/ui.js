@@ -327,7 +327,7 @@ export function showRange(text, error) {
         const beforeLines = beforeText.split("\n");
         const lineNumber = beforeLines.length;
         const formattedPreviousLine = beforeLines.at(-2)
-            ? `${" ".repeat(lineNumber.toString().length)}| ${escapeHTML(beforeLines.at(-2))}\n`
+            ? `${" ".repeat(lineNumber.toString().length)} | ${escapeHTML(beforeLines.at(-2))}\n`
             : "";
         const startOfLine = beforeLines.at(-1);
         const restOfLine = text.slice(range[1]).split("\n")[0];
@@ -339,7 +339,7 @@ export function showRange(text, error) {
             : escapeHTML(rangeText);
         return `
 ${formattedPreviousLine}\
-${lineNumber}| ${escapeHTML(startOfLine)}<span style="background-color: #FF03;">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
+${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
         //TODO use CSS classes
     }
     else {
@@ -375,7 +375,7 @@ function executeSoodocode() {
     }
     catch (err) {
         if (err instanceof SoodocodeError) {
-            outputDiv.innerHTML = `<span style="color: red;">Error: ${escapeHTML(err.message)}</span>\n`
+            outputDiv.innerHTML = `<span style="color: red;">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
                 + showRange(soodocodeInput.value, err);
             console.error(err);
         }

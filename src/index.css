@@ -142,11 +142,12 @@ td, th {
 .output-div {
 	min-width: 100px;
 	width: fit-content;
+	max-width: calc(100% - 40px);
 	min-height: 50px;
 	background-color: black;
 	border: 2px dashed green;
 	font-family: 'Courier New', Courier, monospace;
-	white-space: pre;
+	white-space: pre-wrap;
 	margin: 20px;
 	padding: 5px;
 }
