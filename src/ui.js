@@ -11,8 +11,9 @@ import * as parserTypes from "./parser-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
-import { displayExpression, fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
+import { fail, crash, SoodocodeError, escapeHTML } from "./utils.js";
 import { Token } from "./lexer-types.js";
+import { ExpressionASTArrayTypeNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 function getElement(id, type) {
@@ -32,27 +33,62 @@ export function flattenTree(program) {
             return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement]);
     }).flat(1);
 }
+export function displayExpressionHTML(node, expand = false, format = true) {
+    if (node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
+        return escapeHTML(node.getText());
+    if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode) {
+        const text = escapeHTML(node.getText());
+        return format ? `<span class="expression-display-block">${text}</span>` : text;
+    }
+    const compressed = !expand || node.nodes.every(n => n instanceof Token);
+    if (compressed) {
+        const text = escapeHTML(node.getText());
+        return format ? `<span class="expression-display-block">${text}</span>` : text;
+    }
+    else {
+        if (node.operator.type.startsWith("unary_prefix"))
+            return (`(
+${node.operatorToken.text}
+${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
+)`);
+        else if (node.operator.type.startsWith("unary_postfix"))
+            return (`(
+${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
+${node.operatorToken.text}
+)`);
+        else
+            return (`(
+${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
+${node.operatorToken.text}
+${displayExpressionHTML(node.nodes[1], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
+)`);
+    }
+}
 export function displayProgram(program) {
-    return (Array.isArray(program) ? program : program.nodes).map(node => node instanceof Statement ?
-        node.toString(true) + "\n" :
-        node.nodeGroups.length > 1 ?
-            `<div class="program-display-outer">\
-${node.controlStatements[0].toString(true)}
+    return (Array.isArray(program) ? program : program.nodes).map(node => {
+        if (node instanceof Statement)
+            return displayStatement(node);
+        if (node.nodeGroups.length == 1)
+            return (`<div class="program-display-outer">\
+${displayStatement(node.controlStatements[0])}\
 <div class="program-display-inner">\
 ${displayProgram(node.nodeGroups[0])}\
 </div>\
-${node.controlStatements[1].toString(true)}
-<div class="program-display-inner">\
-${displayProgram(node.nodeGroups[1])}\
-</div>${node.controlStatements[2].toString(true)}
-</div>` : //TODO what the heck is this?
-            `<div class="program-display-outer">\
-${node.controlStatements[0].toString(true)}
-<div class="program-display-inner">\
-${displayProgram(node.nodeGroups[0])}\
-</div>\
-${node.controlStatements.at(-1).toString(true)}
-</div>`).join("");
+${displayStatement(node.controlStatements.at(-1))}\
+</div>`);
+        return (`<div class="program-display-outer">\
+${displayStatement(node.controlStatements[0])}\
+${node.nodeGroups.map((n, i) => [n, node.controlStatements[i + 1] ?? crash(`Cannot display nodes`)]).map(([group, statement]) => (group.length > 0 ? `<div class="program-display-inner">\
+${displayProgram(group)}\
+</div>` : "") +
+            displayStatement(statement)).join("")}\
+</div>`);
+    }).join("");
+}
+export function displayStatement(statement) {
+    return (`<div class="program-display-statement">\
+${statement.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpressionHTML(t, false)}</span>`).join(" ")}\
+</div>`);
 }
 export function evaluateExpressionDemo(node) {
     if (node instanceof Token) {
@@ -78,7 +114,7 @@ export function evaluateExpressionDemo(node) {
             case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
             case "operator.integer_divide": return Math.trunc(evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]));
             case "operator.mod": return evaluateExpressionDemo(node.nodes[0]) % evaluateExpressionDemo(node.nodes[1]);
-            default: fail(`Cannot evaluate expression: cannot evaluate node <${displayExpression(node)}>: unknown operator type ${node.operator.name}`);
+            default: fail(`Cannot evaluate expression: cannot evaluate node <${node.getText()}>: unknown operator type ${node.operator.name}`);
         }
 }
 export function download(filename, data) {
@@ -131,14 +167,17 @@ evaluateExpressionButton.addEventListener("click", e => {
 });
 dumpExpressionTreeButton.addEventListener("click", e => {
     try {
-        const text = displayExpression(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens), dumpExpressionTreeVerbose.checked);
+        const text = displayExpressionHTML(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens), dumpExpressionTreeVerbose.checked, false);
+        console.log(text);
         //Syntax highlighting
         let outputText = "";
         let linePos = 0;
         let lineParenColor = null;
         for (const char of text) {
-            if (char == "\t")
+            if (char == "\t") {
                 outputText += "  ";
+                linePos++;
+            }
             else if (['+', '-', '*', '/'].includes(char))
                 outputText += `<span style="color:white;font-weight:bold;">${char}</span>`;
             else if (/\d/.test(char))
@@ -148,7 +187,7 @@ dumpExpressionTreeButton.addEventListener("click", e => {
                 outputText += `<span style="color:${lineParenColor}">${char}</span>`;
             }
             else if (dumpExpressionTreeVerbose.checked && ['↱', '↳'].includes(char)) {
-                outputText += `<span style="color:hsl(${(1 + linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`;
+                outputText += `<span style="color:hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`;
             }
             else
                 outputText += char;
@@ -309,6 +348,7 @@ function executeSoodocode() {
         }
         else {
             outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
+            console.error(err);
         }
     }
 }

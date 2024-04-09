@@ -46,7 +46,7 @@ import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtim
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote, getUniqueNamesFromCommaSeparatedTokenList, } from "./utils.js";
+import { fail, crash, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote, getUniqueNamesFromCommaSeparatedTokenList, } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 export const statements = {
     byStartKeyword: {},
@@ -61,13 +61,11 @@ export class Statement {
         this.category = this.type.category;
         this.range = getTotalRange(tokens);
     }
-    toString(html = false) {
-        if (html) {
-            return this.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
-        }
-        else {
-            return this.tokens.map(t => displayExpression(t, false)).join(" ");
-        }
+    toString() {
+        return this.tokens.map(t => t.toString()).join(" ");
+    }
+    getText() {
+        return this.tokens.map(t => t.getText()).join(" ");
     }
     static blockEndStatement() {
         if (this.category != "block")
@@ -716,7 +714,7 @@ let CaseBranchRangeStatement = (() => {
     let _classSuper = CaseBranchStatement;
     var CaseBranchRangeStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
-            super(tokens.slice(0, 2));
+            super(tokens);
             if (!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
                 fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number of character`, tokens[0]);
             if (tokens[2].type != tokens[0].type)
@@ -810,7 +808,7 @@ let ForStepStatement = (() => {
     let _classSuper = ForStatement;
     var ForStepStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
-            super(tokens.slice(0, 6));
+            super(tokens);
             this.stepToken = tokens[7];
         }
         step(runtime) {

@@ -20,13 +20,13 @@ import {
 	expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData
 } from "./parser.js";
 import {
-	displayExpression, fail, crash, escapeHTML, isPrimitiveType, splitTokensOnComma, getTotalRange,
-	fquote, getUniqueNamesFromCommaSeparatedTokenList,
+	fail, crash, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote,
+	getUniqueNamesFromCommaSeparatedTokenList,
 } from "./utils.js";
 import { builtinFunctions } from "./builtin_functions.js";
 
 
-export type StatementType = //TODO clean up these names
+export type StatementType =
 	| "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call"
 	| "type" | "type.pointer" | "type.enum" | "type.set" | "type.end"
 	| "if" | "if.end" | "else"
@@ -70,12 +70,11 @@ export class Statement implements TextRanged {
 		this.category = this.type.category;
 		this.range = getTotalRange(tokens);
 	}
-	toString(html = false){
-		if(html){
-			return this.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpression(t, false, true)}</span>`).join(" ");
-		} else {
-			return this.tokens.map(t => displayExpression(t, false)).join(" ");
-		}
+	toString(){
+		return this.tokens.map(t => t.toString()).join(" ");
+	}
+	getText(){
+		return this.tokens.map(t => t.getText()).join(" ");
 	}
 	static blockEndStatement<
 		/** use Function to prevent narrowing, leave blank otherwise */
@@ -475,7 +474,7 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	upperBound:Token;
 	static allowedTypes:TokenType[] = ["number.decimal", "char"];
 	constructor(tokens:[Token, Token, Token, Token]){
-		super(tokens.slice(0, 2) as [Token, Token]);
+		super(tokens as never);
 		if(!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
 			fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number of character`, tokens[0]);
 		if(tokens[2].type != tokens[0].type)
@@ -534,7 +533,7 @@ export class ForStatement extends Statement {
 export class ForStepStatement extends ForStatement {
 	stepToken: ExpressionAST;
 	constructor(tokens:[Token, Token, Token, ExpressionAST, Token, ExpressionAST, Token, ExpressionAST]){
-		super(tokens.slice(0, 6) as [Token, Token, Token, ExpressionAST, Token, ExpressionAST]);
+		super(tokens as never);
 		this.stepToken = tokens[7];
 	}
 	step(runtime:Runtime):number {

@@ -13,7 +13,18 @@ export class ExpressionASTBranchNode {
         return this.allTokens.map(t => t.text).join(" ");
     }
     getText() {
-        return this.allTokens.map(t => t.getText()).join(" ");
+        if (this.operator.type.startsWith("unary_prefix")) {
+            //Is a unary prefix operator and, argument says don't expand or all child nodes are leaf nodes.
+            return `(${this.operatorToken.text} ${this.nodes[0].getText()})`;
+        }
+        else if (this.operator.type.startsWith("unary_postfix")) {
+            //Is a unary postfix operator and, argument says don't expand or all child nodes are leaf nodes.
+            return `(${this.nodes[0].getText()} ${this.operatorToken.text})`;
+        }
+        else {
+            //Binary operator and, argument says don't expand or all child nodes are leaf nodes.
+            return `(${this.nodes[0].getText()} ${this.operatorToken.text} ${this.nodes[1].getText()})`;
+        }
     }
 }
 export class ExpressionASTFunctionCallNode {
@@ -27,7 +38,7 @@ export class ExpressionASTFunctionCallNode {
         return this.allTokens.map(t => t.text).join(" ");
     }
     getText() {
-        return this.allTokens.map(t => t.getText()).join(" ");
+        return `${this.functionName.text}(${this.args.map(n => n.getText()).join(", ")})`;
     }
 }
 export class ExpressionASTArrayAccessNode {
@@ -41,7 +52,7 @@ export class ExpressionASTArrayAccessNode {
         return this.allTokens.map(t => t.text).join(" ");
     }
     getText() {
-        return this.allTokens.map(t => t.getText()).join(" ");
+        return `${this.target.getText()}[${this.indices.map(n => n.getText()).join(", ")}]`;
     }
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
@@ -55,6 +66,10 @@ export class ExpressionASTArrayTypeNode {
     toData() {
         return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isPrimitiveType(this.elementType.text) ? this.elementType.text : ["unresolved", this.elementType.text]);
     }
+    toString() {
+        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;
+    }
+    getText() { return this.toString(); }
 }
 export class ExpressionASTPointerTypeNode {
     constructor(targetType, allTokens) {
