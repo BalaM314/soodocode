@@ -6,6 +6,7 @@ This file contains utility functions.
 */
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
+import { Operator } from "./parser.js";
 import { PrimitiveVariableTypeName } from "./runtime.js";
 import { TagFunction } from "./types.js";
 
@@ -234,6 +235,8 @@ export const fquote = tagProcessor((chunk:string | Object) => {
 		str = chunk.map(c => c.getText()).join(" ");
 	else if(chunk instanceof Token)
 		str = chunk.getText();
+	else if(typeof chunk == "object" && "category" in chunk && "name" in chunk)
+		str = (chunk as Operator).name;
 	else if(typeof chunk == "object" && "toQuotedString" in chunk && typeof chunk.toQuotedString == "function")
 		return chunk.toQuotedString();
 	else str = chunk.toString();

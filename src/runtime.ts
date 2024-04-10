@@ -416,7 +416,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		//arithmetic
 		if(type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic"){
 			if(type && !(type == "REAL" || type == "INTEGER"))
-				fail(fquote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator.name} returns a number`);
+				fail(fquote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
 
 			const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
 			let value:number;
@@ -448,7 +448,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 						fail(
 `Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
 help: try using DIV instead of / to produce an integer as the result`
-						);
+						); //CONFIG
 					break;
 				case operators.integer_divide:
 					if(right == 0) fail(`Division by zero`);
@@ -459,7 +459,7 @@ help: try using DIV instead of / to produce an integer as the result`
 					value = left % right;
 					break;
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
+					fail(fquote`expected the expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`);
 			}
 			return [guessedType, value];
 		}
@@ -467,7 +467,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		//logical
 		if(type == "BOOLEAN" || expr.operator.category == "logical"){
 			if(type && !(type == "BOOLEAN"))
-				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a boolean result`);
+				fail(fquote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`);
 
 			if(expr.operator.type == "unary_prefix"){
 				switch(expr.operator){
@@ -502,19 +502,19 @@ help: try using DIV instead of / to produce an integer as the result`
 				case operators.less_than_equal:
 					return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] <= this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
+					fail(fquote`expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`);
 			}
 		}
 
 		//string
 		if(type == "STRING" || expr.operator.category == "string"){
 			if(type && !(type == "STRING"))
-				fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a string result`);
+				fail(`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`);
 			switch(expr.operator){
 				case operators.string_concatenate:
 					return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING", true)[1] + this.evaluateExpr(expr.nodes[1], "STRING", true)[1]];
 				default:
-					fail(`Cannot evaluate expression starting with ${expr.operator.name}: expected the expression to evaluate to a value of type ${type}, but the operator produces a result of another type`);
+					fail(`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
 			}
 		}
 
@@ -542,6 +542,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(type == "variable") fail(fquote`Cannot evaluate token ${token.text} as a variable`);
 		switch(token.type){
 			case "boolean.false":
+				//TODO bad coercion
 				if(!type || type == "BOOLEAN") return ["BOOLEAN", false];
 				else if(type == "STRING") return ["STRING", "FALSE"];
 				else fail(`Cannot convert value FALSE to ${type}`);

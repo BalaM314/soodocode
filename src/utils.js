@@ -234,6 +234,8 @@ export const fquote = tagProcessor((chunk) => {
         str = chunk.map(c => c.getText()).join(" ");
     else if (chunk instanceof Token)
         str = chunk.getText();
+    else if (typeof chunk == "object" && "category" in chunk && "name" in chunk)
+        str = chunk.name;
     else if (typeof chunk == "object" && "toQuotedString" in chunk && typeof chunk.toQuotedString == "function")
         return chunk.toQuotedString();
     else
