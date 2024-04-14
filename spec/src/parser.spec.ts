@@ -2565,31 +2565,31 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 });
 
 const functionArgumentTests = ((data:Record<string,
-	[input:_Token[], output:Record<string, [type:UnresolvedVariableType, passMode?:PassMode]
-> | "error"]>) => Object.entries(data).map<
-	{name:string; input:Token[]; output:Record<string,
+	[input:_Token[], output:[string, [type:UnresolvedVariableType, passMode?:PassMode]][]
+| "error"]>) => Object.entries(data).map<
+	{name:string; input:Token[]; output:[string,
 		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}
-	> | "error";}
+	][] | "error"}
 >(([name, [input, output]]) => ({
 	name,
 	input: input.map(token),
 	output: output == "error" ? "error" :
-		Object.fromEntries(Object.entries(output).map(
-			([name, [type, passMode]]) => [name, {type, passMode: passMode ? passMode : jasmine.any(String)}]
-		))
+		output.map(
+			([name, [type, passMode]]) => [name, {type, passMode: passMode ?? jasmine.any(String)}]
+		)
 })))({
 	blank: [[
 
-	],{
+	],[
 
-	}],
+	]],
 	oneArg: [[
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
-	],{
-		arg: ["INTEGER"],
-	}],
+	],[
+		["arg", ["INTEGER"]],
+	]],
 	twoArgs: [[
 		["name", "arg"],
 		["punctuation.colon", ":"],
@@ -2598,10 +2598,10 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
-	],{
-		arg: ["INTEGER"],
-		arg2: ["BOOLEAN"],
-	}],
+	],[
+		["arg", ["INTEGER"]],
+		["arg2", ["BOOLEAN"]],
+	]],
 	threeArgs: [[
 		["name", "arg"],
 		["punctuation.colon", ":"],
@@ -2614,11 +2614,11 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg3"],
 		["punctuation.colon", ":"],
 		["name", "STRING"],
-	],{
-		arg: ["INTEGER"],
-		arg2: ["BOOLEAN"],
-		arg3: ["STRING"],
-	}],
+	],[
+		["arg", ["INTEGER"]],
+		["arg2", ["BOOLEAN"]],
+		["arg3", ["STRING"]],
+	]],
 	typeRepetition: [[
 		["name", "arg"],
 		["punctuation.comma", ","],
@@ -2627,11 +2627,11 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg3"],
 		["punctuation.colon", ":"],
 		["name", "STRING"],
-	],{
-		arg: ["STRING"],
-		arg2: ["STRING"],
-		arg3: ["STRING"],
-	}],
+	],[
+		["arg", ["STRING"]],
+		["arg2", ["STRING"]],
+		["arg3", ["STRING"]],
+	]],
 	typeRepetition2: [[
 		["name", "arg1"],
 		["punctuation.comma", ","],
@@ -2640,34 +2640,34 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg3"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
-	],{
-		arg1: ["BOOLEAN"],
-		arg2: ["BOOLEAN"],
-		arg3: ["BOOLEAN"],
-	}],
+	],[
+		["arg1", ["BOOLEAN"]],
+		["arg2", ["BOOLEAN"]],
+		["arg3", ["BOOLEAN"]],
+	]],
 	passModeDefault: [[
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
-	],{
-		arg: ["INTEGER", "value"],
-	}],
+	],[
+		["arg", ["INTEGER", "value"]],
+	]],
 	passModeSpecified1: [[
 		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
-	],{
-		arg: ["INTEGER", "reference"],
-	}],
+	],[
+		["arg", ["INTEGER", "reference"]],
+	]],
 	passModeSpecified2: [[
 		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg"],
 		["punctuation.colon", ":"],
 		["name", "INTEGER"],
-	],{
-		arg: ["INTEGER", "value"],
-	}],
+	],[
+		["arg", ["INTEGER", "value"]],
+	]],
 	passModeSpecified3: [[
 		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
@@ -2677,10 +2677,10 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
-	],{
-		arg: ["INTEGER", "reference"],
-		arg2: ["BOOLEAN", "reference"],
-	}],
+	],[
+		["arg", ["INTEGER", "reference"]],
+		["arg2", ["BOOLEAN", "reference"]],
+	]],
 	passModeSpecified4: [[
 		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg"],
@@ -2690,10 +2690,10 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
-	],{
-		arg: ["INTEGER", "value"],
-		arg2: ["BOOLEAN", "value"],
-	}],
+	],[
+		["arg", ["INTEGER", "value"]],
+		["arg2", ["BOOLEAN", "value"]],
+	]],
 	passModeSpecifiedTwice: [[
 		["keyword.pass_mode.by_value", "BYVAL"],
 		["name", "arg"],
@@ -2704,10 +2704,10 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
-	],{
-		arg: ["INTEGER", "value"],
-		arg2: ["BOOLEAN", "value"],
-	}],
+	],[
+		["arg", ["INTEGER", "value"]],
+		["arg2", ["BOOLEAN", "value"]],
+	]],
 	passModeSpecifiedTwiceDifferently: [[
 		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
@@ -2718,10 +2718,10 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg2"],
 		["punctuation.colon", ":"],
 		["name", "BOOLEAN"],
-	],{
-		arg: ["INTEGER", "reference"],
-		arg2: ["BOOLEAN", "value"],
-	}],
+	],[
+		["arg", ["INTEGER", "reference"]],
+		["arg2", ["BOOLEAN", "value"]],
+	]],
 	passModeSpecifiedTwiceDifferently2: [[
 		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
@@ -2736,11 +2736,11 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg3"],
 		["punctuation.colon", ":"],
 		["name", "STRING"],
-	],{
-		arg: ["INTEGER", "reference"],
-		arg2: ["BOOLEAN", "value"],
-		arg3: ["STRING", "value"],
-	}],
+	],[
+		["arg", ["INTEGER", "reference"]],
+		["arg2", ["BOOLEAN", "value"]],
+		["arg3", ["STRING", "value"]],
+	]],
 	weirdCombination1: [[
 		["keyword.pass_mode.by_reference", "BYREF"],
 		["name", "arg"],
@@ -2753,11 +2753,11 @@ const functionArgumentTests = ((data:Record<string,
 		["name", "arg3"],
 		["punctuation.colon", ":"],
 		["name", "STRING"],
-	],{
-		arg: ["BOOLEAN", "reference"],
-		arg2: ["BOOLEAN", "value"],
-		arg3: ["STRING", "value"],
-	}],
+	],[
+		["arg", ["BOOLEAN", "reference"]],
+		["arg2", ["BOOLEAN", "value"]],
+		["arg3", ["STRING", "value"]],
+	]],
 	nameOnly: [[
 		["name", "arg2"],
 	], "error"],
@@ -3095,9 +3095,7 @@ describe("parseFunctionArguments", () => {
 			});
 		} else {
 			it(`should parse ${name} as function arguments`, () => {
-				expect(
-					Object.fromEntries(parseFunctionArguments(input))
-				).toEqual(output);
+				expect([...parseFunctionArguments(input).entries()]).toEqual(output);
 			});
 		}
 	}
