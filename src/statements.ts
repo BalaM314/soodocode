@@ -63,6 +63,7 @@ export class Statement implements TextRanged {
 	static category:StatementCategory = null!; //Assigned in the decorator
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
+	static suppressErrors = false;
 	range: TextRange;
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;
@@ -458,6 +459,7 @@ export class SwitchStatement extends Statement {
 @statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")
 export class CaseBranchStatement extends Statement {
 	value:Token;
+	static suppressErrors = true;
 	constructor(tokens:[Token, Token]){
 		super(tokens);
 		[this.value] = tokens;

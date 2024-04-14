@@ -95,6 +95,7 @@ export class Statement {
 Statement.category = null; //Assigned in the decorator
 Statement.example = null; //Assigned in the decorator
 Statement.tokens = null; //Assigned in the decorator
+Statement.suppressErrors = false;
 function statement(type, example, ...args) {
     return function (input) {
         var _a;
@@ -701,6 +702,9 @@ let CaseBranchStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         CaseBranchStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.suppressErrors = true;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return CaseBranchStatement = _classThis;

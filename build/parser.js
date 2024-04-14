@@ -203,8 +203,11 @@ export const parseStatement = errorBoundary()((tokens) => {
                     throw err;
             }
         }
-        else
+        else {
+            if (possibleStatement.suppressErrors)
+                result.priority = 0;
             errors.push(result);
+        }
     }
     let maxError = errors[0];
     for (const error of errors) {

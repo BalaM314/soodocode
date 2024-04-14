@@ -44,6 +44,7 @@ export declare class Statement implements TextRanged {
     static category: StatementCategory;
     static example: string;
     static tokens: (TokenMatcher | "#")[];
+    static suppressErrors: boolean;
     range: TextRange;
     constructor(tokens: (Token | ExpressionAST | ExpressionASTArrayTypeNode)[]);
     toString(): string;
@@ -151,6 +152,7 @@ export declare class SwitchStatement extends Statement {
 }
 export declare class CaseBranchStatement extends Statement {
     value: Token;
+    static suppressErrors: boolean;
     constructor(tokens: [Token, Token]);
     branchMatches(switchType: VariableType, switchValue: VariableValue): boolean;
 }
