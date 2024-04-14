@@ -1254,3 +1254,53 @@ let PutRecordStatement = (() => {
     return PutRecordStatement = _classThis;
 })();
 export { PutRecordStatement };
+let ClassStatement = (() => {
+    let _classDecorators = [statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ClassStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+        }
+        runBlock(runtime, node) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "ClassStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassStatement = _classThis;
+})();
+export { ClassStatement };
+let ClassInheritsStatement = (() => {
+    let _classDecorators = [statement("class.inherits", "CLASS Dog", "block", "auto", "keyword.class", "name", "keyword.inherits", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = ClassStatement;
+    var ClassInheritsStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+        }
+        runBlock(runtime, node) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "ClassInheritsStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassInheritsStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassInheritsStatement = _classThis;
+})();
+export { ClassInheritsStatement };

@@ -40,7 +40,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, ExpressionASTClassInstantiationNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
@@ -296,6 +296,11 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         else
                             return [this.resolveVariableType(statement.returnType), output];
                     }
+                }
+                if (expr instanceof ExpressionASTClassInstantiationNode) {
+                    if (type == "variable")
+                        fail(fquote `Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
+                    fail(`Not yet implemented`);
                 }
                 //Operator that returns a result of unknown type
                 if (expr.operator.category == "special") {

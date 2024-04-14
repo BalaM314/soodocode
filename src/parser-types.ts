@@ -8,7 +8,7 @@ import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;
 /** Represents a single node in an expression AST. */
-export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode;
+export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode | ExpressionASTClassInstantiationNode;
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
@@ -52,6 +52,22 @@ export class ExpressionASTFunctionCallNode implements TextRanged {
 	}
 	getText():string {
 		return `${this.functionName.text}(${this.args.map(n => n.getText()).join(", ")})`
+	}
+}
+export class ExpressionASTClassInstantiationNode implements TextRanged {
+	range: TextRange;
+	constructor(
+		public className: Token,
+		public args: ExpressionASTNode[],
+		public allTokens: Token[],
+	){
+		this.range = getTotalRange(allTokens);
+	}
+	toString(){
+		return this.allTokens.map(t => t.text).join(" ");
+	}
+	getText():string {
+		return `NEW ${this.className.text}(${this.args.map(n => n.getText()).join(", ")})`
 	}
 }
 export class ExpressionASTArrayAccessNode implements TextRanged {

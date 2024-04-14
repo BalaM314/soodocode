@@ -16,7 +16,7 @@ import { fail, crash, SoodocodeError, escapeHTML, impossible, applyRangeTransfor
 import { Token } from "./lexer-types.js";
 import {
 	ExpressionASTNode, ProgramAST, ProgramASTNode, ExpressionASTArrayTypeNode,
-	ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode
+	ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, ExpressionASTClassInstantiationNode
 } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
@@ -40,7 +40,7 @@ export function flattenTree(program:ProgramASTNode[]):FlattenTreeOutput[]{
 export function displayExpressionHTML(node:ExpressionASTNode | ExpressionASTArrayTypeNode, expand = false, format = true):string {
 	if(node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
 		return escapeHTML(node.getText());
-	if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode) {
+	if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode) {
 		const text = escapeHTML(node.getText());
 		return format ? `<span class="expression-display-block">${text}</span>` : text;
 	}
@@ -110,9 +110,9 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 		if(node.type == "number.decimal") return Number(node.text);
 		else if(node.type == "name") fail(`Cannot evaluate expression: variable content unknown`);
 		else fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
-	} else if(node instanceof parserTypes.ExpressionASTFunctionCallNode){
+	} else if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTClassInstantiationNode){
 		fail(`Cannot evaluate expression ${node.getText()}: function call result unknown`);
-	} else if(node instanceof parserTypes.ExpressionASTArrayAccessNode){
+	} else if(node instanceof ExpressionASTArrayAccessNode){
 		fail(`Cannot evaluate expression ${node.getText()}: array contents unknown`);
 	} else switch(node.operator.name){
 		case "operator.negate": return - evaluateExpressionDemo(node.nodes[0]);

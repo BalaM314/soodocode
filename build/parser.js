@@ -7,7 +7,7 @@ and processes it into an abstract syntax tree (AST),
 which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
@@ -583,6 +583,12 @@ export const parseExpression = errorBoundary({
         return new ExpressionASTFunctionCallNode(input[0], input.length == 3
             ? [] //If there are no arguments, don't generate a blank argument group
             : splitTokensOnComma(input.slice(2, -1)).map(e => parseExpression(e, true)), input);
+    }
+    //Special case: Class instantiation expression
+    if (input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
+        return new ExpressionASTClassInstantiationNode(input[1], input.length == 4
+            ? [] //If there are no arguments, don't generate a blank argument group
+            : splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)), input);
     }
     //Special case: array access
     let bracketIndex = input.findIndex(t => t.type == "bracket.open");

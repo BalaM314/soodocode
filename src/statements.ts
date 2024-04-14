@@ -38,6 +38,7 @@ export type StatementType =
 	| "procedure" | "procedure.end"
 	| "openfile" | "readfile" | "writefile" | "closefile"
 	| "seek" | "getrecord" | "putrecord"
+	| "class" | "class.inherits" | "class.end"
 ;
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
@@ -763,6 +764,26 @@ export class PutRecordStatement extends Statement {
 		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
 		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
 		const [type, value] = runtime.evaluateExpr(this.variable);
+		fail(`Not yet implemented`);
+	}
+}
+
+@statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
+export class ClassStatement extends Statement {
+	constructor(tokens:[Token, Token] | [Token, Token, Token, Token]){
+		super(tokens);
+	}
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+		fail(`Not yet implemented`);
+	}
+}
+
+@statement("class.inherits", "CLASS Dog", "block", "auto", "keyword.class", "name", "keyword.inherits", "name")
+export class ClassInheritsStatement extends ClassStatement {
+	constructor(tokens:[Token, Token, Token, Token]){
+		super(tokens);
+	}
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		fail(`Not yet implemented`);
 	}
 }

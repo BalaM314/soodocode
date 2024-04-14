@@ -11,6 +11,7 @@ which is the preferred representation of the program.
 import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import {
 	ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
+	ExpressionASTClassInstantiationNode,
 	ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode,
 	ProgramAST, ProgramASTBranchNode,	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
@@ -605,6 +606,17 @@ export const parseExpression = errorBoundary({
 			input.length == 3
 				? [] //If there are no arguments, don't generate a blank argument group
 				: splitTokensOnComma(input.slice(2, -1)).map(e => parseExpression(e, true)),
+			input
+		);
+	}
+
+	//Special case: Class instantiation expression
+	if(input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
+		return new ExpressionASTClassInstantiationNode(
+			input[1],
+			input.length == 4
+				? [] //If there are no arguments, don't generate a blank argument group
+				: splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)),
 			input
 		);
 	}

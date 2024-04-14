@@ -10,7 +10,8 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import {
 	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST,
-	ExpressionASTNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode
+	ExpressionASTNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode,
+	ExpressionASTClassInstantiationNode
 } from "./parser-types.js";
 import { operators } from "./parser.js";
 import {
@@ -375,7 +376,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		//Special cases where the operator isn't a normal operator
 		if(expr instanceof ExpressionASTArrayAccessNode)
 			return this.processArrayAccess(expr, "get", type);
-		if(expr instanceof ExpressionASTFunctionCallNode) {
+		if(expr instanceof ExpressionASTFunctionCallNode){
 			if(type == "variable") fail(fquote`Expected this expression to evaluate to a variable, but found a function call.`);
 			const fn = this.getFunction(expr.functionName.text);
 			if("name" in fn){
@@ -389,6 +390,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				if(type) return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
 				else return [this.resolveVariableType(statement.returnType), output];
 			}
+		}
+		if(expr instanceof ExpressionASTClassInstantiationNode){
+			if(type == "variable") fail(fquote`Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
+			fail(`Not yet implemented`);
 		}
 
 		//Operator that returns a result of unknown type

@@ -5,7 +5,7 @@ import { Statement } from "./statements.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;
 /** Represents a single node in an expression AST. */
-export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode;
+export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode | ExpressionASTClassInstantiationNode;
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
@@ -25,6 +25,15 @@ export declare class ExpressionASTFunctionCallNode implements TextRanged {
     allTokens: Token[];
     range: TextRange;
     constructor(functionName: Token, args: ExpressionASTNode[], allTokens: Token[]);
+    toString(): string;
+    getText(): string;
+}
+export declare class ExpressionASTClassInstantiationNode implements TextRanged {
+    className: Token;
+    args: ExpressionASTNode[];
+    allTokens: Token[];
+    range: TextRange;
+    constructor(className: Token, args: ExpressionASTNode[], allTokens: Token[]);
     toString(): string;
     getText(): string;
 }

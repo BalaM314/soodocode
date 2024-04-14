@@ -41,6 +41,20 @@ export class ExpressionASTFunctionCallNode {
         return `${this.functionName.text}(${this.args.map(n => n.getText()).join(", ")})`;
     }
 }
+export class ExpressionASTClassInstantiationNode {
+    constructor(className, args, allTokens) {
+        this.className = className;
+        this.args = args;
+        this.allTokens = allTokens;
+        this.range = getTotalRange(allTokens);
+    }
+    toString() {
+        return this.allTokens.map(t => t.text).join(" ");
+    }
+    getText() {
+        return `NEW ${this.className.text}(${this.args.map(n => n.getText()).join(", ")})`;
+    }
+}
 export class ExpressionASTArrayAccessNode {
     constructor(target, indices, allTokens) {
         this.target = target;

@@ -13,7 +13,7 @@ import * as utils from "./utils.js";
 import * as runtime from "./runtime.js";
 import { fail, crash, SoodocodeError, escapeHTML, impossible, applyRangeTransformers } from "./utils.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayTypeNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
+import { ExpressionASTArrayTypeNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, ExpressionASTClassInstantiationNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 function getElement(id, type) {
@@ -36,7 +36,7 @@ export function flattenTree(program) {
 export function displayExpressionHTML(node, expand = false, format = true) {
     if (node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
         return escapeHTML(node.getText());
-    if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode) {
+    if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode) {
         const text = escapeHTML(node.getText());
         return format ? `<span class="expression-display-block">${text}</span>` : text;
     }
@@ -99,10 +99,10 @@ export function evaluateExpressionDemo(node) {
         else
             fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
     }
-    else if (node instanceof parserTypes.ExpressionASTFunctionCallNode) {
+    else if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTClassInstantiationNode) {
         fail(`Cannot evaluate expression ${node.getText()}: function call result unknown`);
     }
-    else if (node instanceof parserTypes.ExpressionASTArrayAccessNode) {
+    else if (node instanceof ExpressionASTArrayAccessNode) {
         fail(`Cannot evaluate expression ${node.getText()}: array contents unknown`);
     }
     else
