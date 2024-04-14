@@ -362,24 +362,26 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;"
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 function executeSoodocode() {
+    let output = [];
+    const runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => {
+        output.push(m);
+        console.log(`[Runtime] ${m}`);
+    });
     try {
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
         const program = parser.parse(tokens);
-        let output = [];
-        const runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => {
-            output.push(m);
-            console.log(`[Runtime] ${m}`);
-        });
         if (shouldDump) {
             Object.assign(window, {
                 symbols, tokens, program, runtime
             });
         }
+        runtime.fs.makeBackup();
         runtime.runProgram(program.nodes);
         outputDiv.innerText = output.join("\n") || "<no output>";
     }
     catch (err) {
+        runtime.fs.loadBackup();
         if (err instanceof SoodocodeError) {
             outputDiv.innerHTML = `<span style="color: red;">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
                 + showRange(soodocodeInput.value, err);
