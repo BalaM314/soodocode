@@ -261,6 +261,58 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["number.decimal", "0"],
 		]]
 	],
+	class_instantiation_no_args: [
+		[
+			["keyword.new", "NEW"],
+			["name", "amogus"],
+			["parentheses.open", "("],
+			["parentheses.close", ")"],
+		],
+		["tree", ["class instantiation", "amogus"], [
+
+		]]
+	],
+	class_instantiation_one_arg: [
+		[
+			["keyword.new", "NEW"],
+			["name", "amogus"],
+			["parentheses.open", "("],
+			["number.decimal", "5"],
+			["parentheses.close", ")"],
+		],
+		["tree", ["class instantiation", "amogus"], [
+			["number.decimal", "5"],
+		]]
+	],
+	class_instantiation_complex_args: [
+		[
+			["keyword.new", "NEW"],
+			["name", "amogus"],
+			["parentheses.open", "("],
+			["number.decimal", "5"],
+			["punctuation.comma", ","],
+			["number.decimal", "6"],
+			["punctuation.comma", ","],
+			["boolean.true", "TRUE"],
+			["punctuation.comma", ","],
+			["string", `"sussy"`],
+			["operator.string_concatenate", "&"],
+			["string", `"amogus"`],
+			["punctuation.comma", ","],
+			["number.decimal", "0"],
+			["parentheses.close", ")"],
+		],
+		["tree", ["class instantiation", "amogus"], [
+			["number.decimal", "5"],
+			["number.decimal", "6"],
+			["boolean.true", "TRUE"],
+			["tree", "string_concatenate", [
+				["string", `"sussy"`],
+				["string", `"amogus"`],
+			]],
+			["number.decimal", "0"],
+		]]
+	],
 	functioncallnested: [
 		[
 			["name", "amogus"],
