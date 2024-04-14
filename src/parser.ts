@@ -72,7 +72,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 	.reverse().map(([name, data]) => [name, {
 		passMode: data.passMode,
 		type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument "${name.text}"`, name)
-	}] as const);
+	}] as const).reverse();
 	const argumentsMap:FunctionArguments = new Map(argumentz.map(([name, data]) => [name.text, data] as const));
 	if(argumentsMap.size != argumentz.length){
 		const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
