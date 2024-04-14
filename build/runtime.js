@@ -156,7 +156,8 @@ export class Files {
         return this.backupFiles != null;
     }
     loadBackup() {
-        this.files = JSON.parse(this.backupFiles ?? fail(`No backup to load`));
+        if (this.backupFiles)
+            this.files = JSON.parse(this.backupFiles);
     }
 }
 let Runtime = (() => {
