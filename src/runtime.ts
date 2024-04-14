@@ -172,8 +172,12 @@ export type File = {
 export type OpenedFile = {
 	file: File;
 	mode: FileMode;
+} & ({
+	mode: "READ";
 	lines: Iterator<string>;
-}
+} | {
+	mode: "WRITE" | "APPEND" | "RANDOM";
+})
 
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
 	type: T;
@@ -216,6 +220,13 @@ export type VariableScope = {
 export class Files {
 	files: Record<string, File> = {};
 	private backupFiles: string | null = null;
+	getFile(filename:string, create:true):File;
+	getFile(filename:string, create?:boolean):File | undefined;
+	getFile(filename:string, create = false):File | undefined {
+		return this.files[filename] ?? (create ? this.files[filename] = {
+			name: filename, text: ""
+		} : undefined);
+	}
 	makeBackup(){
 		this.backupFiles = JSON.stringify(this.files);
 	}
@@ -230,7 +241,7 @@ export class Files {
 export class Runtime {
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
-	openFiles: Record<string, OpenedFile> = {};
+	openFiles: Record<string, OpenedFile | undefined> = {};
 	fs = new Files();
 	constructor(
 		public _input: (message:string) => string,
@@ -785,14 +796,16 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 	}
 	/** Creates a scope. */
-	runProgram(code:ProgramASTNode[]):void | {
-		type: "function_return";
-		value: VariableValue;
-	}{
-		return this.runBlock(code, {
+	runProgram(code:ProgramASTNode[]){
+		this.runBlock(code, {
 			statement: "global",
 			variables: {},
 			types: {}
 		});
+
+		for(const filename in this.openFiles){
+			if(this.openFiles[filename] == undefined) delete this.openFiles[filename];
+			else fail(`File ${filename} was not closed`);
+		}
 	}
 }

@@ -144,6 +144,11 @@ export class Files {
         this.files = {};
         this.backupFiles = null;
     }
+    getFile(filename, create = false) {
+        return this.files[filename] ?? (create ? this.files[filename] = {
+            name: filename, text: ""
+        } : undefined);
+    }
     makeBackup() {
         this.backupFiles = JSON.stringify(this.files);
     }
@@ -758,11 +763,17 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
             }
             /** Creates a scope. */
             runProgram(code) {
-                return this.runBlock(code, {
+                this.runBlock(code, {
                     statement: "global",
                     variables: {},
                     types: {}
                 });
+                for (const filename in this.openFiles) {
+                    if (this.openFiles[filename] == undefined)
+                        delete this.openFiles[filename];
+                    else
+                        fail(`File ${filename} was not closed`);
+                }
             }
         },
         (() => {

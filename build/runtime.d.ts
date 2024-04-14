@@ -67,8 +67,12 @@ export type File = {
 export type OpenedFile = {
     file: File;
     mode: FileMode;
+} & ({
+    mode: "READ";
     lines: Iterator<string>;
-};
+} | {
+    mode: "WRITE" | "APPEND" | "RANDOM";
+});
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
     type: T;
     /** Null indicates that the variable has not been initialized */
@@ -107,6 +111,8 @@ export type VariableScope = {
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
+    getFile(filename: string, create: true): File;
+    getFile(filename: string, create?: boolean): File | undefined;
     makeBackup(): void;
     canLoadBackup(): boolean;
     loadBackup(): void;
@@ -116,7 +122,7 @@ export declare class Runtime {
     _output: (message: string) => void;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
-    openFiles: Record<string, OpenedFile>;
+    openFiles: Record<string, OpenedFile | undefined>;
     fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type?: VariableType): [type: VariableType, value: VariableValue];
@@ -171,8 +177,5 @@ export declare class Runtime {
         value: VariableValue;
     };
     /** Creates a scope. */
-    runProgram(code: ProgramASTNode[]): void | {
-        type: "function_return";
-        value: VariableValue;
-    };
+    runProgram(code: ProgramASTNode[]): void;
 }

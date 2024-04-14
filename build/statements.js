@@ -1029,7 +1029,24 @@ let OpenFileStatement = (() => {
             [, this.filename, , this.mode] = tokens;
         }
         run(runtime) {
-            fail(`Not yet implemented`);
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            const mode = this.mode.text;
+            const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(`File ${name} does not exist.`);
+            if (mode == "READ") {
+                runtime.openFiles[name] = {
+                    file,
+                    mode,
+                    lines: file.text.split("\n")[Symbol.iterator]()
+                };
+            }
+            else {
+                if (mode == "WRITE")
+                    file.text = ""; //Clear the file so it can be overwritten
+                runtime.openFiles[name] = {
+                    file,
+                    mode,
+                };
+            }
         }
     };
     __setFunctionName(_classThis, "OpenFileStatement");
@@ -1055,7 +1072,13 @@ let CloseFileStatement = (() => {
             [, this.filename] = tokens;
         }
         run(runtime) {
-            fail(`Not yet implemented`);
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            if (runtime.openFiles[name])
+                runtime.openFiles[name] = undefined;
+            else if (name in runtime.openFiles)
+                fail(fquote `Cannot close file ${name}, because it has already been closed.`);
+            else
+                fail(fquote `Cannot close file ${name}, because it was never opened.`);
         }
     };
     __setFunctionName(_classThis, "CloseFileStatement");

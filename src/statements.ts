@@ -16,7 +16,7 @@ import {
 	expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData
 } from "./parser.js";
 import {
-	EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType,
+	EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType,
 	RecordVariableType, Runtime, SetVariableType, UnresolvedVariableType, VariableType,
 	VariableTypeMapping, VariableValue
 } from "./runtime.js";
@@ -649,7 +649,22 @@ export class OpenFileStatement extends Statement {
 		[, this.filename, , this.mode] = tokens;
 	}
 	run(runtime:Runtime){
-		fail(`Not yet implemented`);
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		const mode = this.mode.text as FileMode;
+		const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(`File ${name} does not exist.`);
+		if(mode == "READ"){
+			runtime.openFiles[name] = {
+				file,
+				mode,
+				lines: file.text.split("\n")[Symbol.iterator]()
+			}
+		} else {
+			if(mode == "WRITE") file.text = ""; //Clear the file so it can be overwritten
+			runtime.openFiles[name] = {
+				file,
+				mode,
+			}
+		}
 	}
 }
 @statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
@@ -660,7 +675,10 @@ export class CloseFileStatement extends Statement {
 		[, this.filename] = tokens;
 	}
 	run(runtime:Runtime){
-		fail(`Not yet implemented`);
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		if(runtime.openFiles[name]) runtime.openFiles[name] = undefined;
+		else if(name in runtime.openFiles) fail(fquote`Cannot close file ${name}, because it has already been closed.`);
+		else fail(fquote`Cannot close file ${name}, because it was never opened.`);
 	}
 }
 @statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
