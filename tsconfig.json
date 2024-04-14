@@ -1,14 +1,21 @@
 {
 	"compilerOptions": {
-		"target": "es2020",
+		"target": "es2022",
 		"module": "ES2022",
-		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
 		"skipLibCheck": true,
+		"incremental": true,
 		"lib": [
 			"DOM",
 			"ES2023"
-		]
-	}
+		],
+		"composite": true,
+		"noEmitOnError": true,
+	},
+	"files": [],
+	"references": [
+		{ "path": "src/" },
+		{ "path": "spec/" },
+	]
 }

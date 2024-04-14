@@ -4,7 +4,7 @@
 	"description": "Runtime and checker for Cambridge Computer Science pseudocode",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "tsc -b spec && jasmine"
 	},
 	"repository": {
 		"type": "git",

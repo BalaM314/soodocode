@@ -1,3 +1,6 @@
 node_modules
 package-lock.json
 traces
+build/.tsbuildinfo
+spec/build
+spec/build/.tsbuildinfo

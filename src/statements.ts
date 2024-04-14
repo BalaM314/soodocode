@@ -6,12 +6,8 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import {
-	EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType,
-	RecordVariableType, Runtime, SetVariableType, UnresolvedVariableType, VariableType,
-	VariableTypeMapping, VariableValue
-} from "./runtime.js";
-import { TokenType, Token, TextRange, TextRanged } from "./lexer-types.js";
+import { builtinFunctions } from "./builtin_functions.js";
+import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import {
 	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode,
 	ProgramASTBranchNode, TokenMatcher
@@ -20,10 +16,14 @@ import {
 	expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData
 } from "./parser.js";
 import {
-	fail, crash, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote,
-	getUniqueNamesFromCommaSeparatedTokenList,
+	EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType,
+	RecordVariableType, Runtime, SetVariableType, UnresolvedVariableType, VariableType,
+	VariableTypeMapping, VariableValue
+} from "./runtime.js";
+import {
+	crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, isPrimitiveType,
+	splitTokensOnComma,
 } from "./utils.js";
-import { builtinFunctions } from "./builtin_functions.js";
 
 
 export type StatementType =
