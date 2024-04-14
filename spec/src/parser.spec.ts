@@ -7,15 +7,15 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token, TokenizedProgram, token } from "../src/lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../src/parser-types.js";
-import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../src/parser.js";
-import { UnresolvedVariableType, ArrayVariableType } from "../src/runtime.js";
+import { Token, TokenizedProgram, token } from "../../build/lexer-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../../build/parser-types.js";
+import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
+import { UnresolvedVariableType, ArrayVariableType } from "../../build/runtime.js";
 import {
 	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
-} from "../src/statements.js";
-import { SoodocodeError } from "../src/utils.js";
+} from "../../build/statements.js";
+import { SoodocodeError } from "../../build/utils.js";
 import {
 	_ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
 	applyAnyRange,

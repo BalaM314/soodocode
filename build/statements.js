@@ -42,12 +42,12 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType } from "./runtime.js";
+import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { fail, crash, isPrimitiveType, splitTokensOnComma, getTotalRange, fquote, getUniqueNamesFromCommaSeparatedTokenList, } from "./utils.js";
-import { builtinFunctions } from "./builtin_functions.js";
+import { EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType } from "./runtime.js";
+import { crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, isPrimitiveType, splitTokensOnComma, } from "./utils.js";
 export const statements = {
     byStartKeyword: {},
     byType: {},

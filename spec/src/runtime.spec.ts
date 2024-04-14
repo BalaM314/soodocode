@@ -1,9 +1,9 @@
 import "jasmine";
-import { Token, token } from "../src/lexer-types.js";
-import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../src/parser-types.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../src/runtime.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../src/statements.js";
-import { SoodocodeError, fail } from "../src/utils.js";
+import { Token, token } from "../../build/lexer-types.js";
+import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../../build/statements.js";
+import { SoodocodeError, fail } from "../../build/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,

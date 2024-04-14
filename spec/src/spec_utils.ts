@@ -1,10 +1,10 @@
-import { SymbolType, Token, TokenType, symbol, token } from "../src/lexer-types.js";
+import { SymbolType, Token, TokenType, symbol, token } from "../../build/lexer-types.js";
 import {
 	ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
-} from "../src/parser-types.js";
-import { Operator, operators, OperatorType } from "../src/parser.js";
-import { Statement } from "../src/statements.js";
-import { crash } from "../src/utils.js";
+} from "../../build/parser-types.js";
+import { Operator, operators, OperatorType } from "../../build/parser.js";
+import { Statement } from "../../build/statements.js";
+import { crash } from "../../build/utils.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
