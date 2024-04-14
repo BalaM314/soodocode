@@ -611,8 +611,8 @@ export class FunctionStatement extends Statement {
 		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
 		this.args = args;
 		const returnType = tokens.at(-1)!.text;
-		if(!isPrimitiveType(returnType)) fail(`Invalid type ${returnType}`);
-		this.returnType = returnType;
+		if(isPrimitiveType(returnType)) this.returnType = returnType;
+		else this.returnType = ["unresolved", returnType];
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
