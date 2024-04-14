@@ -1036,7 +1036,8 @@ let OpenFileStatement = (() => {
                 runtime.openFiles[name] = {
                     file,
                     mode,
-                    lines: file.text.split("\n")[Symbol.iterator]()
+                    lines: file.text.split("\n").slice(0, -1),
+                    lineNumber: 0
                 };
             }
             else {
@@ -1104,7 +1105,14 @@ let ReadFileStatement = (() => {
             [, this.filename, , this.output] = tokens;
         }
         run(runtime) {
-            fail(`Not yet implemented`);
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            if (data.mode != "READ")
+                fail(fquote `Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
+            if (data.lineNumber >= data.lines.length)
+                fail(`End of file reached`);
+            const output = runtime.evaluateExpr(this.output, "variable");
+            output.value = data.lines[data.lineNumber++];
         }
     };
     __setFunctionName(_classThis, "ReadFileStatement");
@@ -1130,7 +1138,11 @@ let WriteFileStatement = (() => {
             [, this.filename, , this.data] = tokens;
         }
         run(runtime) {
-            fail(`Not yet implemented`);
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            if (!(data.mode == "APPEND" || data.mode == "WRITE"))
+                fail(fquote `Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
+            data.file.text += runtime.evaluateExpr(this.data, "STRING")[1] + "\n";
         }
     };
     __setFunctionName(_classThis, "WriteFileStatement");

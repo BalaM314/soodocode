@@ -656,7 +656,8 @@ export class OpenFileStatement extends Statement {
 			runtime.openFiles[name] = {
 				file,
 				mode,
-				lines: file.text.split("\n")[Symbol.iterator]()
+				lines: file.text.split("\n").slice(0, -1), //the last element will be blank, because all lines end with a newline
+				lineNumber: 0
 			}
 		} else {
 			if(mode == "WRITE") file.text = ""; //Clear the file so it can be overwritten
@@ -690,7 +691,12 @@ export class ReadFileStatement extends Statement {
 		[, this.filename, , this.output] = tokens;
 	}
 	run(runtime:Runtime){
-		fail(`Not yet implemented`);
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
+		if(data.mode != "READ") fail(fquote`Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`)
+		if(data.lineNumber >= data.lines.length) fail(`End of file reached`);
+		const output = runtime.evaluateExpr(this.output, "variable");
+		output.value = data.lines[data.lineNumber ++];
 	}
 }
 @statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")
@@ -702,7 +708,10 @@ export class WriteFileStatement extends Statement {
 		[, this.filename, , this.data] = tokens;
 	}
 	run(runtime:Runtime){
-		fail(`Not yet implemented`);
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
+		if(!(data.mode == "APPEND" || data.mode == "WRITE")) fail(fquote`Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
+		data.file.text += runtime.evaluateExpr(this.data, "STRING")[1] + "\n";
 	}
 }
 

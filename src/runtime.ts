@@ -174,7 +174,8 @@ export type OpenedFile = {
 	mode: FileMode;
 } & ({
 	mode: "READ";
-	lines: Iterator<string>;
+	lines: string[];
+	lineNumber: number;
 } | {
 	mode: "WRITE" | "APPEND" | "RANDOM";
 })
