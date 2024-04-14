@@ -281,7 +281,9 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 		} else {
 			if(j >= input.length) return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
 			if(statement.tokens[i] == "#") impossible();
-			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type){
+			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (
+				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
+			)){
 				output.push(input[j]);
 				j++; //Token matches, move to next one
 			} else if(statement.tokens[i] == "literal" || statement.tokens[i] == "literal|otherwise"){

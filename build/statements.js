@@ -1017,3 +1017,183 @@ let ProcedureStatement = (() => {
     return ProcedureStatement = _classThis;
 })();
 export { ProcedureStatement };
+let OpenFileStatement = (() => {
+    let _classDecorators = [statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var OpenFileStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [, this.filename, , this.mode] = tokens;
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "OpenFileStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        OpenFileStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return OpenFileStatement = _classThis;
+})();
+export { OpenFileStatement };
+let CloseFileStatement = (() => {
+    let _classDecorators = [statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var CloseFileStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [, this.filename] = tokens;
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "CloseFileStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        CloseFileStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return CloseFileStatement = _classThis;
+})();
+export { CloseFileStatement };
+let ReadFileStatement = (() => {
+    let _classDecorators = [statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ReadFileStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [, this.filename, , this.output] = tokens;
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "ReadFileStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ReadFileStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ReadFileStatement = _classThis;
+})();
+export { ReadFileStatement };
+let WriteFileStatement = (() => {
+    let _classDecorators = [statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var WriteFileStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [, this.filename, , this.data] = tokens;
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "WriteFileStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        WriteFileStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return WriteFileStatement = _classThis;
+})();
+export { WriteFileStatement };
+let SeekStatement = (() => {
+    let _classDecorators = [statement("seek", `SEEK "file.txt", 5`, "keyword.seek", "expr+", "punctuation.comma", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var SeekStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            [, this.filename, , this.index] = tokens;
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "SeekStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        SeekStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return SeekStatement = _classThis;
+})();
+export { SeekStatement };
+let GetRecordStatement = (() => {
+    let _classDecorators = [statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var GetRecordStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "GetRecordStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        GetRecordStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return GetRecordStatement = _classThis;
+})();
+export { GetRecordStatement };
+let PutRecordStatement = (() => {
+    let _classDecorators = [statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var PutRecordStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+        }
+        run(runtime) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "PutRecordStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        PutRecordStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return PutRecordStatement = _classThis;
+})();
+export { PutRecordStatement };

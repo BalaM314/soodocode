@@ -7,7 +7,7 @@ This file contains the definitions for every statement type supported by Soodoco
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
 import { FunctionData, PrimitiveVariableType, Runtime, UnresolvedVariableType, VariableType, VariableValue } from "./runtime.js";
-export type StatementType = "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function" | "function.end" | "procedure" | "procedure.end";
+export type StatementType = "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord";
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 export declare const statements: {
     byStartKeyword: Partial<Record<"string" | "number.decimal" | "char" | "brace.open" | "brace.close" | "bracket.open" | "bracket.close" | "parentheses.open" | "parentheses.close" | "punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" | "punctuation.period" | "comment" | "name" | "boolean.true" | "boolean.false" | "keyword.declare" | "keyword.define" | "keyword.constant" | "keyword.output" | "keyword.input" | "keyword.call" | "keyword.if" | "keyword.then" | "keyword.else" | "keyword.if_end" | "keyword.for" | "keyword.to" | "keyword.for_end" | "keyword.step" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.pass_mode.by_reference" | "keyword.pass_mode.by_value" | "keyword.type" | "keyword.type_end" | "keyword.open_file" | "keyword.read_file" | "keyword.write_file" | "keyword.close_file" | "keyword.get_record" | "keyword.put_record" | "keyword.seek" | "keyword.file_mode.read" | "keyword.file_mode.write" | "keyword.file_mode.append" | "keyword.file_mode.random" | "keyword.case" | "keyword.of" | "keyword.case_end" | "keyword.otherwise" | "keyword.class" | "keyword.class_end" | "keyword.new" | "keyword.super" | "keyword.inherits" | "keyword.class_modifier.private" | "keyword.class_modifier.public" | "keyword.array" | "keyword.set" | "newline" | "operator.add" | "operator.minus" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer" | "operator.string_concatenate", (typeof Statement)[]>>;
@@ -215,4 +215,41 @@ export declare class ProcedureStatement extends Statement {
     name: string;
     constructor(tokens: Token[]);
     runBlock(runtime: Runtime, node: FunctionData): void;
+}
+export declare class OpenFileStatement extends Statement {
+    mode: Token;
+    filename: ExpressionAST;
+    constructor(tokens: [Token, ExpressionAST, Token, Token]);
+    run(runtime: Runtime): void;
+}
+export declare class CloseFileStatement extends Statement {
+    filename: ExpressionAST;
+    constructor(tokens: [Token, ExpressionAST]);
+    run(runtime: Runtime): void;
+}
+export declare class ReadFileStatement extends Statement {
+    filename: ExpressionAST;
+    output: ExpressionAST;
+    constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
+    run(runtime: Runtime): void;
+}
+export declare class WriteFileStatement extends Statement {
+    filename: ExpressionAST;
+    data: ExpressionAST;
+    constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
+    run(runtime: Runtime): void;
+}
+export declare class SeekStatement extends Statement {
+    filename: ExpressionAST;
+    index: ExpressionAST;
+    constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
+    run(runtime: Runtime): void;
+}
+export declare class GetRecordStatement extends Statement {
+    constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
+    run(runtime: Runtime): void;
+}
+export declare class PutRecordStatement extends Statement {
+    constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
+    run(runtime: Runtime): void;
 }

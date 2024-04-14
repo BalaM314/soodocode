@@ -35,7 +35,10 @@ export type StatementType =
 	| "while" | "while.end"
 	| "dowhile" | "dowhile.end"
 	| "function" | "function.end"
-	| "procedure" | "procedure.end";
+	| "procedure" | "procedure.end"
+	| "openfile" | "readfile" | "writefile" | "closefile"
+	| "seek" | "getrecord" | "putrecord"
+;
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
 export const statements = {
@@ -637,3 +640,81 @@ export class ProcedureStatement extends Statement {
 	}
 }
 
+@statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
+export class OpenFileStatement extends Statement {
+	mode:Token;
+	filename:ExpressionAST;
+	constructor(tokens:[Token, ExpressionAST, Token, Token]){
+		super(tokens);
+		[, this.filename, , this.mode] = tokens;
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
+@statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
+export class CloseFileStatement extends Statement {
+	filename:ExpressionAST;
+	constructor(tokens:[Token, ExpressionAST]){
+		super(tokens);
+		[, this.filename] = tokens;
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
+@statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
+export class ReadFileStatement extends Statement {
+	filename:ExpressionAST;
+	output:ExpressionAST;
+	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+		super(tokens);
+		[, this.filename, , this.output] = tokens;
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
+@statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")
+export class WriteFileStatement extends Statement {
+	filename:ExpressionAST;
+	data:ExpressionAST;
+	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+		super(tokens);
+		[, this.filename, , this.data] = tokens;
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
+
+@statement("seek", `SEEK "file.txt", 5`, "keyword.seek", "expr+", "punctuation.comma", "expr+")
+export class SeekStatement extends Statement {
+	filename:ExpressionAST;
+	index:ExpressionAST;
+	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+		super(tokens);
+		[, this.filename, , this.index] = tokens;
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
+@statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")
+export class GetRecordStatement extends Statement {
+	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+		super(tokens);
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
+@statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")
+export class PutRecordStatement extends Statement {
+	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+		super(tokens);
+	}
+	run(runtime:Runtime){
+		fail(`Not yet implemented`);
+	}
+}
