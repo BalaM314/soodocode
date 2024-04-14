@@ -59,13 +59,16 @@ export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType |
 export type VariableType = PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
-type FileMode = "READ" | "WRITE" | "APPEND";
-interface FileData {
+export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
+export type File = {
     name: string;
     text: string;
-    /** If null, the file has not been opened, or has been closed. */
-    mode: FileMode | null;
-}
+};
+export type OpenedFile = {
+    file: File;
+    mode: FileMode;
+    lines: Iterator<string>;
+};
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
     type: T;
     /** Null indicates that the variable has not been initialized */
@@ -101,12 +104,20 @@ export type VariableScope = {
     variables: Record<string, VariableData | ConstantData>;
     types: Record<string, VariableType>;
 };
+export declare class Files {
+    files: Record<string, File>;
+    private backupFiles;
+    makeBackup(): void;
+    canLoadBackup(): boolean;
+    loadBackup(): void;
+}
 export declare class Runtime {
     _input: (message: string) => string;
     _output: (message: string) => void;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
-    files: Record<string, FileData>;
+    openFiles: Record<string, OpenedFile>;
+    fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type?: VariableType): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type: "variable"): VariableData;
@@ -165,4 +176,3 @@ export declare class Runtime {
         value: VariableValue;
     };
 }
-export {};

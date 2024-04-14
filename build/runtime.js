@@ -139,6 +139,21 @@ export function typesEqual(a, b) {
         (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
 }
+export class Files {
+    constructor() {
+        this.files = {};
+        this.backupFiles = null;
+    }
+    makeBackup() {
+        this.backupFiles = JSON.stringify(this.files);
+    }
+    canLoadBackup() {
+        return this.backupFiles != null;
+    }
+    loadBackup() {
+        this.files = JSON.parse(this.backupFiles ?? fail(`No backup to load`));
+    }
+}
 let Runtime = (() => {
     var _a;
     let _instanceExtraInitializers = [];
@@ -151,7 +166,8 @@ let Runtime = (() => {
                 this._output = _output;
                 this.scopes = [];
                 this.functions = {};
-                this.files = {};
+                this.openFiles = {};
+                this.fs = new Files();
             }
             processArrayAccess(expr, operation, arg2) {
                 //Make sure the variable exists and is an array

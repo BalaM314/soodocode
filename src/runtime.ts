@@ -164,13 +164,15 @@ export type VariableType =
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 
-type FileMode = "READ" | "WRITE" | "APPEND";
-
-interface FileData {
+export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
+export type File = {
 	name: string;
 	text: string;
-	/** If null, the file has not been opened, or has been closed. */
-	mode: FileMode | null;
+}
+export type OpenedFile = {
+	file: File;
+	mode: FileMode;
+	lines: Iterator<string>;
 }
 
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
@@ -211,10 +213,25 @@ export type VariableScope = {
 	types: Record<string, VariableType>;
 };
 
+export class Files {
+	files: Record<string, File> = {};
+	private backupFiles: string | null = null;
+	makeBackup(){
+		this.backupFiles = JSON.stringify(this.files);
+	}
+	canLoadBackup(){
+		return this.backupFiles != null;
+	}
+	loadBackup(){
+		this.files = JSON.parse(this.backupFiles ?? fail(`No backup to load`));
+	}
+}
+
 export class Runtime {
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
-	files: Record<string, FileData> = {};
+	openFiles: Record<string, OpenedFile> = {};
+	fs = new Files();
 	constructor(
 		public _input: (message:string) => string,
 		public _output: (message:string) => void,
