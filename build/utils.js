@@ -150,9 +150,9 @@ export class SoodocodeError extends Error {
     }
     formatMessage(text) {
         return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther)
-            : `(Internal compiler error, cannot format placeholder in error message because no ranges were set)`).replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
+            : `<empty>`).replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
             this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
-                `(Internal compiler error, cannot format placeholder in error message because no ranges were set)`);
+                `<empty>`);
     }
 }
 export function fail(message, rangeSpecific, rangeGeneral) {
@@ -166,7 +166,7 @@ export function impossible() {
 }
 /**
  * Decorator to apply an error boundary to functions.
- * @param predicate Only sets the general range if this returns true.
+ * @param predicate General range is set if this returns true.
  */
 export function errorBoundary({ predicate = (() => true), message } = {}) {
     return function decorator(func, ctx) {

@@ -7,7 +7,7 @@ This file contains all builtin functions defined in the insert.
 
 
 import type { BuiltinFunctionData, PrimitiveVariableType, VariableValue } from "./runtime.js";
-import { fail } from "./utils.js";
+import { fail, fquote } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
@@ -135,7 +135,7 @@ export const builtinFunctions = (
 		returnType: "REAL", //real or integer, but ints coerce to reals
 		impl(str:string){
 			const out = Number(str);
-			if(isNaN(out) || !Number.isFinite(out)) fail(`Cannot convert "${out}" to a number`);
+			if(isNaN(out) || !Number.isFinite(out)) fail(fquote`Cannot convert ${str} to a number`);
 			return out;
 		},
 	},

@@ -4,7 +4,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains all builtin functions defined in the insert.
 */
-import { fail } from "./utils.js";
+import { fail, fquote } from "./utils.js";
 export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
         args: new Map(data.args.map(a => [a[0], { passMode: "reference", type: Array.isArray(a[1]) ? a[1] : [a[1]] }])),
         name,
@@ -128,7 +128,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
         impl(str) {
             const out = Number(str);
             if (isNaN(out) || !Number.isFinite(out))
-                fail(`Cannot convert "${out}" to a number`);
+                fail(fquote `Cannot convert ${str} to a number`);
             return out;
         },
     },

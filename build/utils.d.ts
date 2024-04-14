@@ -37,7 +37,7 @@ export declare function crash(message: string): never;
 export declare function impossible(): never;
 /**
  * Decorator to apply an error boundary to functions.
- * @param predicate Only sets the general range if this returns true.
+ * @param predicate General range is set if this returns true.
  */
 export declare function errorBoundary({ predicate, message }?: Partial<{
     predicate(...args: any[]): boolean;
