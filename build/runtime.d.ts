@@ -11,6 +11,9 @@ import { ProcedureStatement, Statement, ConstantStatement, DeclareStatement, For
 export type VariableTypeMapping<T> = T extends "INTEGER" ? number : T extends "REAL" ? number : T extends "STRING" ? string : T extends "CHAR" ? string : T extends "BOOLEAN" ? boolean : T extends "DATE" ? Date : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
 export type PrimitiveVariableTypeName = "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE";
 export type PrimitiveVariableType = PrimitiveVariableTypeName;
+export declare const _PrimitiveVariableType: {
+    getInitValue(type: PrimitiveVariableType): string | number | boolean | Date;
+};
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export declare class ArrayVariableType {
     lengthInformation: [low: number, high: number][];

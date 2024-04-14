@@ -44,6 +44,18 @@ import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, Expression
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
+export const _PrimitiveVariableType = {
+    getInitValue(type) {
+        return {
+            INTEGER: 0,
+            REAL: 0,
+            STRING: "",
+            CHAR: '',
+            BOOLEAN: false,
+            DATE: new Date()
+        }[type];
+    }
+};
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType {
     constructor(lengthInformation, type) {
@@ -66,7 +78,7 @@ export class ArrayVariableType {
         const type = runtime.resolveVariableType(this.type);
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
-        return Array.from({ length: this.totalLength }, () => typeof type == "string" ? null : type.getInitValue(runtime));
+        return Array.from({ length: this.totalLength }, () => typeof type == "string" ? _PrimitiveVariableType.getInitValue(type) : type.getInitValue(runtime));
     }
 }
 export class RecordVariableType {

@@ -50,6 +50,18 @@ export type PrimitiveVariableTypeName =
 ;
 
 export type PrimitiveVariableType = PrimitiveVariableTypeName;
+export const _PrimitiveVariableType = {
+	getInitValue(type:PrimitiveVariableType){
+		return {
+			INTEGER: 0,
+			REAL: 0,
+			STRING: "",
+			CHAR: '',
+			BOOLEAN: false,
+			DATE: new Date()
+		}[type];
+	}
+}
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType {
 	totalLength:number;
@@ -72,7 +84,7 @@ export class ArrayVariableType {
 	getInitValue(runtime:Runtime):VariableTypeMapping<ArrayVariableType> {
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		return Array.from({length: this.totalLength}, () => typeof type == "string" ? null : type.getInitValue(runtime) as VariableTypeMapping<ArrayElementVariableType> | null);
+		return Array.from({length: this.totalLength}, () => typeof type == "string" ? _PrimitiveVariableType.getInitValue(type) : type.getInitValue(runtime) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 }
 export class RecordVariableType {
