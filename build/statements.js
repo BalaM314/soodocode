@@ -1040,6 +1040,9 @@ let OpenFileStatement = (() => {
                     lineNumber: 0
                 };
             }
+            else if (mode == "RANDOM") {
+                fail(`Not yet implemented`);
+            }
             else {
                 if (mode == "WRITE")
                     file.text = ""; //Clear the file so it can be overwritten
@@ -1168,6 +1171,13 @@ let SeekStatement = (() => {
             [, this.filename, , this.index] = tokens;
         }
         run(runtime) {
+            const index = runtime.evaluateExpr(this.index, "INTEGER")[1];
+            if (index < 0)
+                fail(`SEEK index must be positive`);
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            if (data.mode != "RANDOM")
+                fail(fquote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
             fail(`Not yet implemented`);
         }
     };
@@ -1191,8 +1201,14 @@ let GetRecordStatement = (() => {
     var GetRecordStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
+            [, this.filename, , this.variable] = tokens;
         }
         run(runtime) {
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            if (data.mode != "RANDOM")
+                fail(fquote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+            const variable = runtime.evaluateExpr(this.variable, "variable");
             fail(`Not yet implemented`);
         }
     };
@@ -1216,8 +1232,14 @@ let PutRecordStatement = (() => {
     var PutRecordStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
+            [, this.filename, , this.variable] = tokens;
         }
         run(runtime) {
+            const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            if (data.mode != "RANDOM")
+                fail(fquote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+            const [type, value] = runtime.evaluateExpr(this.variable);
             fail(`Not yet implemented`);
         }
     };

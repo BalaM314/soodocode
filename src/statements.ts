@@ -659,6 +659,8 @@ export class OpenFileStatement extends Statement {
 				lines: file.text.split("\n").slice(0, -1), //the last element will be blank, because all lines end with a newline
 				lineNumber: 0
 			}
+		} else if(mode == "RANDOM"){
+			fail(`Not yet implemented`);
 		} else {
 			if(mode == "WRITE") file.text = ""; //Clear the file so it can be overwritten
 			runtime.openFiles[name] = {
@@ -724,24 +726,43 @@ export class SeekStatement extends Statement {
 		[, this.filename, , this.index] = tokens;
 	}
 	run(runtime:Runtime){
+		const index = runtime.evaluateExpr(this.index, "INTEGER")[1];
+		if(index < 0) fail(`SEEK index must be positive`);
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
+		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
 		fail(`Not yet implemented`);
 	}
 }
 @statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")
 export class GetRecordStatement extends Statement {
+	filename: ExpressionAST;
+	variable: ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
+		[, this.filename, , this.variable] = tokens;
 	}
 	run(runtime:Runtime){
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
+		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const variable = runtime.evaluateExpr(this.variable, "variable");
 		fail(`Not yet implemented`);
 	}
 }
 @statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")
 export class PutRecordStatement extends Statement {
+	filename: ExpressionAST;
+	variable: ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
 		super(tokens);
+		[, this.filename, , this.variable] = tokens;
 	}
 	run(runtime:Runtime){
+		const name = runtime.evaluateExpr(this.filename, "STRING")[1];
+		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
+		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const [type, value] = runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`);
 	}
 }

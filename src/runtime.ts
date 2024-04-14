@@ -177,7 +177,11 @@ export type OpenedFile = {
 	lines: string[];
 	lineNumber: number;
 } | {
-	mode: "WRITE" | "APPEND" | "RANDOM";
+	mode: "WRITE" | "APPEND";
+} | {
+	mode: "RANDOM";
+	data: string[];
+	currentPointer: number;
 })
 
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {

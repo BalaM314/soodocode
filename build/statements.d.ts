@@ -246,10 +246,14 @@ export declare class SeekStatement extends Statement {
     run(runtime: Runtime): void;
 }
 export declare class GetRecordStatement extends Statement {
+    filename: ExpressionAST;
+    variable: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
 export declare class PutRecordStatement extends Statement {
+    filename: ExpressionAST;
+    variable: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
