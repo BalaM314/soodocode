@@ -1175,6 +1175,11 @@ describe("runtime's token evaluator", () => {
 	for(const [name, token, type, output, setup] of tokenTests){
 		it(`should produce the expected output for ${name}`, () => {
 			const runtime = new Runtime(() => fail(`Cannot input`), () => fail(`Cannot output`));
+			runtime.scopes.push({
+				statement: "global",
+				variables: {},
+				types: {}
+			});
 			setup(runtime);
 			if(output[0] == "error")
 				expect(() => runtime.evaluateToken(token, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
@@ -1188,6 +1193,11 @@ describe("runtime's expression evaluator", () => {
 	for(const [name, expression, type, output, setup] of expressionTests){
 		it(`should produce the expected output for ${name}`, () => {
 			const runtime = new Runtime(() => fail(`Cannot input`), () => fail(`Cannot output`));
+			runtime.scopes.push({
+				statement: "global",
+				variables: {},
+				types: {}
+			});
 			setup(runtime);
 			if(output[0] == "error")
 				expect(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
@@ -1205,6 +1215,11 @@ describe("runtime's statement executor", () => {
 				() => inputs.shift() ?? fail(`Program required input, but none was available`),
 				message => output = message
 			);
+			runtime.scopes.push({
+				statement: "global",
+				variables: {},
+				types: {}
+			});
 			setup(runtime);
 			if(test == "error"){
 				expect(() => statement.run(runtime)).toThrowMatching(e => e instanceof SoodocodeError);
@@ -1225,9 +1240,9 @@ describe("runtime's program execution", () => {
 				str => outputs.push(str)
 			);
 			if(Array.isArray(output)){
-				expect(() => runtime.runBlock(program.nodes)).toThrowMatching(e => e instanceof SoodocodeError);
+				expect(() => runtime.runProgram(program.nodes)).toThrowMatching(e => e instanceof SoodocodeError);
 			} else {
-				runtime.runBlock(program.nodes);
+				runtime.runProgram(program.nodes);
 				expect(outputs.join("\n")).toEqual(output);
 			}
 		});

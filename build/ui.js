@@ -376,7 +376,7 @@ function executeSoodocode() {
                 symbols, tokens, program, runtime
             });
         }
-        runtime.runBlock(program.nodes);
+        runtime.runProgram(program.nodes);
         outputDiv.innerText = output.join("\n") || "<no output>";
     }
     catch (err) {

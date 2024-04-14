@@ -212,11 +212,7 @@ export type VariableScope = {
 };
 
 export class Runtime {
-	scopes: VariableScope[] = [{
-		statement: "global",
-		variables: {},
-		types: {}
-	}];
+	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
 	files: Record<string, FileData> = {};
 	constructor(
@@ -770,5 +766,16 @@ help: try using DIV instead of / to produce an integer as the result`
 				value: returned
 			};
 		}
+	}
+	/** Creates a scope. */
+	runProgram(code:ProgramASTNode[]):void | {
+		type: "function_return";
+		value: VariableValue;
+	}{
+		return this.runBlock(code, {
+			statement: "global",
+			variables: {},
+			types: {}
+		});
 	}
 }

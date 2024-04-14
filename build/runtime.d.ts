@@ -159,5 +159,10 @@ export declare class Runtime {
         type: "function_return";
         value: VariableValue;
     };
+    /** Creates a scope. */
+    runProgram(code: ProgramASTNode[]): void | {
+        type: "function_return";
+        value: VariableValue;
+    };
 }
 export {};

@@ -149,11 +149,7 @@ let Runtime = (() => {
             constructor(_input, _output) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
-                this.scopes = [{
-                        statement: "global",
-                        variables: {},
-                        types: {}
-                    }];
+                this.scopes = [];
                 this.functions = {};
                 this.files = {};
             }
@@ -743,6 +739,14 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         value: returned
                     };
                 }
+            }
+            /** Creates a scope. */
+            runProgram(code) {
+                return this.runBlock(code, {
+                    statement: "global",
+                    variables: {},
+                    types: {}
+                });
             }
         },
         (() => {
