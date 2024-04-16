@@ -1,10 +1,11 @@
-import { SymbolType, Token, TokenType, symbol, token } from "../../build/lexer-types.js";
+import { SymbolType, Token, TokenType, token } from "../../build/lexer-types.js";
 import {
 	ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
 } from "../../build/parser-types.js";
-import { Operator, operators, OperatorType } from "../../build/parser.js";
+import { operators, OperatorType } from "../../build/parser.js";
 import { Statement } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
+import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
@@ -22,6 +23,9 @@ export type _ExpressionASTBranchNode = [
 ];
 export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
 export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
+
+export type _VariableType = Exclude<VariableType, PrimitiveVariableType> | PrimitiveVariableTypeName;
+export type _UnresolvedVariableType = string;
 
 export type _Operator = Exclude<OperatorType, "assignment" | "pointer">;
 
@@ -133,9 +137,19 @@ export function process_ProgramASTNode(input:_ProgramASTNode):ProgramASTNode {
 			input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
 		);
 }
+export function process_VariableType(input:_VariableType):VariableType;
+export function process_VariableType(input:_VariableType | null):VariableType | null;
+export function process_VariableType(input:_VariableType | null):VariableType | null {
+	if(input == null) return input;
+	if(typeof input == "string") return PrimitiveVariableType.get(input);
+	return input;
+}
+export function process_UnresolvedVariableType(input:_UnresolvedVariableType):UnresolvedVariableType {
+	return PrimitiveVariableType.get(input) ?? ["unresolved", input];
+}
+
 
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
-
 /** Mutates input unsafely */
 export function applyAnyRange<TIn extends
 	ExpressionAST | ExpressionASTArrayTypeNode | Statement | ProgramASTBranchNode | ProgramAST

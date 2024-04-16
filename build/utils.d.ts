@@ -5,7 +5,6 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { PrimitiveVariableTypeName } from "./runtime.js";
 import { TagFunction } from "./types.js";
 export declare function getText(tokens: Token[]): string;
 /** Ranges must telescope inwards */
@@ -44,7 +43,6 @@ export declare function errorBoundary({ predicate, message }?: Partial<{
     message(...args: any[]): string;
 }>): <T extends (...args: any[]) => unknown>(func: T, ctx?: ClassMethodDecoratorContext) => T;
 export declare function escapeHTML(input?: string): string;
-export declare function isPrimitiveType(input: string): input is PrimitiveVariableTypeName;
 export declare function parseError(thing: unknown): string;
 /** Generates a tag template processor from a function that processes one value at a time. */
 export declare function tagProcessor<T>(transformer: (chunk: T, index: number, allStringChunks: readonly string[], allVarChunks: readonly T[]) => string): TagFunction<T, string>;

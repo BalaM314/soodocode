@@ -8,12 +8,25 @@ import { Token } from "./lexer-types.js";
 import { ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ExpressionASTArrayAccessNode } from "./parser-types.js";
 import { ProcedureStatement, Statement, ConstantStatement, DeclareStatement, ForStatement, FunctionStatement, DefineStatement, BuiltinFunctionArguments } from "./statements.js";
 /**Stores the JS type used for each pseudocode variable type */
-export type VariableTypeMapping<T> = T extends "INTEGER" ? number : T extends "REAL" ? number : T extends "STRING" ? string : T extends "CHAR" ? string : T extends "BOOLEAN" ? boolean : T extends "DATE" ? Date : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
 export type PrimitiveVariableTypeName = "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE";
-export type PrimitiveVariableType = PrimitiveVariableTypeName;
-export declare const _PrimitiveVariableType: {
-    getInitValue(type: PrimitiveVariableType): string | number | boolean | Date;
-};
+export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
+export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> {
+    name: T;
+    static INTEGER: PrimitiveVariableType<"INTEGER">;
+    static REAL: PrimitiveVariableType<"REAL">;
+    static STRING: PrimitiveVariableType<"STRING">;
+    static CHAR: PrimitiveVariableType<"CHAR">;
+    static BOOLEAN: PrimitiveVariableType<"BOOLEAN">;
+    static DATE: PrimitiveVariableType<"DATE">;
+    private constructor();
+    is<T extends PrimitiveVariableTypeName>(...type: T[]): this is PrimitiveVariableType<T>;
+    static valid(input: string): input is PrimitiveVariableTypeName;
+    static get(type: PrimitiveVariableTypeName): PrimitiveVariableType;
+    static get(type: string): PrimitiveVariableType | undefined;
+    static resolve(type: string): Exclude<UnresolvedVariableType, ArrayVariableType>;
+    getInitValue(runtime: Runtime): number | string | boolean | Date;
+}
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export declare class ArrayVariableType {
     lengthInformation: [low: number, high: number][];
@@ -24,6 +37,7 @@ export declare class ArrayVariableType {
     toString(): string;
     toQuotedString(): string;
     getInitValue(runtime: Runtime): VariableTypeMapping<ArrayVariableType>;
+    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare class RecordVariableType {
     name: string;
@@ -32,6 +46,7 @@ export declare class RecordVariableType {
     toString(): string;
     toQuotedString(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare class PointerVariableType {
     name: string;
@@ -40,6 +55,7 @@ export declare class PointerVariableType {
     toString(): string;
     toQuotedString(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare class EnumeratedVariableType {
     name: string;
@@ -48,6 +64,7 @@ export declare class EnumeratedVariableType {
     toString(): string;
     toQuotedString(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare class SetVariableType {
     name: string;
@@ -56,10 +73,11 @@ export declare class SetVariableType {
     toString(): string;
     toQuotedString(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare function typesEqual(a: VariableType, b: VariableType): boolean;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string];
-export type VariableType = PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType;
+export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";

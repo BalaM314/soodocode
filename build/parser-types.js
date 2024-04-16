@@ -1,5 +1,5 @@
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType } from "./runtime.js";
-import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime.js";
+import { fail, fquote, getTotalRange } from "./utils.js";
 /** Represents a branch node (node with child nodes) in an expression AST. */
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
@@ -78,7 +78,7 @@ export class ExpressionASTArrayTypeNode {
         this.range = getTotalRange(allTokens);
     }
     toData() {
-        return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), isPrimitiveType(this.elementType.text) ? this.elementType.text : ["unresolved", this.elementType.text]);
+        return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), PrimitiveVariableType.resolve(this.elementType.text));
     }
     toString() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;
@@ -92,7 +92,7 @@ export class ExpressionASTPointerTypeNode {
         this.range = getTotalRange(allTokens);
     }
     toData(name) {
-        return new PointerVariableType(name, isPrimitiveType(this.targetType.text) ? this.targetType.text : fail(fquote `Invalid variable type ${this.targetType.text}`));
+        return new PointerVariableType(name, PrimitiveVariableType.get(this.targetType.text) ?? fail(fquote `Invalid variable type ${this.targetType.text}`));
     }
 }
 export class ExpressionASTEnumTypeNode {

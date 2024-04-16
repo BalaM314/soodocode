@@ -203,9 +203,6 @@ export function escapeHTML(input) {
         return "";
     return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
-export function isPrimitiveType(input) {
-    return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
-}
 export function parseError(thing) {
     if (thing instanceof Error) {
         return thing.toString();

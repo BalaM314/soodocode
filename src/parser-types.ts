@@ -1,8 +1,8 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { Operator } from "./parser.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType } from "./runtime.js";
+import { Operator, processTypeData } from "./parser.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { fail, fquote, getTotalRange, isPrimitiveType } from "./utils.js";
+import { fail, fquote, getTotalRange } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -99,7 +99,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged {
 	toData():ArrayVariableType {
 		return new ArrayVariableType(
 			this.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
-			isPrimitiveType(this.elementType.text) ? this.elementType.text : ["unresolved", this.elementType.text]
+			PrimitiveVariableType.resolve(this.elementType.text)
 		);
 	}
 	toString():string {
@@ -118,7 +118,7 @@ export class ExpressionASTPointerTypeNode implements TextRanged {
 	toData(name:string):PointerVariableType {
 		return new PointerVariableType(
 			name,
-			isPrimitiveType(this.targetType.text) ? this.targetType.text : fail(fquote`Invalid variable type ${this.targetType.text}`)
+			PrimitiveVariableType.get(this.targetType.text) ?? fail(fquote`Invalid variable type ${this.targetType.text}`)
 		);
 	}
 }

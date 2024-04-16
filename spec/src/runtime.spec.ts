@@ -1,16 +1,26 @@
 import "jasmine";
 import { Token, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, process_ExpressionAST, process_ProgramAST, process_Statement } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_Statement, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
-	[token:_Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
+	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
 >) => Object.entries(data).map<[
-		name:string, token:Token, type:VariableType | null, output:[type:VariableType, value:VariableValue] | ["error"], setup:(r:Runtime) => unknown
-	]>(([k, v]) => [k, token(v[0]), v[1], v[2], v[3] ?? (() => {})])
+		name:string,
+		token:Token,
+		type:VariableType | null,
+		output:[type:VariableType, value:VariableValue] | ["error"],
+		setup:(r:Runtime) => unknown
+	]>(([k, v]) => [
+		k,
+		token(v[0]),
+		process_VariableType(v[1]),
+		v[2].length == 1 ? v[2] : [process_VariableType(v[2][0]), v[2][1]],
+		v[3] ?? (() => {})
+	])
 )({
 	boolean_true: [
 		["boolean.true", "true"],
@@ -84,7 +94,7 @@ const tokenTests = ((data:Record<string,
 		r => r.getCurrentScope().variables["x"] = {
 			mutable: true,
 			declaration: null!,
-			type: "INTEGER",
+			type: PrimitiveVariableType.INTEGER,
 			value: 5
 		}
 	],
@@ -131,8 +141,8 @@ const tokenTests = ((data:Record<string,
 });
 
 const expressionTests = ((data:Record<string, [
-	expression:_ExpressionAST, type:VariableType | null,
-	output:[type:VariableType, value:VariableValue] | ["error"],
+	expression:_ExpressionAST, type:_VariableType | null,
+	output:[type:_VariableType, value:VariableValue] | ["error"],
 	setup?:(r:Runtime) => unknown
 ]>) =>
 	Object.entries(data).map<[
@@ -140,7 +150,11 @@ const expressionTests = ((data:Record<string, [
 	output:[type:VariableType, value:VariableValue] | ["error"],
 	setup:(r:Runtime) => unknown
 ]>(([k, v]) => [
-	k, process_ExpressionAST(v[0]), v[1], v[2], v[3] ?? (() => {})
+	k,
+	process_ExpressionAST(v[0]),
+	process_VariableType(v[1]),
+	v[2].length == 1 ? v[2] : [process_VariableType(v[2][0]), v[2][1]],
+	v[3] ?? (() => {})
 ]))({
 	addNumbers: [
 		["tree", "add", [
@@ -159,7 +173,7 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 18],
 		r => {
 			const amogusType = new RecordVariableType("amogusType", {
-				sus: "INTEGER"
+				sus: PrimitiveVariableType.INTEGER
 			});
 			r.getCurrentScope().types["amogusType"] = amogusType;
 			r.getCurrentScope().variables["amogus"] = {
@@ -184,7 +198,7 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 123],
 		r => {
 			const innerType = new RecordVariableType("innerType", {
-				ccc: "INTEGER"
+				ccc: PrimitiveVariableType.INTEGER
 			});
 			const outerType = new RecordVariableType("outerType", {
 				bbb: innerType
@@ -214,7 +228,7 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 124],
 		r => {
 			const innerType = new RecordVariableType("innerType", {
-				ccc: "INTEGER"
+				ccc: PrimitiveVariableType.INTEGER
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().variables["aaa"] = {
@@ -236,7 +250,7 @@ const expressionTests = ((data:Record<string, [
 		["error"],
 		r => {
 			r.getCurrentScope().variables["aaa"] = {
-				type: "DATE",
+				type: PrimitiveVariableType.DATE,
 				declaration: null!,
 				mutable: true,
 				value: Date.now()
@@ -252,7 +266,7 @@ const expressionTests = ((data:Record<string, [
 		["error"],
 		r => {
 			const amogusType = new RecordVariableType("amogusType", {
-				sus: "INTEGER"
+				sus: PrimitiveVariableType.INTEGER
 			});
 			r.getCurrentScope().types["amogusType"] = amogusType;
 			r.getCurrentScope().variables["amogus"] = {
@@ -266,9 +280,9 @@ const expressionTests = ((data:Record<string, [
 		}
 	],
 	pointerRef1: (() => {
-		const intPointer = new PointerVariableType("intPtr", "INTEGER");
-		const intVar:VariableData<"INTEGER"> = {
-			type: "INTEGER",
+		const intPointer = new PointerVariableType("intPtr", PrimitiveVariableType.INTEGER);
+		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
+			type: PrimitiveVariableType.INTEGER,
 			declaration: null!,
 			mutable: true,
 			value: 19
@@ -358,9 +372,9 @@ const expressionTests = ((data:Record<string, [
 	// 	]
 	// })(),
 	pointerRef_invalid_undeclared_variable: (() => {
-		const intPointer = new PointerVariableType("intPtr", "INTEGER");
-		const intVar:VariableData<"INTEGER"> = {
-			type: "INTEGER",
+		const intPointer = new PointerVariableType("intPtr", PrimitiveVariableType.INTEGER);
+		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
+			type: PrimitiveVariableType.INTEGER,
 			declaration: null!,
 			mutable: true,
 			value: 19
@@ -385,9 +399,9 @@ const expressionTests = ((data:Record<string, [
 			"INTEGER",
 			["INTEGER", 20],
 			r => {
-				const intPointer = new PointerVariableType("intPtr", "INTEGER");
-				const amogusVar:VariableData<"INTEGER"> = {
-					type: "INTEGER",
+				const intPointer = new PointerVariableType("intPtr", PrimitiveVariableType.INTEGER);
+				const amogusVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
+					type: PrimitiveVariableType.INTEGER,
 					declaration: null!,
 					mutable: true,
 					value: 20
@@ -427,7 +441,7 @@ const statementTests = ((data:Record<string, [
 		r => expect(r.scopes[0]?.variables?.x).toEqual({
 			declaration: jasmine.any(DeclareStatement),
 			mutable: true,
-			type: "DATE",
+			type: PrimitiveVariableType.DATE,
 			value: null
 		})
 	],
@@ -441,7 +455,7 @@ const statementTests = ((data:Record<string, [
 		]],
 		r => {},
 		r => {
-			expect(r.getType("amogus")).toEqual(new PointerVariableType("amogus", "INTEGER"));
+			expect(r.getType("amogus")).toEqual(new PointerVariableType("amogus", PrimitiveVariableType.INTEGER));
 		}
 	],
 	typePointer_invalid_nonexistent: [
@@ -484,7 +498,7 @@ const statementTests = ((data:Record<string, [
 		r => {},
 		r => {
 			expect(r.getType("amog"))
-				.toEqual(new SetVariableType("amog", "INTEGER"));
+				.toEqual(new SetVariableType("amog", PrimitiveVariableType.INTEGER));
 		}
 	],
 });
@@ -1189,6 +1203,7 @@ describe("runtime's token evaluator", () => {
 	}
 });
 
+type expect_ = <T>(actual: T) => jasmine.Matchers<T>;
 describe("runtime's expression evaluator", () => {
 	for(const [name, expression, type, output, setup] of expressionTests){
 		it(`should produce the expected output for ${name}`, () => {
@@ -1200,9 +1215,9 @@ describe("runtime's expression evaluator", () => {
 			});
 			setup(runtime);
 			if(output[0] == "error")
-				expect(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
+				(expect as expect_)(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
 			else
-				expect(runtime.evaluateExpr(expression, type ?? undefined)).toEqual(output);
+				(expect as expect_)(runtime.evaluateExpr(expression, type ?? undefined)).toEqual(output);
 		});
 	}
 });

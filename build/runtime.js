@@ -44,8 +44,23 @@ import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, Expression
 import { operators } from "./parser.js";
 import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
-export const _PrimitiveVariableType = {
-    getInitValue(type) {
+export class PrimitiveVariableType {
+    constructor(name) {
+        this.name = name;
+    }
+    is(...type) {
+        return type.includes(this.name);
+    }
+    static valid(input) {
+        return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
+    }
+    static get(type) {
+        return this.valid(type) ? this[type] : undefined;
+    }
+    static resolve(type) {
+        return this.get(type) ?? ["unresolved", type];
+    }
+    getInitValue(runtime) {
         return {
             INTEGER: 0,
             REAL: 0,
@@ -53,9 +68,15 @@ export const _PrimitiveVariableType = {
             CHAR: '',
             BOOLEAN: false,
             DATE: new Date()
-        }[type];
+        }[this.name];
     }
-};
+}
+PrimitiveVariableType.INTEGER = new PrimitiveVariableType("INTEGER");
+PrimitiveVariableType.REAL = new PrimitiveVariableType("REAL");
+PrimitiveVariableType.STRING = new PrimitiveVariableType("STRING");
+PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
+PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
+PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType {
     constructor(lengthInformation, type) {
@@ -78,8 +99,9 @@ export class ArrayVariableType {
         const type = runtime.resolveVariableType(this.type);
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
-        return Array.from({ length: this.totalLength }, () => typeof type == "string" ? _PrimitiveVariableType.getInitValue(type) : type.getInitValue(runtime));
+        return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime));
     }
+    is(...type) { return false; }
 }
 export class RecordVariableType {
     constructor(name, fields) {
@@ -97,8 +119,8 @@ export class RecordVariableType {
             typeof v == "string" ? null : v.getInitValue(runtime)
         ]));
     }
+    is(...type) { return false; }
 }
-;
 export class PointerVariableType {
     constructor(name, target) {
         this.name = name;
@@ -113,6 +135,7 @@ export class PointerVariableType {
     getInitValue(runtime) {
         return null;
     }
+    is(...type) { return false; }
 }
 export class EnumeratedVariableType {
     constructor(name, values) {
@@ -128,6 +151,7 @@ export class EnumeratedVariableType {
     getInitValue(runtime) {
         return null;
     }
+    is(...type) { return false; }
 }
 export class SetVariableType {
     constructor(name, baseType) {
@@ -143,6 +167,7 @@ export class SetVariableType {
     getInitValue(runtime) {
         fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
     }
+    is(...type) { return false; }
 }
 export function typesEqual(a, b) {
     return a == b ||
@@ -202,7 +227,7 @@ let Runtime = (() => {
                     fail(`Cannot evaluate expression starting with "array access": \
 ${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
 but found ${expr.indices.length} indices`, expr.indices);
-                const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, "INTEGER")[1]]);
+                const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER)[1]]);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([expr, value], index) => value > varTypeData.lengthInformation[index][1] ||
                     value < varTypeData.lengthInformation[index][0])) != -1)
@@ -380,17 +405,17 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (type == "variable")
                     fail(`Cannot evaluate this expression as a variable`);
                 //arithmetic
-                if (type == "REAL" || type == "INTEGER" || expr.operator.category == "arithmetic") {
-                    if (type && !(type == "REAL" || type == "INTEGER"))
+                if (type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic") {
+                    if (type && !type.is("REAL", "INTEGER"))
                         fail(fquote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
-                    const guessedType = type ?? "REAL"; //Use this type to evaluate the expression
+                    const guessedType = type ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
                     let value;
                     //if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
                     if (expr.operator.type == "unary_prefix") {
                         const [operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType, true);
                         switch (expr.operator) {
                             case operators.negate:
-                                return ["INTEGER", -operand];
+                                return [PrimitiveVariableType.INTEGER, -operand];
                             default: crash("impossible");
                         }
                     }
@@ -410,7 +435,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             if (right == 0)
                                 fail(`Division by zero`);
                             value = left / right;
-                            if (type == "INTEGER")
+                            if (type?.is("INTEGER"))
                                 fail(`Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
 help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                             break;
@@ -430,53 +455,53 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     return [guessedType, value];
                 }
                 //logical
-                if (type == "BOOLEAN" || expr.operator.category == "logical") {
-                    if (type && !(type == "BOOLEAN"))
+                if (type?.is("BOOLEAN") || expr.operator.category == "logical") {
+                    if (type && !type.is("BOOLEAN"))
                         fail(fquote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`);
                     if (expr.operator.type == "unary_prefix") {
                         switch (expr.operator) {
                             case operators.not:
-                                return ["BOOLEAN", !this.evaluateExpr(expr.nodes[0], "BOOLEAN", true)[1]];
+                                return [PrimitiveVariableType.BOOLEAN, !this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1]];
                             default: crash("impossible");
                         }
                     }
                     switch (expr.operator) {
                         case operators.and:
-                            return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN", true)[1] && this.evaluateExpr(expr.nodes[1], "BOOLEAN", true)[1]];
+                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] && this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
                         case operators.or:
-                            return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "BOOLEAN", true)[1] || this.evaluateExpr(expr.nodes[1], "BOOLEAN", true)[1]];
+                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] || this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
                         case operators.equal_to:
                         case operators.not_equal_to:
                             //Type is unknown
                             const [leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
                             const [rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
                             const typesMatch = (leftType == rightType) ||
-                                (leftType == "INTEGER" && rightType == "REAL") ||
-                                (leftType == "REAL" && rightType == "INTEGER");
+                                (leftType.is("INTEGER") && rightType.is("REAL")) ||
+                                (leftType.is("REAL") && rightType.is("INTEGER"));
                             const is_equal = typesMatch && (left == right);
                             if (expr.operator == operators.equal_to)
-                                return ["BOOLEAN", is_equal];
+                                return [PrimitiveVariableType.BOOLEAN, is_equal];
                             else
-                                return ["BOOLEAN", !is_equal];
+                                return [PrimitiveVariableType.BOOLEAN, !is_equal];
                         case operators.greater_than:
-                            return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] > this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
+                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] > this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         case operators.greater_than_equal:
-                            return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] >= this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
+                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] >= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         case operators.less_than:
-                            return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] < this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
+                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] < this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         case operators.less_than_equal:
-                            return ["BOOLEAN", this.evaluateExpr(expr.nodes[0], "REAL", true)[1] <= this.evaluateExpr(expr.nodes[1], "REAL", true)[1]];
+                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] <= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         default:
                             fail(fquote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
                     }
                 }
                 //string
-                if (type == "STRING" || expr.operator.category == "string") {
-                    if (type && !(type == "STRING"))
+                if (type?.is("STRING") || expr.operator.category == "string") {
+                    if (type && !type.is("STRING"))
                         fail(`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`);
                     switch (expr.operator) {
                         case operators.string_concatenate:
-                            return ["STRING", this.evaluateExpr(expr.nodes[0], "STRING", true)[1] + this.evaluateExpr(expr.nodes[1], "STRING", true)[1]];
+                            return [PrimitiveVariableType.STRING, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)[1] + this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)[1]];
                         default:
                             fail(`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
                     }
@@ -512,47 +537,48 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 switch (token.type) {
                     case "boolean.false":
                         //TODO bad coercion
-                        if (!type || type == "BOOLEAN")
-                            return ["BOOLEAN", false];
-                        else if (type == "STRING")
-                            return ["STRING", "FALSE"];
+                        if (!type || type.is("BOOLEAN"))
+                            return [PrimitiveVariableType.BOOLEAN, false];
+                        else if (type.is("STRING"))
+                            return [PrimitiveVariableType.STRING, "FALSE"];
                         else
                             fail(`Cannot convert value FALSE to ${type}`);
                     case "boolean.true":
-                        if (!type || type == "BOOLEAN")
-                            return ["BOOLEAN", true];
-                        else if (type == "STRING")
-                            return ["STRING", "TRUE"];
+                        if (!type || type.is("BOOLEAN"))
+                            return [PrimitiveVariableType.BOOLEAN, true];
+                        else if (type.is("STRING"))
+                            return [PrimitiveVariableType.STRING, "TRUE"];
                         else
                             fail(`Cannot convert value TRUE to ${type}`);
                     case "number.decimal":
-                        if (!type || type == "INTEGER" || type == "REAL" || type == "STRING") {
+                        if (!type || type.is("INTEGER", "REAL", "STRING")) {
                             const val = Number(token.text);
                             if (!Number.isFinite(val))
                                 fail(`Value ${token.text} cannot be converted to a number: too large`);
-                            if (type == "INTEGER") {
-                                if (type == "INTEGER" && !Number.isInteger(val))
+                            if (type?.is("INTEGER")) {
+                                if (!Number.isInteger(val))
                                     fail(`Value ${token.text} cannot be converted to an integer`);
-                                if (type == "INTEGER" && !Number.isSafeInteger(val))
+                                if (!Number.isSafeInteger(val))
                                     fail(`Value ${token.text} cannot be converted to an integer: too large`);
-                                return ["INTEGER", val];
+                                return [PrimitiveVariableType.INTEGER, val];
                             }
-                            else if (type == "STRING")
-                                return ["STRING", token.text];
+                            else if (type?.is("STRING")) {
+                                return [PrimitiveVariableType.STRING, token.text];
+                            }
                             else {
-                                return ["REAL", val];
+                                return [PrimitiveVariableType.REAL, val];
                             }
                         }
                         else
-                            fail(`Cannot convert number to type ${type}`);
+                            fail(fquote `Cannot convert number to type ${type}`);
                     case "string":
-                        if (!type || type == "STRING")
-                            return ["STRING", token.text.slice(1, -1)]; //remove the quotes
+                        if (!type || type.is("STRING"))
+                            return [PrimitiveVariableType.STRING, token.text.slice(1, -1)]; //remove the quotes
                         else
                             fail(`Cannot convert value ${token.text} to ${type}`);
                     case "char":
-                        if (!type || type == "CHAR")
-                            return ["CHAR", token.text.slice(1, -1)]; //remove the quotes
+                        if (!type || type.is("CHAR"))
+                            return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
                         else
                             fail(`Cannot convert value ${token.text} to ${type}`);
                     default: fail(`Cannot evaluate token of type ${token.type}`);
@@ -573,9 +599,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 }
             }
             resolveVariableType(type) {
-                if (typeof type == "string")
-                    return type;
-                else if (type instanceof ArrayVariableType)
+                if (type instanceof PrimitiveVariableType || type instanceof ArrayVariableType)
                     return type;
                 else
                     return this.getType(type[1]) ?? fail(fquote `Type ${type[1]} does not exist`);
@@ -633,14 +657,14 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 //typescript really hates this function, beware
                 if (typesEqual(from, to))
                     return value;
-                if (from == "STRING" && to == "CHAR")
+                if (from.is("STRING") && to.is("CHAR"))
                     return value;
-                if (from == "INTEGER" && to == "REAL")
+                if (from.is("INTEGER") && to.is("REAL"))
                     return value;
-                if (from == "REAL" && to == "INTEGER")
+                if (from.is("REAL") && to.is("INTEGER"))
                     return Math.trunc(value);
-                if (to == "STRING") {
-                    if (from == "BOOLEAN" || from == "CHAR" || from == "DATE" || from == "INTEGER" || from == "REAL" || from == "STRING")
+                if (to.is("STRING")) {
+                    if (from.is("BOOLEAN", "CHAR", "DATE", "INTEGER", "REAL", "STRING"))
                         return value.toString();
                     else if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;

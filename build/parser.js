@@ -8,8 +8,9 @@ which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
+import { PrimitiveVariableType } from "./runtime.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary()((tokens) => {
@@ -68,10 +69,7 @@ export const parseFunctionArguments = errorBoundary()((tokens) => {
 });
 export const processTypeData = errorBoundary()((typeNode) => {
     if (typeNode instanceof Token) {
-        if (isPrimitiveType(typeNode.text))
-            return typeNode.text;
-        else
-            return ["unresolved", typeNode.text];
+        return PrimitiveVariableType.get(typeNode.text) ?? ["unresolved", typeNode.text];
     }
     else
         return typeNode.toData();

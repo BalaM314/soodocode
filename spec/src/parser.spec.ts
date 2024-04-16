@@ -10,7 +10,7 @@ import "jasmine";
 import { Token, TokenizedProgram, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
-import { UnresolvedVariableType, ArrayVariableType } from "../../build/runtime.js";
+import { UnresolvedVariableType, ArrayVariableType, PrimitiveVariableType, PrimitiveVariableTypeName } from "../../build/runtime.js";
 import {
 	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
@@ -18,8 +18,12 @@ import {
 import { SoodocodeError } from "../../build/utils.js";
 import {
 	_ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
+	_UnresolvedVariableType,
+	_VariableType,
 	applyAnyRange,
 	process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement,
+	process_UnresolvedVariableType,
+	process_VariableType,
 } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
@@ -2617,7 +2621,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 });
 
 const functionArgumentTests = ((data:Record<string,
-	[input:_Token[], output:[string, [type:UnresolvedVariableType, passMode?:PassMode]][]
+	[input:_Token[], output:[string, [type:_UnresolvedVariableType, passMode?:PassMode]][]
 | "error"]>) => Object.entries(data).map<
 	{name:string; input:Token[]; output:[string,
 		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}
@@ -2627,7 +2631,7 @@ const functionArgumentTests = ((data:Record<string,
 	input: input.map(token),
 	output: output == "error" ? "error" :
 		output.map(
-			([name, [type, passMode]]) => [name, {type, passMode: passMode ?? jasmine.any(String)}]
+			([name, [type, passMode]]) => [name, {type: process_UnresolvedVariableType(type), passMode: passMode ?? jasmine.any(String)}]
 		)
 })))({
 	blank: [[
@@ -3155,31 +3159,31 @@ describe("parseFunctionArguments", () => {
 
 describe("ArrayTypeData", () => {
 	it(`should generate correct data`, () => {
-		const data1 = new ArrayVariableType([[0, 9]], "BOOLEAN");
+		const data1 = new ArrayVariableType([[0, 9]], PrimitiveVariableType.BOOLEAN);
 		expect(data1.arraySizes).toEqual([10]);
 		expect(data1.totalLength).toEqual(10);
-		const data2 = new ArrayVariableType([[1, 15]], "STRING");
+		const data2 = new ArrayVariableType([[1, 15]], PrimitiveVariableType.STRING);
 		expect(data2.arraySizes).toEqual([15]);
 		expect(data2.totalLength).toEqual(15);
-		const data3 = new ArrayVariableType([[0, 9], [0, 19]], "BOOLEAN");
+		const data3 = new ArrayVariableType([[0, 9], [0, 19]], PrimitiveVariableType.BOOLEAN);
 		expect(data3.arraySizes).toEqual([10, 20]);
 		expect(data3.totalLength).toEqual(200);
-		const data4 = new ArrayVariableType([[1, 10], [1, 15]], "DATE");
+		const data4 = new ArrayVariableType([[1, 10], [1, 15]], PrimitiveVariableType.DATE);
 		expect(data4.arraySizes).toEqual([10, 15]);
 		expect(data4.totalLength).toEqual(150);
-		const data5 = new ArrayVariableType([[0, 9], [1, 15], [0, 20]], "INTEGER");
+		const data5 = new ArrayVariableType([[0, 9], [1, 15], [0, 20]], PrimitiveVariableType.INTEGER);
 		expect(data5.arraySizes).toEqual([10, 15, 21]);
 		expect(data5.totalLength).toEqual(3150);
 	});
 	it(`should handle correct inputs`, () => {
-		expect(() => new ArrayVariableType([[0, 0]], "CHAR")).not.toThrow();
-		expect(() => new ArrayVariableType([[5, 5]], "CHAR")).not.toThrow();
+		expect(() => new ArrayVariableType([[0, 0]], PrimitiveVariableType.CHAR)).not.toThrow();
+		expect(() => new ArrayVariableType([[5, 5]], PrimitiveVariableType.CHAR)).not.toThrow();
 	})
 	it(`should handle incorrect inputs`, () => {
-		expect(() => new ArrayVariableType([[0, -1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[2, 1]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[0, 1], [0, 10.5]], "CHAR")).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, -1]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[2, 1]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, 10.5]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, 1], [0, 10.5]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
 	});
 });
 

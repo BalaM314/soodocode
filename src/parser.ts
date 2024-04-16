@@ -15,14 +15,14 @@ import {
 	ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode,
 	ProgramAST, ProgramASTBranchNode,	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
-import type { UnresolvedVariableType } from "./runtime.js";
+import { PrimitiveVariableType, type UnresolvedVariableType } from "./runtime.js";
 import {
 	CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments,
 	PassMode, Statement, statements
 } from "./statements.js";
 import { PartialKey } from "./types.js";
 import {
-	SoodocodeError, crash, errorBoundary, fail, fquote, impossible, isPrimitiveType, splitTokens,
+	SoodocodeError, crash, errorBoundary, fail, fquote, impossible, splitTokens,
 	splitTokensOnComma, splitTokensWithSplitter
 } from "./utils.js";
 
@@ -84,10 +84,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 
 export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):UnresolvedVariableType => {
 	if(typeNode instanceof Token){
-		if(isPrimitiveType(typeNode.text))
-			return typeNode.text;
-		else
-			return ["unresolved", typeNode.text];
+		return PrimitiveVariableType.get(typeNode.text) ?? ["unresolved", typeNode.text];
 	} else return typeNode.toData();
 });
 
