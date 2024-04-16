@@ -1,6 +1,6 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator, processTypeData } from "./parser.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { Statement } from "./statements.js";
 import { fail, fquote, getTotalRange } from "./utils.js";
 

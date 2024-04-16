@@ -1,7 +1,8 @@
 import "jasmine";
 import { Token, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, Runtime, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
+import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_Statement, process_VariableType } from "./spec_utils.js";

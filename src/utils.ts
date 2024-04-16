@@ -7,7 +7,6 @@ This file contains utility functions.
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
-import { PrimitiveVariableTypeName } from "./runtime.js";
 import { TagFunction } from "./types.js";
 
 

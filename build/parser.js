@@ -8,7 +8,7 @@ which is the preferred representation of the program.
 */
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
-import { PrimitiveVariableType } from "./runtime.js";
+import { PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 //TODO add a way to specify the range for an empty list of tokens

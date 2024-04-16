@@ -1,6 +1,6 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType } from "./runtime.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType } from "./runtime-types.js";
 import { Statement } from "./statements.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;

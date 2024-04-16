@@ -8,7 +8,7 @@ which is the preferred representation of the program.
 */
 import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
 import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST } from "./parser-types.js";
-import { type UnresolvedVariableType } from "./runtime.js";
+import { type UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export declare const parseFunctionArguments: (tokens: Token[]) => FunctionArguments;
@@ -49,7 +49,7 @@ export type Operator = {
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export declare const operatorsByPriority: Operator[][];
 /** Indexed by OperatorType */
-export declare const operators: Omit<Record<"add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "assignment" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
+export declare const operators: Omit<Record<"assignment" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "add" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
 export declare const expressionLeafNodeTypes: TokenType[];
 export declare const parseExpressionLeafNode: (token: Token) => ExpressionASTLeafNode;
 export declare const parseExpression: (input: Token[], recursive?: any) => ExpressionASTNode;

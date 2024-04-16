@@ -15,7 +15,7 @@ import {
 	ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode,
 	ProgramAST, ProgramASTBranchNode,	ProgramASTBranchNodeType, ProgramASTNode
 } from "./parser-types.js";
-import { PrimitiveVariableType, type UnresolvedVariableType } from "./runtime.js";
+import { PrimitiveVariableType, type UnresolvedVariableType } from "./runtime-types.js";
 import {
 	CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments,
 	PassMode, Statement, statements

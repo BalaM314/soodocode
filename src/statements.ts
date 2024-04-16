@@ -17,9 +17,10 @@ import {
 } from "./parser.js";
 import {
 	EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType,
-	RecordVariableType, Runtime, SetVariableType, UnresolvedVariableType, VariableType,
+	RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType,
 	VariableTypeMapping, VariableValue
-} from "./runtime.js";
+} from "./runtime-types.js";
+import { Runtime } from "./runtime.js";
 import {
 	crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList,
 	splitTokensOnComma,

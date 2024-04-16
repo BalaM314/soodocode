@@ -4,7 +4,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains all builtin functions defined in the insert.
 */
-import { PrimitiveVariableType } from "./runtime.js";
+import { PrimitiveVariableType } from "./runtime-types.js";
 import { fail, fquote } from "./utils.js";
 export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
         args: new Map(data.args.map(a => [a[0], { passMode: "reference", type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t => PrimitiveVariableType.get(t)) }])),

@@ -1,4 +1,4 @@
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { fail, fquote, getTotalRange } from "./utils.js";
 /** Represents a branch node (node with child nodes) in an expression AST. */
 export class ExpressionASTBranchNode {

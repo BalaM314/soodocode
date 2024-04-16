@@ -5,7 +5,7 @@ import {
 import { operators, OperatorType } from "../../build/parser.js";
 import { Statement } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
-import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime.js";
+import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
