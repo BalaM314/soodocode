@@ -161,7 +161,7 @@ export class DeclareStatement extends Statement {
 			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
 			runtime.getCurrentScope().variables[variable] = {
 				type: varType,
-				value: typeof varType == "string" ? null : varType.getInitValue(runtime),
+				value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),
 				declaration: this,
 				mutable: true,
 			};

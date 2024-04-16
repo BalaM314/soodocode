@@ -64,8 +64,8 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	static resolve(type:string):Exclude<UnresolvedVariableType, ArrayVariableType> {
 		return this.get(type) ?? ["unresolved", type];
 	}
-	getInitValue(runtime:Runtime):number | string | boolean | Date {
-		return {
+	getInitValue(runtime:Runtime, requireInit:boolean):number | string | boolean | Date | null {
+		if(requireInit) return {
 			INTEGER: 0,
 			REAL: 0,
 			STRING: "",
@@ -73,6 +73,7 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 			BOOLEAN: false,
 			DATE: new Date()
 		}[this.name];
+		else return null;
 	}
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
@@ -94,10 +95,10 @@ export class ArrayVariableType {
 	toQuotedString(){
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
 	}
-	getInitValue(runtime:Runtime):VariableTypeMapping<ArrayVariableType> {
+	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		return Array.from({length: this.totalLength}, () => type.getInitValue(runtime) as VariableTypeMapping<ArrayElementVariableType> | null);
+		return Array.from({length: this.totalLength}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 	is(...type:PrimitiveVariableTypeName[]){ return false; }
 }
@@ -112,9 +113,9 @@ export class RecordVariableType {
 	toQuotedString(){
 		return fquote`${this.name} (user-defined record type)`;
 	}
-	getInitValue(runtime:Runtime):VariableValue | null {
+	getInitValue(runtime:Runtime, requireInit:boolean):VariableValue | null {
 		return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-			typeof v == "string" ? null : v.getInitValue(runtime)
+			typeof v == "string" ? null : v.getInitValue(runtime, false)
 		]));
 	}
 	is(...type:PrimitiveVariableTypeName[]){ return false; }

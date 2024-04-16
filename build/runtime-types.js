@@ -21,15 +21,18 @@ export class PrimitiveVariableType {
     static resolve(type) {
         return this.get(type) ?? ["unresolved", type];
     }
-    getInitValue(runtime) {
-        return {
-            INTEGER: 0,
-            REAL: 0,
-            STRING: "",
-            CHAR: '',
-            BOOLEAN: false,
-            DATE: new Date()
-        }[this.name];
+    getInitValue(runtime, requireInit) {
+        if (requireInit)
+            return {
+                INTEGER: 0,
+                REAL: 0,
+                STRING: "",
+                CHAR: '',
+                BOOLEAN: false,
+                DATE: new Date()
+            }[this.name];
+        else
+            return null;
     }
 }
 PrimitiveVariableType.INTEGER = new PrimitiveVariableType("INTEGER");
@@ -56,11 +59,11 @@ export class ArrayVariableType {
     toQuotedString() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
     }
-    getInitValue(runtime) {
+    getInitValue(runtime, requireInit) {
         const type = runtime.resolveVariableType(this.type);
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
-        return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime));
+        return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
     is(...type) { return false; }
 }
@@ -75,9 +78,9 @@ export class RecordVariableType {
     toQuotedString() {
         return fquote `${this.name} (user-defined record type)`;
     }
-    getInitValue(runtime) {
+    getInitValue(runtime, requireInit) {
         return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-            typeof v == "string" ? null : v.getInitValue(runtime)
+            typeof v == "string" ? null : v.getInitValue(runtime, false)
         ]));
     }
     is(...type) { return false; }

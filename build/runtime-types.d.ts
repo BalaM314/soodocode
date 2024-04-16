@@ -25,7 +25,7 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static get(type: PrimitiveVariableTypeName): PrimitiveVariableType;
     static get(type: string): PrimitiveVariableType | undefined;
     static resolve(type: string): Exclude<UnresolvedVariableType, ArrayVariableType>;
-    getInitValue(runtime: Runtime): number | string | boolean | Date;
+    getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export declare class ArrayVariableType {
@@ -36,7 +36,7 @@ export declare class ArrayVariableType {
     constructor(lengthInformation: [low: number, high: number][], type: Exclude<UnresolvedVariableType, ArrayVariableType>);
     toString(): string;
     toQuotedString(): string;
-    getInitValue(runtime: Runtime): VariableTypeMapping<ArrayVariableType>;
+    getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;
     is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare class RecordVariableType {
@@ -45,7 +45,7 @@ export declare class RecordVariableType {
     constructor(name: string, fields: Record<string, VariableType>);
     toString(): string;
     toQuotedString(): string;
-    getInitValue(runtime: Runtime): VariableValue | null;
+    getInitValue(runtime: Runtime, requireInit: boolean): VariableValue | null;
     is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare class PointerVariableType {
