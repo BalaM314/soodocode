@@ -8,23 +8,12 @@ which is the preferred representation of the program.
 */
 
 
-import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
-import {
-	ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode,
-	ExpressionASTClassInstantiationNode,
-	ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode,
-	ProgramAST, ProgramASTBranchNode,	ProgramASTBranchNodeType, ProgramASTNode
-} from "./parser-types.js";
-import { PrimitiveVariableType, type UnresolvedVariableType } from "./runtime-types.js";
-import {
-	CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments,
-	PassMode, Statement, statements
-} from "./statements.js";
+import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode } from "./parser-types.js";
+import { PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
+import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { PartialKey } from "./types.js";
-import {
-	SoodocodeError, crash, errorBoundary, fail, fquote, impossible, splitTokens,
-	splitTokensOnComma, splitTokensWithSplitter
-} from "./utils.js";
+import { crash, errorBoundary, fail, fquote, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 

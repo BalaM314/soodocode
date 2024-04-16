@@ -8,23 +8,11 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import { builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import {
-	ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode,
-	ProgramASTBranchNode, TokenMatcher
-} from "./parser-types.js";
-import {
-	expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData
-} from "./parser.js";
-import {
-	EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType,
-	RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType,
-	VariableTypeMapping, VariableValue
-} from "./runtime-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
+import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import {
-	crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList,
-	splitTokensOnComma,
-} from "./utils.js";
+import { crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
 export type StatementType =

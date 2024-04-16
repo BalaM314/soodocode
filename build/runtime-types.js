@@ -1,3 +1,9 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the types for the runtime, such as the variable types and associated utility types.
+*/
 import { fail, crash, fquote } from "./utils.js";
 export class PrimitiveVariableType {
     constructor(name) {

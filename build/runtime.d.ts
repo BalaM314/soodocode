@@ -5,8 +5,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the runtime, which executes the program AST.
 */
 import { Token } from "./lexer-types.js";
-import { ProgramASTNode, ExpressionASTBranchNode, ExpressionAST, ExpressionASTArrayAccessNode } from "./parser-types.js";
-import { VariableScope, FunctionData, OpenedFile, VariableType, VariableValue, VariableData, ConstantData, VariableTypeMapping, PointerVariableType, UnresolvedVariableType, EnumeratedVariableType, BuiltinFunctionData, File } from "./runtime-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import { BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FunctionData, OpenedFile, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;

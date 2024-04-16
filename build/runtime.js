@@ -40,10 +40,10 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, ExpressionASTClassInstantiationNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { ArrayVariableType, PrimitiveVariableType, RecordVariableType, PointerVariableType, EnumeratedVariableType, typesEqual } from "./runtime-types.js";
-import { ProcedureStatement, Statement, FunctionStatement } from "./statements.js";
+import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
+import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 //TODO: fix coercion
 //CONFIG: array initialization

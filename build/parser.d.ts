@@ -6,9 +6,9 @@ This file contains the parser, which takes a list of tokens
 and processes it into an abstract syntax tree (AST),
 which is the preferred representation of the program.
 */
-import { TextRange, Token, TokenizedProgram, type TokenType } from "./lexer-types.js";
+import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST } from "./parser-types.js";
-import { type UnresolvedVariableType } from "./runtime-types.js";
+import { UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export declare const parseFunctionArguments: (tokens: Token[]) => FunctionArguments;

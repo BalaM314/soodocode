@@ -8,17 +8,10 @@ This file contains the runtime, which executes the program AST.
 
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import {
-	ProgramASTBranchNode, ProgramASTNode, ExpressionASTBranchNode, ExpressionAST,
-	ExpressionASTNode, ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode,
-	ExpressionASTClassInstantiationNode
-} from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { VariableScope, FunctionData, OpenedFile, VariableType, VariableValue, VariableData, ArrayVariableType, PrimitiveVariableType, ConstantData, RecordVariableType, VariableTypeMapping, PointerVariableType, UnresolvedVariableType, EnumeratedVariableType, BuiltinFunctionData, typesEqual, File } from "./runtime-types.js";
-import {
-	ProcedureStatement, Statement, ConstantStatement, DeclareStatement, ForStatement,
-	FunctionStatement, DefineStatement, BuiltinFunctionArguments
-} from "./statements.js";
+import { ArrayVariableType, BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FunctionData, OpenedFile, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
+import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
 
 //TODO: fix coercion

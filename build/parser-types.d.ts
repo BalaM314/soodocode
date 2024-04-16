@@ -1,7 +1,13 @@
-import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the types for the parser.
+*/
+import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType } from "./runtime-types.js";
-import { Statement } from "./statements.js";
+import type { Statement } from "./statements.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;
 /** Represents a single node in an expression AST. */

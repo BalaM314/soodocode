@@ -48,7 +48,7 @@ import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma, } from "./utils.js";
+import { crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statements = {
     byStartKeyword: {},
     byType: {},

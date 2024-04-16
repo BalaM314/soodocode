@@ -5,21 +5,18 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains code for the user interface.
 */
 
-import * as lexer from "./lexer.js";
-import * as parser from "./parser.js";
 import * as lexerTypes from "./lexer-types.js";
+import * as lexer from "./lexer.js";
 import * as parserTypes from "./parser-types.js";
+import * as parser from "./parser.js";
+import * as runtime from "./runtime.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
-import * as runtime from "./runtime.js";
-import { fail, crash, SoodocodeError, escapeHTML, impossible, applyRangeTransformers } from "./utils.js";
 import { Token } from "./lexer-types.js";
-import {
-	ExpressionASTNode, ProgramAST, ProgramASTNode, ExpressionASTArrayTypeNode,
-	ExpressionASTArrayAccessNode, ExpressionASTFunctionCallNode, ExpressionASTClassInstantiationNode
-} from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError } from "./utils.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
@@ -176,7 +173,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 			if(err.rangeGeneral) expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeGeneral)}"`;
 		} else {
 			console.error(err);
-			expressionOutputDiv.innerText = "Soodocode crashed! " + utils.parseError(err);
+			expressionOutputDiv.innerText = "Soodocode crashed! " + parseError(err);
 		}
 	}
 });
@@ -227,7 +224,7 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 			if(err.rangeGeneral) expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeGeneral)}"`;
 		} else {
 			console.error(err);
-			expressionOutputDiv.innerText = "Soodocode crashed!" + utils.parseError(err);
+			expressionOutputDiv.innerText = "Soodocode crashed!" + parseError(err);
 		}
 	}
 });
@@ -330,7 +327,7 @@ ${displayProgram(program)}`
 			if(err.rangeSpecific) outputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.rangeSpecific)}"`;
 			if(err.rangeGeneral) outputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.rangeGeneral)}"`;
 		} else {
-			outputDiv.innerText = `Soodocode crashed! ${utils.parseError(err)}`;
+			outputDiv.innerText = `Soodocode crashed! ${parseError(err)}`;
 		}
 	}
 });
@@ -412,7 +409,7 @@ function executeSoodocode(){
 				+ showRange(soodocodeInput.value, err);
 			console.error(err);
 		} else {
-			outputDiv.innerHTML = `<span style="color: red;">Soodocode crashed! ${escapeHTML(utils.parseError(err))}</span>`;
+			outputDiv.innerHTML = `<span style="color: red;">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
 			console.error(err);
 		}
 	}

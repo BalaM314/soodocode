@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { TagFunction } from "./types.js";
+import type { TagFunction } from "./types.js";
 export declare function getText(tokens: Token[]): string;
 /** Ranges must telescope inwards */
 export declare function applyRangeTransformers(text: string, ranges: [range: TextRange, start: string, end: string, transformer?: (rangeText: string) => string][]): string;

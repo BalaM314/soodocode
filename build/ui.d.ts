@@ -4,9 +4,9 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains code for the user interface.
 */
-import { SoodocodeError } from "./utils.js";
-import { ExpressionASTNode, ProgramAST, ProgramASTNode, ExpressionASTArrayTypeNode } from "./parser-types.js";
+import { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Statement } from "./statements.js";
+import { SoodocodeError } from "./utils.js";
 type FlattenTreeOutput = [depth: number, statement: Statement];
 export declare function flattenTree(program: ProgramASTNode[]): FlattenTreeOutput[];
 export declare function displayExpressionHTML(node: ExpressionASTNode | ExpressionASTArrayTypeNode, expand?: boolean, format?: boolean): string;

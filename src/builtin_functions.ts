@@ -6,7 +6,7 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import { PrimitiveVariableType, type BuiltinFunctionData, type PrimitiveVariableTypeName, type VariableValue } from "./runtime-types.js";
+import { BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableValue } from "./runtime-types.js";
 import { fail, fquote } from "./utils.js";
 
 
