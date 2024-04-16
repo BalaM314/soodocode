@@ -1,5 +1,5 @@
 CONSTANT input = "qkfd{ql^yk  maqmthqkd^  ielfxthb  }uui|n  {oqo  ugfd}ok_wm  ieskplsid^  phj`xp  yyui{o  j^pnyunn,,  sihb{qk_rr  ieqmomqkc_  vnzprj  b`sqtjzpnndd  c_rjj^  gal^ssk_uous  yyuivt..  hhb`qovj}u  b`tltpmese  kaskvhoiss''  h`c_~t"
-FUNCTION parse(BYREF input: STRING) RETURNS STRING
+FUNCTION parse(BYVAL input: STRING) RETURNS STRING
 	WHILE 1 + 2 / 3 * 4 MOD 5 DIV 6 > 420
 		OUTPUT "Processing..."
 	ENDWHILE
