@@ -48,7 +48,7 @@ export type StatementExecutionResult = {
 	value: VariableValue;
 };
 
-export class Statement implements TextRanged {
+export class Statement implements TextRanged { //TODO make abstract?
 	type:typeof Statement;
 	stype:StatementType;
 	static type:StatementType;
@@ -141,7 +141,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		statements.byType[type] = input;
 		input.tokens = args as TokenMatcher[];
 		return input;
-	}
+	};
 }
 
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
@@ -174,7 +174,7 @@ export class ConstantStatement extends Statement {
 	expr: Token;
 	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens);
-		let [constant, name, equals, expr] = tokens;
+		const [_constant, name, _equals, expr] = tokens;
 		this.name = name.text;
 		this.expr = expr;
 	}
@@ -343,6 +343,7 @@ export class InputStatement extends Statement {
 			case PrimitiveVariableType.CHAR:
 				if(input.length == 1) variable.value = input;
 				else fail(`input was not a valid character: contained more than one character`);
+				break;
 			default:
 				fail(`Cannot INPUT variable of type ${variable.type}`);
 		}
@@ -393,7 +394,7 @@ export class IfStatement extends Statement {
 		this.condition = tokens[1];
 	}
 	/** Warning: block will not include the usual end statement. */
-	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
+	static supportsSplit(_block:ProgramASTBranchNode, statement:Statement):true | string {
 		if(statement.stype != "else") return `${statement.stype} statements are not valid in IF blocks`;
 		return true;
 		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
@@ -458,7 +459,7 @@ export class CaseBranchStatement extends Statement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Try to evaluate the case token with the same type as the switch target
-		const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+		const [_caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
 		return switchValue == caseValue;
 	}
 }
@@ -469,7 +470,7 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens as never);
 		if(!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
-			fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number of character`, tokens[0]);
+			fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number or character`, tokens[0]);
 		if(tokens[2].type != tokens[0].type)
 			fail(`Token of type ${tokens[2].type} does not match the other range bound: expected a ${tokens[0].type}`, tokens[2]);
 		this.upperBound = tokens[2];
@@ -477,8 +478,8 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Evaluate the case tokens with the same type as the switch target
-		const [lType, lValue] = Runtime.evaluateToken(this.value, switchType);
-		const [uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
+		const [_lType, lValue] = Runtime.evaluateToken(this.value, switchType);
+		const [_uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
 		return lValue <= switchValue && switchValue <= uValue;
 	}
 }
@@ -493,7 +494,7 @@ export class ForStatement extends Statement {
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
 	}
-	step(runtime:Runtime):number {
+	step(_runtime:Runtime):number {
 		return 1;
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
@@ -513,7 +514,7 @@ export class ForStatement extends Statement {
 						mutable: false,
 						type: PrimitiveVariableType.INTEGER,
 						get value(){ return i; },
-						set value(value){ crash(`Attempted assignment to constant`) },
+						set value(value){ crash(`Attempted assignment to constant`); },
 					}
 				},
 				types: {}
@@ -644,7 +645,7 @@ export class OpenFileStatement extends Statement {
 				mode,
 				lines: file.text.split("\n").slice(0, -1), //the last element will be blank, because all lines end with a newline
 				lineNumber: 0
-			}
+			};
 		} else if(mode == "RANDOM"){
 			fail(`Not yet implemented`);
 		} else {
@@ -652,7 +653,7 @@ export class OpenFileStatement extends Statement {
 			runtime.openFiles[name] = {
 				file,
 				mode,
-			}
+			};
 		}
 	}
 }
@@ -681,7 +682,7 @@ export class ReadFileStatement extends Statement {
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
 		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
-		if(data.mode != "READ") fail(fquote`Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`)
+		if(data.mode != "READ") fail(fquote`Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
 		if(data.lineNumber >= data.lines.length) fail(`End of file reached`);
 		const output = runtime.evaluateExpr(this.output, "variable");
 		output.value = data.lines[data.lineNumber ++];
@@ -763,7 +764,7 @@ export class ClassStatement extends Statement {
 	}
 }
 
-@statement("class.inherits", "CLASS Dog", "block", "auto", "keyword.class", "name", "keyword.inherits", "name")
+@statement("class.inherits", "CLASS Dog", "block", "keyword.class", "name", "keyword.inherits", "name")
 export class ClassInheritsStatement extends ClassStatement {
 	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens);

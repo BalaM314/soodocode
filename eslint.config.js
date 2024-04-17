@@ -20,8 +20,10 @@ export default tseslint.config(
 				{
 					ignoredNodes: [
 						"* > TemplateLiteral",
+						"TemplateLiteral ~ *",
 						"SwitchCase"
-					]
+					],
+					flatTernaryExpressions: true
 				}
 			],
 			"linebreak-style": [
@@ -32,7 +34,32 @@ export default tseslint.config(
 				"error",
 				"always"
 			],
+			"no-unused-vars": "off",
 			"prefer-const": "warn",
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					"args": "all",
+					"argsIgnorePattern": "^_",
+					"caughtErrors": "all",
+					"caughtErrorsIgnorePattern": "^_",
+					"destructuredArrayIgnorePattern": "^_",
+					"varsIgnorePattern": "^_",
+					"ignoreRestSiblings": true
+				}
+			],
+			"@typescript-eslint/unbound-method": "off",
+			"@typescript-eslint/ban-types": [
+				"error",
+				{
+					extendDefaults: true,
+					types: {
+						"Symbol": false,
+						"{}": false,
+						"Function": false,
+					}
+				}
+			]
 			// "@typescript-eslint/no-non-null-assertion": "off",
 			// "@typescript-eslint/no-inferrable-types": "off",
 			// "@typescript-eslint/no-namespace": "off"

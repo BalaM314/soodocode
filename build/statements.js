@@ -183,7 +183,7 @@ let ConstantStatement = (() => {
     var ConstantStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            let [constant, name, equals, expr] = tokens;
+            const [_constant, name, _equals, expr] = tokens;
             this.name = name.text;
             this.expr = expr;
         }
@@ -473,6 +473,7 @@ let InputStatement = (() => {
                         variable.value = input;
                     else
                         fail(`input was not a valid character: contained more than one character`);
+                    break;
                 default:
                     fail(`Cannot INPUT variable of type ${variable.type}`);
             }
@@ -572,7 +573,7 @@ let IfStatement = (() => {
             this.condition = tokens[1];
         }
         /** Warning: block will not include the usual end statement. */
-        static supportsSplit(block, statement) {
+        static supportsSplit(_block, statement) {
             if (statement.stype != "else")
                 return `${statement.stype} statements are not valid in IF blocks`;
             return true;
@@ -690,7 +691,7 @@ let CaseBranchStatement = (() => {
             if (this.value.type == "keyword.otherwise")
                 return true;
             //Try to evaluate the case token with the same type as the switch target
-            const [caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+            const [_caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
             return switchValue == caseValue;
         }
     };
@@ -718,7 +719,7 @@ let CaseBranchRangeStatement = (() => {
         constructor(tokens) {
             super(tokens);
             if (!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
-                fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number of character`, tokens[0]);
+                fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number or character`, tokens[0]);
             if (tokens[2].type != tokens[0].type)
                 fail(`Token of type ${tokens[2].type} does not match the other range bound: expected a ${tokens[0].type}`, tokens[2]);
             this.upperBound = tokens[2];
@@ -727,8 +728,8 @@ let CaseBranchRangeStatement = (() => {
             if (this.value.type == "keyword.otherwise")
                 return true;
             //Evaluate the case tokens with the same type as the switch target
-            const [lType, lValue] = Runtime.evaluateToken(this.value, switchType);
-            const [uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
+            const [_lType, lValue] = Runtime.evaluateToken(this.value, switchType);
+            const [_uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
             return lValue <= switchValue && switchValue <= uValue;
         }
     };
@@ -759,7 +760,7 @@ let ForStatement = (() => {
             this.lowerBound = tokens[3];
             this.upperBound = tokens[5];
         }
-        step(runtime) {
+        step(_runtime) {
             return 1;
         }
         runBlock(runtime, node) {
@@ -1275,7 +1276,7 @@ let ClassStatement = (() => {
 })();
 export { ClassStatement };
 let ClassInheritsStatement = (() => {
-    let _classDecorators = [statement("class.inherits", "CLASS Dog", "block", "auto", "keyword.class", "name", "keyword.inherits", "name")];
+    let _classDecorators = [statement("class.inherits", "CLASS Dog", "block", "keyword.class", "name", "keyword.inherits", "name")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;

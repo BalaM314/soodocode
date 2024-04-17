@@ -85,7 +85,7 @@ ${displayStatement(node.controlStatements.at(-1)!)}\
 `<div class="program-display-outer">\
 ${displayStatement(node.controlStatements[0])}\
 ${node.nodeGroups.map<[ProgramASTNode[], Statement]>((n, i) => [n, node.controlStatements[i + 1] ?? crash(`Cannot display nodes`)]).map(([group, statement]) =>
-(group.length > 0 ? `<div class="program-display-inner">\
+	(group.length > 0 ? `<div class="program-display-inner">\
 ${displayProgram(group)}\
 </div>` : "") +
 displayStatement(statement)
@@ -152,7 +152,7 @@ window.addEventListener("keydown", e => {
 	}
 });
 
-evaluateExpressionButton.addEventListener("click", e => {
+evaluateExpressionButton.addEventListener("click", () => {
 	try {
 		expressionOutputDiv.innerText = evaluateExpressionDemo(
 			parser.parseExpression(
@@ -178,7 +178,7 @@ evaluateExpressionButton.addEventListener("click", e => {
 	}
 });
 
-dumpExpressionTreeButton.addEventListener("click", e => {
+dumpExpressionTreeButton.addEventListener("click", () => {
 	try {
 		const text = displayExpressionHTML(
 			parser.parseExpression(
@@ -203,9 +203,9 @@ dumpExpressionTreeButton.addEventListener("click", e => {
 			else if(/\d/.test(char)) outputText += `<span style="color:#B5CEA8;">${char}</span>`;
 			else if(dumpExpressionTreeVerbose.checked && ['(',')'].includes(char)){
 				lineParenColor ??= `hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%)`;
-				outputText += `<span style="color:${lineParenColor}">${char}</span>`
+				outputText += `<span style="color:${lineParenColor}">${char}</span>`;
 			} else if(dumpExpressionTreeVerbose.checked && ['↱','↳'].includes(char)){
-				outputText += `<span style="color:hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`
+				outputText += `<span style="color:hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`;
 			} else outputText += char;
 			linePos ++;
 			if(char == "\n"){
@@ -240,7 +240,7 @@ soodocodeInput.onkeydown = e => {
 		soodocodeInput.value = soodocodeInput.value
 			.slice(0, end)
 			.split("\n")
-			.map((line, i, text) =>
+			.map((line, i) =>
 				i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line
 			).join("\n") + soodocodeInput.value.slice(end);
 		//Replace cursor position
@@ -268,7 +268,7 @@ soodocodeInput.onkeydown = e => {
 			soodocodeInput.value = soodocodeInput.value
 				.slice(0, end)
 				.split("\n")
-				.map((line, i, text) =>
+				.map((line, i) =>
 					i >= numNewlinesBefore ? "\t" + line : line
 				).join("\n") + soodocodeInput.value.slice(end);
 			//Replace cursor position
@@ -286,9 +286,9 @@ soodocodeInput.onkeydown = e => {
 		soodocodeInput.value = newText;
 		soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start;
 	}
-}
+};
 
-dumpTokensButton.addEventListener("click", e => {
+dumpTokensButton.addEventListener("click", () => {
 	try {
 		const symbols = lexer.symbolize(soodocodeInput.value);
 		const tokens = lexer.tokenize(symbols);
@@ -347,7 +347,7 @@ export function showRange(text:string, error:SoodocodeError):string {
 			error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]
 		))
 	){
-		let range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
+		const range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
 		const beforeText = text.slice(0, range[0]);
 		const rangeText = text.slice(...range);
 		const beforeLines = beforeText.split("\n");
@@ -372,7 +372,7 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;"
 		const trimEnd = text.slice(error.rangeSpecific[1]).indexOf("\n");
 		text = text.slice(0, trimEnd);
 		const fullText = applyRangeTransformers(text, [
-			[error.rangeSpecific!, `<span style="text-decoration: underline wavy red;">`, "</span>", escapeHTML]
+			[error.rangeSpecific, `<span style="text-decoration: underline wavy red;">`, "</span>", escapeHTML]
 		]);
 		const trimStart = fullText.slice(0, error.rangeSpecific[0]).lastIndexOf("\n");
 		return fullText.slice(trimStart);
@@ -382,7 +382,7 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;"
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 function executeSoodocode(){
-	let output:string[] = [];
+	const output:string[] = [];
 	const runtime = new Runtime(
 		(msg) => prompt(msg) ?? fail("input was empty"),
 		m => {
@@ -418,10 +418,10 @@ function executeSoodocode(){
 let flashing = false;
 let bouncing = false;
 let flipped = false;
-let clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 headerText.addEventListener("click", e => {
 	clickTimes.shift();
-			clickTimes.push(Date.now());
+	clickTimes.push(Date.now());
 	if(e.shiftKey) flashing = !flashing;
 	if(e.altKey) bouncing = !bouncing;
 	if(e.ctrlKey) flipped = !flipped;
@@ -439,7 +439,7 @@ setInterval(() => {
 
 function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
-	(window as any).runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`));
+	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`));
 	Object.assign(window,
 		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime
 	);

@@ -41,31 +41,37 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 		} else passMode = null;
 
 		//There must be a name
-		if(section[offset + 0]?.type != "name") fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
+		if(section[offset + 0]?.type != "name")
+			fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
 
 		//If the name is the only thing present, then the type is specified later, leave it as null
 		if(section.length == offset + 1){
 			type = null;
 		} else {
 			//Expect a colon
-			if(section[offset + 1]?.type != "punctuation.colon") fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
+			if(section[offset + 1]?.type != "punctuation.colon")
+				fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
 			type = processTypeData(parseType(section.slice(offset + 2)));
 		}
 		return [
 			section[offset + 0], //pass the token through so we can use it to generate errors
 			{ passMode, type }
 		];
-	}).map<[name:Token, {type:UnresolvedVariableType | null, passMode:PassMode}]>(([name, data]) => [name, {
-		passMode: data.passMode ? passMode = data.passMode : passMode,
-		type: data.type
-	}])
-	.reverse().map(([name, data]) => [name, {
-		passMode: data.passMode,
-		type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument "${name.text}"`, name)
-	}] as const).reverse();
+	})
+		.map<[name:Token, {type:UnresolvedVariableType | null, passMode:PassMode}]>(([name, data]) => [name, {
+			passMode: data.passMode ? passMode = data.passMode : passMode,
+			type: data.type
+		}])
+		.reverse()
+		.map(([name, data]) => [name, {
+			passMode: data.passMode,
+			type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument "${name.text}"`, name)
+		}] as const)
+		.reverse();
 	const argumentsMap:FunctionArguments = new Map(argumentz.map(([name, data]) => [name.text, data] as const));
 	if(argumentsMap.size != argumentz.length){
-		const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
+		const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ??
+			crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
 		fail(`Duplicate function argument "${duplicateArgument.text}"`, duplicateArgument);
 	}
 	return argumentsMap;
@@ -91,8 +97,7 @@ export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode 
 		tokens.at(-1)?.type == "name"
 	)) fail(fquote`Cannot parse type from ${tokens}`);
 	return new ExpressionASTArrayTypeNode(
-		splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma")
-		.map(({group, splitter}) => {
+		splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({group, splitter}) => {
 			if(group.length != 3) fail(
 				fquote`Invalid array range specifier ${group}`,
 				group.length ? group : splitter
@@ -125,7 +130,7 @@ export function splitTokensToStatements(tokens:Token[]):Token[][] {
 }
 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
-	let lines:Token[][] = splitTokensToStatements(tokens);
+	const lines:Token[][] = splitTokensToStatements(tokens);
 	const statements = lines.map(parseStatement);
 	const programNodes:ProgramASTNode[] = [];
 	function getActiveBuffer(){
@@ -176,12 +181,12 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
  **/
 export const parseStatement = errorBoundary()((tokens:Token[]):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
-	let possibleStatements:(typeof Statement)[] =
+	const possibleStatements:(typeof Statement)[] =
 		tokens[0].type in statements.byStartKeyword
 			? statements.byStartKeyword[tokens[0].type]!
 			: statements.irregular;
 	if(possibleStatements.length == 0) fail(`No possible statements`, tokens);
-	let errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
+	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
@@ -410,10 +415,9 @@ export const operatorsByPriority = ((input:(PartialKey<Operator, "type" | "name"
 ]);
 /** Indexed by OperatorType */
 export const operators = Object.fromEntries(
-	operatorsByPriority.flat()
-	.map(o => [
-		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name
-	, o] as const)
+	operatorsByPriority.flat().map(o => [
+		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
+	] as const)
 ) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
 function cannotEndExpression(token:Token){
@@ -438,6 +442,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 export const parseExpression = errorBoundary({
 	predicate: (input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 })((input:Token[], recursive = false):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`);
 	//If there is only one token
@@ -445,7 +450,6 @@ export const parseExpression = errorBoundary({
 
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
 	//TODO O(mn) unnecessarily, optimize
-	toNextOperator:
 	for(const operatorsOfCurrentPriority of operatorsByPriority){
 		let parenNestLevel = 0, bracketNestLevel = 0;
 		//Find the index of the last (lowest priority) operator of the current priority
@@ -608,10 +612,10 @@ export const parseExpression = errorBoundary({
 	}
 
 	//Special case: array access
-	let bracketIndex = input.findIndex(t => t.type == "bracket.open");
+	const bracketIndex = input.findIndex(t => t.type == "bracket.open");
 	if(bracketIndex != -1 && input.at(-1)?.type == "bracket.close"){
-		let target = input.slice(0, bracketIndex);
-		let indicesTokens = input.slice(bracketIndex + 1, -1);
+		const target = input.slice(0, bracketIndex);
+		const indicesTokens = input.slice(bracketIndex + 1, -1);
 		if(target.length == 0) fail(`Missing target in array index expression`);
 		if(indicesTokens.length == 0) fail(`Missing indices in array index expression`);
 		const parsedTarget = parseExpression(target, true);

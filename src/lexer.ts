@@ -168,12 +168,12 @@ class SymbolizerIO {
 	}
 	isNumber(){
 		if(!this.has()) return false;
-		let code = this.at().charCodeAt(0);
+		const code = this.at().charCodeAt(0);
 		return (code >= 48 && code <= 57);
 	}
 	isAlphanumeric(){
 		if(!this.has()) return false;
-		let code = this.at().charCodeAt(0);
+		const code = this.at().charCodeAt(0);
 		//0-9, a-z, A-Z, _
 		return (code >= 48 && code <= 57) ||
 			(code >= 65 && code <= 90) ||
@@ -223,7 +223,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		sString: null as null | Symbol,
 		dString: null as null | Symbol,
 		decimalNumber: "none" as "none" | "allowDecimal" | "requireNumber",
-	}
+	};
 	let currentString = "";
 	let symbol:Symbol;
 	for(symbol of input.symbols){

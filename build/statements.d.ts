@@ -136,7 +136,7 @@ export declare class IfStatement extends Statement {
     condition: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token]);
     /** Warning: block will not include the usual end statement. */
-    static supportsSplit(block: ProgramASTBranchNode, statement: Statement): true | string;
+    static supportsSplit(_block: ProgramASTBranchNode, statement: Statement): true | string;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];
@@ -168,7 +168,7 @@ export declare class ForStatement extends Statement {
     lowerBound: ExpressionAST;
     upperBound: ExpressionAST;
     constructor(tokens: [Token, Token, Token, ExpressionAST, Token, ExpressionAST]);
-    step(runtime: Runtime): number;
+    step(_runtime: Runtime): number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];

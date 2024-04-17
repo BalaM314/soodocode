@@ -19,8 +19,8 @@ export function getText(tokens:Token[]){
 export function applyRangeTransformers(text:string, ranges:[range:TextRange, start:string, end:string, transformer?:(rangeText:string) => string][]){
 	let offset = 0;
 	for(const [range, start, end, transformer_] of ranges){
-		let transformer = transformer_ ?? (x => x);
-		let newRange = range.map(n => n + offset);
+		const transformer = transformer_ ?? (x => x);
+		const newRange = range.map(n => n + offset);
 		text = text.slice(0, newRange[0]) + start + transformer(text.slice(...newRange)) + end + text.slice(newRange[1]);
 		offset += start.length;
 	}
@@ -125,9 +125,9 @@ export function findRange(args:unknown[]):TextRange | undefined {
 		if(typeof arg == "object" && arg != null && "range" in arg && isRange(arg.range))
 			return arg.range;
 		if(Array.isArray(arg) && isRange(arg[0]))
-			return getTotalRange(arg)
-		if(Array.isArray(arg) && arg.length > 0 && isRange(arg[0].range))
-			return getTotalRange(arg)
+			return getTotalRange(arg as TextRange[]);
+		if(Array.isArray(arg) && arg.length > 0 && isRange((arg[0] as TextRanged).range))
+			return getTotalRange(arg as TextRanged[]);
 	}
 	return undefined;
 }
@@ -139,8 +139,7 @@ export class SoodocodeError extends Error {
 	}
 	formatMessage(text:string){
 		return this.message.replace("$rc",
-			this.rangeOther ? text.slice(...this.rangeOther)
-				: `<empty>`
+			this.rangeOther ? text.slice(...this.rangeOther) : `<empty>`
 		).replace("$r",
 			this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
 			this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
@@ -164,10 +163,11 @@ export function impossible():never {
  * @param predicate General range is set if this returns true.
  */
 export function errorBoundary({predicate = (() => true), message}:Partial<{
-	predicate(...args:any[]): boolean;
-	message(...args:any[]): string;
+	predicate(...args:any[]): boolean; //eslint-disable-line @typescript-eslint/no-explicit-any
+	message(...args:any[]): string; //eslint-disable-line @typescript-eslint/no-explicit-any
 }> = {}){
-	return function decorator<T extends (...args:any[]) => unknown>(func:T, ctx?:ClassMethodDecoratorContext):T {
+	//eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return function decorator<T extends (...args:any[]) => unknown>(func:T, _ctx?:ClassMethodDecoratorContext):T {
 		return function replacedFunction(this:ThisParameterType<T>, ...args:Parameters<T>){
 			try {
 				return func.apply(this, args);
@@ -193,7 +193,7 @@ export function errorBoundary({predicate = (() => true), message}:Partial<{
 				throw err;
 			}
 		} as T;
-	}
+	};
 }
 
 export function escapeHTML(input?:string):string {
@@ -207,10 +207,11 @@ export function parseError(thing:unknown):string {
 	} else if(typeof thing == "string"){
 		return thing;
 	} else if(thing != null && typeof thing == "object" && "toString" in thing && typeof thing.toString == "function"){
+		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		return thing.toString();
 	} else {
 		console.log("[[FINDTAG]] Unable to parse the following error object");
-		console.log(thing as any);
+		console.log(thing as never);
 		return "Unable to parse error object";
 	}
 }
@@ -221,7 +222,7 @@ export function tagProcessor<T>(
 ):TagFunction<T, string> {
 	return function(stringChunks:readonly string[], ...varChunks:readonly T[]){
 		return String.raw({raw: stringChunks}, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));
-	}
+	};
 }
 
 export const fquote = tagProcessor((chunk:string | Object) => {
@@ -235,7 +236,7 @@ export const fquote = tagProcessor((chunk:string | Object) => {
 	else if(typeof chunk == "object" && "toQuotedString" in chunk && typeof chunk.toQuotedString == "function")
 		return chunk.toQuotedString();
 	else str = chunk.toString();
-	return str.length == 0 ? "<empty>" : `"${str}"`
+	return str.length == 0 ? "<empty>" : `"${str}"`;
 });
 
 export function forceType<T>(input:unknown):asserts input is T {}

@@ -52,17 +52,21 @@ export const parseFunctionArguments = errorBoundary()((tokens) => {
             section[offset + 0],
             { passMode, type }
         ];
-    }).map(([name, data]) => [name, {
+    })
+        .map(([name, data]) => [name, {
             passMode: data.passMode ? passMode = data.passMode : passMode,
             type: data.type
         }])
-        .reverse().map(([name, data]) => [name, {
+        .reverse()
+        .map(([name, data]) => [name, {
             passMode: data.passMode,
             type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument "${name.text}"`, name)
-        }]).reverse();
+        }])
+        .reverse();
     const argumentsMap = new Map(argumentz.map(([name, data]) => [name.text, data]));
     if (argumentsMap.size != argumentz.length) {
-        const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ?? crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
+        const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ??
+            crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
         fail(`Duplicate function argument "${duplicateArgument.text}"`, duplicateArgument);
     }
     return argumentsMap;
@@ -87,8 +91,7 @@ export const parseType = errorBoundary()((tokens) => {
         tokens.at(-2)?.type == "keyword.of" &&
         tokens.at(-1)?.type == "name"))
         fail(fquote `Cannot parse type from ${tokens}`);
-    return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma")
-        .map(({ group, splitter }) => {
+    return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({ group, splitter }) => {
         if (group.length != 3)
             fail(fquote `Invalid array range specifier ${group}`, group.length ? group : splitter);
         if (group[0].type != "number.decimal")
@@ -117,7 +120,7 @@ export function splitTokensToStatements(tokens) {
     }).flat(1).filter(ts => ts.length > 0); //remove blank lines
 }
 export function parse({ program, tokens }) {
-    let lines = splitTokensToStatements(tokens);
+    const lines = splitTokensToStatements(tokens);
     const statements = lines.map(parseStatement);
     const programNodes = [];
     function getActiveBuffer() {
@@ -175,12 +178,12 @@ export function parse({ program, tokens }) {
 export const parseStatement = errorBoundary()((tokens) => {
     if (tokens.length < 1)
         crash("Empty statement");
-    let possibleStatements = tokens[0].type in statements.byStartKeyword
+    const possibleStatements = tokens[0].type in statements.byStartKeyword
         ? statements.byStartKeyword[tokens[0].type]
         : statements.irregular;
     if (possibleStatements.length == 0)
         fail(`No possible statements`, tokens);
-    let errors = [];
+    const errors = [];
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
@@ -407,10 +410,8 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => ({
     //(array access)
 ]);
 /** Indexed by OperatorType */
-export const operators = Object.fromEntries(operatorsByPriority.flat()
-    .map(o => [
-    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name,
-    o
+export const operators = Object.fromEntries(operatorsByPriority.flat().map(o => [
+    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
 ]));
 function cannotEndExpression(token) {
     //TODO is this the best way?
@@ -431,6 +432,7 @@ export const parseExpressionLeafNode = errorBoundary()((token) => {
 export const parseExpression = errorBoundary({
     predicate: (input, recursive) => !recursive,
     message: () => `Cannot parse expression "$rc": `
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
 })((input, recursive = false) => {
     if (!Array.isArray(input))
         crash(`parseExpression(): expected array of tokens, got ${input}`);
@@ -439,7 +441,7 @@ export const parseExpression = errorBoundary({
         return parseExpressionLeafNode(input[0]);
     //Go through P E M-D A-S in reverse order to find the operator with the lowest priority
     //TODO O(mn) unnecessarily, optimize
-    toNextOperator: for (const operatorsOfCurrentPriority of operatorsByPriority) {
+    for (const operatorsOfCurrentPriority of operatorsByPriority) {
         let parenNestLevel = 0, bracketNestLevel = 0;
         //Find the index of the last (lowest priority) operator of the current priority
         //Iterate through token list backwards
@@ -589,10 +591,10 @@ export const parseExpression = errorBoundary({
             : splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)), input);
     }
     //Special case: array access
-    let bracketIndex = input.findIndex(t => t.type == "bracket.open");
+    const bracketIndex = input.findIndex(t => t.type == "bracket.open");
     if (bracketIndex != -1 && input.at(-1)?.type == "bracket.close") {
-        let target = input.slice(0, bracketIndex);
-        let indicesTokens = input.slice(bracketIndex + 1, -1);
+        const target = input.slice(0, bracketIndex);
+        const indicesTokens = input.slice(bracketIndex + 1, -1);
         if (target.length == 0)
             fail(`Missing target in array index expression`);
         if (indicesTokens.length == 0)

@@ -127,7 +127,7 @@ export type BuiltinFunctionData = {
     args: BuiltinFunctionArguments;
     returnType: VariableType | null;
     name: string;
-    impl: (...args: VariableValue[]) => VariableValue;
+    impl: (this: Runtime, ...args: VariableValue[]) => VariableValue;
 };
 export type VariableScope = {
     statement: Statement | "global";

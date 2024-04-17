@@ -166,13 +166,13 @@ class SymbolizerIO {
     isNumber() {
         if (!this.has())
             return false;
-        let code = this.at().charCodeAt(0);
+        const code = this.at().charCodeAt(0);
         return (code >= 48 && code <= 57);
     }
     isAlphanumeric() {
         if (!this.has())
             return false;
-        let code = this.at().charCodeAt(0);
+        const code = this.at().charCodeAt(0);
         //0-9, a-z, A-Z, _
         return (code >= 48 && code <= 57) ||
             (code >= 65 && code <= 90) ||

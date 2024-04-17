@@ -26,6 +26,10 @@ declare global {
 		map<TThis extends Array<T>, U>(this:TThis, fn:(v:T, i:number, a:TThis) => U): number extends TThis["length"] ? U[] : { [K in keyof TThis]: U };
 		slice<TThis extends Array<T>>(this:TThis): TThis;
 	}
+	interface ArrayConstructor {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		isArray(arg: any): arg is unknown[];
+	}
 }
 
 

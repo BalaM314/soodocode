@@ -7,13 +7,14 @@ This file contains all builtin functions defined in the insert.
 
 
 import { BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableValue } from "./runtime-types.js";
+import type { Runtime } from "./runtime.js";
 import { fail, fquote } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
 	args: [name:string, type:PrimitiveVariableTypeName | PrimitiveVariableTypeName[]][];
 	returnType: PrimitiveVariableTypeName;
-	impl(...args:VariableValue[]):VariableValue;
+	impl(this:Runtime, ...args:VariableValue[]):VariableValue;
 };
 export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>

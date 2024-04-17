@@ -39,7 +39,7 @@ export type PrimitiveVariableTypeName =
 	| "DATE"
 ;
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
-export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> {
+export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> { //TODO have them all extend something
 	static INTEGER = new PrimitiveVariableType("INTEGER");
 	static REAL = new PrimitiveVariableType("REAL");
 	static STRING = new PrimitiveVariableType("STRING");
@@ -158,10 +158,10 @@ export class SetVariableType {
 		public baseType: PrimitiveVariableType,
 	){}
 	toString(){
-		return `${this.name} (user-defined set type containing ${this.baseType})`
+		return `${this.name} (user-defined set type containing ${this.baseType})`;
 	}
 	toQuotedString(){
-		return fquote`${this.name} (user-defined set type containing ${this.baseType})`
+		return fquote`${this.name} (user-defined set type containing ${this.baseType})`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
@@ -200,7 +200,7 @@ export type VariableType =
 	| SetVariableType
 ;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
-export type VariableValue = VariableTypeMapping<any>;
+export type VariableValue = VariableTypeMapping<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
 export type File = {
@@ -250,7 +250,7 @@ export type BuiltinFunctionData = {
 	args:BuiltinFunctionArguments;
 	returnType:VariableType | null;
 	name:string;
-	impl: (...args:VariableValue[]) => VariableValue;
+	impl: (this:Runtime, ...args:VariableValue[]) => VariableValue;
 };
 
 
