@@ -235,7 +235,7 @@ function formatQuoted(input:Formattable):string {
 	let str:string;
 	if(typeof input == "string") str = input;
 	else if(Array.isArray(input)) str = input.map(formatText).join(" ");
-	else return input.fmtQuoted();
+	else return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
 	
 	if(str.length == 0) str = `[empty]`;
 	return `${str}`;

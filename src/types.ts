@@ -12,7 +12,8 @@ export interface TagFunction<Tin = string, Tout = string> {
 
 export interface IFormattable {
 	fmtDebug():string;
-	fmtQuoted():string;
+	/** If not implemented, defaults to `"${fmtText()}"` */
+	fmtQuoted?: () => string;
 	fmtText():string;
 }
 
