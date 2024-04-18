@@ -10,6 +10,12 @@ export interface TagFunction<Tin = string, Tout = string> {
 	(stringChunks: readonly string[], ...varChunks: readonly Tin[]):Tout;
 }
 
+export interface IFormattable {
+	fmtDebug():string;
+	fmtQuoted():string;
+	fmtText():string;
+}
+
 /** Makes the property K of T optional. */
 export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
 

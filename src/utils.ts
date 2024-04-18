@@ -7,7 +7,7 @@ This file contains utility functions.
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
 import type { Operator } from "./parser.js";
-import type { TagFunction } from "./types.js";
+import type { IFormattable, TagFunction } from "./types.js";
 
 
 export function getText(tokens:Token[]){
@@ -225,18 +225,30 @@ export function tagProcessor<T>(
 	};
 }
 
-export const fquote = tagProcessor((chunk:string | Object) => {
+export type Formattable = IFormattable | IFormattable[] | string;
+function formatText(input:Formattable):string {
+	if(typeof input == "string") return input;
+	else if(Array.isArray(input)) return input.map(formatText).join(" ");
+	else return input.fmtText();
+}
+function formatQuoted(input:Formattable):string {
 	let str:string;
-	if(Array.isArray(chunk) && chunk[0] && chunk[0] instanceof Token )
-		str = chunk.map(c => c.getText()).join(" ");
-	else if(chunk instanceof Token)
-		str = chunk.getText();
-	else if(typeof chunk == "object" && "category" in chunk && "name" in chunk)
-		str = (chunk as Operator).name;
-	else if(typeof chunk == "object" && "toQuotedString" in chunk && typeof chunk.toQuotedString == "function")
-		return chunk.toQuotedString();
-	else str = chunk.toString();
-	return str.length == 0 ? "<empty>" : `"${str}"`;
-});
+	if(typeof input == "string") str = input;
+	else if(Array.isArray(input)) str = input.map(formatText).join(" ");
+	else return input.fmtQuoted();
+	
+	if(str.length == 0) str = `[empty]`;
+	return `${str}`;
+}
+function formatDebug(input:Formattable):string {
+	if(typeof input == "string") return input;
+	else if(Array.isArray(input)) return `[${input.map(formatDebug).join(", ")}]`;
+	else return input.fmtDebug();
+}
+export const f = {
+	text: tagProcessor(formatText),
+	quote: tagProcessor(formatQuoted),
+	debug: tagProcessor(formatDebug),
+};
 
 export function forceType<T>(input:unknown):asserts input is T {}
