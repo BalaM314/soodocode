@@ -12,7 +12,8 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNod
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { IFormattable } from "./types.js";
+import { crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
 export type StatementType =
@@ -48,7 +49,7 @@ export type StatementExecutionResult = {
 	value: VariableValue;
 };
 
-export class Statement implements TextRanged { //TODO make abstract?
+export class Statement implements TextRanged, IFormattable { //TODO make abstract?
 	type:typeof Statement;
 	stype:StatementType;
 	static type:StatementType;
@@ -64,11 +65,11 @@ export class Statement implements TextRanged { //TODO make abstract?
 		this.category = this.type.category;
 		this.range = getTotalRange(tokens);
 	}
-	toString(){
-		return this.tokens.map(t => t.toString()).join(" ");
+	fmtText(){
+		return this.tokens.map(t => t.fmtText()).join(" ");
 	}
-	getText(){
-		return this.tokens.map(t => t.getText()).join(" ");
+	fmtDebug(){
+		return this.tokens.map(t => t.fmtDebug()).join(" ");
 	}
 	static blockEndStatement<
 		/** use Function to prevent narrowing, leave blank otherwise */
@@ -82,7 +83,7 @@ export class Statement implements TextRanged { //TODO make abstract?
 	}
 	/** Warning: block will not include the usual end statement. */
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
-		return fquote`current block of type ${block.type} cannot be split by ${statement.toString()}`;
+		return f.quote`current block of type ${block.type} cannot be split by ${statement.stype} statement`;
 	}
 	static checkBlock(block:ProgramASTBranchNode){
 		//crash if the block is invalid or incomplete

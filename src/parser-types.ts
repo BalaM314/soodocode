@@ -7,9 +7,10 @@ This file contains the types for the parser.
 
 import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime-types.js";
+import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
-import { fail, fquote, getTotalRange } from "./utils.js";
+import { IFormattable } from "./types.js";
+import { getTotalRange } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -19,7 +20,7 @@ export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode 
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
-export class ExpressionASTBranchNode implements TextRanged {
+export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
 		public operatorToken: Token,
@@ -32,20 +33,20 @@ export class ExpressionASTBranchNode implements TextRanged {
 	toString(){
 		return this.allTokens.map(t => t.text).join(" ");
 	}
-	getText():string {
+	fmtText():string {
 		if(this.operator.type.startsWith("unary_prefix")){
-			//Is a unary prefix operator and, argument says don't expand or all child nodes are leaf nodes.
-			return `(${this.operatorToken.text} ${this.nodes[0].getText()})`;
+			return `(${this.operatorToken.text} ${this.nodes[0].fmtText()})`;
 		} else if(this.operator.type.startsWith("unary_postfix")){
-			//Is a unary postfix operator and, argument says don't expand or all child nodes are leaf nodes.
-			return `(${this.nodes[0].getText()} ${this.operatorToken.text})`;
-		} else {
-			//Binary operator and, argument says don't expand or all child nodes are leaf nodes.
-			return `(${this.nodes[0].getText()} ${this.operatorToken.text} ${this.nodes[1].getText()})`;
+			return `(${this.nodes[0].fmtText()} ${this.operatorToken.text})`;
+		} else { //binary operator
+			return `(${this.nodes[0].fmtText()} ${this.operatorToken.text} ${this.nodes[1].fmtText()})`;
 		}
 	}
+	fmtDebug():string {
+		return `[${this.operator.name} ${this.nodes.map(n => n.fmtDebug()).join(" ")}]`;
+	}
 }
-export class ExpressionASTFunctionCallNode implements TextRanged {
+export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
 		public functionName: Token,
@@ -57,8 +58,11 @@ export class ExpressionASTFunctionCallNode implements TextRanged {
 	toString(){
 		return this.allTokens.map(t => t.text).join(" ");
 	}
-	getText():string {
-		return `${this.functionName.text}(${this.args.map(n => n.getText()).join(", ")})`;
+	fmtText():string {
+		return `${this.functionName.text}(${this.args.map(n => n.fmtText()).join(", ")})`;
+	}
+	fmtDebug():string {
+		return `${this.functionName.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
 	}
 }
 export class ExpressionASTClassInstantiationNode implements TextRanged {
@@ -73,11 +77,14 @@ export class ExpressionASTClassInstantiationNode implements TextRanged {
 	toString(){
 		return this.allTokens.map(t => t.text).join(" ");
 	}
-	getText():string {
-		return `NEW ${this.className.text}(${this.args.map(n => n.getText()).join(", ")})`;
+	fmtText():string {
+		return `NEW ${this.className.text}(${this.args.map(n => n.fmtText()).join(", ")})`;
+	}
+	fmtDebug():string {
+		return `NEW ${this.className.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
 	}
 }
-export class ExpressionASTArrayAccessNode implements TextRanged {
+export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
 		public target: ExpressionASTNode,
@@ -89,12 +96,15 @@ export class ExpressionASTArrayAccessNode implements TextRanged {
 	toString(){
 		return this.allTokens.map(t => t.text).join(" ");
 	}
-	getText():string {
-		return `${this.target.getText()}[${this.indices.map(n => n.getText()).join(", ")}]`;
+	fmtText():string {
+		return `${this.target.fmtText()}[${this.indices.map(n => n.fmtText()).join(", ")}]`;
+	}
+	fmtDebug():string {
+		return `${this.target.fmtDebug()}[${this.indices.map(n => n.fmtDebug()).join(" ")}]`;
 	}
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
-export class ExpressionASTArrayTypeNode implements TextRanged {
+export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
 		public lengthInformation: [low:Token, high:Token][],
@@ -109,41 +119,43 @@ export class ExpressionASTArrayTypeNode implements TextRanged {
 			PrimitiveVariableType.resolve(this.elementType.text)
 		);
 	}
-	toString():string {
+	fmtText():string {
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;
 	}
-	getText(){ return this.toString(); }
-}
-export class ExpressionASTPointerTypeNode implements TextRanged {
-	range: TextRange;
-	constructor(
-		public targetType: Token,
-		public allTokens: Token[],
-	){
-		this.range = getTotalRange(allTokens);
-	}
-	toData(name:string):PointerVariableType {
-		return new PointerVariableType(
-			name,
-			PrimitiveVariableType.get(this.targetType.text) ?? fail(fquote`Invalid variable type ${this.targetType.text}`)
-		);
+	fmtDebug():string {
+		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.fmtDebug()} : ${h.fmtDebug()}`).join(", ")}] OF ${this.elementType.fmtDebug()}`;
 	}
 }
-export class ExpressionASTEnumTypeNode implements TextRanged {
-	range: TextRange;
-	constructor(
-		public values: Token[],
-		public allTokens: Token[],
-	){
-		this.range = getTotalRange(allTokens);
-	}
-	toData(name:string):EnumeratedVariableType {
-		return new EnumeratedVariableType(
-			name,
-			this.values.map(t => t.text)
-		);
-	}
-}
+// export class ExpressionASTPointerTypeNode implements TextRanged {
+// 	range: TextRange;
+// 	constructor(
+// 		public targetType: Token,
+// 		public allTokens: Token[],
+// 	){
+// 		this.range = getTotalRange(allTokens);
+// 	}
+// 	toData(name:string):PointerVariableType {
+// 		return new PointerVariableType(
+// 			name,
+// 			PrimitiveVariableType.get(this.targetType.text) ?? fail(f.quote`Invalid variable type ${this.targetType}`)
+// 		);
+// 	}
+// }
+// export class ExpressionASTEnumTypeNode implements TextRanged {
+// 	range: TextRange;
+// 	constructor(
+// 		public values: Token[],
+// 		public allTokens: Token[],
+// 	){
+// 		this.range = getTotalRange(allTokens);
+// 	}
+// 	toData(name:string):EnumeratedVariableType {
+// 		return new EnumeratedVariableType(
+// 			name,
+// 			this.values.map(t => t.text)
+// 		);
+// 	}
+// }
 /** Represents a node that represents a type, which can be either a single token or an array type node. */
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 /** Represents an "extended" expression AST node, which may also be an array type node */

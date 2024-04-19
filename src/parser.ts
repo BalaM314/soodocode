@@ -13,7 +13,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { PartialKey } from "./types.js";
-import { crash, errorBoundary, fail, fquote, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -42,7 +42,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 
 		//There must be a name
 		if(section[offset + 0]?.type != "name")
-			fail(`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
+			fail(f.quote`Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
 
 		//If the name is the only thing present, then the type is specified later, leave it as null
 		if(section.length == offset + 1){
@@ -50,7 +50,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 		} else {
 			//Expect a colon
 			if(section[offset + 1]?.type != "punctuation.colon")
-				fail(`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
+				fail(f.quote`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
 			type = processTypeData(parseType(section.slice(offset + 2)));
 		}
 		return [
@@ -65,14 +65,14 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 		.reverse()
 		.map(([name, data]) => [name, {
 			passMode: data.passMode,
-			type: data.type ? type = data.type : type ?? fail(`Type not specified for function argument "${name.text}"`, name)
+			type: data.type ? type = data.type : type ?? fail(f.quote`Type not specified for function argument ${name}`, name)
 		}] as const)
 		.reverse();
 	const argumentsMap:FunctionArguments = new Map(argumentz.map(([name, data]) => [name.text, data] as const));
 	if(argumentsMap.size != argumentz.length){
 		const [duplicateArgument] = argumentz.find((a, i) => argumentz.find((b, j) => a[0].text == b[0].text && i != j)) ??
-			crash(`Unable to find the duplicate function argument in ${argumentz.map(([name, arg]) => name)}`);
-		fail(`Duplicate function argument "${duplicateArgument.text}"`, duplicateArgument);
+			crash(f.debug`Unable to find the duplicate function argument in ${tokens}`);
+		fail(f.quote`Duplicate function argument ${duplicateArgument}`, duplicateArgument);
 	}
 	return argumentsMap;
 });
@@ -86,7 +86,7 @@ export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):
 export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode => {
 	if(tokens.length == 1){
 		if(tokens[0].type == "name") return tokens[0];
-		else fail(`Token ${tokens[0]} is not a valid type`);
+		else fail(f.quote`Cannot parse type from ${tokens}`);
 	}
 
 	//Array type
@@ -95,16 +95,16 @@ export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode 
 		tokens[1]?.type == "bracket.open" &&
 		tokens.at(-2)?.type == "keyword.of" &&
 		tokens.at(-1)?.type == "name"
-	)) fail(fquote`Cannot parse type from ${tokens}`);
+	)) fail(f.quote`Cannot parse type from ${tokens}`);
 	return new ExpressionASTArrayTypeNode(
 		splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({group, splitter}) => {
 			if(group.length != 3) fail(
-				fquote`Invalid array range specifier ${group}`,
+				f.quote`Invalid array range specifier ${group}`,
 				group.length ? group : splitter
 			);
-			if(group[0].type != "number.decimal") fail(fquote`Expected a number, got ${group[0].text}`, group[0]);
-			if(group[1].type != "punctuation.colon") fail(fquote`Expected a colon, got ${group[1].text}`, group[1]);
-			if(group[2].type != "number.decimal") fail(fquote`Expected a number, got ${group[2].text}`, group[2]);
+			if(group[0].type != "number.decimal") fail(f.quote`Expected a number, got ${group[0]}`, group[0]);
+			if(group[1].type != "punctuation.colon") fail(f.quote`Expected a colon, got ${group[1]}`, group[1]);
+			if(group[2].type != "number.decimal") fail(f.quote`Expected a number, got ${group[2]}`, group[2]);
 			return [group[0], group[2]] as [Token, Token];
 		}),
 		tokens.at(-1)!,
@@ -156,10 +156,10 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 				lastNode.controlStatements.push(statement);
 				lastNode.controlStatements[0].type.checkBlock(lastNode);
 				blockStack.pop();
-			} else fail(`Unexpected statement: current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
+			} else fail(f.quote`Unexpected statement: current block is of type ${lastNode.controlStatements[0].stype}`, statement, null); //TODO use display name instead of internal name
 		} else if(statement.category == "block_multi_split"){
 			const lastNode = blockStack.at(-1);
-			if(!lastNode) fail(`Unexpected statement: this statement must be inside a block`, statement, null);
+			if(!lastNode) fail(`Unexpected statement: ${statement.stype} statements must be inside a block`, statement, null);
 			let errorMessage:true | string;
 			if((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
 				fail(`Unexpected statement: ${errorMessage}`, statement, null);
@@ -168,7 +168,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 		} else statement.category satisfies never;
 	}
 	if(blockStack.length)
-		fail(`There were unclosed blocks: "${blockStack.at(-1)!.controlStatements[0].toString()}" requires a matching "${blockStack.at(-1)!.controlStatements[0].type.blockEndStatement().type}" statement`, blockStack.at(-1)!.controlStatements[0], null);
+		fail(f.quote`There were unclosed blocks: ${blockStack.at(-1)!.controlStatements[0]} requires a matching ${blockStack.at(-1)!.controlStatements[0].type.blockEndStatement().type} statement`, blockStack.at(-1)!.controlStatements[0], null);
 	return {
 		program,
 		nodes: programNodes
@@ -251,7 +251,15 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 			const start = j;
 			if(j >= input.length){
 				if(allowEmpty) continue; //Consumed all tokens
-				else return { message: `Unexpected end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
+				else return {
+					message:
+						statement.tokens[i] == ".+" ? `Expected something, got end of line` :
+						statement.tokens[i] == "expr+" ? `Expected an expression, got end of line` :
+						statement.tokens[i] == "type+" ? `Expected a type, got end of line` :
+						impossible(),
+					priority: 4,
+					range: input.at(-1)!.rangeAfter()
+				};
 			}
 			let anyTokensSkipped = false;
 			while(statement.tokens[i + 1] != input[j].type){ //Repeat until the current token in input is the next token
@@ -259,11 +267,20 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 				j ++;
 				if(j >= input.length){ //end reached
 					if(i == statement.tokens.length - 1) break; //Consumed all tokens
-					return { message: `Expected a ${statement.tokens[i + 1]}, but none were found`, priority: 4, range: input.at(-1)!.rangeAfter() };
+					return { message: `Expected a ${statement.tokens[i + 1]}, got end of line`, priority: 4, range: input.at(-1)!.rangeAfter() }; //TODO display name
 				}
 			}
 			const end = j - 1;
-			if(!anyTokensSkipped && !allowEmpty) return { message: `Expected one or more tokens, but found zero`, priority: 6, range: input[j].range };
+			if(!anyTokensSkipped && !allowEmpty) //this triggers on input like `IF THEN`, where the expression is missing
+				return {
+					message:
+						statement.tokens[i] == ".+" ? `Expected something before this token` :
+						statement.tokens[i] == "expr+" ? `Expected an expression before this token` :
+						statement.tokens[i] == "type+" ? `Expected a type before this token` :
+						impossible(),
+					priority: 6,
+					range: input[j].range
+				};
 			if(statement.tokens[i] == "expr+")
 				output.push({type: "expression", start, end});
 			else if(statement.tokens[i] == "type+")
@@ -271,7 +288,7 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 			else
 				output.push(...input.slice(start, end + 1));
 		} else {
-			if(j >= input.length) return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
+			if(j >= input.length) return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() }; //TODO display name
 			if(statement.tokens[i] == "#") impossible();
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (
 				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
@@ -288,11 +305,11 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 					negativeNumber.text = input[j].text + negativeNumber.text;
 					output.push(negativeNumber);
 					j += 2;
-				} else return { message: `Expected a ${statement.tokens[i]}`, priority: 8, range: input[j].range };
-			} else return { message: `Expected a ${statement.tokens[i]}`, priority: 5, range: input[j].range };
+				} else return { message: f.text`Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 8, range: input[j].range };
+			} else return { message: f.text`Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 5, range: input[j].range };
 		}
 	}
-	if(j != input.length) return { message: `Expected end of line, found ${input[j].type}`, priority: 7, range: input[j].range };
+	if(j != input.length) return { message: f.quote`Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
 	return output;
 });
 
@@ -440,11 +457,11 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 
 //TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
 export const parseExpression = errorBoundary({
-	predicate: (input, recursive) => !recursive,
+	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 })((input:Token[], recursive = false):ExpressionASTNode => {
-	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`);
+	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
 
@@ -497,9 +514,9 @@ export const parseExpression = errorBoundary({
 						// ^
 						// lowest priority is leftmost
 						if(canBeUnaryOperator(input[i - 1])) continue; //Operator priority assumption is wrong, try again!
-						fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
+						fail(f.text`Unexpected expression on left side of operator ${input[i]}`, input[i]);
 					}
-					if(right.length == 0) fail(`Mo expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
+					if(right.length == 0) fail(f.text`Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
 					if(right.length == 1 && operator.name == "operator.negate" && right[0].type == "number.decimal"){
 						//Special handling for negative numbers:
 						//Do not create an expression, instead mutate the number token into a negative number
@@ -521,9 +538,9 @@ export const parseExpression = errorBoundary({
 					if(i != input.length - 1){ //if there are tokens to the right of a unary postfix operator
 						if(operator.type == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
 						//No need to worry about operator priority changing for postfix
-						fail(`Unexpected expression on left side of operator "${input[i].text}"`, input[i]);
+						fail(f.text`Unexpected expression on left side of operator ${input[i]}`, input[i]);
 					}
-					if(left.length == 0) fail(`Mo expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
+					if(left.length == 0) fail(f.text`Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
@@ -536,9 +553,9 @@ export const parseExpression = errorBoundary({
 					const right = input.slice(i + 1);
 					if(left.length == 0){
 						if(operator.type == "binary_o_unary_prefix") continue; //this is the unary operator, try again
-						else fail(`No expression on left side of operator ${input[i].text}`, input[i].rangeBefore());
+						else fail(f.text`Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
 					}
-					if(right.length == 0) fail(`No expression on right side of operator ${input[i].text}`, input[i].rangeAfter());
+					if(right.length == 0) fail(f.text`Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
 					if(operator.type == "binary_o_unary_prefix"){
 						if(cannotEndExpression(input[i - 1])) continue; //Binary operator can't fit here, this must be the unary operator
 					}

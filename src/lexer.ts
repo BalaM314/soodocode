@@ -9,7 +9,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 
 
 import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
-import { crash, fail, impossible } from "./utils.js";
+import { crash, fail, impossible, f } from "./utils.js";
 
 
 const symbolTypeData: [
@@ -261,12 +261,12 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		else if(symbol.type === "comment.multiline.open") state.mComment = symbol;
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
-			const num = tokens.at(-1) ?? crash(`impossible`);
+			const num = tokens.at(-1) ?? impossible();
 			if(symbol.type == "numeric_fragment"){
 				//very cursed modifying of the token
 				num.text += "." + symbol.text;
 				num.range[1] += (1 + symbol.text.length);
-				if(isNaN(Number(num.text))) crash(`Invalid parsed number ${symbol.text}`);
+				if(isNaN(Number(num.text))) crash(f.quote`Invalid parsed number ${symbol}`);
 				state.decimalNumber = "none";
 			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`, symbol);
 		} else if(state.decimalNumber == "allowDecimal" && symbol.type == "punctuation.period"){
@@ -278,7 +278,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			state.dString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
-		else if(symbol.type === "unknown") fail(`Invalid symbol ${symbol.text}`, symbol);
+		else if(symbol.type === "unknown") fail(f.quote`Invalid character ${symbol}`, symbol);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);

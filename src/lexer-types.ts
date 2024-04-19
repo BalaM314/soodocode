@@ -5,6 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains types for the lexer, such as Symbol and Token.
 */
 
+import { IFormattable } from "./types.js";
 import { crash, getRange, getTotalRange } from "./utils.js";
 
 export type TextRange = [start:number, end:number];
@@ -50,10 +51,13 @@ export class Symbol implements TextRanged {
 	toToken(){
 		if(tokenTypes.includes(this.type as TokenType)) //typescript being dumb
 			return new Token(this.type as TokenType, this.text, this.range);
-		else crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
+		else crash(`Cannot convert symbol ${this.fmtDebug()} to a token: type is not a valid token type`);
 	}
-	toString(){
-		return `<${this.type} ${this.text}>`;
+	fmtDebug(){
+		return `Symbol [${this.type} ${this.text}]`;
+	}
+	fmtText(){
+		return this.text;
 	}
 	clearRange():Symbol {
 		this.range = [-1, -1];
@@ -104,18 +108,17 @@ export const tokenTypes = [
 export type TokenType = typeof tokenTypes extends ReadonlyArray<infer T> ? T : never;
 
 /** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
-export class Token implements TextRanged {
+export class Token implements TextRanged, IFormattable {
 	constructor(
 		public type: TokenType,
 		public text: string,
 		public range: TextRange,
 	){}
-	__token__(){};
-	toString(){
-		return `[${this.type} ${this.text}]`;
-	}
-	getText(){
+	fmtText(){
 		return this.text;
+	}
+	fmtDebug(){
+		return `Token [${this.type} ${this.text}]`;
 	}
 	clone():Token {
 		return new Token(this.type, this.text, this.range);
