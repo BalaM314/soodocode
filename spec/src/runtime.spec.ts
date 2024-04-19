@@ -3,7 +3,7 @@ import { Token, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OutputStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, statements } from "../../build/statements.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_Statement, process_VariableType } from "./spec_utils.js";
 
@@ -983,6 +983,83 @@ const programTests = ((data:Record<string,
 			]]
 		],
 		`1.2345`
+	],
+	files_eof: [
+		[
+			[OpenFileStatement, [
+				["keyword.open_file", "OPENFILE"],
+				["string", `"amogus.txt"`],
+				["keyword.for", "FOR"],
+				["keyword.file_mode.write", "WRITE"],
+			]],
+			[WriteFileStatement, [
+				["keyword.write_file", "WRITEFILE"],
+				["string", `"amogus.txt"`],
+				["punctuation.comma", ","],
+				["string", `"a"`],
+			]],
+			[WriteFileStatement, [
+				["keyword.write_file", "WRITEFILE"],
+				["string", `"amogus.txt"`],
+				["punctuation.comma", ","],
+				["string", `"b"`],
+			]],
+			[WriteFileStatement, [
+				["keyword.write_file", "WRITEFILE"],
+				["string", `"amogus.txt"`],
+				["punctuation.comma", ","],
+				["string", `"c"`],
+			]],
+			[CloseFileStatement, [
+				["keyword.close_file", "CLOSEFILE"],
+				["string", `"amogus.txt"`],
+			]],
+			[OpenFileStatement, [
+				["keyword.open_file", "OPENFILE"],
+				["string", `"amogus.txt"`],
+				["keyword.for", "FOR"],
+				["keyword.file_mode.write", "READ"],
+			]],
+			[DeclareStatement, [
+				["keyword.declare", "DECLARE"],
+				["name", "x"],
+				["punctuation.colon", ":"],
+				["name", "STRING"],
+			]],
+			{
+				type: "while",
+				controlStatements: [
+					[WhileStatement, [
+						["keyword.while", "WHILE"],
+						["tree", "not", [
+							["tree", ["function call", "EOF"], [	
+								["string", `"amogus.txt"`],
+							]]
+						]]
+					]],
+					[statements.byType["while.end"], [
+						["keyword.while_end", "ENDWHILE"],
+					]]
+				],
+				nodeGroups: [[
+					[ReadFileStatement, [
+						["keyword.read_file", "READFILE"],
+						["string", `"amogus.txt"`],
+						["punctuation.comma", ","],
+						["name", "x"],
+					]],
+					[OutputStatement, [
+						["keyword.output", "OUTPUT"],
+						["name", "x"],
+					]],
+				]],
+			},
+			[CloseFileStatement, [
+				["keyword.close_file", "CLOSEFILE"],
+				["string", `"amogus.txt"`],
+			]],
+		],
+		`a\nb\nc`
 	],
 	procedure_1: [
 		[
