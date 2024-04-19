@@ -6,7 +6,7 @@ This file contains the runtime, which executes the program AST.
 */
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
-import { BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FunctionData, OpenedFile, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
@@ -77,4 +77,6 @@ export declare class Runtime {
     };
     /** Creates a scope. */
     runProgram(code: ProgramASTNode[]): void;
+    getOpenFile(filename: string): OpenedFile;
+    getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;
 }

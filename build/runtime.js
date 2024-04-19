@@ -691,6 +691,12 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         fail(f.quote `File ${filename} was not closed`);
                 }
             }
+            getOpenFile(filename, modes, operationDescription) {
+                const data = (this.openFiles[filename] ?? fail(f.quote `File ${filename} is not open or does not exist.`));
+                if (modes && operationDescription && !modes.includes(data.mode))
+                    fail(f.quote `${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
+                return data;
+            }
         },
         (() => {
             const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;

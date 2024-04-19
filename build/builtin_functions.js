@@ -243,5 +243,14 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             return new Date();
         }
     },
-    //TODO:files EOF()
+    EOF: {
+        args: [
+            ["Filename", "STRING"]
+        ],
+        returnType: "BOOLEAN",
+        impl(filename) {
+            const file = this.getOpenFile(filename, ["READ"], `EOF function`);
+            return file.lineNumber >= file.lines.length;
+        }
+    }
 });

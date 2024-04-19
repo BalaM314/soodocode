@@ -10,7 +10,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { ArrayVariableType, BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FunctionData, OpenedFile, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 
@@ -612,5 +612,12 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(this.openFiles[filename] == undefined) delete this.openFiles[filename];
 			else fail(f.quote`File ${filename} was not closed`);
 		}
+	}
+	getOpenFile(filename:string):OpenedFile;
+	getOpenFile<T extends FileMode>(filename:string, modes:T[], operationDescription:string):OpenedFileOfType<T>;
+	getOpenFile(filename:string, modes?:FileMode[], operationDescription?:string):OpenedFile {
+		const data = (this.openFiles[filename] ?? fail(f.quote`File ${filename} is not open or does not exist.`));
+		if(modes && operationDescription && !modes.includes(data.mode)) fail(f.quote`${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
+		return data;
 	}
 }

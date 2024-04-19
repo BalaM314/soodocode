@@ -679,8 +679,7 @@ export class ReadFileStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
-		if(data.mode != "READ") fail(f.quote`Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
+		const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
 		if(data.lineNumber >= data.lines.length) fail(`End of file reached`);
 		const output = runtime.evaluateExpr(this.output, "variable");
 		output.value = data.lines[data.lineNumber ++];
@@ -696,8 +695,7 @@ export class WriteFileStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
-		if(!(data.mode == "APPEND" || data.mode == "WRITE")) fail(f.quote`Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
+		const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
 		data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING)[1] + "\n";
 	}
 }
@@ -714,8 +712,7 @@ export class SeekStatement extends Statement {
 		const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER)[1];
 		if(index < 0) fail(`SEEK index must be positive`);
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
-		if(data.mode != "RANDOM") fail(f.quote`SEEK statement requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
 		fail(`Not yet implemented`);
 	}
 }
@@ -729,8 +726,7 @@ export class GetRecordStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
-		if(data.mode != "RANDOM") fail(f.quote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
 		const variable = runtime.evaluateExpr(this.variable, "variable");
 		fail(`Not yet implemented`);
 	}
@@ -745,8 +741,7 @@ export class PutRecordStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
-		if(data.mode != "RANDOM") fail(f.quote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
 		const [type, value] = runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`);
 	}

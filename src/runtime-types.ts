@@ -248,7 +248,8 @@ export type OpenedFile = {
 	mode: "RANDOM";
 	data: string[];
 	currentPointer: number;
-})
+});
+export type OpenedFileOfType<T extends FileMode> = OpenedFile & { mode: T; };
 
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
 	type: T;
