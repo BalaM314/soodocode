@@ -7,11 +7,20 @@ This file contains the types for the runtime, such as the variable types and ass
 import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments } from "./statements.js";
+import { IFormattable } from "./types.js";
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
+export declare abstract class BaseVariableType implements IFormattable {
+    abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
+    is(...type: PrimitiveVariableTypeName[]): boolean;
+    abstract fmtDebug(): string;
+    /** If not implemented, defaults to `"${fmtText()}"` */
+    fmtQuoted(): string;
+    abstract fmtText(): string;
+}
 export type PrimitiveVariableTypeName = "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE";
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
-export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> {
+export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
     name: T;
     static INTEGER: PrimitiveVariableType<"INTEGER">;
     static REAL: PrimitiveVariableType<"REAL">;
@@ -20,6 +29,8 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static BOOLEAN: PrimitiveVariableType<"BOOLEAN">;
     static DATE: PrimitiveVariableType<"DATE">;
     private constructor();
+    fmtDebug(): string;
+    fmtText(): T;
     is<T extends PrimitiveVariableTypeName>(...type: T[]): this is PrimitiveVariableType<T>;
     static valid(input: string): input is PrimitiveVariableTypeName;
     static get(type: PrimitiveVariableTypeName): PrimitiveVariableType;
@@ -28,52 +39,51 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
-export declare class ArrayVariableType {
+export declare class ArrayVariableType extends BaseVariableType {
     lengthInformation: [low: number, high: number][];
     type: Exclude<UnresolvedVariableType, ArrayVariableType>;
     totalLength: number;
     arraySizes: number[];
     constructor(lengthInformation: [low: number, high: number][], type: Exclude<UnresolvedVariableType, ArrayVariableType>);
-    toString(): string;
-    toQuotedString(): string;
+    fmtText(): string;
+    fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;
-    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
-export declare class RecordVariableType {
+export declare class RecordVariableType extends BaseVariableType {
     name: string;
     fields: Record<string, VariableType>;
     constructor(name: string, fields: Record<string, VariableType>);
-    toString(): string;
-    toQuotedString(): string;
+    fmtText(): string;
+    fmtQuoted(): string;
+    fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableValue | null;
-    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
-export declare class PointerVariableType {
+export declare class PointerVariableType extends BaseVariableType {
     name: string;
     target: VariableType;
     constructor(name: string, target: VariableType);
-    toString(): string;
-    toQuotedString(): string;
+    fmtText(): string;
+    fmtQuoted(): string;
+    fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
-    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
-export declare class EnumeratedVariableType {
+export declare class EnumeratedVariableType extends BaseVariableType {
     name: string;
     values: string[];
     constructor(name: string, values: string[]);
-    toString(): string;
-    toQuotedString(): string;
+    fmtText(): string;
+    fmtQuoted(): string;
+    fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
-    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
-export declare class SetVariableType {
+export declare class SetVariableType extends BaseVariableType {
     name: string;
     baseType: PrimitiveVariableType;
     constructor(name: string, baseType: PrimitiveVariableType);
-    toString(): string;
+    fmtText(): string;
     toQuotedString(): string;
+    fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
-    is(...type: PrimitiveVariableTypeName[]): boolean;
 }
 export declare function typesEqual(a: VariableType, b: VariableType): boolean;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string];

@@ -325,7 +325,7 @@ export class Operator implements IFormattable {
 		Object.assign(this, args);
 	}
 	fmtText(){
-		return `${this.name}`;
+		return `${this.name}`; //TODO display name
 	}
 	fmtDebug(){
 		return `Operator [${this.name}] (${this.category} ${this.type})`;
@@ -466,7 +466,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 		fail(`Invalid expression leaf node`);
 });
 
-//TOOD allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
+//TODO allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `

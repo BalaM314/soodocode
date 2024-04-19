@@ -6,7 +6,6 @@ This file contains utility functions.
 */
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
-import type { Operator } from "./parser.js";
 import { UnresolvedVariableType } from "./runtime-types.js";
 import type { IFormattable, TagFunction } from "./types.js";
 
@@ -80,24 +79,24 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 export function getUniqueNamesFromCommaSeparatedTokenList(tokens:Token[], nextToken?:Token, validNames:TokenType[] = ["name"]):Token[] {
 	const names:Token[] = [];
 
-	let expected:"name" | "commaOrColon" = "name";
+	let expected:"name" | "comma" = "name";
 	for(const token of tokens){
 		if(expected == "name"){
 			if(validNames.includes(token.type)){
 				names.push(token);
-				expected = "commaOrColon";
-			} else fail(fquote`Expected a name, got ${token.text}`, token);
+				expected = "comma";
+			} else fail(f.quote`Expected a name, got ${token}`, token);
 		} else {
 			if(token.type == "punctuation.comma"){
 				expected = "name";
-			} else fail(fquote`Expected a comma, got ${token.text}`, token);
+			} else fail(f.quote`Expected a comma, got ${token}`, token);
 		}
 	}
 	if(expected == "name") fail(`Expected a name, found ${nextToken?.text ?? "end of input"}`, nextToken);
 	if(new Set(names.map(t => t.text)).size !== names.length){
 		//duplicate value
 		const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
-		fail(fquote`Duplicate name ${duplicateToken.text} in list`, duplicateToken, tokens);
+		fail(f.quote`Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
 	}
 	return names;
 }
@@ -159,15 +158,24 @@ export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
 }
 
+export function Abstract<TClass extends new (...args:any[]) => any>(input:TClass, context:ClassDecoratorContext<TClass>):TClass {
+	return class __temp extends input {
+		constructor(...args:any[]){
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+			super(...args);
+			if(this.constructor === __temp) throw new Error(`Cannot construct abstract class ${input.name}`);
+		}
+	};
+}
+
 /**
  * Decorator to apply an error boundary to functions.
  * @param predicate General range is set if this returns true.
  */
 export function errorBoundary({predicate = (() => true), message}:Partial<{
-	predicate(...args:any[]): boolean; //eslint-disable-line @typescript-eslint/no-explicit-any
-	message(...args:any[]): string; //eslint-disable-line @typescript-eslint/no-explicit-any
+	predicate(...args:any[]): boolean;
+	message(...args:any[]): string;
 }> = {}){
-	//eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return function decorator<T extends (...args:any[]) => unknown>(func:T, _ctx?:ClassMethodDecoratorContext):T {
 		return function replacedFunction(this:ThisParameterType<T>, ...args:Parameters<T>){
 			try {

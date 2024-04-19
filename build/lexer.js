@@ -7,7 +7,7 @@ first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (12
 second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
 */
 import { Symbol, Token } from "./lexer-types.js";
-import { crash, fail, impossible } from "./utils.js";
+import { crash, fail, impossible, f } from "./utils.js";
 const symbolTypeData = [
     [/<-{1,2}/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],
@@ -266,13 +266,13 @@ export function tokenize(input) {
             state.mComment = symbol;
         //Decimals
         else if (state.decimalNumber == "requireNumber") {
-            const num = tokens.at(-1) ?? crash(`impossible`);
+            const num = tokens.at(-1) ?? impossible();
             if (symbol.type == "numeric_fragment") {
                 //very cursed modifying of the token
                 num.text += "." + symbol.text;
                 num.range[1] += (1 + symbol.text.length);
                 if (isNaN(Number(num.text)))
-                    crash(`Invalid parsed number ${symbol.text}`);
+                    crash(f.quote `Invalid parsed number ${symbol}`);
                 state.decimalNumber = "none";
             }
             else
@@ -292,7 +292,7 @@ export function tokenize(input) {
         else if (symbol.type === "space")
             void 0;
         else if (symbol.type === "unknown")
-            fail(`Invalid symbol ${symbol.text}`, symbol);
+            fail(f.quote `Invalid character ${symbol}`, symbol);
         else if (symbol.type === "numeric_fragment") {
             state.decimalNumber = "allowDecimal";
             if (isNaN(Number(symbol.text)))

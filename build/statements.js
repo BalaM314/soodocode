@@ -48,55 +48,73 @@ import { ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { crash, fail, fquote, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statements = {
     byStartKeyword: {},
     byType: {},
     irregular: [],
 };
-export class Statement {
-    constructor(tokens) {
-        this.tokens = tokens;
-        this.type = this.constructor;
-        this.stype = this.type.type;
-        this.category = this.type.category;
-        this.range = getTotalRange(tokens);
-    }
-    toString() {
-        return this.tokens.map(t => t.toString()).join(" ");
-    }
-    getText() {
-        return this.tokens.map(t => t.getText()).join(" ");
-    }
-    static blockEndStatement() {
-        if (this.category != "block")
-            crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
-        return statements.byType[this.type.split(".")[0] + ".end"]; //REFACTOR CHECK
-    }
-    example() {
-        return this.type.example;
-    }
-    /** Warning: block will not include the usual end statement. */
-    static supportsSplit(block, statement) {
-        return fquote `current block of type ${block.type} cannot be split by ${statement.toString()}`;
-    }
-    static checkBlock(block) {
-        //crash if the block is invalid or incomplete
-    }
-    run(runtime) {
-        crash(`Missing runtime implementation for statement ${this.stype}`);
-    }
-    runBlock(runtime, node) {
-        if (this.category == "block")
-            crash(`Missing runtime implementation for block statement ${this.stype}`);
-        else
-            crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
-    }
-}
-Statement.category = null; //Assigned in the decorator
-Statement.example = null; //Assigned in the decorator
-Statement.tokens = null; //Assigned in the decorator
-Statement.suppressErrors = false;
+let Statement = (() => {
+    let _classDecorators = [Abstract];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    var Statement = _classThis = class {
+        constructor(tokens) {
+            this.tokens = tokens;
+            this.type = this.constructor;
+            this.stype = this.type.type;
+            this.category = this.type.category;
+            this.range = getTotalRange(tokens);
+        }
+        fmtText() {
+            return this.tokens.map(t => t.fmtText()).join(" ");
+        }
+        fmtDebug() {
+            return this.tokens.map(t => t.fmtDebug()).join(" ");
+        }
+        static blockEndStatement() {
+            if (this.category != "block")
+                crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
+            return statements.byType[this.type.split(".")[0] + ".end"]; //REFACTOR CHECK
+        }
+        example() {
+            return this.type.example;
+        }
+        /** Warning: block will not include the usual end statement. */
+        static supportsSplit(block, statement) {
+            return f.quote `current block of type ${block.type} cannot be split by ${statement.stype} statement`;
+        }
+        static checkBlock(block) {
+            //crash if the block is invalid or incomplete
+        }
+        run(runtime) {
+            crash(`Missing runtime implementation for statement ${this.stype}`);
+        }
+        runBlock(runtime, node) {
+            if (this.category == "block")
+                crash(`Missing runtime implementation for block statement ${this.stype}`);
+            else
+                crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
+        }
+    };
+    __setFunctionName(_classThis, "Statement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        Statement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.category = null; //Assigned in the decorator
+    _classThis.example = null; //Assigned in the decorator
+    _classThis.tokens = null; //Assigned in the decorator
+    _classThis.suppressErrors = false;
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return Statement = _classThis;
+})();
+export { Statement };
 function statement(type, example, ...args) {
     return function (input) {
         var _a;
@@ -373,12 +391,12 @@ let AssignmentStatement = (() => {
             super(tokens);
             [this.target, , this.expr] = tokens;
             if (this.target instanceof Token && isLiteral(this.target.type))
-                fail(fquote `Cannot assign to literal token ${this.target.text}`, this.target, this);
+                fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
         run(runtime) {
             const variable = runtime.evaluateExpr(this.target, "variable");
             if (!variable.mutable)
-                fail(`Cannot assign to constant ${this.target.toString()}`);
+                fail(f.quote `Cannot assign to constant ${this.target}`);
             //CONFIG allow copying arrays/records by assignment?
             variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
         }
@@ -442,7 +460,7 @@ let InputStatement = (() => {
                 fail(`Undeclared variable ${this.name}`);
             if (!variable.mutable)
                 fail(`Cannot INPUT ${this.name} because it is a constant`);
-            const input = runtime._input(`Enter the value for variable ${this.name} (type: ${variable.type})`);
+            const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`);
             switch (variable.type) {
                 case PrimitiveVariableType.BOOLEAN:
                     variable.value = input.toLowerCase() != "false";
@@ -475,7 +493,7 @@ let InputStatement = (() => {
                         fail(`input was not a valid character: contained more than one character`);
                     break;
                 default:
-                    fail(`Cannot INPUT variable of type ${variable.type}`);
+                    fail(f.quote `Cannot INPUT variable of type ${variable.type}`);
             }
         }
     };
@@ -955,10 +973,7 @@ let FunctionStatement = (() => {
     var FunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            const args = parseFunctionArguments(tokens.slice(3, -3));
-            if (typeof args == "string")
-                fail(`Invalid function arguments: ${args}`);
-            this.args = args;
+            this.args = parseFunctionArguments(tokens.slice(3, -3));
             this.returnType = processTypeData(tokens.at(-1));
             this.name = tokens[1].text;
         }
@@ -991,10 +1006,7 @@ let ProcedureStatement = (() => {
     var ProcedureStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            const args = parseFunctionArguments(tokens.slice(3, -1));
-            if (typeof args == "string")
-                fail(`Invalid function arguments: ${args}`);
-            this.args = args;
+            this.args = parseFunctionArguments(tokens.slice(3, -1));
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
@@ -1076,9 +1088,9 @@ let CloseFileStatement = (() => {
             if (runtime.openFiles[name])
                 runtime.openFiles[name] = undefined;
             else if (name in runtime.openFiles)
-                fail(fquote `Cannot close file ${name}, because it has already been closed.`);
+                fail(f.quote `Cannot close file ${name}, because it has already been closed.`);
             else
-                fail(fquote `Cannot close file ${name}, because it was never opened.`);
+                fail(f.quote `Cannot close file ${name}, because it was never opened.`);
         }
     };
     __setFunctionName(_classThis, "CloseFileStatement");
@@ -1105,9 +1117,9 @@ let ReadFileStatement = (() => {
         }
         run(runtime) {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            const data = (runtime.openFiles[name] ?? fail(f.quote `File ${name} is not open or does not exist.`));
             if (data.mode != "READ")
-                fail(fquote `Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
+                fail(f.quote `Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
             if (data.lineNumber >= data.lines.length)
                 fail(`End of file reached`);
             const output = runtime.evaluateExpr(this.output, "variable");
@@ -1138,9 +1150,9 @@ let WriteFileStatement = (() => {
         }
         run(runtime) {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            const data = (runtime.openFiles[name] ?? fail(f.quote `File ${name} is not open or does not exist.`));
             if (!(data.mode == "APPEND" || data.mode == "WRITE"))
-                fail(fquote `Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
+                fail(f.quote `Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
             data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING)[1] + "\n";
         }
     };
@@ -1171,9 +1183,9 @@ let SeekStatement = (() => {
             if (index < 0)
                 fail(`SEEK index must be positive`);
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            const data = (runtime.openFiles[name] ?? fail(f.quote `File ${name} is not open or does not exist.`));
             if (data.mode != "RANDOM")
-                fail(fquote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+                fail(f.quote `SEEK statement requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
             fail(`Not yet implemented`);
         }
     };
@@ -1201,9 +1213,9 @@ let GetRecordStatement = (() => {
         }
         run(runtime) {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            const data = (runtime.openFiles[name] ?? fail(f.quote `File ${name} is not open or does not exist.`));
             if (data.mode != "RANDOM")
-                fail(fquote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+                fail(f.quote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
             const variable = runtime.evaluateExpr(this.variable, "variable");
             fail(`Not yet implemented`);
         }
@@ -1232,9 +1244,9 @@ let PutRecordStatement = (() => {
         }
         run(runtime) {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-            const data = (runtime.openFiles[name] ?? fail(fquote `File ${name} is not open or does not exist.`));
+            const data = (runtime.openFiles[name] ?? fail(f.quote `File ${name} is not open or does not exist.`));
             if (data.mode != "RANDOM")
-                fail(fquote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+                fail(f.quote `_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
             const [type, value] = runtime.evaluateExpr(this.variable);
             fail(`Not yet implemented`);
         }

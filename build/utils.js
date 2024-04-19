@@ -4,7 +4,6 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains utility functions.
 */
-import { Token } from "./lexer-types.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
@@ -87,17 +86,17 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
         if (expected == "name") {
             if (validNames.includes(token.type)) {
                 names.push(token);
-                expected = "commaOrColon";
+                expected = "comma";
             }
             else
-                fail(fquote `Expected a name, got ${token.text}`, token);
+                fail(f.quote `Expected a name, got ${token}`, token);
         }
         else {
             if (token.type == "punctuation.comma") {
                 expected = "name";
             }
             else
-                fail(fquote `Expected a comma, got ${token.text}`, token);
+                fail(f.quote `Expected a comma, got ${token}`, token);
         }
     }
     if (expected == "name")
@@ -105,7 +104,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
     if (new Set(names.map(t => t.text)).size !== names.length) {
         //duplicate value
         const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
-        fail(fquote `Duplicate name ${duplicateToken.text} in list`, duplicateToken, tokens);
+        fail(f.quote `Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
     }
     return names;
 }
@@ -149,8 +148,7 @@ export class SoodocodeError extends Error {
         this.modified = false;
     }
     formatMessage(text) {
-        return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther)
-            : `<empty>`).replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
+        return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther) : `<empty>`).replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
             this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
                 `<empty>`);
     }
@@ -164,12 +162,22 @@ export function crash(message) {
 export function impossible() {
     throw new Error(`this shouldn't be possible...`);
 }
+export function Abstract(input, context) {
+    return class __temp extends input {
+        constructor(...args) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            super(...args);
+            if (this.constructor === __temp)
+                throw new Error(`Cannot construct abstract class ${input.name}`);
+        }
+    };
+}
 /**
  * Decorator to apply an error boundary to functions.
  * @param predicate General range is set if this returns true.
  */
 export function errorBoundary({ predicate = (() => true), message } = {}) {
-    return function decorator(func, ctx) {
+    return function decorator(func, _ctx) {
         return function replacedFunction(...args) {
             try {
                 return func.apply(this, args);
@@ -211,6 +219,7 @@ export function parseError(thing) {
         return thing;
     }
     else if (thing != null && typeof thing == "object" && "toString" in thing && typeof thing.toString == "function") {
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         return thing.toString();
     }
     else {
@@ -225,18 +234,46 @@ export function tagProcessor(transformer) {
         return String.raw({ raw: stringChunks }, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));
     };
 }
-export const fquote = tagProcessor((chunk) => {
-    let str;
-    if (Array.isArray(chunk) && chunk[0] && chunk[0] instanceof Token)
-        str = chunk.map(c => c.getText()).join(" ");
-    else if (chunk instanceof Token)
-        str = chunk.getText();
-    else if (typeof chunk == "object" && "category" in chunk && "name" in chunk)
-        str = chunk.name;
-    else if (typeof chunk == "object" && "toQuotedString" in chunk && typeof chunk.toQuotedString == "function")
-        return chunk.toQuotedString();
+function formatText(input) {
+    if (typeof input == "string")
+        return input;
+    else if (Array.isArray(input)) {
+        if (input[0] == "unresolved" && typeof input[1] == "string")
+            return input[1];
+        return input.map(formatText).join(" ");
+    }
     else
-        str = chunk.toString();
-    return str.length == 0 ? "<empty>" : `"${str}"`;
-});
+        return input.fmtText();
+}
+function formatQuoted(input) {
+    let str;
+    if (typeof input == "string")
+        str = input;
+    else if (Array.isArray(input)) {
+        if (input[0] == "unresolved" && typeof input[1] == "string")
+            str = input[1];
+        str = input.map(formatText).join(" ");
+    }
+    else
+        return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
+    if (str.length == 0)
+        str = `[empty]`;
+    return `${str}`;
+}
+function formatDebug(input) {
+    if (typeof input == "string")
+        return input;
+    else if (Array.isArray(input)) {
+        if (input[0] == "unresolved" && typeof input[1] == "string")
+            return `UnresolvedVariableType[${input[1]}]`;
+        return `[${input.map(formatDebug).join(", ")}]`;
+    }
+    else
+        return input.fmtDebug();
+}
+export const f = {
+    text: tagProcessor(formatText),
+    quote: tagProcessor(formatQuoted),
+    debug: tagProcessor(formatDebug),
+};
 export function forceType(input) { }

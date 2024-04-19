@@ -53,7 +53,7 @@ export type PrimitiveVariableTypeName =
 	| "DATE"
 ;
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
-export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType { //TODO have them all extend something
+export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
 	static INTEGER = new PrimitiveVariableType("INTEGER");
 	static REAL = new PrimitiveVariableType("REAL");
 	static STRING = new PrimitiveVariableType("STRING");

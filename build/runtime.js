@@ -44,7 +44,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, Expr
 import { operators } from "./parser.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, crash, errorBoundary, fail, fquote, impossible } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 //TODO: fix coercion
 //CONFIG: array initialization
 export class Files {
@@ -87,13 +87,13 @@ let Runtime = (() => {
                 //Make sure the variable exists and is an array
                 const _variable = this.evaluateExpr(expr.target, "variable");
                 if (!(_variable.type instanceof ArrayVariableType))
-                    fail(`Cannot convert variable of type ${_variable.type} to an array`, expr.target);
+                    fail(f.quote `Cannot convert variable of type ${_variable.type} to an array`, expr.target);
                 const variable = _variable;
                 const varTypeData = variable.type;
                 //TODO is there any way of getting a 1D array out of a 2D array?
                 //Forbids getting any arrays from arrays
                 if (arg2 instanceof ArrayVariableType)
-                    fail(`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the operator produces a result of type ${varTypeData.type}`, expr.target);
+                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
                 if (expr.indices.length != variable.type.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
 ${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
@@ -122,7 +122,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     }
                     const output = variable.value[index];
                     if (output == null)
-                        fail(`Cannot use the value of uninitialized variable ${expr.target.getText()}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
+                        fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
                     if (type)
                         return [type, this.coerceValue(output, this.resolveVariableType(varTypeData.type), type)];
                     else
@@ -143,8 +143,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (operation == "set" || arg2 == "variable") {
                     const variable = this.evaluateExpr(expr.nodes[0], "variable");
                     if (!(variable.type instanceof RecordVariableType))
-                        fail(fquote `Cannot access property ${property} on variable of type ${variable.type} because it is not a record type and cannot have proprties`, expr.nodes[0]);
-                    const outputType = variable.type.fields[property] ?? fail(fquote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+                        fail(f.quote `Cannot access property ${property} on variable of type ${variable.type} because it is not a record type and cannot have proprties`, expr.nodes[0]);
+                    const outputType = variable.type.fields[property] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                     if (arg2 == "variable") {
                         //i see nothing wrong with this bodged variable data
                         return {
@@ -164,11 +164,11 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const type = arg2;
                     const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
                     if (!(objType instanceof RecordVariableType))
-                        fail(fquote `Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
-                    const outputType = objType.fields[property] ?? fail(fquote `Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
+                        fail(f.quote `Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
+                    const outputType = objType.fields[property] ?? fail(f.quote `Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
                     const value = obj[property];
                     if (value === null)
-                        fail(`Cannot use the value of uninitialized variable ${expr.nodes[0].toString()}.${property}`, expr.nodes[1]);
+                        fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
                     if (type)
                         return [type, this.coerceValue(value, outputType, type)];
                     else
@@ -186,7 +186,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     return this.processArrayAccess(expr, "get", type);
                 if (expr instanceof ExpressionASTFunctionCallNode) {
                     if (type == "variable")
-                        fail(fquote `Expected this expression to evaluate to a variable, but found a function call.`);
+                        fail(`Expected this expression to evaluate to a variable, but found a function call.`);
                     const fn = this.getFunction(expr.functionName.text);
                     if ("name" in fn) {
                         const output = this.callBuiltinFunction(fn, expr.args);
@@ -197,7 +197,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     }
                     else {
                         if (fn.type == "procedure")
-                            fail(`Procedure ${expr.functionName.text} does not return a value.`);
+                            fail(f.quote `Procedure ${expr.functionName} does not return a value.`);
                         const statement = fn.controlStatements[0];
                         const output = this.callFunction(fn, expr.args, true);
                         if (type)
@@ -208,7 +208,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 }
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
                     if (type == "variable")
-                        fail(fquote `Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
+                        fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
                     fail(`Not yet implemented`);
                 }
                 //Operator that returns a result of unknown type
@@ -220,7 +220,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             if (type == "variable")
                                 fail(`Cannot evaluate a referencing expression as a variable`);
                             if (type && !(type instanceof PointerVariableType))
-                                fail(`Expected result to be of type ${type}, but the refernce operator will return a pointer`);
+                                fail(f.quote `Expected result to be of type ${type}, but the reference operator will return a pointer`);
                             let variable;
                             try {
                                 variable = this.evaluateExpr(expr.nodes[0], "variable", true);
@@ -233,7 +233,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                                 if (err instanceof SoodocodeError) {
                                     const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
                                     //Guess the type
-                                    const pointerType = this.getPointerTypeFor(targetType) ?? fail(fquote `Cannot find a pointer type for ${targetType}`);
+                                    const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`);
                                     return [pointerType, {
                                             type: targetType,
                                             declaration: "dynamic",
@@ -244,7 +244,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                                 else
                                     throw err;
                             }
-                            const pointerType = this.getPointerTypeFor(variable.type) ?? fail(fquote `Cannot find a pointer type for ${variable.type}`);
+                            const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote `Cannot find a pointer type for ${variable.type}`);
                             if (type)
                                 return [pointerType, this.coerceValue(variable, pointerType, type)];
                             else
@@ -253,9 +253,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         case operators.pointer_dereference: {
                             const [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
                             if (variableValue == null)
-                                fail(`Cannot dereference value because it has not been initialized`, expr.nodes[0]);
+                                fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
                             if (!(pointerVariableType instanceof PointerVariableType))
-                                fail(`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
+                                fail(f.quote `Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
                             const pointerVariableData = variableValue;
                             if (type == "variable") {
                                 if (!pointerVariableData.mutable)
@@ -264,7 +264,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             }
                             else {
                                 if (pointerVariableData.value == null)
-                                    fail(`Cannot dereference ${expr.nodes[0]} because the underlying value has not been initialized`, expr.nodes[0]);
+                                    fail(f.quote `Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
                                 if (type)
                                     return [pointerVariableType.target, this.coerceValue(pointerVariableData.value, pointerVariableType.target, type)];
                                 else
@@ -279,7 +279,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 //arithmetic
                 if (type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic") {
                     if (type && !type.is("REAL", "INTEGER"))
-                        fail(fquote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
+                        fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
                     const guessedType = type ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
                     let value;
                     //if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
@@ -322,14 +322,14 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                             value = left % right;
                             break;
                         default:
-                            fail(fquote `expected the expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`);
+                            fail(f.quote `Expected the expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`);
                     }
                     return [guessedType, value];
                 }
                 //logical
                 if (type?.is("BOOLEAN") || expr.operator.category == "logical") {
                     if (type && !type.is("BOOLEAN"))
-                        fail(fquote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`);
+                        fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`);
                     if (expr.operator.type == "unary_prefix") {
                         switch (expr.operator) {
                             case operators.not:
@@ -365,18 +365,18 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         case operators.less_than_equal:
                             return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] <= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         default:
-                            fail(fquote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
+                            fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
                     }
                 }
                 //string
                 if (type?.is("STRING") || expr.operator.category == "string") {
                     if (type && !type.is("STRING"))
-                        fail(`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`);
+                        fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`);
                     switch (expr.operator) {
                         case operators.string_concatenate:
                             return [PrimitiveVariableType.STRING, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)[1] + this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)[1]];
                         default:
-                            fail(`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
+                            fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
                     }
                 }
                 expr.operator.category;
@@ -389,12 +389,12 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         if (!type || type === enumType)
                             return [enumType, token.text];
                         else
-                            fail(fquote `Cannot convert value of type ${enumType} to ${type}`);
+                            fail(f.quote `Cannot convert value of type ${enumType} to ${type}`);
                     }
                     else {
                         const variable = this.getVariable(token.text);
                         if (!variable)
-                            fail(`Undeclared variable ${token.text}`);
+                            fail(f.quote `Undeclared variable ${token}`);
                         if (type == "variable")
                             return variable;
                         if (variable.value == null)
@@ -406,7 +406,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     }
                 }
                 if (type == "variable")
-                    fail(fquote `Cannot evaluate token ${token.text} as a variable`);
+                    fail(f.quote `Cannot evaluate token ${token.text} as a variable`);
                 switch (token.type) {
                     case "boolean.false":
                         //TODO bad coercion
@@ -415,7 +415,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         else if (type.is("STRING"))
                             return [PrimitiveVariableType.STRING, "FALSE"];
                         else
-                            fail(`Cannot convert value FALSE to ${type}`);
+                            fail(f.text `Cannot convert value FALSE to type ${type}`);
                         break;
                     case "boolean.true":
                         if (!type || type.is("BOOLEAN"))
@@ -423,18 +423,18 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         else if (type.is("STRING"))
                             return [PrimitiveVariableType.STRING, "TRUE"];
                         else
-                            fail(`Cannot convert value TRUE to ${type}`);
+                            fail(f.text `Cannot convert value TRUE to type ${type}`);
                         break;
                     case "number.decimal":
                         if (!type || type.is("INTEGER", "REAL", "STRING")) {
                             const val = Number(token.text);
                             if (!Number.isFinite(val))
-                                fail(`Value ${token.text} cannot be converted to a number: too large`);
+                                fail(f.quote `Value ${token} cannot be converted to a number: too large`);
                             if (type?.is("INTEGER")) {
                                 if (!Number.isInteger(val))
-                                    fail(`Value ${token.text} cannot be converted to an integer`);
+                                    fail(f.quote `Value ${token} cannot be converted to an integer`);
                                 if (!Number.isSafeInteger(val))
-                                    fail(`Value ${token.text} cannot be converted to an integer: too large`);
+                                    fail(f.quote `Value ${token} cannot be converted to an integer: too large`);
                                 return [PrimitiveVariableType.INTEGER, val];
                             }
                             else if (type?.is("STRING")) {
@@ -445,21 +445,21 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                             }
                         }
                         else
-                            fail(fquote `Cannot convert number to type ${type}`);
+                            fail(f.quote `Cannot convert number to type ${type}`);
                         break;
                     case "string":
                         if (!type || type.is("STRING"))
                             return [PrimitiveVariableType.STRING, token.text.slice(1, -1)]; //remove the quotes
                         else
-                            fail(`Cannot convert value ${token.text} to ${type}`);
+                            fail(f.quote `Cannot convert value ${token} to type ${type}`);
                         break;
                     case "char":
                         if (!type || type.is("CHAR"))
                             return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
                         else
-                            fail(`Cannot convert value ${token.text} to ${type}`);
+                            fail(f.quote `Cannot convert value ${token} to type ${type}`);
                         break;
-                    default: fail(`Cannot evaluate token of type ${token.type}`);
+                    default: fail(f.quote `Cannot evaluate token ${token} of type ${token.type}`);
                 }
             }
             static evaluateToken(token, type) {
@@ -471,7 +471,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 }
                 catch (err) {
                     if (err instanceof _a.NotStaticError)
-                        fail(`Cannot evaluate token ${token} in a static context`, token);
+                        fail(f.quote `Cannot evaluate token ${token} in a static context`, token);
                     else
                         throw err;
                 }
@@ -480,7 +480,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 if (type instanceof PrimitiveVariableType || type instanceof ArrayVariableType)
                     return type;
                 else
-                    return this.getType(type[1]) ?? fail(fquote `Type ${type[1]} does not exist`);
+                    return this.getType(type[1]) ?? fail(f.quote `Type ${type[1]} does not exist`);
             }
             /** Returned variable may not be initialized */
             getVariable(name) {
@@ -519,13 +519,13 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 return this.scopes.at(-1) ?? crash(`No scope?`);
             }
             getFunction(name) {
-                return this.functions[name] ?? builtinFunctions[name] ?? fail(`Function "${name}" is not defined.`);
+                return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} is not defined.`);
             }
             getCurrentFunction() {
                 const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);
                 if (!scope)
                     return null;
-                return this.functions[scope.statement.name] ?? crash(`impossible`);
+                return this.functions[scope.statement.name] ?? impossible();
             }
             coerceValue(value, from, to) {
                 //typescript really hates this function, beware
@@ -543,7 +543,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     else if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;
                 }
-                fail(fquote `Cannot coerce value of type ${from} to ${to}`);
+                fail(f.quote `Cannot coerce value of type ${from} to ${to}`);
             }
             cloneValue(type, value) {
                 if (value == null)
@@ -563,7 +563,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 if (type instanceof RecordVariableType)
                     return Object.fromEntries(Object.entries(value)
                         .map(([k, v]) => [k, this.cloneValue(type.fields[k], v)]));
-                crash(`cannot clone value of type ${type}`);
+                crash(f.quote `Cannot clone value of type ${type}`);
             }
             callFunction(funcNode, args, requireReturnValue = false) {
                 const func = funcNode.controlStatements[0];
@@ -590,7 +590,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     if (passMode == "reference") {
                         const varData = this.evaluateExpr(args[i], "variable");
                         if (!typesEqual(varData.type, rType))
-                            fail(fquote `Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type.`);
+                            fail(f.quote `Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type.`);
                         scope.variables[name] = {
                             declaration: func,
                             mutable: true,
@@ -616,15 +616,15 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 }
                 else { //must be functionstatement
                     if (!output)
-                        fail(`Function ${func.name} did not return a value`);
+                        fail(f.quote `Function ${func.name} did not return a value`);
                     return output.value;
                 }
             }
             callBuiltinFunction(fn, args, returnType) {
                 if (fn.args.size != args.length)
-                    fail(`Incorrect number of arguments for function ${fn.name}`);
+                    fail(f.quote `Incorrect number of arguments for function ${fn.name}`);
                 if (!fn.returnType)
-                    fail(`Builtin function ${fn.name} did not return a value`);
+                    fail(f.quote `Builtin function ${fn.name} does not return a value`);
                 const processedArgs = [];
                 let i = 0;
                 nextArg: for (const { type } of fn.args.values()) {
@@ -688,7 +688,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     if (this.openFiles[filename] == undefined)
                         delete this.openFiles[filename];
                     else
-                        fail(`File ${filename} was not closed`);
+                        fail(f.quote `File ${filename} was not closed`);
                 }
             }
         },

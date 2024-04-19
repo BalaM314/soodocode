@@ -4,8 +4,15 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains global type definitions.
 */
+export type ClassProperties<T extends object, K extends keyof T = keyof T, NonFunctionKeys extends keyof T = K extends unknown ? T[K] extends (...args: any[]) => unknown ? never : K : never> = Pick<T, NonFunctionKeys>;
 export interface TagFunction<Tin = string, Tout = string> {
     (stringChunks: readonly string[], ...varChunks: readonly Tin[]): Tout;
+}
+export interface IFormattable {
+    fmtDebug(): string;
+    /** If not implemented, defaults to `"${fmtText()}"` */
+    fmtQuoted?: () => string;
+    fmtText(): string;
 }
 /** Makes the property K of T optional. */
 export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
@@ -23,5 +30,8 @@ declare global {
             [K in keyof TThis]: U;
         };
         slice<TThis extends Array<T>>(this: TThis): TThis;
+    }
+    interface ArrayConstructor {
+        isArray(arg: any): arg is unknown[];
     }
 }

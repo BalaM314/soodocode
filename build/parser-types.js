@@ -4,8 +4,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains the types for the parser.
 */
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType } from "./runtime-types.js";
-import { fail, fquote, getTotalRange } from "./utils.js";
+import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
+import { getTotalRange } from "./utils.js";
 /** Represents a branch node (node with child nodes) in an expression AST. */
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
@@ -18,19 +18,19 @@ export class ExpressionASTBranchNode {
     toString() {
         return this.allTokens.map(t => t.text).join(" ");
     }
-    getText() {
+    fmtText() {
         if (this.operator.type.startsWith("unary_prefix")) {
-            //Is a unary prefix operator and, argument says don't expand or all child nodes are leaf nodes.
-            return `(${this.operatorToken.text} ${this.nodes[0].getText()})`;
+            return `(${this.operatorToken.text} ${this.nodes[0].fmtText()})`;
         }
         else if (this.operator.type.startsWith("unary_postfix")) {
-            //Is a unary postfix operator and, argument says don't expand or all child nodes are leaf nodes.
-            return `(${this.nodes[0].getText()} ${this.operatorToken.text})`;
+            return `(${this.nodes[0].fmtText()} ${this.operatorToken.text})`;
         }
-        else {
-            //Binary operator and, argument says don't expand or all child nodes are leaf nodes.
-            return `(${this.nodes[0].getText()} ${this.operatorToken.text} ${this.nodes[1].getText()})`;
+        else { //binary operator
+            return `(${this.nodes[0].fmtText()} ${this.operatorToken.text} ${this.nodes[1].fmtText()})`;
         }
+    }
+    fmtDebug() {
+        return `[${this.operator.name} ${this.nodes.map(n => n.fmtDebug()).join(" ")}]`;
     }
 }
 export class ExpressionASTFunctionCallNode {
@@ -43,8 +43,11 @@ export class ExpressionASTFunctionCallNode {
     toString() {
         return this.allTokens.map(t => t.text).join(" ");
     }
-    getText() {
-        return `${this.functionName.text}(${this.args.map(n => n.getText()).join(", ")})`;
+    fmtText() {
+        return `${this.functionName.text}(${this.args.map(n => n.fmtText()).join(", ")})`;
+    }
+    fmtDebug() {
+        return `${this.functionName.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
     }
 }
 export class ExpressionASTClassInstantiationNode {
@@ -57,8 +60,11 @@ export class ExpressionASTClassInstantiationNode {
     toString() {
         return this.allTokens.map(t => t.text).join(" ");
     }
-    getText() {
-        return `NEW ${this.className.text}(${this.args.map(n => n.getText()).join(", ")})`;
+    fmtText() {
+        return `NEW ${this.className.text}(${this.args.map(n => n.fmtText()).join(", ")})`;
+    }
+    fmtDebug() {
+        return `NEW ${this.className.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
     }
 }
 export class ExpressionASTArrayAccessNode {
@@ -71,8 +77,11 @@ export class ExpressionASTArrayAccessNode {
     toString() {
         return this.allTokens.map(t => t.text).join(" ");
     }
-    getText() {
-        return `${this.target.getText()}[${this.indices.map(n => n.getText()).join(", ")}]`;
+    fmtText() {
+        return `${this.target.fmtText()}[${this.indices.map(n => n.fmtText()).join(", ")}]`;
+    }
+    fmtDebug() {
+        return `${this.target.fmtDebug()}[${this.indices.map(n => n.fmtDebug()).join(" ")}]`;
     }
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
@@ -86,29 +95,11 @@ export class ExpressionASTArrayTypeNode {
     toData() {
         return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), PrimitiveVariableType.resolve(this.elementType.text));
     }
-    toString() {
+    fmtText() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;
     }
-    getText() { return this.toString(); }
-}
-export class ExpressionASTPointerTypeNode {
-    constructor(targetType, allTokens) {
-        this.targetType = targetType;
-        this.allTokens = allTokens;
-        this.range = getTotalRange(allTokens);
-    }
-    toData(name) {
-        return new PointerVariableType(name, PrimitiveVariableType.get(this.targetType.text) ?? fail(fquote `Invalid variable type ${this.targetType.text}`));
-    }
-}
-export class ExpressionASTEnumTypeNode {
-    constructor(values, allTokens) {
-        this.values = values;
-        this.allTokens = allTokens;
-        this.range = getTotalRange(allTokens);
-    }
-    toData(name) {
-        return new EnumeratedVariableType(name, this.values.map(t => t.text));
+    fmtDebug() {
+        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.fmtDebug()} : ${h.fmtDebug()}`).join(", ")}] OF ${this.elementType.fmtDebug()}`;
     }
 }
 /** Represents a branch node (node with children) in a program AST. */

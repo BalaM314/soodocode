@@ -8,6 +8,7 @@ import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
 import { FunctionData, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
+import { IFormattable } from "./types.js";
 export type StatementType = "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end";
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 export declare const statements: {
@@ -36,7 +37,7 @@ export type StatementExecutionResult = {
     type: "function_return";
     value: VariableValue;
 };
-export declare class Statement implements TextRanged {
+export declare class Statement implements TextRanged, IFormattable {
     tokens: (Token | ExpressionAST | ExpressionASTArrayTypeNode)[];
     type: typeof Statement;
     stype: StatementType;
@@ -48,8 +49,8 @@ export declare class Statement implements TextRanged {
     static suppressErrors: boolean;
     range: TextRange;
     constructor(tokens: (Token | ExpressionAST | ExpressionASTArrayTypeNode)[]);
-    toString(): string;
-    getText(): string;
+    fmtText(): string;
+    fmtDebug(): string;
     static blockEndStatement<
     /** use Function to prevent narrowing, leave blank otherwise */
     TOut extends typeof Statement | Function = typeof Statement>(): typeof Statement extends TOut ? TOut : unknown;

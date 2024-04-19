@@ -15,7 +15,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
@@ -35,14 +35,14 @@ export function flattenTree(program) {
 }
 export function displayExpressionHTML(node, expand = false, format = true) {
     if (node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
-        return escapeHTML(node.getText());
+        return escapeHTML(node.fmtText());
     if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode) {
-        const text = escapeHTML(node.getText());
+        const text = escapeHTML(node.fmtText());
         return format ? `<span class="expression-display-block">${text}</span>` : text;
     }
     const compressed = !expand || node.nodes.every(n => n instanceof Token);
     if (compressed) {
-        const text = escapeHTML(node.getText());
+        const text = escapeHTML(node.fmtText());
         return format ? `<span class="expression-display-block">${text}</span>` : text;
     }
     else {
@@ -97,13 +97,13 @@ export function evaluateExpressionDemo(node) {
         else if (node.type == "name")
             fail(`Cannot evaluate expression: variable content unknown`);
         else
-            fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
+            fail(f.quote `Cannot evaluate expression: cannot evaluate token ${node}: not a number`);
     }
     else if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTClassInstantiationNode) {
-        fail(`Cannot evaluate expression ${node.getText()}: function call result unknown`);
+        fail(f.quote `Cannot evaluate expression ${node}: function call result unknown`);
     }
     else if (node instanceof ExpressionASTArrayAccessNode) {
-        fail(`Cannot evaluate expression ${node.getText()}: array contents unknown`);
+        fail(f.quote `Cannot evaluate expression ${node}: array contents unknown`);
     }
     else
         switch (node.operator.name) {
@@ -114,7 +114,7 @@ export function evaluateExpressionDemo(node) {
             case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
             case "operator.integer_divide": return Math.trunc(evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]));
             case "operator.mod": return evaluateExpressionDemo(node.nodes[0]) % evaluateExpressionDemo(node.nodes[1]);
-            default: fail(`Cannot evaluate expression: cannot evaluate node <${node.getText()}>: unknown operator type ${node.operator.name}`);
+            default: fail(f.quote `Cannot evaluate expression: cannot evaluate node ${node}: unknown operator type ${node.operator.name}`);
         }
 }
 export function download(filename, data) {
@@ -143,7 +143,7 @@ window.addEventListener("keydown", e => {
         download("program.sc", soodocodeInput.value);
     }
 });
-evaluateExpressionButton.addEventListener("click", e => {
+evaluateExpressionButton.addEventListener("click", () => {
     try {
         expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
         // |> operator when
@@ -165,7 +165,7 @@ evaluateExpressionButton.addEventListener("click", e => {
         }
     }
 });
-dumpExpressionTreeButton.addEventListener("click", e => {
+dumpExpressionTreeButton.addEventListener("click", () => {
     try {
         const text = displayExpressionHTML(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens), dumpExpressionTreeVerbose.checked, false);
         console.log(text);
@@ -226,7 +226,7 @@ soodocodeInput.onkeydown = e => {
         soodocodeInput.value = soodocodeInput.value
             .slice(0, end)
             .split("\n")
-            .map((line, i, text) => i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line).join("\n") + soodocodeInput.value.slice(end);
+            .map((line, i) => i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line).join("\n") + soodocodeInput.value.slice(end);
         //Replace cursor position
         soodocodeInput.selectionStart = start - 1;
         soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
@@ -252,7 +252,7 @@ soodocodeInput.onkeydown = e => {
             soodocodeInput.value = soodocodeInput.value
                 .slice(0, end)
                 .split("\n")
-                .map((line, i, text) => i >= numNewlinesBefore ? "\t" + line : line).join("\n") + soodocodeInput.value.slice(end);
+                .map((line, i) => i >= numNewlinesBefore ? "\t" + line : line).join("\n") + soodocodeInput.value.slice(end);
             //Replace cursor position
             soodocodeInput.selectionStart = start + 1;
             soodocodeInput.selectionEnd = end + 1 + numNewlinesWithin;
@@ -270,7 +270,7 @@ soodocodeInput.onkeydown = e => {
         soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start;
     }
 };
-dumpTokensButton.addEventListener("click", e => {
+dumpTokensButton.addEventListener("click", () => {
     try {
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
@@ -327,7 +327,7 @@ export function showRange(text, error) {
     }
     if ( //There is only one range, or the specific range is entirely inside the general range
     (!error.rangeGeneral || !error.rangeSpecific || (error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]))) {
-        let range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
+        const range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
         const beforeText = text.slice(0, range[0]);
         const rangeText = text.slice(...range);
         const beforeLines = beforeText.split("\n");
@@ -362,7 +362,7 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;"
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 function executeSoodocode() {
-    let output = [];
+    const output = [];
     const runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => {
         output.push(m);
         console.log(`[Runtime] ${m}`);
@@ -396,7 +396,7 @@ function executeSoodocode() {
 let flashing = false;
 let bouncing = false;
 let flipped = false;
-let clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+const clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 headerText.addEventListener("click", e => {
     clickTimes.shift();
     clickTimes.push(Date.now());

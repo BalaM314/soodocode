@@ -16,7 +16,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
@@ -36,15 +36,15 @@ export function flattenTree(program:ProgramASTNode[]):FlattenTreeOutput[]{
 
 export function displayExpressionHTML(node:ExpressionASTNode | ExpressionASTArrayTypeNode, expand = false, format = true):string {
 	if(node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
-		return escapeHTML(node.getText());
+		return escapeHTML(node.fmtText());
 	if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode) {
-		const text = escapeHTML(node.getText());
+		const text = escapeHTML(node.fmtText());
 		return format ? `<span class="expression-display-block">${text}</span>` : text;
 	}
 
 	const compressed = !expand || node.nodes.every(n => n instanceof Token);
 	if(compressed){
-		const text = escapeHTML(node.getText());
+		const text = escapeHTML(node.fmtText());
 		return format ? `<span class="expression-display-block">${text}</span>` : text;
 	} else {
 		if(node.operator.type.startsWith("unary_prefix")) return (
@@ -106,11 +106,11 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	if(node instanceof Token){
 		if(node.type == "number.decimal") return Number(node.text);
 		else if(node.type == "name") fail(`Cannot evaluate expression: variable content unknown`);
-		else fail(`Cannot evaluate expression: cannot evaluate token ${node.text}: not a number`);
+		else fail(f.quote`Cannot evaluate expression: cannot evaluate token ${node}: not a number`);
 	} else if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTClassInstantiationNode){
-		fail(`Cannot evaluate expression ${node.getText()}: function call result unknown`);
+		fail(f.quote`Cannot evaluate expression ${node}: function call result unknown`);
 	} else if(node instanceof ExpressionASTArrayAccessNode){
-		fail(`Cannot evaluate expression ${node.getText()}: array contents unknown`);
+		fail(f.quote`Cannot evaluate expression ${node}: array contents unknown`);
 	} else switch(node.operator.name){
 		case "operator.negate": return - evaluateExpressionDemo(node.nodes[0]);
 		case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
@@ -119,7 +119,7 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 		case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
 		case "operator.integer_divide": return Math.trunc(evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]));
 		case "operator.mod": return evaluateExpressionDemo(node.nodes[0]) % evaluateExpressionDemo(node.nodes[1]);
-		default: fail(`Cannot evaluate expression: cannot evaluate node <${node.getText()}>: unknown operator type ${node.operator.name}`);
+		default: fail(f.quote`Cannot evaluate expression: cannot evaluate node ${node}: unknown operator type ${node.operator.name}`);
 	}
 }
 

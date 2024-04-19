@@ -13,7 +13,7 @@ import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArgum
 import { EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { IFormattable } from "./types.js";
-import { crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
 export type StatementType =
@@ -49,6 +49,7 @@ export type StatementExecutionResult = {
 	value: VariableValue;
 };
 
+@Abstract
 export class Statement implements TextRanged, IFormattable { //TODO make abstract?
 	type:typeof Statement;
 	stype:StatementType;
@@ -286,11 +287,11 @@ export class AssignmentStatement extends Statement {
 		super(tokens);
 		[this.target, , this.expr] = tokens;
 		if(this.target instanceof Token && isLiteral(this.target.type))
-			fail(fquote`Cannot assign to literal token ${this.target.text}`, this.target, this);
+			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
 	run(runtime:Runtime){
 		const variable = runtime.evaluateExpr(this.target, "variable");
-		if(!variable.mutable) fail(`Cannot assign to constant ${this.target.toString()}`);
+		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${this.target}`);
 		//CONFIG allow copying arrays/records by assignment?
 		variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
 	}
@@ -322,7 +323,7 @@ export class InputStatement extends Statement {
 		const variable = runtime.getVariable(this.name);
 		if(!variable) fail(`Undeclared variable ${this.name}`);
 		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`);
-		const input = runtime._input(`Enter the value for variable ${this.name} (type: ${variable.type})`);
+		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`);
 		switch(variable.type){
 			case PrimitiveVariableType.BOOLEAN:
 				variable.value = input.toLowerCase() != "false"; break;
@@ -346,7 +347,7 @@ export class InputStatement extends Statement {
 				else fail(`input was not a valid character: contained more than one character`);
 				break;
 			default:
-				fail(`Cannot INPUT variable of type ${variable.type}`);
+				fail(f.quote`Cannot INPUT variable of type ${variable.type}`);
 		}
 	}
 }
@@ -596,9 +597,7 @@ export class FunctionStatement extends Statement {
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
-		const args = parseFunctionArguments(tokens.slice(3, -3));
-		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
-		this.args = args;
+		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.returnType = processTypeData(tokens.at(-1)!);
 		this.name = tokens[1].text;
 	}
@@ -617,9 +616,7 @@ export class ProcedureStatement extends Statement {
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
-		const args = parseFunctionArguments(tokens.slice(3, -1));
-		if(typeof args == "string") fail(`Invalid function arguments: ${args}`);
-		this.args = args;
+		this.args = parseFunctionArguments(tokens.slice(3, -1));
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
@@ -629,7 +626,7 @@ export class ProcedureStatement extends Statement {
 }
 
 @statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
-export class OpenFileStatement extends Statement {
+export class OpenFileStatement extends Statement { //TODO filestatement?
 	mode:Token;
 	filename:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, Token]){
@@ -668,8 +665,8 @@ export class CloseFileStatement extends Statement {
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
 		if(runtime.openFiles[name]) runtime.openFiles[name] = undefined;
-		else if(name in runtime.openFiles) fail(fquote`Cannot close file ${name}, because it has already been closed.`);
-		else fail(fquote`Cannot close file ${name}, because it was never opened.`);
+		else if(name in runtime.openFiles) fail(f.quote`Cannot close file ${name}, because it has already been closed.`);
+		else fail(f.quote`Cannot close file ${name}, because it was never opened.`);
 	}
 }
 @statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
@@ -682,8 +679,8 @@ export class ReadFileStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
-		if(data.mode != "READ") fail(fquote`Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
+		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
+		if(data.mode != "READ") fail(f.quote`Reading from a file with READFILE requires the file to be opened with mode "READ", but the mode is ${data.mode}`);
 		if(data.lineNumber >= data.lines.length) fail(`End of file reached`);
 		const output = runtime.evaluateExpr(this.output, "variable");
 		output.value = data.lines[data.lineNumber ++];
@@ -699,8 +696,8 @@ export class WriteFileStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
-		if(!(data.mode == "APPEND" || data.mode == "WRITE")) fail(fquote`Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
+		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
+		if(!(data.mode == "APPEND" || data.mode == "WRITE")) fail(f.quote`Writing to a file with WRITEFILE requires the file to be opened with mode "APPEND" or "WRITE", but the mode is ${data.mode}`);
 		data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING)[1] + "\n";
 	}
 }
@@ -717,8 +714,8 @@ export class SeekStatement extends Statement {
 		const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER)[1];
 		if(index < 0) fail(`SEEK index must be positive`);
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
-		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
+		if(data.mode != "RANDOM") fail(f.quote`SEEK statement requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
 		fail(`Not yet implemented`);
 	}
 }
@@ -732,8 +729,8 @@ export class GetRecordStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
-		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
+		if(data.mode != "RANDOM") fail(f.quote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
 		const variable = runtime.evaluateExpr(this.variable, "variable");
 		fail(`Not yet implemented`);
 	}
@@ -748,8 +745,8 @@ export class PutRecordStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const data = (runtime.openFiles[name] ?? fail(fquote`File ${name} is not open or does not exist.`));
-		if(data.mode != "RANDOM") fail(fquote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
+		const data = (runtime.openFiles[name] ?? fail(f.quote`File ${name} is not open or does not exist.`));
+		if(data.mode != "RANDOM") fail(f.quote`_ requires the file to be opened with mode "RANDOM", but the mode is ${data.mode}`);
 		const [type, value] = runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`);
 	}

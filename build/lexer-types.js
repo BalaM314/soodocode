@@ -31,10 +31,13 @@ export class Symbol {
         if (tokenTypes.includes(this.type)) //typescript being dumb
             return new Token(this.type, this.text, this.range);
         else
-            crash(`Cannot convert symbol ${this.toString()} to a token: type is not a valid token type`);
+            crash(`Cannot convert symbol ${this.fmtDebug()} to a token: type is not a valid token type`);
     }
-    toString() {
-        return `<${this.type} ${this.text}>`;
+    fmtDebug() {
+        return `Symbol [${this.type} ${this.text}]`;
+    }
+    fmtText() {
+        return this.text;
     }
     clearRange() {
         this.range = [-1, -1];
@@ -87,13 +90,11 @@ export class Token {
         this.text = text;
         this.range = range;
     }
-    __token__() { }
-    ;
-    toString() {
-        return `[${this.type} ${this.text}]`;
-    }
-    getText() {
+    fmtText() {
         return this.text;
+    }
+    fmtDebug() {
+        return `Token [${this.type} ${this.text}]`;
     }
     clone() {
         return new Token(this.type, this.text, this.range);

@@ -10,6 +10,7 @@ import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js"
 import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST } from "./parser-types.js";
 import { UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
+import { ClassProperties, IFormattable } from "./types.js";
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export declare const parseFunctionArguments: (tokens: Token[]) => FunctionArguments;
 export declare const processTypeData: (typeNode: ExpressionASTTypeNode) => UnresolvedVariableType;
@@ -40,12 +41,17 @@ type StatementCheckFailResult = {
  */
 export declare const checkStatement: (statement: typeof Statement, input: Token[]) => StatementCheckFailResult | StatementCheckTokenRange[];
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
-export type Operator = {
+export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
+export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";
+export declare class Operator implements IFormattable {
     token: TokenType;
     name: string;
-    type: "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
-    category: "arithmetic" | "logical" | "string" | "special";
-};
+    type: OperatorMode;
+    category: OperatorCategory;
+    constructor(args: ClassProperties<Operator>);
+    fmtText(): string;
+    fmtDebug(): string;
+}
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export declare const operatorsByPriority: Operator[][];
 /** Indexed by OperatorType */

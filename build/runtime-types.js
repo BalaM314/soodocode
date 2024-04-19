@@ -4,10 +4,26 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
-import { fail, crash, fquote } from "./utils.js";
-export class PrimitiveVariableType {
+import { fail, crash, f } from "./utils.js";
+export class BaseVariableType {
+    is(...type) {
+        return false;
+    }
+    /** If not implemented, defaults to `"${fmtText()}"` */
+    fmtQuoted() {
+        return `"${this.fmtText()}"`;
+    }
+}
+export class PrimitiveVariableType extends BaseVariableType {
     constructor(name) {
+        super();
         this.name = name;
+    }
+    fmtDebug() {
+        return `PrimitiveVariableType ${this.name}`;
+    }
+    fmtText() {
+        return this.name;
     }
     is(...type) {
         return type.includes(this.name);
@@ -42,8 +58,9 @@ PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
-export class ArrayVariableType {
+export class ArrayVariableType extends BaseVariableType {
     constructor(lengthInformation, type) {
+        super();
         this.lengthInformation = lengthInformation;
         this.type = type;
         if (this.lengthInformation.some(b => b[1] < b[0]))
@@ -53,11 +70,11 @@ export class ArrayVariableType {
         this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
         this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
     }
-    toString() {
-        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+    fmtText() {
+        return f.text `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
     }
-    toQuotedString() {
-        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+    fmtDebug() {
+        return f.debug `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
     }
     getInitValue(runtime, requireInit) {
         const type = runtime.resolveVariableType(this.type);
@@ -65,73 +82,84 @@ export class ArrayVariableType {
             crash(`Attempted to initialize array of arrays`);
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
-    is(...type) { return false; }
 }
-export class RecordVariableType {
+export class RecordVariableType extends BaseVariableType {
     constructor(name, fields) {
+        super();
         this.name = name;
         this.fields = fields;
     }
-    toString() {
+    fmtText() {
         return `${this.name} (user-defined record type)`;
     }
-    toQuotedString() {
-        return fquote `${this.name} (user-defined record type)`;
+    fmtQuoted() {
+        return `"${this.name}" (user-defined record type)`;
+    }
+    fmtDebug() {
+        return `RecordVariableType [${this.name}] (fields: ${Object.keys(this.fields).join(", ")})`;
     }
     getInitValue(runtime, requireInit) {
         return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
             typeof v == "string" ? null : v.getInitValue(runtime, false)
         ]));
     }
-    is(...type) { return false; }
 }
-export class PointerVariableType {
+export class PointerVariableType extends BaseVariableType {
     constructor(name, target) {
+        super();
         this.name = name;
         this.target = target;
     }
-    toString() {
-        return `${this.name} (user-defined pointer type ^${this.target})`;
+    fmtText() {
+        return f.text `${this.name} (user-defined pointer type ^${this.target})`;
     }
-    toQuotedString() {
-        return fquote `${this.name} (user-defined pointer type ^${this.target})`;
+    fmtQuoted() {
+        return f.text `"${this.name}" (user-defined pointer type ^${this.target})`;
+    }
+    fmtDebug() {
+        return f.debug `PointerVariableType [${this.name}] to "${this.target}"`;
     }
     getInitValue(runtime) {
         return null;
     }
-    is(...type) { return false; }
 }
-export class EnumeratedVariableType {
+export class EnumeratedVariableType extends BaseVariableType {
     constructor(name, values) {
+        super();
         this.name = name;
         this.values = values;
     }
-    toString() {
+    fmtText() {
         return `${this.name} (user-defined enumerated type)`;
     }
-    toQuotedString() {
-        return fquote `${this.name} (user-defined enumerated type)`;
+    fmtQuoted() {
+        return `"${this.name}" (user-defined enumerated type)`;
+    }
+    fmtDebug() {
+        return f.debug `EnumeratedVariableType [${this.name}] (values: ${this.values.join(", ")})`;
     }
     getInitValue(runtime) {
         return null;
     }
-    is(...type) { return false; }
 }
-export class SetVariableType {
+export class SetVariableType extends BaseVariableType {
     constructor(name, baseType) {
+        super();
         this.name = name;
         this.baseType = baseType;
     }
-    toString() {
-        return `${this.name} (user-defined set type containing ${this.baseType})`;
+    fmtText() {
+        return f.text `${this.name} (user-defined set type containing "${this.baseType}")`;
     }
     toQuotedString() {
-        return fquote `${this.name} (user-defined set type containing ${this.baseType})`;
+        return f.text `"${this.name}" (user-defined set type containing "${this.baseType}")`;
+    }
+    fmtDebug() {
+        return f.debug `SetVariableType [${this.name}] (contains: ${this.baseType})`;
     }
     getInitValue(runtime) {
         fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
     }
-    is(...type) { return false; }
 }
 export function typesEqual(a, b) {
     return a == b ||

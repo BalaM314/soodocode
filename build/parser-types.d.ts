@@ -6,8 +6,9 @@ This file contains the types for the parser.
 */
 import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { Operator } from "./parser.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType } from "./runtime-types.js";
+import { ArrayVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
+import { IFormattable } from "./types.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;
 /** Represents a single node in an expression AST. */
@@ -15,7 +16,7 @@ export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode 
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
-export declare class ExpressionASTBranchNode implements TextRanged {
+export declare class ExpressionASTBranchNode implements TextRanged, IFormattable {
     operatorToken: Token;
     operator: Operator;
     nodes: ExpressionASTNode[];
@@ -23,16 +24,18 @@ export declare class ExpressionASTBranchNode implements TextRanged {
     range: TextRange;
     constructor(operatorToken: Token, operator: Operator, nodes: ExpressionASTNode[], allTokens: Token[]);
     toString(): string;
-    getText(): string;
+    fmtText(): string;
+    fmtDebug(): string;
 }
-export declare class ExpressionASTFunctionCallNode implements TextRanged {
+export declare class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
     functionName: Token;
     args: ExpressionASTNode[];
     allTokens: Token[];
     range: TextRange;
     constructor(functionName: Token, args: ExpressionASTNode[], allTokens: Token[]);
     toString(): string;
-    getText(): string;
+    fmtText(): string;
+    fmtDebug(): string;
 }
 export declare class ExpressionASTClassInstantiationNode implements TextRanged {
     className: Token;
@@ -41,41 +44,29 @@ export declare class ExpressionASTClassInstantiationNode implements TextRanged {
     range: TextRange;
     constructor(className: Token, args: ExpressionASTNode[], allTokens: Token[]);
     toString(): string;
-    getText(): string;
+    fmtText(): string;
+    fmtDebug(): string;
 }
-export declare class ExpressionASTArrayAccessNode implements TextRanged {
+export declare class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
     target: ExpressionASTNode;
     indices: ExpressionASTNode[];
     allTokens: Token[];
     range: TextRange;
     constructor(target: ExpressionASTNode, indices: ExpressionASTNode[], allTokens: Token[]);
     toString(): string;
-    getText(): string;
+    fmtText(): string;
+    fmtDebug(): string;
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
-export declare class ExpressionASTArrayTypeNode implements TextRanged {
+export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
     lengthInformation: [low: Token, high: Token][];
     elementType: Token;
     allTokens: Token[];
     range: TextRange;
     constructor(lengthInformation: [low: Token, high: Token][], elementType: Token, allTokens: Token[]);
     toData(): ArrayVariableType;
-    toString(): string;
-    getText(): string;
-}
-export declare class ExpressionASTPointerTypeNode implements TextRanged {
-    targetType: Token;
-    allTokens: Token[];
-    range: TextRange;
-    constructor(targetType: Token, allTokens: Token[]);
-    toData(name: string): PointerVariableType;
-}
-export declare class ExpressionASTEnumTypeNode implements TextRanged {
-    values: Token[];
-    allTokens: Token[];
-    range: TextRange;
-    constructor(values: Token[], allTokens: Token[]);
-    toData(name: string): EnumeratedVariableType;
+    fmtText(): string;
+    fmtDebug(): string;
 }
 /** Represents a node that represents a type, which can be either a single token or an array type node. */
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
