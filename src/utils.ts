@@ -7,6 +7,7 @@ This file contains utility functions.
 
 import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
 import type { Operator } from "./parser.js";
+import { UnresolvedVariableType } from "./runtime-types.js";
 import type { IFormattable, TagFunction } from "./types.js";
 
 
@@ -225,25 +226,31 @@ export function tagProcessor<T>(
 	};
 }
 
-export type Formattable = IFormattable | IFormattable[] | string;
+export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType;
 function formatText(input:Formattable):string {
 	if(typeof input == "string") return input;
-	else if(Array.isArray(input)) return input.map(formatText).join(" ");
-	else return input.fmtText();
+	else if(Array.isArray(input)){
+		if(input[0] == "unresolved" && typeof input[1] == "string") return input[1];
+		return input.map(formatText).join(" ");
+	} else return input.fmtText();
 }
 function formatQuoted(input:Formattable):string {
 	let str:string;
 	if(typeof input == "string") str = input;
-	else if(Array.isArray(input)) str = input.map(formatText).join(" ");
-	else return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
+	else if(Array.isArray(input)){
+		if(input[0] == "unresolved" && typeof input[1] == "string") str = input[1];
+		str = input.map(formatText).join(" ");
+	} else return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
 	
 	if(str.length == 0) str = `[empty]`;
 	return `${str}`;
 }
 function formatDebug(input:Formattable):string {
 	if(typeof input == "string") return input;
-	else if(Array.isArray(input)) return `[${input.map(formatDebug).join(", ")}]`;
-	else return input.fmtDebug();
+	else if(Array.isArray(input)){
+		if(input[0] == "unresolved" && typeof input[1] == "string") return `UnresolvedVariableType[${input[1]}]`;
+		return `[${input.map(formatDebug).join(", ")}]`;
+	} else return input.fmtDebug();
 }
 export const f = {
 	text: tagProcessor(formatText),

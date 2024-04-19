@@ -314,7 +314,7 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 });
 
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
-export type Operator = {
+export type Operator = { //TODOIMM convert to class to allow for implementing formattable
 	token: TokenType;
 	name: string;
 	type: "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
@@ -459,7 +459,6 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 })((input:Token[], recursive = false):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
 	//If there is only one token

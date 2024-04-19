@@ -36,18 +36,7 @@ export default tseslint.config(
 			],
 			"no-unused-vars": "off",
 			"prefer-const": "warn",
-			"@typescript-eslint/no-unused-vars": [
-				"error",
-				{
-					"args": "all",
-					"argsIgnorePattern": "^_",
-					"caughtErrors": "all",
-					"caughtErrorsIgnorePattern": "^_",
-					"destructuredArrayIgnorePattern": "^_",
-					"varsIgnorePattern": "^_",
-					"ignoreRestSiblings": true
-				}
-			],
+			"@typescript-eslint/no-unused-vars": "off",
 			"@typescript-eslint/unbound-method": "off",
 			"@typescript-eslint/ban-types": [
 				"error",
