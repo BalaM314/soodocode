@@ -5,6 +5,11 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains global type definitions.
 */
 
+export type ClassProperties<
+	T extends object,
+	K extends keyof T = keyof T,
+	NonFunctionKeys extends keyof T = K extends unknown ? T[K] extends (...args:any[]) => unknown ? never : K : never
+> = Pick<T, NonFunctionKeys>;
 
 export interface TagFunction<Tin = string, Tout = string> {
 	(stringChunks: readonly string[], ...varChunks: readonly Tin[]):Tout;
@@ -34,7 +39,6 @@ declare global {
 		slice<TThis extends Array<T>>(this:TThis): TThis;
 	}
 	interface ArrayConstructor {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		isArray(arg: any): arg is unknown[];
 	}
 }

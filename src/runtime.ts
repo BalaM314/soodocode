@@ -344,7 +344,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				case operators.string_concatenate:
 					return [PrimitiveVariableType.STRING, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)[1] + this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)[1]];
 				default:
-					fail(f.quote`Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
+					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`);
 			}
 		}
 
@@ -451,7 +451,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	getPointerTypeFor(type:VariableType):PointerVariableType | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			const data = Object.values(this.scopes[i].types)
-				.find((data):data is PointerVariableType => data instanceof PointerVariableType && typesEqual(data.target, type))
+				.find((data):data is PointerVariableType => data instanceof PointerVariableType && typesEqual(data.target, type));
 			if(data) return data;
 		}
 		return null;

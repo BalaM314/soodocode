@@ -228,7 +228,7 @@ export type VariableType =
 	| SetVariableType
 ;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
-export type VariableValue = VariableTypeMapping<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+export type VariableValue = VariableTypeMapping<any>;
 
 export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
 export type File = {

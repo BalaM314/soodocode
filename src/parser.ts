@@ -12,7 +12,7 @@ import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js"
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode } from "./parser-types.js";
 import { PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { PartialKey } from "./types.js";
+import { ClassProperties, IFormattable, PartialKey } from "./types.js";
 import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
@@ -314,17 +314,28 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 });
 
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
-export type Operator = { //TODOIMM convert to class to allow for implementing formattable
-	token: TokenType;
-	name: string;
-	type: "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
-	category: "arithmetic" | "logical" | "string" | "special";
+export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
+export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
+export class Operator implements IFormattable {
+	token!: TokenType;
+	name!: string;
+	type!: OperatorMode;
+	category!: OperatorCategory;
+	constructor(args:ClassProperties<Operator>){
+		Object.assign(this, args);
+	}
+	fmtText(){
+		return `${this.name}`;
+	}
+	fmtDebug(){
+		return `Operator [${this.name}] (${this.category} ${this.type})`;
+	}
 }
 
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-export const operatorsByPriority = ((input:(PartialKey<Operator, "type" | "name">)[][]):Operator[][] =>
+export const operatorsByPriority = ((input:(PartialKey<ClassProperties<Operator>, "type" | "name">)[][]):Operator[][] =>
 	input.map(row => row.map(o =>
-		({
+		new Operator({
 			token: o.token,
 			category: o.category,
 			type: o.type ?? "binary",
