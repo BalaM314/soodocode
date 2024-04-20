@@ -15,7 +15,8 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax.
 * [x] Records
 * [x] Sets
 * [x] Shortened forms (for variable declaration and function arguments)
-* [ ] Files
+* [x] Basic file operations (read/write/append)
+* [ ] Record-based file operations (getrecord, seek)
 * [ ] Classes
 
 View the site [here](https://balam314.github.io/soodocode)
