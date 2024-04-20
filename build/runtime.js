@@ -1,9 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains the runtime, which executes the program AST.
-*/
 var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
     var useValue = arguments.length > 2;
     for (var i = 0; i < initializers.length; i++) {
@@ -45,8 +39,6 @@ import { operators } from "./parser.js";
 import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
-//TODO: fix coercion
-//CONFIG: array initialization
 export class Files {
     constructor() {
         this.files = {};
@@ -84,14 +76,11 @@ let Runtime = (() => {
                 this.fs = new Files();
             }
             processArrayAccess(expr, operation, arg2) {
-                //Make sure the variable exists and is an array
                 const _variable = this.evaluateExpr(expr.target, "variable");
                 if (!(_variable.type instanceof ArrayVariableType))
                     fail(f.quote `Cannot convert variable of type ${_variable.type} to an array`, expr.target);
                 const variable = _variable;
                 const varTypeData = variable.type;
-                //TODO is there any way of getting a 1D array out of a 2D array?
-                //Forbids getting any arrays from arrays
                 if (arg2 instanceof ArrayVariableType)
                     fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
                 if (expr.indices.length != variable.type.lengthInformation.length)
@@ -111,7 +100,6 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (operation == "get") {
                     const type = arg2;
                     if (type == "variable") {
-                        //i see nothing wrong with this bodged variable data
                         return {
                             type: this.resolveVariableType(varTypeData.type),
                             declaration: variable.declaration,
@@ -133,10 +121,6 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 }
             }
             processRecordAccess(expr, operation, arg2) {
-                //this code is terrible
-                //note to self:
-                //do not use typescript overloads like this
-                //the extra code DRYness is not worth it
                 if (!(expr.nodes[1] instanceof Token))
                     impossible();
                 const property = expr.nodes[1].text;
@@ -146,7 +130,6 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         fail(f.quote `Cannot access property ${property} on variable of type ${variable.type} because it is not a record type and cannot have proprties`, expr.nodes[0]);
                     const outputType = variable.type.fields[property] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                     if (arg2 == "variable") {
-                        //i see nothing wrong with this bodged variable data
                         return {
                             type: outputType,
                             declaration: variable.declaration,
@@ -180,8 +163,6 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     crash(`expr was ${expr}`);
                 if (expr instanceof Token)
                     return this.evaluateToken(expr, type);
-                //Branch node
-                //Special cases where the operator isn't a normal operator
                 if (expr instanceof ExpressionASTArrayAccessNode)
                     return this.processArrayAccess(expr, "get", type);
                 if (expr instanceof ExpressionASTFunctionCallNode) {
@@ -211,7 +192,6 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
                     fail(`Not yet implemented`);
                 }
-                //Operator that returns a result of unknown type
                 if (expr.operator.category == "special") {
                     switch (expr.operator) {
                         case operators.access:
@@ -224,15 +204,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             let variable;
                             try {
                                 variable = this.evaluateExpr(expr.nodes[0], "variable", true);
-                                //Guess the type
                             }
                             catch (err) {
-                                //If the thing we're referencing couldn't be evaluated to a variable
-                                //create a fake variable
-                                //CONFIG weird pointers to fake variables
                                 if (err instanceof SoodocodeError) {
                                     const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
-                                    //Guess the type
                                     const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`);
                                     return [pointerType, {
                                             type: targetType,
@@ -276,13 +251,11 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 }
                 if (type == "variable")
                     fail(`Cannot evaluate this expression as a variable`);
-                //arithmetic
                 if (type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic") {
                     if (type && !type.is("REAL", "INTEGER"))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
-                    const guessedType = type ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
+                    const guessedType = type ?? PrimitiveVariableType.REAL;
                     let value;
-                    //if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
                     if (expr.operator.type == "unary_prefix") {
                         const [_operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType, true);
                         switch (expr.operator) {
@@ -309,7 +282,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             value = left / right;
                             if (type?.is("INTEGER"))
                                 fail(`Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
-help: try using DIV instead of / to produce an integer as the result`); //CONFIG
+help: try using DIV instead of / to produce an integer as the result`);
                             break;
                         case operators.integer_divide:
                             if (right == 0)
@@ -326,7 +299,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     }
                     return [guessedType, value];
                 }
-                //logical
                 if (type?.is("BOOLEAN") || expr.operator.category == "logical") {
                     if (type && !type.is("BOOLEAN"))
                         fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`);
@@ -344,7 +316,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                             return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] || this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
                         case operators.equal_to:
                         case operators.not_equal_to: {
-                            //Type is unknown
                             const [leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
                             const [rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
                             const typesMatch = (leftType == rightType) ||
@@ -368,7 +339,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                             fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`);
                     }
                 }
-                //string
                 if (type?.is("STRING") || expr.operator.category == "string") {
                     if (type && !type.is("STRING"))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`);
@@ -409,7 +379,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     fail(f.quote `Cannot evaluate token ${token.text} as a variable`);
                 switch (token.type) {
                     case "boolean.false":
-                        //TODO bad coercion
                         if (!type || type.is("BOOLEAN"))
                             return [PrimitiveVariableType.BOOLEAN, false];
                         else if (type.is("STRING"))
@@ -449,13 +418,13 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         break;
                     case "string":
                         if (!type || type.is("STRING"))
-                            return [PrimitiveVariableType.STRING, token.text.slice(1, -1)]; //remove the quotes
+                            return [PrimitiveVariableType.STRING, token.text.slice(1, -1)];
                         else
                             fail(f.quote `Cannot convert value ${token} to type ${type}`);
                         break;
                     case "char":
                         if (!type || type.is("CHAR"))
-                            return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
+                            return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)];
                         else
                             fail(f.quote `Cannot convert value ${token} to type ${type}`);
                         break;
@@ -463,7 +432,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 }
             }
             static evaluateToken(token, type) {
-                //major shenanigans
                 try {
                     return this.prototype.evaluateToken.call(new Proxy({}, {
                         get() { throw new _a.NotStaticError(); },
@@ -482,7 +450,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 else
                     return this.getType(type[1]) ?? fail(f.quote `Type ${type[1]} does not exist`);
             }
-            /** Returned variable may not be initialized */
             getVariable(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     if (this.scopes[i].variables[name])
@@ -528,7 +495,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 return this.functions[scope.statement.name] ?? impossible();
             }
             coerceValue(value, from, to) {
-                //typescript really hates this function, beware
                 if (typesEqual(from, to))
                     return value;
                 if (from.is("STRING") && to.is("CHAR"))
@@ -559,7 +525,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 if (Array.isArray(value))
                     return value.slice().map(v => this.cloneValue(this.resolveVariableType(type.type), v));
                 if (type instanceof PointerVariableType)
-                    return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
+                    return value;
                 if (type instanceof RecordVariableType)
                     return Object.fromEntries(Object.entries(value)
                         .map(([k, v]) => [k, this.cloneValue(type.fields[k], v)]));
@@ -572,11 +538,9 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                         fail(`Cannot use return value of ${func.name}() as it is a procedure`);
                 }
                 else if (func instanceof FunctionStatement) {
-                    //all good
                 }
                 else
-                    crash(`Invalid function ${func.stype}`); //unreachable
-                //Assemble scope
+                    crash(`Invalid function ${func.stype}`);
                 if (func.args.size != args.length)
                     fail(`Incorrect number of arguments for function ${func.name}`);
                 const scope = {
@@ -614,7 +578,7 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                 if (func instanceof ProcedureStatement) {
                     return null;
                 }
-                else { //must be functionstatement
+                else {
                     if (!output)
                         fail(f.quote `Function ${func.name} did not return a value`);
                     return output.value;
@@ -677,7 +641,6 @@ help: try using DIV instead of / to produce an integer as the result`); //CONFIG
                     };
                 }
             }
-            /** Creates a scope. */
             runProgram(code) {
                 this.runBlock(code, {
                     statement: "global",

@@ -1,15 +1,8 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains the types for the runtime, such as the variable types and associated utility types.
-*/
 import { fail, crash, f } from "./utils.js";
 export class BaseVariableType {
     is(...type) {
         return false;
     }
-    /** If not implemented, defaults to `"${fmtText()}"` */
     fmtQuoted() {
         return `"${this.fmtText()}"`;
     }
@@ -57,7 +50,6 @@ PrimitiveVariableType.STRING = new PrimitiveVariableType("STRING");
 PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
-/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType extends BaseVariableType {
     constructor(lengthInformation, type) {
         super();

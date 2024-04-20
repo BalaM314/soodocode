@@ -1,9 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains types for the lexer, such as Symbol and Token.
-*/
 import { crash, getRange, getTotalRange } from "./utils.js";
 export const symbolTypes = [
     "numeric_fragment",
@@ -19,16 +13,14 @@ export const symbolTypes = [
     "newline",
     "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ];
-/** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
 export class Symbol {
     constructor(type, text, range) {
         this.type = type;
         this.text = text;
         this.range = range;
     }
-    /** type must be a valid token type */
     toToken() {
-        if (tokenTypes.includes(this.type)) //typescript being dumb
+        if (tokenTypes.includes(this.type))
             return new Token(this.type, this.text, this.range);
         else
             crash(`Cannot convert symbol ${this.fmtDebug()} to a token: type is not a valid token type`);
@@ -57,7 +49,6 @@ export function symbol(type, text) {
         return new Symbol(type, text, [-1, -1]);
 }
 export const tokenTypes = [
-    //use _ to join words
     "number.decimal",
     "string", "char",
     "brace.open", "brace.close",
@@ -83,7 +74,6 @@ export const tokenTypes = [
     "newline",
     "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ];
-/** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
 export class Token {
     constructor(type, text, range) {
         this.type = type;

@@ -1,20 +1,12 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains the types for the runtime, such as the variable types and associated utility types.
-*/
 import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments } from "./statements.js";
 import { IFormattable } from "./types.js";
-/**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
     is(...type: PrimitiveVariableTypeName[]): boolean;
     abstract fmtDebug(): string;
-    /** If not implemented, defaults to `"${fmtText()}"` */
     fmtQuoted(): string;
     abstract fmtText(): string;
 }
@@ -38,7 +30,6 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static resolve(type: string): Exclude<UnresolvedVariableType, ArrayVariableType>;
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
-/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export declare class ArrayVariableType extends BaseVariableType {
     lengthInformation: [low: number, high: number][];
     type: Exclude<UnresolvedVariableType, ArrayVariableType>;
@@ -112,21 +103,18 @@ export type OpenedFile = {
 export type OpenedFileOfType<T extends FileMode> = OpenedFile & {
     mode: T;
 };
-export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
+export type VariableData<T extends VariableType = VariableType, Uninitialized = null> = {
     type: T;
-    /** Null indicates that the variable has not been initialized */
     value: VariableTypeMapping<T> | Uninitialized;
     declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | "dynamic";
     mutable: true;
 };
 export type ConstantData<T extends VariableType = VariableType> = {
     type: T;
-    /** Cannot be null */
     value: VariableTypeMapping<T>;
     declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
     mutable: false;
 };
-/** Either a function or a procedure */
 export type FunctionData = ProgramASTBranchNode & {
     nodeGroups: [body: ProgramASTNode[]];
 } & ({

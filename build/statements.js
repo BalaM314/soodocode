@@ -1,9 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains the definitions for every statement type supported by Soodocode.
-*/
 var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
     function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
     var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
@@ -76,17 +70,15 @@ let Statement = (() => {
         static blockEndStatement() {
             if (this.category != "block")
                 crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
-            return statements.byType[this.type.split(".")[0] + ".end"]; //REFACTOR CHECK
+            return statements.byType[this.type.split(".")[0] + ".end"];
         }
         example() {
             return this.type.example;
         }
-        /** Warning: block will not include the usual end statement. */
         static supportsSplit(block, statement) {
             return f.quote `current block of type ${block.type} cannot be split by ${statement.stype} statement`;
         }
         static checkBlock(block) {
-            //crash if the block is invalid or incomplete
         }
         run(runtime) {
             crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -105,9 +97,9 @@ let Statement = (() => {
         Statement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.category = null; //Assigned in the decorator
-    _classThis.example = null; //Assigned in the decorator
-    _classThis.tokens = null; //Assigned in the decorator
+    _classThis.category = null;
+    _classThis.example = null;
+    _classThis.tokens = null;
     _classThis.suppressErrors = false;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
@@ -129,11 +121,9 @@ function statement(type, example, ...args) {
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(type + ".end", "[unknown]", "block_end", args[0] + "_end")(//REFACTOR CHECK //TODO very bad, caused bugs
-            class __endStatement extends Statement {
+            statement(type + ".end", "[unknown]", "block_end", args[0] + "_end")(class __endStatement extends Statement {
             });
         }
-        //validate args
         if (args.length < 1)
             crash(`Invalid statement definitions! All statements must contain at least one token`);
         if (args.find((v, i, args) => (v == "expr+" || v == ".+" || v == ".*") &&
@@ -163,7 +153,6 @@ let DeclareStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.variables = [];
-            //parse the variable list
             this.variables = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(1, -2), tokens.at(-2)).map(t => t.text);
             this.varType = processTypeData(tokens.at(-1));
         }
@@ -397,7 +386,6 @@ let AssignmentStatement = (() => {
             const variable = runtime.evaluateExpr(this.target, "variable");
             if (!variable.mutable)
                 fail(f.quote `Cannot assign to constant ${this.target}`);
-            //CONFIG allow copying arrays/records by assignment?
             variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
         }
     };
@@ -590,12 +578,10 @@ let IfStatement = (() => {
             super(tokens);
             this.condition = tokens[1];
         }
-        /** Warning: block will not include the usual end statement. */
         static supportsSplit(_block, statement) {
             if (statement.stype != "else")
                 return `${statement.stype} statements are not valid in IF blocks`;
             return true;
-            //If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
         }
         runBlock(runtime, node) {
             if (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]) {
@@ -663,12 +649,10 @@ let SwitchStatement = (() => {
             for (const [i, statement] of controlStatements.entries()) {
                 if (i == 0)
                     continue;
-                //skip the first one as that is the switch statement
                 if (statement instanceof this.type.blockEndStatement())
-                    break; //end of statements
+                    break;
                 else if (statement instanceof CaseBranchStatement) {
                     const caseToken = statement.value;
-                    //Ensure that OTHERWISE is the last branch
                     if (caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
                         fail(`OTHERWISE case branch must be the last case branch`, statement);
                     if (statement.branchMatches(switchType, switchValue)) {
@@ -708,7 +692,6 @@ let CaseBranchStatement = (() => {
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
                 return true;
-            //Try to evaluate the case token with the same type as the switch target
             const [_caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
             return switchValue == caseValue;
         }
@@ -745,7 +728,6 @@ let CaseBranchRangeStatement = (() => {
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
                 return true;
-            //Evaluate the case tokens with the same type as the switch target
             const [_lType, lValue] = Runtime.evaluateToken(this.value, switchType);
             const [_uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
             return lValue <= switchValue && switchValue <= uValue;
@@ -794,7 +776,6 @@ let ForStatement = (() => {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     variables: {
-                        //Set the loop variable in the loop scope
                         [this.name]: {
                             declaration: this,
                             mutable: false,
@@ -924,7 +905,6 @@ let DoWhileStatement = (() => {
                 if (++i > DoWhileStatement.maxLoops)
                     fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
             } while (!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN)[1]);
-            //Inverted, the pseudocode statement is "until"
         }
     };
     __setFunctionName(_classThis, "DoWhileStatement");
@@ -934,7 +914,7 @@ let DoWhileStatement = (() => {
         DoWhileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.maxLoops = 10000; //CONFIG
+    _classThis.maxLoops = 10000;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -982,7 +962,6 @@ let FunctionStatement = (() => {
                 fail(`Duplicate function definition for ${this.name}`);
             else if (this.name in builtinFunctions)
                 fail(`Function ${this.name} is already defined as a builtin function`);
-            //Don't actually run the block
             runtime.functions[this.name] = node;
         }
     };
@@ -1010,7 +989,6 @@ let ProcedureStatement = (() => {
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
-            //Don't actually run the block
             runtime.functions[this.name] = node;
         }
     };
@@ -1053,7 +1031,7 @@ let OpenFileStatement = (() => {
             }
             else {
                 if (mode == "WRITE")
-                    file.text = ""; //Clear the file so it can be overwritten
+                    file.text = "";
                 runtime.openFiles[name] = {
                     file,
                     mode,

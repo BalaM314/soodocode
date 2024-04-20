@@ -1,9 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains code for the user interface.
-*/
 import * as lexerTypes from "./lexer-types.js";
 import * as lexer from "./lexer.js";
 import * as parserTypes from "./parser-types.js";
@@ -118,7 +112,6 @@ export function evaluateExpressionDemo(node) {
         }
 }
 export function download(filename, data) {
-    //Self explanatory.
     const el = document.createElement("a");
     el.setAttribute("href", URL.createObjectURL(new Blob([data])));
     el.setAttribute("download", filename);
@@ -145,9 +138,7 @@ window.addEventListener("keydown", e => {
 });
 evaluateExpressionButton.addEventListener("click", () => {
     try {
-        expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value
-        // |> operator when
-        )).tokens)).toString();
+        expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens)).toString();
         expressionOutputDiv.style.color = "white";
     }
     catch (err) {
@@ -169,7 +160,6 @@ dumpExpressionTreeButton.addEventListener("click", () => {
     try {
         const text = displayExpressionHTML(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens), dumpExpressionTreeVerbose.checked, false);
         console.log(text);
-        //Syntax highlighting
         let outputText = "";
         let linePos = 0;
         let lineParenColor = null;
@@ -218,42 +208,31 @@ dumpExpressionTreeButton.addEventListener("click", () => {
 soodocodeInput.onkeydown = e => {
     if ((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)) {
         e.preventDefault();
-        //Save cursor position
         const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
         const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
         const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n(?=\t)/g)?.length ?? 0;
-        //indent the text
         soodocodeInput.value = soodocodeInput.value
             .slice(0, end)
             .split("\n")
             .map((line, i) => i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line).join("\n") + soodocodeInput.value.slice(end);
-        //Replace cursor position
         soodocodeInput.selectionStart = start - 1;
         soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
     }
     else if (e.key == "Tab" || (e.key == "]" && e.ctrlKey)) {
         e.preventDefault();
         if (soodocodeInput.selectionStart == soodocodeInput.selectionEnd && !(e.key == "]" && e.ctrlKey)) {
-            //Insert a tab character
-            //Save cursor position
             const start = soodocodeInput.selectionStart;
-            //Insert tab
             soodocodeInput.value = soodocodeInput.value.slice(0, start) + "\t" + soodocodeInput.value.slice(start);
-            //Replace cursor position
             soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
         }
         else {
-            //indent the block
-            //Save cursor position
             const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
             const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
             const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n/g)?.length ?? 0;
-            //indent the text
             soodocodeInput.value = soodocodeInput.value
                 .slice(0, end)
                 .split("\n")
                 .map((line, i) => i >= numNewlinesBefore ? "\t" + line : line).join("\n") + soodocodeInput.value.slice(end);
-            //Replace cursor position
             soodocodeInput.selectionStart = start + 1;
             soodocodeInput.selectionEnd = end + 1 + numNewlinesWithin;
         }
@@ -262,7 +241,6 @@ soodocodeInput.onkeydown = e => {
         e.preventDefault();
         executeSoodocode();
     }
-    //Update text
     const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2190", "<-").replaceAll("\u2013", "-").replaceAll("\u2011", "-");
     if (soodocodeInput.value != newText) {
         const start = soodocodeInput.selectionStart;
@@ -318,15 +296,13 @@ ${displayProgram(program)}`;
 });
 export function showRange(text, error) {
     if (!error.rangeGeneral && !error.rangeSpecific)
-        return ``; //can't show anything
-    //Move back the range if it only contains a newline, or nothing
+        return ``;
     if (error.rangeSpecific && error.rangeSpecific[1] - error.rangeSpecific[0] == 1) {
         const specificText = text.slice(...error.rangeSpecific);
         if (specificText == "" || specificText == "\n")
             error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
     }
-    if ( //There is only one range, or the specific range is entirely inside the general range
-    (!error.rangeGeneral || !error.rangeSpecific || (error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]))) {
+    if ((!error.rangeGeneral || !error.rangeSpecific || (error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]))) {
         const range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
         const beforeText = text.slice(0, range[0]);
         const rangeText = text.slice(...range);
@@ -346,10 +322,8 @@ export function showRange(text, error) {
         return `
 ${formattedPreviousLine}\
 ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
-        //TODO use CSS classes
     }
     else {
-        //Drop the general range TODO fix
         const trimEnd = text.slice(error.rangeSpecific[1]).indexOf("\n");
         text = text.slice(0, trimEnd);
         const fullText = applyRangeTransformers(text, [
@@ -408,7 +382,6 @@ headerText.addEventListener("click", e => {
         flipped = !flipped;
     headerText.style.setProperty("transform", flipped ? "scaleX(-1)" : "none");
     headerText.style.setProperty("animation-name", bouncing ? "sizebounce" : "none");
-    //modifying animation-play-state didn't work as the animation could get paused when the size is high, causing scrollbars to appear
     if (!e.shiftKey && !e.altKey && !e.ctrlKey)
         headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
     if (((Date.now() - clickTimes[0]) / 10) < 500)

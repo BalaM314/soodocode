@@ -1,9 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains code for the user interface.
-*/
 import { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError } from "./utils.js";

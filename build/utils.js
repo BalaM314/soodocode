@@ -1,13 +1,6 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains utility functions.
-*/
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
-/** Ranges must telescope inwards */
 export function applyRangeTransformers(text, ranges) {
     let offset = 0;
     for (const [range, start, end, transformer_] of ranges) {
@@ -102,7 +95,6 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
     if (expected == "name")
         fail(`Expected a name, found ${nextToken?.text ?? "end of input"}`, nextToken);
     if (new Set(names.map(t => t.text)).size !== names.length) {
-        //duplicate value
         const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
         fail(f.quote `Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
     }
@@ -165,17 +157,12 @@ export function impossible() {
 export function Abstract(input, context) {
     return class __temp extends input {
         constructor(...args) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             super(...args);
             if (this.constructor === __temp)
                 throw new Error(`Cannot construct abstract class ${input.name}`);
         }
     };
 }
-/**
- * Decorator to apply an error boundary to functions.
- * @param predicate General range is set if this returns true.
- */
 export function errorBoundary({ predicate = (() => true), message } = {}) {
     return function decorator(func, _ctx) {
         return function replacedFunction(...args) {
@@ -188,13 +175,11 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
                         err.message = message(...args) + err.message;
                         err.rangeOther = findRange(args);
                     }
-                    //Try to find the range
                     if (err.rangeSpecific === undefined)
                         err.rangeSpecific = findRange(args);
                     else if (err.rangeGeneral === undefined && predicate(...args)) {
                         const _rangeGeneral = findRange(args);
-                        if ( //If the general range is unspecified, and when guessed is equal to the specific range, just set it to null
-                        _rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
+                        if (_rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
                             err.rangeGeneral = null;
                         else
                             err.rangeGeneral = _rangeGeneral;
@@ -219,7 +204,6 @@ export function parseError(thing) {
         return thing;
     }
     else if (thing != null && typeof thing == "object" && "toString" in thing && typeof thing.toString == "function") {
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         return thing.toString();
     }
     else {
@@ -228,7 +212,6 @@ export function parseError(thing) {
         return "Unable to parse error object";
     }
 }
-/** Generates a tag template processor from a function that processes one value at a time. */
 export function tagProcessor(transformer) {
     return function (stringChunks, ...varChunks) {
         return String.raw({ raw: stringChunks }, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));

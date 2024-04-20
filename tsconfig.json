@@ -6,6 +6,7 @@
 		"strict": true,
 		"skipLibCheck": true,
 		"incremental": true,
+		"removeComments": true,
 		"lib": [
 			"DOM",
 			"ES2023"

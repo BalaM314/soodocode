@@ -50,7 +50,7 @@ export type StatementExecutionResult = {
 };
 
 @Abstract
-export class Statement implements TextRanged, IFormattable { //TODO make abstract?
+export class Statement implements TextRanged, IFormattable {
 	type:typeof Statement;
 	stype:StatementType;
 	static type:StatementType;

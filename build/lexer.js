@@ -1,11 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains the lexer, which takes the raw user input and processes it;
-first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" ("),
-second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
-*/
 import { Symbol, Token } from "./lexer-types.js";
 import { crash, fail, impossible, f } from "./utils.js";
 const symbolTypeData = [
@@ -105,7 +97,6 @@ const tokenNameTypeData = ((d) => d)({
     "WRITE": "keyword.file_mode.write",
     "WRITEFILE": "keyword.write_file",
 });
-/** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;
@@ -173,18 +164,15 @@ class SymbolizerIO {
         if (!this.has())
             return false;
         const code = this.at().charCodeAt(0);
-        //0-9, a-z, A-Z, _
         return (code >= 48 && code <= 57) ||
             (code >= 65 && code <= 90) ||
             (code >= 97 && code <= 122) || code === 95;
     }
 }
 SymbolizerIO.prototype;
-/** Converts an input string to a list of symbols. */
 export function symbolize(input) {
     const str = new SymbolizerIO(input);
     toNextCharacter: while (str.has()) {
-        //TODO optimize nested loop
         for (const [identifier, symbolType] of symbolTypeData) {
             if (typeof identifier == "string" || identifier instanceof RegExp) {
                 if (str.cons(identifier)) {
@@ -210,7 +198,6 @@ export function symbolize(input) {
         symbols: str.output
     };
 }
-/** Converts a list of symbols into a list of tokens. */
 export function tokenize(input) {
     const tokens = [];
     const state = {
@@ -224,8 +211,7 @@ export function tokenize(input) {
     let symbol;
     for (symbol of input.symbols) {
         if (state.decimalNumber == "allowDecimal" && symbol.type !== "punctuation.period")
-            state.decimalNumber = "none"; //Cursed state reset
-        //State checks and comments
+            state.decimalNumber = "none";
         if (state.sComment) {
             if (symbol.type === "newline") {
                 state.sComment = null;
@@ -240,7 +226,6 @@ export function tokenize(input) {
                 fail(`Cannot close multiline comment, no open multiline comment`, symbol);
         }
         else if (state.mComment) {
-            //discard the symbol
         }
         else if (state.sString) {
             currentString += symbol.text;
@@ -264,11 +249,9 @@ export function tokenize(input) {
             state.sComment = symbol;
         else if (symbol.type === "comment.multiline.open")
             state.mComment = symbol;
-        //Decimals
         else if (state.decimalNumber == "requireNumber") {
             const num = tokens.at(-1) ?? impossible();
             if (symbol.type == "numeric_fragment") {
-                //very cursed modifying of the token
                 num.text += "." + symbol.text;
                 num.range[1] += (1 + symbol.text.length);
                 if (isNaN(Number(num.text)))
@@ -307,7 +290,6 @@ export function tokenize(input) {
             tokens.push(symbol.toToken());
         }
     }
-    //Ending state checks
     if (state.mComment)
         fail(`Unclosed multiline comment`, state.mComment);
     if (state.dString)

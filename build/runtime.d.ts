@@ -1,9 +1,3 @@
-/**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains the runtime, which executes the program AST.
-*/
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import { BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
@@ -58,7 +52,6 @@ export declare class Runtime {
     };
     static evaluateToken(token: Token, type?: VariableType): [type: VariableType, value: VariableValue];
     resolveVariableType(type: UnresolvedVariableType): VariableType;
-    /** Returned variable may not be initialized */
     getVariable(name: string): VariableData | ConstantData | null;
     getType(name: string): VariableType | null;
     getEnumFromValue(name: string): EnumeratedVariableType | null;
@@ -75,7 +68,6 @@ export declare class Runtime {
         type: "function_return";
         value: VariableValue;
     };
-    /** Creates a scope. */
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;
     getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;
