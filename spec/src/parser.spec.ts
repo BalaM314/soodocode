@@ -3118,11 +3118,11 @@ describe("parseStatement", () => {
 	for(const [name, program, output] of parseStatementTests){
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
-				expect(() => parseStatement(program)).toThrowMatching(e => e instanceof SoodocodeError);
+				expect(() => parseStatement(program, null)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} into a statement`, () => {
-				expect(parseStatement(program)).toEqual(output);
+				expect(parseStatement(program, null)).toEqual(output);
 			});
 		}
 	}

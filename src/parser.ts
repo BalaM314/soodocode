@@ -131,14 +131,14 @@ export function splitTokensToStatements(tokens:Token[]):Token[][] {
 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	const lines:Token[][] = splitTokensToStatements(tokens);
-	const statements = lines.map(parseStatement);
 	const programNodes:ProgramASTNode[] = [];
 	function getActiveBuffer(){
 		if(blockStack.length == 0) return programNodes;
 		else return blockStack.at(-1)!.nodeGroups.at(-1)!;
 	}
 	const blockStack:ProgramASTBranchNode[] = [];
-	for(const statement of statements){
+	for(const line of lines){
+		const statement = parseStatement(line, blockStack.at(-1) ?? null);
 		if(statement.category == "normal"){
 			getActiveBuffer().push(statement);
 		} else if(statement.category == "block"){
@@ -179,12 +179,13 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary()((tokens:Token[]):Statement => {
+export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	const possibleStatements:(typeof Statement)[] =
-		tokens[0].type in statements.byStartKeyword
+		(tokens[0].type in statements.byStartKeyword
 			? statements.byStartKeyword[tokens[0].type]!
-			: statements.irregular;
+			: statements.irregular)
+			.filter(s => !s.blockType || s.blockType == context?.type);
 	if(possibleStatements.length == 0) fail(`No possible statements`, tokens);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
@@ -242,6 +243,7 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 	//but it works
 
 	if(input.length == 0) crash(`checkStatement() called with empty input`);
+	if(statement.category == "block_multi_split" && !statement.blockType) crash(`block_multi_split statements must have a block type specified.`);
 
 	const output:StatementCheckTokenRange[] = [];
 	let i, j;

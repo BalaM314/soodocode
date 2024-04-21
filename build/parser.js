@@ -104,7 +104,6 @@ export function splitTokensToStatements(tokens) {
 }
 export function parse({ program, tokens }) {
     const lines = splitTokensToStatements(tokens);
-    const statements = lines.map(parseStatement);
     const programNodes = [];
     function getActiveBuffer() {
         if (blockStack.length == 0)
@@ -113,7 +112,8 @@ export function parse({ program, tokens }) {
             return blockStack.at(-1).nodeGroups.at(-1);
     }
     const blockStack = [];
-    for (const statement of statements) {
+    for (const line of lines) {
+        const statement = parseStatement(line, blockStack.at(-1) ?? null);
         if (statement.category == "normal") {
             getActiveBuffer().push(statement);
         }
@@ -154,12 +154,13 @@ export function parse({ program, tokens }) {
         nodes: programNodes
     };
 }
-export const parseStatement = errorBoundary()((tokens) => {
+export const parseStatement = errorBoundary()((tokens, context) => {
     if (tokens.length < 1)
         crash("Empty statement");
-    const possibleStatements = tokens[0].type in statements.byStartKeyword
+    const possibleStatements = (tokens[0].type in statements.byStartKeyword
         ? statements.byStartKeyword[tokens[0].type]
-        : statements.irregular;
+        : statements.irregular)
+        .filter(s => !s.blockType || s.blockType == context?.type);
     if (possibleStatements.length == 0)
         fail(`No possible statements`, tokens);
     const errors = [];
@@ -213,6 +214,8 @@ export function isLiteral(type) {
 export const checkStatement = errorBoundary()((statement, input) => {
     if (input.length == 0)
         crash(`checkStatement() called with empty input`);
+    if (statement.category == "block_multi_split" && !statement.blockType)
+        crash(`block_multi_split statements must have a block type specified.`);
     const output = [];
     let i, j;
     for (i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
