@@ -8,7 +8,7 @@ This file contains unit tests for the parser.
 
 import "jasmine";
 import { Token, TokenizedProgram, token } from "../../build/lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST } from "../../build/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { UnresolvedVariableType, ArrayVariableType, PrimitiveVariableType, PrimitiveVariableTypeName } from "../../build/runtime-types.js";
 import {
@@ -1139,13 +1139,14 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 	]
 });
 
-const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Statement | "error"]>) =>
+const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Statement | "error", context?:ProgramASTBranchNodeType]>) =>
 	Object.entries(data).map<
-		[name:string, program:Token[], output:jasmine.Expected<Statement> | "error"]
-	>(([name, [program, output]]) => [
+		[name:string, program:Token[], output:jasmine.Expected<Statement> | "error", context:ProgramASTBranchNodeType | null]
+	>(([name, [program, output, context]]) => [
 		name,
 		program.map(token),
-		output == "error" ? "error" : applyAnyRange(process_Statement(output))
+		output == "error" ? "error" : applyAnyRange(process_Statement(output)),
+		context ?? null
 	]
 ))({
 	output1: [
@@ -1597,7 +1598,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 		[CaseBranchStatement, [
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranch2: [
 		[
@@ -1607,7 +1609,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 		[CaseBranchStatement, [
 			["string", `"hello"`],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranch3: [
 		[
@@ -1618,7 +1621,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 		[CaseBranchStatement, [
 			["number.decimal", "-5"],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranch4: [
 		[
@@ -1628,7 +1632,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 		[CaseBranchStatement, [
 			["keyword.otherwise", "OTHERWISE"],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranch_invalid_expr: [
 		[
@@ -1637,11 +1642,28 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		],
-		"error"
+		"error",
+		"switch"
 	],
 	casebranch_invalid_notstatic: [
 		[
 			["name", "x"],
+			["punctuation.colon", ":"],
+		],
+		"error",
+		"switch"
+	],
+	casebranch_invalid_context: [
+		[
+			["number.decimal", "5"],
+			["punctuation.colon", ":"],
+		],
+		"error",
+		"if"
+	],
+	casebranch_invalid_context_null: [
+		[
+			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		],
 		"error"
@@ -1658,7 +1680,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["keyword.to", "TO"],
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranchrange_2: [
 		[
@@ -1672,7 +1695,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["keyword.to", "TO"],
 			["char", 'e'],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranchrange_3: [
 		[
@@ -1687,7 +1711,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["keyword.to", "TO"],
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranchrange_4: [
 		[
@@ -1703,7 +1728,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["keyword.to", "TO"],
 			["number.decimal", "-1"],
 			["punctuation.colon", ":"],
-		]]
+		]],
+		"switch"
 	],
 	casebranchrange_invalid_notstatic: [
 		[
@@ -1714,7 +1740,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["name", "x"],
 			["punctuation.colon", ":"],
 		],
-		"error"
+		"error",
+		"switch"
 	],
 	casebranchrange_invalid_type_1: [
 		[
@@ -1724,7 +1751,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["boolean.true", "TRUE"],
 			["punctuation.colon", ":"],
 		],
-		"error"
+		"error",
+		"switch"
 	],
 	casebranchrange_invalid_type_2: [
 		[
@@ -1733,7 +1761,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		],
-		"error"
+		"error",
+		"switch"
 	],
 	casebranchrange_invalid_type_3: [
 		[
@@ -1742,7 +1771,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		],
-		"error"
+		"error",
+		"switch"
 	],
 	for_simple: [
 		[
@@ -3115,14 +3145,15 @@ describe("parseExpression", () => {
 });
 
 describe("parseStatement", () => {
-	for(const [name, program, output] of parseStatementTests){
+	for(const [name, program, output, context] of parseStatementTests){
+		const fakeNode = context ? new ProgramASTBranchNode(context, [], []) : null;
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
-				expect(() => parseStatement(program, null)).toThrowMatching(e => e instanceof SoodocodeError);
+				expect(() => parseStatement(program, fakeNode)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} into a statement`, () => {
-				expect(parseStatement(program, null)).toEqual(output);
+				expect(parseStatement(program, fakeNode)).toEqual(output);
 			});
 		}
 	}
