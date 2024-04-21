@@ -76,7 +76,7 @@ let Statement = (() => {
             return this.type.example;
         }
         static supportsSplit(block, statement) {
-            return f.quote `current block of type ${block.type} cannot be split by ${statement.stype} statement`;
+            return true;
         }
         static checkBlock(block) {
         }
@@ -101,6 +101,7 @@ let Statement = (() => {
     _classThis.example = null;
     _classThis.tokens = null;
     _classThis.suppressErrors = false;
+    _classThis.blockType = null;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -578,11 +579,6 @@ let IfStatement = (() => {
             super(tokens);
             this.condition = tokens[1];
         }
-        static supportsSplit(_block, statement) {
-            if (statement.stype != "else")
-                return `${statement.stype} statements are not valid in IF blocks`;
-            return true;
-        }
         runBlock(runtime, node) {
             if (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]) {
                 return runtime.runBlock(node.nodeGroups[0]);
@@ -617,6 +613,9 @@ let ElseStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ElseStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "if";
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ElseStatement = _classThis;
@@ -634,15 +633,16 @@ let SwitchStatement = (() => {
             [, , this.expression] = tokens;
         }
         static supportsSplit(block, statement) {
-            if (!(statement instanceof CaseBranchStatement))
-                return `${statement.stype} statements are not valid in CASE OF blocks`;
             if (block.nodeGroups.at(-1).length == 0 && block.nodeGroups.length != 1)
-                return `Previous case branch was empty.`;
+                return `Previous case branch was empty. (Fallthrough is not supported.)`;
             return true;
         }
-        static checkBlock({ nodeGroups }) {
+        static checkBlock({ nodeGroups, controlStatements }) {
             if (nodeGroups[0].length > 0)
                 fail(`Statements are not allowed before the first case branch`, nodeGroups[0]);
+            let err;
+            if (err = controlStatements.slice(1, -1).find((s, i, arr) => s instanceof CaseBranchStatement && s.value.type == "keyword.otherwise" && i != arr.length - 1))
+                fail(`OTHERWISE case branch must be the last case branch`, err);
         }
         runBlock(runtime, { controlStatements, nodeGroups }) {
             const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
@@ -654,7 +654,7 @@ let SwitchStatement = (() => {
                 else if (statement instanceof CaseBranchStatement) {
                     const caseToken = statement.value;
                     if (caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
-                        fail(`OTHERWISE case branch must be the last case branch`, statement);
+                        crash(`OTHERWISE case branch must be the last case branch`);
                     if (statement.branchMatches(switchType, switchValue)) {
                         runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
                         break;
@@ -703,7 +703,7 @@ let CaseBranchStatement = (() => {
         CaseBranchStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.suppressErrors = true;
+    _classThis.blockType = "switch";
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -740,6 +740,7 @@ let CaseBranchRangeStatement = (() => {
         CaseBranchRangeStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
+    _classThis.blockType = "switch";
     _classThis.allowedTypes = ["number.decimal", "char"];
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);

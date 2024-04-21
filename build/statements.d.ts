@@ -1,5 +1,5 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { FunctionData, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { IFormattable } from "./types.js";
@@ -41,6 +41,7 @@ export declare class Statement implements TextRanged, IFormattable {
     static example: string;
     static tokens: (TokenMatcher | "#")[];
     static suppressErrors: boolean;
+    static blockType: ProgramASTBranchNodeType | null;
     range: TextRange;
     constructor(tokens: (Token | ExpressionAST | ExpressionASTArrayTypeNode)[]);
     fmtText(): string;
@@ -126,29 +127,30 @@ export declare class CallStatement extends Statement {
 export declare class IfStatement extends Statement {
     condition: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token]);
-    static supportsSplit(_block: ProgramASTBranchNode, statement: Statement): true | string;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];
     };
 }
 export declare class ElseStatement extends Statement {
+    static blockType: ProgramASTBranchNodeType | null;
 }
 export declare class SwitchStatement extends Statement {
     expression: ExpressionAST;
     constructor(tokens: [Token, Token, ExpressionAST]);
     static supportsSplit(block: ProgramASTBranchNode, statement: Statement): true | string;
-    static checkBlock({ nodeGroups }: ProgramASTBranchNode): void;
+    static checkBlock({ nodeGroups, controlStatements }: ProgramASTBranchNode): void;
     runBlock(runtime: Runtime, { controlStatements, nodeGroups }: ProgramASTBranchNode): void | StatementExecutionResult;
 }
 export declare class CaseBranchStatement extends Statement {
     value: Token;
-    static suppressErrors: boolean;
+    static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, Token]);
     branchMatches(switchType: VariableType, switchValue: VariableValue): boolean;
 }
 export declare class CaseBranchRangeStatement extends CaseBranchStatement {
     upperBound: Token;
+    static blockType: ProgramASTBranchNodeType;
     static allowedTypes: TokenType[];
     constructor(tokens: [Token, Token, Token, Token]);
     branchMatches(switchType: VariableType, switchValue: VariableValue): boolean;

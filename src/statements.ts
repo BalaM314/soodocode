@@ -8,7 +8,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import { builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
@@ -59,6 +59,10 @@ export class Statement implements TextRanged, IFormattable {
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
 	static suppressErrors = false;
+	/**
+	 * If set, the statement class will only be checked for in blocks of this type.
+	 **/
+	static blockType:ProgramASTBranchNodeType | null = null;
 	range: TextRange;
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;
@@ -82,9 +86,13 @@ export class Statement implements TextRanged, IFormattable {
 	example(){
 		return this.type.example;
 	}
-	/** Warning: block will not include the usual end statement. */
+	/**
+	 * Use this method to validate block splitting statements.
+	 * Split statements are only considered if the block type matches, so this method returns true by default.
+	 * Warning: block will not include the usual end statement.
+	 **/
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
-		return f.quote`current block of type ${block.type} cannot be split by ${statement.stype} statement`;
+		return true;
 	}
 	static checkBlock(block:ProgramASTBranchNode){
 		//crash if the block is invalid or incomplete
@@ -395,12 +403,6 @@ export class IfStatement extends Statement {
 		super(tokens);
 		this.condition = tokens[1];
 	}
-	/** Warning: block will not include the usual end statement. */
-	static supportsSplit(_block:ProgramASTBranchNode, statement:Statement):true | string {
-		if(statement.stype != "else") return `${statement.stype} statements are not valid in IF blocks`;
-		return true;
-		//If the current block is an if statement, the splitting statement is "else", and there is at least one statement in the first block
-	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		if(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]){
 			return runtime.runBlock(node.nodeGroups[0]);
@@ -410,7 +412,9 @@ export class IfStatement extends Statement {
 	}
 }
 @statement("else", "ELSE", "block_multi_split", "keyword.else")
-export class ElseStatement extends Statement {}
+export class ElseStatement extends Statement {
+	static blockType: ProgramASTBranchNodeType | null = "if";
+}
 @statement("switch", "CASE OF x", "block", "auto", "keyword.case", "keyword.of", "expr+")
 export class SwitchStatement extends Statement {
 	//First node group is blank, because a blank node group is created and then the block is split by the first case branch
@@ -420,12 +424,16 @@ export class SwitchStatement extends Statement {
 		[,, this.expression] = tokens;
 	}
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
-		if(!(statement instanceof CaseBranchStatement)) return `${statement.stype} statements are not valid in CASE OF blocks`;
-		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty.`;
+		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty. (Fallthrough is not supported.)`;
 		return true;
 	}
-	static checkBlock({nodeGroups}:ProgramASTBranchNode){
+	static checkBlock({nodeGroups, controlStatements}:ProgramASTBranchNode){
 		if(nodeGroups[0].length > 0) fail(`Statements are not allowed before the first case branch`, nodeGroups[0]);
+		let err:Statement | undefined;
+		// eslint-disable-next-line no-cond-assign
+		if(err = controlStatements.slice(1, -1).find((s, i, arr) =>
+			s instanceof CaseBranchStatement && s.value.type == "keyword.otherwise" && i != arr.length - 1)
+		) fail(`OTHERWISE case branch must be the last case branch`, err);
 	}
 	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
 		const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
@@ -435,9 +443,8 @@ export class SwitchStatement extends Statement {
 			if(statement instanceof this.type.blockEndStatement<Function>()) break; //end of statements
 			else if(statement instanceof CaseBranchStatement){
 				const caseToken = statement.value;
-				//Ensure that OTHERWISE is the last branch
 				if(caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
-					fail(`OTHERWISE case branch must be the last case branch`, statement);
+					crash(`OTHERWISE case branch must be the last case branch`);
 
 				if(statement.branchMatches(switchType, switchValue)){
 					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
@@ -453,7 +460,7 @@ export class SwitchStatement extends Statement {
 @statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")
 export class CaseBranchStatement extends Statement {
 	value:Token;
-	static suppressErrors = true;
+	static blockType:ProgramASTBranchNodeType = "switch";
 	constructor(tokens:[Token, Token]){
 		super(tokens);
 		[this.value] = tokens;
@@ -468,6 +475,7 @@ export class CaseBranchStatement extends Statement {
 @statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal", "keyword.to", "literal", "punctuation.colon")
 export class CaseBranchRangeStatement extends CaseBranchStatement {
 	upperBound:Token;
+	static blockType:ProgramASTBranchNodeType = "switch";
 	static allowedTypes:TokenType[] = ["number.decimal", "char"];
 	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens as never);
