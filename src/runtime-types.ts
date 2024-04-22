@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments } from "./statements.js";
+import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
 import { fail, crash, f } from "./utils.js";
 
@@ -281,6 +281,19 @@ export type BuiltinFunctionData = {
 	name:string;
 	impl: (this:Runtime, ...args:VariableValue[]) => VariableValue;
 };
+export type ClassData = ProgramASTBranchNode & {
+	type: "class";
+	controlStatements: [start:ClassStatement, end:Statement];
+};
+export type ClassMethodData = ProgramASTBranchNode & {
+	nodeGroups: [body:ProgramASTNode[]];
+} & ({
+	type: "class_function";
+	controlStatements: [start:ClassFunctionStatement, end:Statement];
+} | {
+	type: "class_procedure";
+	controlStatements: [start:ClassProcedureStatement, end:Statement];
+});
 
 
 export type VariableScope = {

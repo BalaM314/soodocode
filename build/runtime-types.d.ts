@@ -1,6 +1,6 @@
 import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments } from "./statements.js";
+import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
 export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
 export declare abstract class BaseVariableType implements IFormattable {
@@ -130,6 +130,19 @@ export type BuiltinFunctionData = {
     name: string;
     impl: (this: Runtime, ...args: VariableValue[]) => VariableValue;
 };
+export type ClassData = ProgramASTBranchNode & {
+    type: "class";
+    controlStatements: [start: ClassStatement, end: Statement];
+};
+export type ClassMethodData = ProgramASTBranchNode & {
+    nodeGroups: [body: ProgramASTNode[]];
+} & ({
+    type: "class_function";
+    controlStatements: [start: ClassFunctionStatement, end: Statement];
+} | {
+    type: "class_procedure";
+    controlStatements: [start: ClassProcedureStatement, end: Statement];
+});
 export type VariableScope = {
     statement: Statement | "global";
     variables: Record<string, VariableData | ConstantData>;

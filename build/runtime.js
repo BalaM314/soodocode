@@ -72,6 +72,7 @@ let Runtime = (() => {
                 this._output = _output;
                 this.scopes = [];
                 this.functions = {};
+                this.classes = {};
                 this.openFiles = {};
                 this.fs = new Files();
             }
@@ -486,7 +487,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                 return this.scopes.at(-1) ?? crash(`No scope?`);
             }
             getFunction(name) {
-                return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} is not defined.`);
+                return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
+            }
+            getClass(name) {
+                return this.classes[name] ?? builtinFunctions[name] ?? fail(f.quote `Class ${name} has not been defined.`);
             }
             getCurrentFunction() {
                 const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);

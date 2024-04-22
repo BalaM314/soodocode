@@ -10,12 +10,13 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ClassData, ClassMethodData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { IFormattable } from "./types.js";
 import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
+//TODO snake case
 export type StatementType =
 	| "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call"
 	| "type" | "type.pointer" | "type.enum" | "type.set" | "type.end"
@@ -29,6 +30,7 @@ export type StatementType =
 	| "openfile" | "readfile" | "writefile" | "closefile"
 	| "seek" | "getrecord" | "putrecord"
 	| "class" | "class.inherits" | "class.end"
+	| "class_property" | "class_procedure" | "class_function"
 ;
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
@@ -761,20 +763,112 @@ export class PutRecordStatement extends Statement {
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
 export class ClassStatement extends Statement {
+	static allowOnly:StatementType[] = ["class_property", "class_procedure", "class_function"];
+	properties: Record<string, ClassPropertyStatement> = {};
+	methods: Record<string, ClassMethodData> = {};
+
+	name: Token;
 	constructor(tokens:[Token, Token] | [Token, Token, Token, Token]){
 		super(tokens);
+		this.name = tokens[1];
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		fail(`Not yet implemented`);
+	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassData {
+		const classData = branchNode as ClassData;
+		for(const node of branchNode.nodeGroups[0]){
+			if(node instanceof ProgramASTBranchNode){
+				if(node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement){
+					node.controlStatements[0].runClass(runtime, classData);
+				} else {
+					console.error({branchNode, node});
+					crash(`Invalid node in class block`);
+				}
+			} else if(node instanceof ClassPropertyStatement){
+				node.runClass(runtime, classData);
+			} else {
+				console.error({branchNode, node});
+				crash(`Invalid node in class block`);
+			}
+		}
+		return classData;
+	}
+	runBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
+		runtime.classes[this.name.text] = this.initializeClass(runtime, branchNode);
+	}
+}
+@statement("class.inherits", "CLASS Dog", "block", "keyword.class", "name", "keyword.inherits", "name")
+export class ClassInheritsStatement extends ClassStatement {
+	superClassName:Token;
+	constructor(tokens:[Token, Token, Token, Token]){
+		super(tokens);
+		this.superClassName = tokens[3];
+	}
+	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassData {
+		const baseClass = runtime.getClass(this.superClassName.text);
+		const extensions = super.initializeClass(runtime, branchNode);
+		//Apply the base class's properties and functions
+		for(const [key, value] of Object.entries(baseClass.controlStatements[0].properties)){
+			//If the property has not been overriden, set it to the base class's property
+			extensions.controlStatements[0].properties[key] ??= value;
+		}
+		for(const [key, value] of Object.entries(baseClass.controlStatements[0].methods)){
+			//If the method has not been overriden, set it to the base class's method
+			extensions.controlStatements[0].methods[key] ??= value;
+		}
+		return extensions;
 	}
 }
 
-@statement("class.inherits", "CLASS Dog", "block", "keyword.class", "name", "keyword.inherits", "name")
-export class ClassInheritsStatement extends ClassStatement {
-	constructor(tokens:[Token, Token, Token, Token]){
+//TODO use interfaces on properties like accessModifier and filename
+@statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")
+export class ClassPropertyStatement extends DeclareStatement {
+	accessModifier:Token;
+	static blockType: ProgramASTBranchNodeType = "class";
+	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
 		super(tokens);
+		this.accessModifier = tokens[0];
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+	run(runtime:Runtime){
+		crash(`Class sub-statements cannot be run normally`);
+	}
+	runClass(runtime:Runtime, clazz:ClassData){
+		fail(`Not yet implemented`);
+		const varType = runtime.resolveVariableType(this.varType);
+		for(const variable of this.variables){
+			// if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
+			// runtime.getCurrentScope().variables[variable] = {
+			// 	type: varType,
+			// 	value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),
+			// 	declaration: this,
+			// 	mutable: true,
+			// };
+		}
+	}
+}
+@statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
+export class ClassProcedureStatement extends ProcedureStatement {
+	accessModifier: Token;
+	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
+		super(tokens.slice(1));
+		this.accessModifier = tokens[0];
+	}
+	runBlock(){
+		crash(`Class sub-statements cannot be run normally`);
+	}
+	runClass(runtime:Runtime, clazz:ClassData){
+		fail(`Not yet implemented`);
+	}
+}
+@statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
+export class ClassFunctionStatement extends FunctionStatement {
+	accessModifier: Token;
+	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, Token]){
+		super(tokens.slice(1));
+		this.accessModifier = tokens[0];
+	}
+	runBlock(){
+		crash(`Class sub-statements cannot be run normally`);
+	}
+	runClass(runtime:Runtime, clazz:ClassData){
 		fail(`Not yet implemented`);
 	}
 }

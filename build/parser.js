@@ -157,10 +157,11 @@ export function parse({ program, tokens }) {
 export const parseStatement = errorBoundary()((tokens, context) => {
     if (tokens.length < 1)
         crash("Empty statement");
-    const possibleStatements = (tokens[0].type in statements.byStartKeyword
-        ? statements.byStartKeyword[tokens[0].type]
-        : statements.irregular)
-        .filter(s => !s.blockType || s.blockType == context?.type);
+    const possibleStatements = context?.controlStatements[0].type.allowOnly
+        ? context.controlStatements[0].type.allowOnly.map(s => statements.byType[s])
+        : (tokens[0].type in statements.byStartKeyword
+            ? statements.byStartKeyword[tokens[0].type]
+            : statements.irregular).filter(s => (!s.blockType || s.blockType == context?.type));
     if (possibleStatements.length == 0)
         fail(`No possible statements`, tokens);
     const errors = [];
@@ -267,7 +268,7 @@ export const checkStatement = errorBoundary()((statement, input) => {
                 return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
             if (statement.tokens[i] == "#")
                 impossible();
-            else if (statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode."))) {
+            else if (statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")) || (statement.tokens[i] == "class_modifier" && input[j].type.startsWith("keyword.class_modifier."))) {
                 output.push(input[j]);
                 j++;
             }

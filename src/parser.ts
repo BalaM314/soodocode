@@ -181,7 +181,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
  **/
 export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
-	const possibleStatements:(typeof Statement)[] =
+	const possibleStatements:(typeof Statement)[] = //TODO improve error messages here
 		context?.controlStatements[0].type.allowOnly
 			? context.controlStatements[0].type.allowOnly.map(s => statements.byType[s])
 			: (tokens[0].type in statements.byStartKeyword

@@ -10,7 +10,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { ArrayVariableType, BuiltinFunctionData, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassData, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 
@@ -41,6 +41,7 @@ export class Files {
 export class Runtime {
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
+	classes: Record<string, ClassData> = {};
 	openFiles: Record<string, OpenedFile | undefined> = {};
 	fs = new Files();
 	constructor(
@@ -460,7 +461,10 @@ help: try using DIV instead of / to produce an integer as the result`
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
 	getFunction(name:string):FunctionData | BuiltinFunctionData {
-		return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote`Function ${name} is not defined.`);
+		return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote`Function ${name} has not been defined.`);
+	}
+	getClass(name:string):ClassData {
+		return this.classes[name] ?? builtinFunctions[name] ?? fail(f.quote`Class ${name} has not been defined.`);
 	}
 	getCurrentFunction():FunctionData | null {
 		const scope = this.scopes.findLast(

@@ -38,7 +38,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTFunctionCallNode } from "./parser-types.js";
+import { ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
@@ -102,6 +102,7 @@ let Statement = (() => {
     _classThis.tokens = null;
     _classThis.suppressErrors = false;
     _classThis.blockType = null;
+    _classThis.allowOnly = null;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -1240,9 +1241,34 @@ let ClassStatement = (() => {
     var ClassStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
+            this.properties = {};
+            this.methods = {};
+            this.name = tokens[1];
         }
-        runBlock(runtime, node) {
-            fail(`Not yet implemented`);
+        initializeClass(runtime, branchNode) {
+            const classData = branchNode;
+            for (const node of branchNode.nodeGroups[0]) {
+                if (node instanceof ProgramASTBranchNode) {
+                    if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
+                        node.controlStatements[0].runClass(runtime, classData);
+                    }
+                    else {
+                        console.error({ branchNode, node });
+                        crash(`Invalid node in class block`);
+                    }
+                }
+                else if (node instanceof ClassPropertyStatement) {
+                    node.runClass(runtime, classData);
+                }
+                else {
+                    console.error({ branchNode, node });
+                    crash(`Invalid node in class block`);
+                }
+            }
+            return classData;
+        }
+        runBlock(runtime, branchNode) {
+            runtime.classes[this.name.text] = this.initializeClass(runtime, branchNode);
         }
     };
     __setFunctionName(_classThis, "ClassStatement");
@@ -1251,6 +1277,9 @@ let ClassStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ClassStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.allowOnly = ["class_property", "class_procedure", "class_function"];
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ClassStatement = _classThis;
@@ -1265,9 +1294,19 @@ let ClassInheritsStatement = (() => {
     var ClassInheritsStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
+            this.superClassName = tokens[3];
         }
-        runBlock(runtime, node) {
-            fail(`Not yet implemented`);
+        initializeClass(runtime, branchNode) {
+            var _a, _b;
+            const baseClass = runtime.getClass(this.superClassName.text);
+            const extensions = super.initializeClass(runtime, branchNode);
+            for (const [key, value] of Object.entries(baseClass.controlStatements[0].properties)) {
+                (_a = extensions.controlStatements[0].properties)[key] ?? (_a[key] = value);
+            }
+            for (const [key, value] of Object.entries(baseClass.controlStatements[0].methods)) {
+                (_b = extensions.controlStatements[0].methods)[key] ?? (_b[key] = value);
+            }
+            return extensions;
         }
     };
     __setFunctionName(_classThis, "ClassInheritsStatement");
@@ -1281,3 +1320,96 @@ let ClassInheritsStatement = (() => {
     return ClassInheritsStatement = _classThis;
 })();
 export { ClassInheritsStatement };
+let ClassPropertyStatement = (() => {
+    let _classDecorators = [statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = DeclareStatement;
+    var ClassPropertyStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens);
+            this.accessModifier = tokens[0];
+        }
+        run(runtime) {
+            crash(`Class sub-statements cannot be run normally`);
+        }
+        runClass(runtime, clazz) {
+            fail(`Not yet implemented`);
+            const varType = runtime.resolveVariableType(this.varType);
+            for (const variable of this.variables) {
+            }
+        }
+    };
+    __setFunctionName(_classThis, "ClassPropertyStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassPropertyStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "class";
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassPropertyStatement = _classThis;
+})();
+export { ClassPropertyStatement };
+let ClassProcedureStatement = (() => {
+    let _classDecorators = [statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = ProcedureStatement;
+    var ClassProcedureStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens.slice(1));
+            this.accessModifier = tokens[0];
+        }
+        runBlock() {
+            crash(`Class sub-statements cannot be run normally`);
+        }
+        runClass(runtime, clazz) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "ClassProcedureStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassProcedureStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassProcedureStatement = _classThis;
+})();
+export { ClassProcedureStatement };
+let ClassFunctionStatement = (() => {
+    let _classDecorators = [statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = FunctionStatement;
+    var ClassFunctionStatement = _classThis = class extends _classSuper {
+        constructor(tokens) {
+            super(tokens.slice(1));
+            this.accessModifier = tokens[0];
+        }
+        runBlock() {
+            crash(`Class sub-statements cannot be run normally`);
+        }
+        runClass(runtime, clazz) {
+            fail(`Not yet implemented`);
+        }
+    };
+    __setFunctionName(_classThis, "ClassFunctionStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassFunctionStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassFunctionStatement = _classThis;
+})();
+export { ClassFunctionStatement };

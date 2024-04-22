@@ -59,7 +59,7 @@ export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormatta
 }
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
-export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode";
+export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;
     nodes: ProgramASTNode[];
@@ -73,4 +73,4 @@ export declare class ProgramASTBranchNode implements TextRanged {
     constructor(type: ProgramASTBranchNodeType, controlStatements: Statement[], nodeGroups: ProgramASTNode[][]);
     range(): TextRange;
 }
-export type ProgramASTBranchNodeType = "if" | "for" | "for.step" | "while" | "dowhile" | "function" | "procedure" | "switch" | "type";
+export type ProgramASTBranchNodeType = "if" | "for" | "for.step" | "while" | "dowhile" | "function" | "procedure" | "switch" | "type" | "class" | "class_function" | "class_procedure";
