@@ -381,6 +381,7 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;"
 
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
+let lastOutputText:string = "";
 function executeSoodocode(){
 	const output:string[] = [];
 	const runtime = new Runtime(
@@ -401,7 +402,15 @@ function executeSoodocode(){
 		}
 		runtime.fs.makeBackup();
 		runtime.runProgram(program.nodes);
-		outputDiv.innerText = output.join("\n") || "<no output>";
+		const outputText = output.join("\n") || "<no output>";
+		outputDiv.innerText = outputText;
+		if(lastOutputText == outputText){
+			//flash
+			outputDiv.style.animationName = "";
+			outputDiv.offsetHeight; //reflow
+			outputDiv.style.animationName = "highlight-output-div";
+		}
+		lastOutputText = outputText;
 	} catch(err){
 		runtime.fs.loadBackup();
 		if(err instanceof SoodocodeError){

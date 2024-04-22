@@ -150,6 +150,10 @@ td, th {
 	white-space: pre-wrap;
 	margin: 20px;
 	padding: 5px;
+	animation-duration: 1000ms;
+	animation-timing-function: cubic-bezier(0.08, 1.05, 0.39, 0.87);
+	animation-fill-mode: both;
+	/* animation-name: flash-output; */
 }
 
 .program-display-inner {
@@ -221,5 +225,14 @@ input[type="checkbox"] {
 	}
 	100% {
 		transform: scale(1.0);
+	}
+}
+
+@keyframes highlight-output-div {
+	0% {
+		background-color: #444;
+	}
+	100% {
+		background-color: #000;
 	}
 }

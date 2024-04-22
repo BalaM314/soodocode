@@ -335,6 +335,7 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;"
 }
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
+let lastOutputText = "";
 function executeSoodocode() {
     const output = [];
     const runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => {
@@ -352,7 +353,14 @@ function executeSoodocode() {
         }
         runtime.fs.makeBackup();
         runtime.runProgram(program.nodes);
-        outputDiv.innerText = output.join("\n") || "<no output>";
+        const outputText = output.join("\n") || "<no output>";
+        outputDiv.innerText = outputText;
+        if (lastOutputText == outputText) {
+            outputDiv.style.animationName = "";
+            outputDiv.offsetHeight;
+            outputDiv.style.animationName = "highlight-output-div";
+        }
+        lastOutputText = outputText;
     }
     catch (err) {
         runtime.fs.loadBackup();
