@@ -1292,7 +1292,7 @@ let ClassStatement = (() => {
         ClassStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.allowOnly = ["class_property", "class_procedure", "class_function"];
+    _classThis.allowOnly = ["class_property", "class_procedure", "class_function", "class.end"];
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();

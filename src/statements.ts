@@ -66,7 +66,7 @@ export class Statement implements TextRanged, IFormattable {
 	 **/
 	static blockType:ProgramASTBranchNodeType | null = null;
 	/**
-	 * If set, only the specified statement classes will only be checked for in blocks of this statement.
+	 * If set, only the specified statement classes will only be checked for in blocks of this statement. Make sure to add the end statement.
 	 **/
 	static allowOnly:StatementType[] | null = null;
 	range: TextRange;
@@ -763,7 +763,7 @@ export class PutRecordStatement extends Statement {
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
 export class ClassStatement extends Statement {
-	static allowOnly:StatementType[] = ["class_property", "class_procedure", "class_function"];
+	static allowOnly:StatementType[] = ["class_property", "class_procedure", "class_function", "class.end"];
 	properties: Record<string, ClassPropertyStatement> = {};
 	methods: Record<string, ClassMethodData> = {};
 
