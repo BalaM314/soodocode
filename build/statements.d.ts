@@ -268,17 +268,14 @@ export declare class ClassPropertyStatement extends DeclareStatement {
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, ...names: Token[], Token, ExpressionASTTypeNode]);
     run(runtime: Runtime): void;
-    runClass(runtime: Runtime, clazz: ClassData): void;
 }
 export declare class ClassProcedureStatement extends ProcedureStatement {
     accessModifier: Token;
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token]);
     runBlock(): void;
-    runClass(runtime: Runtime, clazz: ClassData): void;
 }
 export declare class ClassFunctionStatement extends FunctionStatement {
     accessModifier: Token;
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token, Token, Token]);
     runBlock(): void;
-    runClass(runtime: Runtime, clazz: ClassData): void;
 }

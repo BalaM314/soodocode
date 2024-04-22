@@ -777,13 +777,25 @@ export class ClassStatement extends Statement {
 		for(const node of branchNode.nodeGroups[0]){
 			if(node instanceof ProgramASTBranchNode){
 				if(node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement){
-					node.controlStatements[0].runClass(runtime, classData);
+					const method = node.controlStatements[0];
+					if(this.methods[method.name]){
+						fail(f.quote`Duplicate declaration of class method ${method.name}`, this, this.properties[method.name]);
+					} else {
+						node.controlStatements[0] satisfies (ClassFunctionStatement | ClassProcedureStatement);
+						this.methods[method.name] = node as ClassMethodData;
+					}
 				} else {
 					console.error({branchNode, node});
 					crash(`Invalid node in class block`);
 				}
 			} else if(node instanceof ClassPropertyStatement){
-				node.runClass(runtime, classData);
+				for(const variable of node.variables){
+					if(this.properties[variable]){
+						fail(f.quote`Duplicate declaration of class property ${variable}`, this, this.properties[variable]);
+					} else {
+						this.properties[variable] = node;
+					}
+				}
 			} else {
 				console.error({branchNode, node});
 				crash(`Invalid node in class block`);
@@ -830,19 +842,6 @@ export class ClassPropertyStatement extends DeclareStatement {
 	run(runtime:Runtime){
 		crash(`Class sub-statements cannot be run normally`);
 	}
-	runClass(runtime:Runtime, clazz:ClassData){
-		fail(`Not yet implemented`);
-		const varType = runtime.resolveVariableType(this.varType);
-		for(const variable of this.variables){
-			// if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`);
-			// runtime.getCurrentScope().variables[variable] = {
-			// 	type: varType,
-			// 	value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),
-			// 	declaration: this,
-			// 	mutable: true,
-			// };
-		}
-	}
 }
 @statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ClassProcedureStatement extends ProcedureStatement {
@@ -854,9 +853,6 @@ export class ClassProcedureStatement extends ProcedureStatement {
 	runBlock(){
 		crash(`Class sub-statements cannot be run normally`);
 	}
-	runClass(runtime:Runtime, clazz:ClassData){
-		fail(`Not yet implemented`);
-	}
 }
 @statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class ClassFunctionStatement extends FunctionStatement {
@@ -867,8 +863,5 @@ export class ClassFunctionStatement extends FunctionStatement {
 	}
 	runBlock(){
 		crash(`Class sub-statements cannot be run normally`);
-	}
-	runClass(runtime:Runtime, clazz:ClassData){
-		fail(`Not yet implemented`);
 	}
 }

@@ -1250,7 +1250,14 @@ let ClassStatement = (() => {
             for (const node of branchNode.nodeGroups[0]) {
                 if (node instanceof ProgramASTBranchNode) {
                     if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
-                        node.controlStatements[0].runClass(runtime, classData);
+                        const method = node.controlStatements[0];
+                        if (this.methods[method.name]) {
+                            fail(f.quote `Duplicate declaration of class method ${method.name}`, this, this.properties[method.name]);
+                        }
+                        else {
+                            node.controlStatements[0];
+                            this.methods[method.name] = node;
+                        }
                     }
                     else {
                         console.error({ branchNode, node });
@@ -1258,7 +1265,14 @@ let ClassStatement = (() => {
                     }
                 }
                 else if (node instanceof ClassPropertyStatement) {
-                    node.runClass(runtime, classData);
+                    for (const variable of node.variables) {
+                        if (this.properties[variable]) {
+                            fail(f.quote `Duplicate declaration of class property ${variable}`, this, this.properties[variable]);
+                        }
+                        else {
+                            this.properties[variable] = node;
+                        }
+                    }
                 }
                 else {
                     console.error({ branchNode, node });
@@ -1334,12 +1348,6 @@ let ClassPropertyStatement = (() => {
         run(runtime) {
             crash(`Class sub-statements cannot be run normally`);
         }
-        runClass(runtime, clazz) {
-            fail(`Not yet implemented`);
-            const varType = runtime.resolveVariableType(this.varType);
-            for (const variable of this.variables) {
-            }
-        }
     };
     __setFunctionName(_classThis, "ClassPropertyStatement");
     (() => {
@@ -1369,9 +1377,6 @@ let ClassProcedureStatement = (() => {
         runBlock() {
             crash(`Class sub-statements cannot be run normally`);
         }
-        runClass(runtime, clazz) {
-            fail(`Not yet implemented`);
-        }
     };
     __setFunctionName(_classThis, "ClassProcedureStatement");
     (() => {
@@ -1397,9 +1402,6 @@ let ClassFunctionStatement = (() => {
         }
         runBlock() {
             crash(`Class sub-statements cannot be run normally`);
-        }
-        runClass(runtime, clazz) {
-            fail(`Not yet implemented`);
         }
     };
     __setFunctionName(_classThis, "ClassFunctionStatement");
