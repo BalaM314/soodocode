@@ -60,9 +60,13 @@ export class Statement implements TextRanged, IFormattable {
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
 	static suppressErrors = false;
 	/**
-	 * If set, the statement class will only be checked for in blocks of this type.
+	 * If set, this statement class will only be checked for in blocks of the specified type.
 	 **/
 	static blockType:ProgramASTBranchNodeType | null = null;
+	/**
+	 * If set, only the specified statement classes will only be checked for in blocks of this statement.
+	 **/
+	static allowOnly:StatementType[] | null = null;
 	range: TextRange;
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;

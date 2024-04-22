@@ -162,7 +162,7 @@ export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
-export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode";
+export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 
 /** Represents a fully processed program. */
 export type ProgramAST = {
@@ -189,4 +189,4 @@ export class ProgramASTBranchNode implements TextRanged {
 	}
 }
 /** The valid types for a branch node in a program AST. */
-export type ProgramASTBranchNodeType = | "if" | "for" | "for.step" | "while" | "dowhile" | "function" | "procedure" | "switch" | "type";
+export type ProgramASTBranchNodeType = | "if" | "for" | "for.step" | "while" | "dowhile" | "function" | "procedure" | "switch" | "type" | "class" | "class_function" | "class_procedure";

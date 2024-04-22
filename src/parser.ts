@@ -182,10 +182,13 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	const possibleStatements:(typeof Statement)[] =
-		(tokens[0].type in statements.byStartKeyword
-			? statements.byStartKeyword[tokens[0].type]!
-			: statements.irregular)
-			.filter(s => !s.blockType || s.blockType == context?.type);
+		context?.controlStatements[0].type.allowOnly
+			? context.controlStatements[0].type.allowOnly.map(s => statements.byType[s])
+			: (tokens[0].type in statements.byStartKeyword
+				? statements.byStartKeyword[tokens[0].type]!
+				: statements.irregular).filter(s =>
+				(!s.blockType || s.blockType == context?.type)
+			);
 	if(possibleStatements.length == 0) fail(`No possible statements`, tokens);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
@@ -239,8 +242,6 @@ type StatementCheckFailResult = { message: string; priority: number; range: Text
  */
 export const checkStatement = errorBoundary()((statement:typeof Statement, input:Token[]):
 	StatementCheckFailResult | StatementCheckTokenRange[] => {
-	//warning: despite writing it, I do not fully understand this code
-	//but it works
 
 	if(input.length == 0) crash(`checkStatement() called with empty input`);
 	if(statement.category == "block_multi_split" && !statement.blockType) crash(`block_multi_split statements must have a block type specified.`);
@@ -294,6 +295,8 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 			if(statement.tokens[i] == "#") impossible();
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (
 				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
+			) || (
+				statement.tokens[i] == "class_modifier" && input[j].type.startsWith("keyword.class_modifier.")
 			)){
 				output.push(input[j]);
 				j++; //Token matches, move to next one
