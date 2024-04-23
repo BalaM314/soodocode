@@ -328,7 +328,7 @@ export class AssignmentStatement extends Statement {
 		const variable = runtime.evaluateExpr(this.target, "variable");
 		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${this.target}`);
 		//CONFIG allow copying arrays/records by assignment?
-		variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
+		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
 	}
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
