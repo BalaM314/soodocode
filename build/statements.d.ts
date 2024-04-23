@@ -1,6 +1,6 @@
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
-import { ClassData, ClassMethodData, FunctionData, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
+import { ClassVariableType, FunctionData, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { IFormattable } from "./types.js";
 export type StatementType = "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end";
@@ -253,17 +253,15 @@ export declare class PutRecordStatement extends Statement {
 }
 export declare class ClassStatement extends Statement {
     static allowOnly: Set<StatementType>;
-    properties: Record<string, ClassPropertyStatement>;
-    methods: Record<string, ClassMethodData>;
     name: Token;
     constructor(tokens: [Token, Token] | [Token, Token, Token, Token]);
-    initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassData;
+    initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType;
     runBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): void;
 }
 export declare class ClassInheritsStatement extends ClassStatement {
     superClassName: Token;
     constructor(tokens: [Token, Token, Token, Token]);
-    initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassData;
+    initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType;
 }
 export declare class ClassPropertyStatement extends DeclareStatement {
     accessModifier: Token;

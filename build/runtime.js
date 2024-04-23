@@ -36,7 +36,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 export class Files {
@@ -72,7 +72,6 @@ let Runtime = (() => {
                 this._output = _output;
                 this.scopes = [];
                 this.functions = {};
-                this.classes = {};
                 this.openFiles = {};
                 this.fs = new Files();
             }
@@ -490,7 +489,13 @@ help: try using DIV instead of / to produce an integer as the result`);
                 return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
             }
             getClass(name) {
-                return this.classes[name] ?? builtinFunctions[name] ?? fail(f.quote `Class ${name} has not been defined.`);
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    if (this.scopes[i].types[name]) {
+                        if (!(this.scopes[i].types[name] instanceof ClassVariableType))
+                            fail(f.quote `Type ${name} is not a class, it is ${this.scopes[i].types[name]}`);
+                    }
+                }
+                fail(f.quote `Class ${name} has not been defined.`);
             }
             getCurrentFunction() {
                 const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement);

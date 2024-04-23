@@ -1,6 +1,6 @@
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
-import { BuiltinFunctionData, ClassData, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { BuiltinFunctionData, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
@@ -15,7 +15,6 @@ export declare class Runtime {
     _output: (message: string) => void;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
-    classes: Record<string, ClassData>;
     openFiles: Record<string, OpenedFile | undefined>;
     fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
@@ -59,7 +58,7 @@ export declare class Runtime {
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
     getFunction(name: string): FunctionData | BuiltinFunctionData;
-    getClass(name: string): ClassData;
+    getClass(name: string): ClassVariableType;
     getCurrentFunction(): FunctionData | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;

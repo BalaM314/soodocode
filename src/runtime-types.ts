@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
+import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
 import { fail, crash, f } from "./utils.js";
 
@@ -27,6 +27,7 @@ export type VariableTypeMapping<T> =
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
+	T extends ClassVariableType ? "TODO" :
 	never
 ;
 
@@ -196,6 +197,25 @@ export class SetVariableType extends BaseVariableType {
 		fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
 	}
 }
+export class ClassVariableType extends BaseVariableType {
+	constructor(
+		public name: string, 
+		public properties: Record<string, ClassPropertyStatement> = {},
+		public methods: Record<string, ClassMethodData> = {},
+	){super();}
+	fmtText(){
+		return f.text`${this.name} (user-defined class type)`;
+	}
+	toQuotedString(){
+		return f.quote`"${this.name}" (user-defined class type)`;
+	}
+	fmtDebug(){
+		return f.debug`ClassVariableType [${this.name}]`;
+	}
+	getInitValue(runtime:Runtime):VariableValue | null {
+		return null;
+	}
+}
 
 export function typesEqual(a:VariableType, b:VariableType):boolean {
 	return a == b ||
@@ -226,6 +246,7 @@ export type VariableType =
 	| PointerVariableType
 	| EnumeratedVariableType
 	| SetVariableType
+	| ClassVariableType
 ;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
@@ -280,10 +301,6 @@ export type BuiltinFunctionData = {
 	returnType:VariableType | null;
 	name:string;
 	impl: (this:Runtime, ...args:VariableValue[]) => VariableValue;
-};
-export type ClassData = ProgramASTBranchNode & {
-	type: "class";
-	controlStatements: [start:ClassStatement, end:Statement];
 };
 export type ClassMethodData = ProgramASTBranchNode & {
 	nodeGroups: [body:ProgramASTNode[]];

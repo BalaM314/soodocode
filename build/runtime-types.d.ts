@@ -1,8 +1,8 @@
 import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
+import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : never;
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? "TODO" : never;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
     is(...type: PrimitiveVariableTypeName[]): boolean;
@@ -76,9 +76,19 @@ export declare class SetVariableType extends BaseVariableType {
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
 }
+export declare class ClassVariableType extends BaseVariableType {
+    name: string;
+    properties: Record<string, ClassPropertyStatement>;
+    methods: Record<string, ClassMethodData>;
+    constructor(name: string, properties?: Record<string, ClassPropertyStatement>, methods?: Record<string, ClassMethodData>);
+    fmtText(): string;
+    toQuotedString(): string;
+    fmtDebug(): string;
+    getInitValue(runtime: Runtime): VariableValue | null;
+}
 export declare function typesEqual(a: VariableType, b: VariableType): boolean;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string];
-export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType;
+export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType | ClassVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
@@ -129,10 +139,6 @@ export type BuiltinFunctionData = {
     returnType: VariableType | null;
     name: string;
     impl: (this: Runtime, ...args: VariableValue[]) => VariableValue;
-};
-export type ClassData = ProgramASTBranchNode & {
-    type: "class";
-    controlStatements: [start: ClassStatement, end: Statement];
 };
 export type ClassMethodData = ProgramASTBranchNode & {
     nodeGroups: [body: ProgramASTNode[]];

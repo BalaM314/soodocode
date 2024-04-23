@@ -40,7 +40,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statements = {
@@ -1272,22 +1272,20 @@ let ClassStatement = (() => {
     var ClassStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            this.properties = {};
-            this.methods = {};
             this.name = tokens[1];
         }
         initializeClass(runtime, branchNode) {
-            const classData = branchNode;
+            const classData = new ClassVariableType(this.name.text);
             for (const node of branchNode.nodeGroups[0]) {
                 if (node instanceof ProgramASTBranchNode) {
                     if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
                         const method = node.controlStatements[0];
-                        if (this.methods[method.name]) {
-                            fail(f.quote `Duplicate declaration of class method ${method.name}`, this, this.properties[method.name]);
+                        if (classData.methods[method.name]) {
+                            fail(f.quote `Duplicate declaration of class method ${method.name}`, this, classData.methods[method.name]);
                         }
                         else {
                             node.controlStatements[0];
-                            this.methods[method.name] = node;
+                            classData.methods[method.name] = node;
                         }
                     }
                     else {
@@ -1297,11 +1295,11 @@ let ClassStatement = (() => {
                 }
                 else if (node instanceof ClassPropertyStatement) {
                     for (const variable of node.variables) {
-                        if (this.properties[variable]) {
-                            fail(f.quote `Duplicate declaration of class property ${variable}`, this, this.properties[variable]);
+                        if (classData.properties[variable]) {
+                            fail(f.quote `Duplicate declaration of class property ${variable}`, this, classData.properties[variable]);
                         }
                         else {
-                            this.properties[variable] = node;
+                            classData.properties[variable] = node;
                         }
                     }
                 }
@@ -1313,7 +1311,10 @@ let ClassStatement = (() => {
             return classData;
         }
         runBlock(runtime, branchNode) {
-            runtime.classes[this.name.text] = this.initializeClass(runtime, branchNode);
+            if (runtime.getCurrentScope().types[this.name.text])
+                fail(f.quote `Type ${this.name.text} already exists in the current scope`);
+            const data = this.initializeClass(runtime, branchNode);
+            runtime.getCurrentScope().types[this.name.text] = data;
         }
     };
     __setFunctionName(_classThis, "ClassStatement");
@@ -1345,11 +1346,11 @@ let ClassInheritsStatement = (() => {
             var _a, _b;
             const baseClass = runtime.getClass(this.superClassName.text);
             const extensions = super.initializeClass(runtime, branchNode);
-            for (const [key, value] of Object.entries(baseClass.controlStatements[0].properties)) {
-                (_a = extensions.controlStatements[0].properties)[key] ?? (_a[key] = value);
+            for (const [key, value] of Object.entries(baseClass.properties)) {
+                (_a = extensions.properties)[key] ?? (_a[key] = value);
             }
-            for (const [key, value] of Object.entries(baseClass.controlStatements[0].methods)) {
-                (_b = extensions.controlStatements[0].methods)[key] ?? (_b[key] = value);
+            for (const [key, value] of Object.entries(baseClass.methods)) {
+                (_b = extensions.methods)[key] ?? (_b[key] = value);
             }
             return extensions;
         }

@@ -153,6 +153,26 @@ export class SetVariableType extends BaseVariableType {
         fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
     }
 }
+export class ClassVariableType extends BaseVariableType {
+    constructor(name, properties = {}, methods = {}) {
+        super();
+        this.name = name;
+        this.properties = properties;
+        this.methods = methods;
+    }
+    fmtText() {
+        return f.text `${this.name} (user-defined class type)`;
+    }
+    toQuotedString() {
+        return f.quote `"${this.name}" (user-defined class type)`;
+    }
+    fmtDebug() {
+        return f.debug `ClassVariableType [${this.name}]`;
+    }
+    getInitValue(runtime) {
+        return null;
+    }
+}
 export function typesEqual(a, b) {
     return a == b ||
         (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (a.type == b.type ||
