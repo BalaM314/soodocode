@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranch
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { UnresolvedVariableType, ArrayVariableType, PrimitiveVariableType, PrimitiveVariableTypeName } from "../../build/runtime-types.js";
 import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
+	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
 } from "../../build/statements.js";
 import { SoodocodeError } from "../../build/utils.js";
@@ -21,6 +21,7 @@ import {
 	_UnresolvedVariableType,
 	_VariableType,
 	applyAnyRange,
+	fakeStatement,
 	process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement,
 	process_UnresolvedVariableType,
 	process_VariableType,
@@ -29,7 +30,7 @@ import {
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 
 //i miss rust macros
-
+//TODO major dedupe
 
 const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_ExpressionAST | "error"]>) =>
 	Object.entries(d).map<
@@ -1139,14 +1140,14 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 	]
 });
 
-const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Statement | "error", context?:ProgramASTBranchNodeType]>) =>
+const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Statement | "error", context?:[ProgramASTBranchNodeType, typeof Statement]]>) =>
 	Object.entries(data).map<
-		[name:string, program:Token[], output:jasmine.Expected<Statement> | "error", context:ProgramASTBranchNodeType | null]
+		[name:string, program:Token[], output:jasmine.Expected<Statement> | "error", context:[ProgramASTBranchNodeType, Statement] | null]
 	>(([name, [program, output, context]]) => [
 		name,
 		program.map(token),
 		output == "error" ? "error" : applyAnyRange(process_Statement(output)),
-		context ?? null
+		context ? [context[0], fakeStatement(context[1])] : null
 	]
 ))({
 	output1: [
@@ -1599,7 +1600,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranch2: [
 		[
@@ -1610,7 +1611,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["string", `"hello"`],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranch3: [
 		[
@@ -1622,7 +1623,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "-5"],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranch4: [
 		[
@@ -1633,7 +1634,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["keyword.otherwise", "OTHERWISE"],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranch_invalid_expr: [
 		[
@@ -1643,7 +1644,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranch_invalid_notstatic: [
 		[
@@ -1651,7 +1652,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranch_invalid_context: [
 		[
@@ -1659,7 +1660,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"if"
+		["if", IfStatement]
 	],
 	casebranch_invalid_context_null: [
 		[
@@ -1681,7 +1682,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_2: [
 		[
@@ -1696,7 +1697,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["char", 'e'],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_3: [
 		[
@@ -1712,7 +1713,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "5"],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_4: [
 		[
@@ -1729,7 +1730,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["number.decimal", "-1"],
 			["punctuation.colon", ":"],
 		]],
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_invalid_notstatic: [
 		[
@@ -1741,7 +1742,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_invalid_type_1: [
 		[
@@ -1752,7 +1753,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_invalid_type_2: [
 		[
@@ -1762,7 +1763,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"switch"
+		["switch", SwitchStatement]
 	],
 	casebranchrange_invalid_type_3: [
 		[
@@ -1772,7 +1773,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["punctuation.colon", ":"],
 		],
 		"error",
-		"switch"
+		["switch", SwitchStatement]
 	],
 	for_simple: [
 		[
@@ -1903,6 +1904,198 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["name", "INTEGER"],
 			["parentheses.close", `)`],
 		]]
+	],
+	classproperty1: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+		],
+		[ClassPropertyStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+		]],
+		["class", ClassStatement]
+	],
+	classproperty_multiple: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.comma", ","],
+			["name", "y"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+		],
+		[ClassPropertyStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.comma", ","],
+			["name", "y"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+		]],
+		["class", ClassStatement]
+	],
+	classproperty_multiple_type: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.comma", ","],
+			["name", "y"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["keyword.array", "ARRAY"],
+			["bracket.open", "["],
+			["number.decimal", "1"],
+			["punctuation.colon", ":"],
+			["number.decimal", "10"],
+			["bracket.close", "]"],
+			["keyword.of", "OF"],
+			["name", "INTEGER"],
+		],
+		[ClassPropertyStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.comma", ","],
+			["name", "y"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			[
+				[
+					[1, 10]
+				],
+				["name", "INTEGER"],
+			]
+		]],
+		["class", ClassStatement]
+	],
+	classproperty_invalid_context: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "x"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+		],
+		"error"
+	],
+	classprocedure1: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["parentheses.close", `)`],
+		],
+		[ClassProcedureStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["parentheses.close", `)`],
+		]],
+		["class", ClassStatement]
+	],
+	classprocedure_new: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["keyword.new", "NEW"],
+			["parentheses.open", `(`],
+			["parentheses.close", `)`],
+		],
+		[ClassProcedureStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["keyword.new", "NEW"],
+			["parentheses.open", `(`],
+			["parentheses.close", `)`],
+		]],
+		["class", ClassStatement]
+	],
+	classprocedure_args: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["name", "y"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["name", "STRING"],
+			["parentheses.close", `)`],
+		],
+		[ClassProcedureStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["name", "y"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["name", "STRING"],
+			["parentheses.close", `)`],
+		]],
+		["class", ClassStatement]
+	],
+	classfunction_args: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.function", "FUNCTION"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["name", "y"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["name", "STRING"],
+			["parentheses.close", `)`],
+			["keyword.returns", "RETURNS"],
+			["name", "STRING"],
+		],
+		[ClassFunctionStatement, [
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.function", "FUNCTION"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["name", "y"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["punctuation.comma", ","],
+			["name", "z"],
+			["punctuation.colon", ":"],
+			["name", "STRING"],
+			["parentheses.close", `)`],
+			["keyword.returns", "RETURNS"],
+			["name", "STRING"],
+		]],
+		["class", ClassStatement]
+	],
+	classprocedure_invalid_context: [
+		[
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["name", "x"],
+			["parentheses.open", `(`],
+			["parentheses.close", `)`],
+		],
+		"error"
 	],
 	// empty: [
 	// 	[
@@ -3146,7 +3339,7 @@ describe("parseExpression", () => {
 
 describe("parseStatement", () => {
 	for(const [name, program, output, context] of parseStatementTests){
-		const fakeNode = context ? new ProgramASTBranchNode(context, [], []) : null;
+		const fakeNode = context ? new ProgramASTBranchNode(context[0], [context[1]], []) : null;
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
 				expect(() => parseStatement(program, fakeNode)).toThrowMatching(e => e instanceof SoodocodeError);

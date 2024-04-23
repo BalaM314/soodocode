@@ -147,7 +147,12 @@ export function process_VariableType(input:_VariableType | null):VariableType | 
 export function process_UnresolvedVariableType(input:_UnresolvedVariableType):UnresolvedVariableType {
 	return PrimitiveVariableType.get(input) ?? ["unresolved", input];
 }
-
+export function fakeStatement(type:typeof Statement):Statement {
+	//lol wut
+	return {
+		type
+	} as Statement;
+}
 
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
 /** Mutates input unsafely */
