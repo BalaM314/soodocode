@@ -167,7 +167,7 @@ export function getPossibleStatements(tokens, context) {
         else
             validStatements = allowedValidStatements;
     }
-    validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type);
+    validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
     if (validStatements.length == 0) {
         fail(`No valid statement definitions`);
     }

@@ -187,7 +187,7 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
 			fail(`No valid statement definitions\nInput could have been ${validStatements.map(s => `"${s.type}"`).join(" or ")}, but the only statements allowed in block ${context!.type} are ${[...ctx.allowOnly].map(s => `"${s}"`).join(" or ")}`);
 		} else validStatements = allowedValidStatements;
 	}
-	validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type);
+	validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
 	if(validStatements.length == 0){
 		fail(`No valid statement definitions`);
 	}

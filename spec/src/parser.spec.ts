@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranch
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { UnresolvedVariableType, ArrayVariableType, PrimitiveVariableType, PrimitiveVariableTypeName } from "../../build/runtime-types.js";
 import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
+	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
 	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
 } from "../../build/statements.js";
 import { SoodocodeError } from "../../build/utils.js";
@@ -1841,7 +1841,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			]],
 			["keyword.step", "STEP"],
 			["number.decimal", "2"],
-		]]
+		]],
 	],
 	until1: [
 		[
@@ -1856,7 +1856,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 				["number.decimal", "5"],
 				["name", "x"],
 			]],
-		]]
+		]],
+		["dowhile", DoWhileStatement]
 	],
 	until2: [
 		[
@@ -1869,7 +1870,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["tree", "not", [
 					["name", "x"],
 				]],
-		]]
+		]],
+		["dowhile", DoWhileStatement]
 	],
 	procedure1: [
 		[
@@ -2841,6 +2843,107 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			]],
 		}]
 	],
+	class: [
+		[
+			["keyword.class", "CLASS"],
+			["name", "amogus"],
+			["newline", "\n"],
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "name"],
+			["punctuation.colon", ":"],
+			["name", "STRING"],
+			["newline", "\n"],
+			["keyword.class_modifier.public", "PUBLIC"],
+			["name", "susLevel"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["newline", "\n"],
+			["keyword.class_modifier.public", "PUBLIC"],
+			["keyword.procedure", "PROCEDURE"],
+			["keyword.new", "NEW"],
+			["parentheses.open", "("],
+			["name", "Name"],
+			["punctuation.colon", ":"],
+			["name", "STRING"],
+			["punctuation.comma", ","],
+			["name", "SusLevel"],
+			["punctuation.colon", ":"],
+			["name", "INTEGER"],
+			["parentheses.close", ")"],
+			["newline", "\n"],
+			["name", "name"],
+			["operator.assignment", "<-"],
+			["name", "Name"],
+			["newline", "\n"],
+			["name", "susLevel"],
+			["operator.assignment", "<-"],
+			["name", "SusLevel"],
+			["newline", "\n"],
+			["keyword.procedure_end", "ENDPROCEDURE"],
+			["newline", "\n"],
+			["keyword.class_end", "ENDCLASS"],
+		],
+		[{
+			type: "class",
+			controlStatements: [
+				[ClassStatement, [
+					["keyword.class", "CLASS"],
+					["name", "amogus"],
+				]],
+				[statements.byType["class.end"], [
+					["keyword.class_end", "ENDCLASS"],
+				]]
+			],
+			nodeGroups: [[
+				[ClassPropertyStatement, [
+					["keyword.class_modifier.public", "PUBLIC"],
+					["name", "name"],
+					["punctuation.colon", ":"],
+					["name", "STRING"],
+				]],
+				[ClassPropertyStatement, [
+					["keyword.class_modifier.public", "PUBLIC"],
+					["name", "susLevel"],
+					["punctuation.colon", ":"],
+					["name", "INTEGER"],
+				]],
+				{
+					type: "class_procedure",
+					controlStatements: [
+						[ClassProcedureStatement, [
+							["keyword.class_modifier.public", "PUBLIC"],
+							["keyword.procedure", "PROCEDURE"],
+							["keyword.new", "NEW"],
+							["parentheses.open", `(`],
+							["name", "Name"],
+							["punctuation.colon", ":"],
+							["name", "STRING"],
+							["punctuation.comma", ","],
+							["name", "SusLevel"],
+							["punctuation.colon", ":"],
+							["name", "INTEGER"],
+							["parentheses.close", `)`],
+						]],
+						[ClassProcedureEndStatement, [
+							["keyword.procedure_end", "ENDPROCEDURE"],
+						]],
+					],
+					nodeGroups: [[
+						[AssignmentStatement, [
+							["name", "name"],
+							["operator.assignment", `<-`],
+							["name", "Name"],
+						]],
+						[AssignmentStatement, [
+							["name", "susLevel"],
+							["operator.assignment", `<-`],
+							["name", "SusLevel"],
+						]],
+					]]
+				}
+			]]
+		}]
+	]
 });
 
 const functionArgumentTests = ((data:Record<string,

@@ -112,6 +112,7 @@ export { Statement };
 function statement(type, example, ...args) {
     return function (input) {
         var _a, _b, _c, _d, _e, _f, _g;
+        var _h;
         input.type = type;
         input.example = example;
         if (args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split") {
@@ -123,8 +124,10 @@ function statement(type, example, ...args) {
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(type + ".end", "[unknown]", "block_end", args[0] + "_end")(class __endStatement extends Statement {
-            });
+            statement(type + ".end", "[unknown]", "block_end", args[0] + "_end")((_h = class __endStatement extends Statement {
+                },
+                _h.blockType = type,
+                _h));
         }
         if (args.length < 1)
             crash(`Invalid statement definitions! All statements must contain at least one token`);
@@ -870,6 +873,9 @@ let ForEndStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ForEndStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "for";
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ForEndStatement = _classThis;
@@ -963,6 +969,9 @@ let DoWhileEndStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         DoWhileEndStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "dowhile";
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return DoWhileEndStatement = _classThis;
@@ -1386,7 +1395,7 @@ let ClassPropertyStatement = (() => {
 })();
 export { ClassPropertyStatement };
 let ClassProcedureStatement = (() => {
-    let _classDecorators = [statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")];
+    let _classDecorators = [statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "block", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1414,8 +1423,27 @@ let ClassProcedureStatement = (() => {
     return ClassProcedureStatement = _classThis;
 })();
 export { ClassProcedureStatement };
+let ClassProcedureEndStatement = (() => {
+    let _classDecorators = [statement("class_procedure.end", "ENDPROCEDURE", "block_end", "keyword.procedure_end")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ClassProcedureEndStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ClassProcedureEndStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassProcedureEndStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassProcedureEndStatement = _classThis;
+})();
+export { ClassProcedureEndStatement };
 let ClassFunctionStatement = (() => {
-    let _classDecorators = [statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
+    let _classDecorators = [statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1443,3 +1471,22 @@ let ClassFunctionStatement = (() => {
     return ClassFunctionStatement = _classThis;
 })();
 export { ClassFunctionStatement };
+let ClassFunctionEndStatement = (() => {
+    let _classDecorators = [statement("class_function.end", "ENDFUNCTION", "block_end", "keyword.function_end")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ClassFunctionEndStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ClassFunctionEndStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ClassFunctionEndStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ClassFunctionEndStatement = _classThis;
+})();
+export { ClassFunctionEndStatement };

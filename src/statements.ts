@@ -30,7 +30,9 @@ export type StatementType =
 	| "openfile" | "readfile" | "writefile" | "closefile"
 	| "seek" | "getrecord" | "putrecord"
 	| "class" | "class.inherits" | "class.end"
-	| "class_property" | "class_procedure" | "class_function"
+	| "class_property"
+	| "class_procedure" | "class_procedure.end"
+	| "class_function" | "class_function.end"
 ;
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
@@ -138,7 +140,9 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		if(args[0] == "auto" && input.category == "block"){
 			args.shift();
 			statement(type + ".end" as StatementType, "[unknown]", "block_end", args[0] + "_end" as TokenType)( //REFACTOR CHECK //TODO very bad, caused bugs
-				class __endStatement extends Statement {}
+				class __endStatement extends Statement {
+					static blockType = type as ProgramASTBranchNodeType; //TODO valiate casts
+				}
 			);
 		}
 		//validate args
@@ -570,6 +574,7 @@ export class ForStepStatement extends ForStatement {
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
 export class ForEndStatement extends Statement {
 	name:string;
+	static blockType: ProgramASTBranchNodeType = "for";
 	constructor(tokens:[Token, Token]){
 		super(tokens);
 		this.name = tokens[1].text;
@@ -614,6 +619,7 @@ export class DoWhileStatement extends Statement {
 @statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
 export class DoWhileEndStatement extends Statement {
 	condition:ExpressionAST;
+	static blockType: ProgramASTBranchNodeType = "dowhile";
 	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
 		this.condition = tokens[1];
@@ -860,7 +866,7 @@ export class ClassPropertyStatement extends DeclareStatement {
 		crash(`Class sub-statements cannot be run normally`);
 	}
 }
-@statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
+@statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "block", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ClassProcedureStatement extends ProcedureStatement {
 	accessModifier: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
@@ -872,7 +878,9 @@ export class ClassProcedureStatement extends ProcedureStatement {
 		crash(`Class sub-statements cannot be run normally`);
 	}
 }
-@statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
+@statement("class_procedure.end", "ENDPROCEDURE", "block_end", "keyword.procedure_end")
+export class ClassProcedureEndStatement extends Statement {}
+@statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class ClassFunctionStatement extends FunctionStatement {
 	accessModifier: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
@@ -884,3 +892,5 @@ export class ClassFunctionStatement extends FunctionStatement {
 		crash(`Class sub-statements cannot be run normally`);
 	}
 }
+@statement("class_function.end", "ENDFUNCTION", "block_end", "keyword.function_end")
+export class ClassFunctionEndStatement extends Statement {}
