@@ -1406,6 +1406,9 @@ let ClassProcedureStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ClassProcedureStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "class";
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ClassProcedureStatement = _classThis;
@@ -1432,6 +1435,9 @@ let ClassFunctionStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ClassFunctionStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "class";
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ClassFunctionStatement = _classThis;

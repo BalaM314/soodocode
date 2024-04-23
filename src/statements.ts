@@ -863,6 +863,7 @@ export class ClassPropertyStatement extends DeclareStatement {
 @statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ClassProcedureStatement extends ProcedureStatement {
 	accessModifier: Token;
+	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
 		super(tokens.slice(1));
 		this.accessModifier = tokens[0];
@@ -874,6 +875,7 @@ export class ClassProcedureStatement extends ProcedureStatement {
 @statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class ClassFunctionStatement extends FunctionStatement {
 	accessModifier: Token;
+	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, Token]){
 		super(tokens.slice(1));
 		this.accessModifier = tokens[0];

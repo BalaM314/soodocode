@@ -271,11 +271,13 @@ export declare class ClassPropertyStatement extends DeclareStatement {
 }
 export declare class ClassProcedureStatement extends ProcedureStatement {
     accessModifier: Token;
+    static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token]);
     runBlock(): void;
 }
 export declare class ClassFunctionStatement extends FunctionStatement {
     accessModifier: Token;
+    static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token, Token, Token]);
     runBlock(): void;
 }

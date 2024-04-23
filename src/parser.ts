@@ -308,6 +308,8 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
 			) || (
 				statement.tokens[i] == "class_modifier" && input[j].type.startsWith("keyword.class_modifier.")
+			) || (
+				statement.tokens[i] == "name" && input[j].type == "keyword.new"
 			)){
 				output.push(input[j]);
 				j++; //Token matches, move to next one
