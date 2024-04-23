@@ -68,7 +68,7 @@ export class Statement implements TextRanged, IFormattable {
 	/**
 	 * If set, only the specified statement classes will only be checked for in blocks of this statement. Make sure to add the end statement.
 	 **/
-	static allowOnly:StatementType[] | null = null;
+	static allowOnly:Set<StatementType> | null = null;
 	range: TextRange;
 	constructor(public tokens:(Token | ExpressionAST | ExpressionASTArrayTypeNode)[]){
 		this.type = this.constructor as typeof Statement;
@@ -150,8 +150,25 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		if(args[0] == "#"){
 			statements.irregular.push(input);
 		} else {
-			const firstToken = args[0] as TokenType;
-			(statements.byStartKeyword[firstToken] ??= []).push(input);
+			const firstToken = args[0] as Exclude<TokenMatcher, "#">;
+			switch(firstToken){
+				case ".": case ".*": case ".+": case "expr+": case "type+": case "literal": case "literal|otherwise":
+					crash(`Invalid statement definitions! Statements starting with matcher ${firstToken} must be irregular`);
+					break;
+				//Register these on the different token types
+				case "class_modifier":
+					(statements.byStartKeyword["keyword.class_modifier.private"] ??= []).push(input);
+					(statements.byStartKeyword["keyword.class_modifier.public"] ??= []).push(input);
+					break;
+				case "file_mode":
+					(statements.byStartKeyword["keyword.file_mode.read"] ??= []).push(input);
+					(statements.byStartKeyword["keyword.file_mode.write"] ??= []).push(input);
+					(statements.byStartKeyword["keyword.file_mode.append"] ??= []).push(input);
+					(statements.byStartKeyword["keyword.file_mode.random"] ??= []).push(input);
+					break;
+				default:
+					(statements.byStartKeyword[firstToken] ??= []).push(input);
+			}
 		}
 		if(statements.byType[type]) crash(`Invalid statement definitions! Statement for type ${type} already registered`);
 		statements.byType[type] = input;
@@ -763,7 +780,7 @@ export class PutRecordStatement extends Statement {
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
 export class ClassStatement extends Statement {
-	static allowOnly:StatementType[] = ["class_property", "class_procedure", "class_function", "class.end"];
+	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
 	properties: Record<string, ClassPropertyStatement> = {};
 	methods: Record<string, ClassMethodData> = {};
 

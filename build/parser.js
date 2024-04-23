@@ -154,16 +154,29 @@ export function parse({ program, tokens }) {
         nodes: programNodes
     };
 }
+export function getPossibleStatements(tokens, context) {
+    const ctx = context?.controlStatements[0].type;
+    let validStatements = (tokens[0].type in statements.byStartKeyword
+        ? statements.byStartKeyword[tokens[0].type]
+        : statements.irregular);
+    if (ctx?.allowOnly) {
+        const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
+        if (allowedValidStatements.length == 0) {
+            fail(`No valid statement definitions\nInput could have been ${validStatements.map(s => `"${s.type}"`).join(" or ")}, but the only statements allowed in block ${context.type} are ${[...ctx.allowOnly].map(s => `"${s}"`).join(" or ")}`);
+        }
+        else
+            validStatements = allowedValidStatements;
+    }
+    validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type);
+    if (validStatements.length == 0) {
+        fail(`No valid statement definitions`);
+    }
+    return validStatements;
+}
 export const parseStatement = errorBoundary()((tokens, context) => {
     if (tokens.length < 1)
         crash("Empty statement");
-    const possibleStatements = context?.controlStatements[0].type.allowOnly
-        ? context.controlStatements[0].type.allowOnly.map(s => statements.byType[s])
-        : (tokens[0].type in statements.byStartKeyword
-            ? statements.byStartKeyword[tokens[0].type]
-            : statements.irregular).filter(s => (!s.blockType || s.blockType == context?.type));
-    if (possibleStatements.length == 0)
-        fail(`No possible statements`, tokens);
+    const possibleStatements = getPossibleStatements(tokens, context);
     const errors = [];
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);

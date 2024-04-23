@@ -111,7 +111,7 @@ let Statement = (() => {
 export { Statement };
 function statement(type, example, ...args) {
     return function (input) {
-        var _a;
+        var _a, _b, _c, _d, _e, _f, _g;
         input.type = type;
         input.example = example;
         if (args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split") {
@@ -136,7 +136,29 @@ function statement(type, example, ...args) {
         }
         else {
             const firstToken = args[0];
-            ((_a = statements.byStartKeyword)[firstToken] ?? (_a[firstToken] = [])).push(input);
+            switch (firstToken) {
+                case ".":
+                case ".*":
+                case ".+":
+                case "expr+":
+                case "type+":
+                case "literal":
+                case "literal|otherwise":
+                    crash(`Invalid statement definitions! Statements starting with matcher ${firstToken} must be irregular`);
+                    break;
+                case "class_modifier":
+                    ((_a = statements.byStartKeyword)["keyword.class_modifier.private"] ?? (_a["keyword.class_modifier.private"] = [])).push(input);
+                    ((_b = statements.byStartKeyword)["keyword.class_modifier.public"] ?? (_b["keyword.class_modifier.public"] = [])).push(input);
+                    break;
+                case "file_mode":
+                    ((_c = statements.byStartKeyword)["keyword.file_mode.read"] ?? (_c["keyword.file_mode.read"] = [])).push(input);
+                    ((_d = statements.byStartKeyword)["keyword.file_mode.write"] ?? (_d["keyword.file_mode.write"] = [])).push(input);
+                    ((_e = statements.byStartKeyword)["keyword.file_mode.append"] ?? (_e["keyword.file_mode.append"] = [])).push(input);
+                    ((_f = statements.byStartKeyword)["keyword.file_mode.random"] ?? (_f["keyword.file_mode.random"] = [])).push(input);
+                    break;
+                default:
+                    ((_g = statements.byStartKeyword)[firstToken] ?? (_g[firstToken] = [])).push(input);
+            }
         }
         if (statements.byType[type])
             crash(`Invalid statement definitions! Statement for type ${type} already registered`);
@@ -1292,7 +1314,7 @@ let ClassStatement = (() => {
         ClassStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.allowOnly = ["class_property", "class_procedure", "class_function", "class.end"];
+    _classThis.allowOnly = new Set(["class_property", "class_procedure", "class_function", "class.end"]);
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();

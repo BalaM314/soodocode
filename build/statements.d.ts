@@ -42,7 +42,7 @@ export declare class Statement implements TextRanged, IFormattable {
     static tokens: (TokenMatcher | "#")[];
     static suppressErrors: boolean;
     static blockType: ProgramASTBranchNodeType | null;
-    static allowOnly: StatementType[] | null;
+    static allowOnly: Set<StatementType> | null;
     range: TextRange;
     constructor(tokens: (Token | ExpressionAST | ExpressionASTArrayTypeNode)[]);
     fmtText(): string;
@@ -250,7 +250,7 @@ export declare class PutRecordStatement extends Statement {
     run(runtime: Runtime): void;
 }
 export declare class ClassStatement extends Statement {
-    static allowOnly: StatementType[];
+    static allowOnly: Set<StatementType>;
     properties: Record<string, ClassPropertyStatement>;
     methods: Record<string, ClassMethodData>;
     name: Token;
