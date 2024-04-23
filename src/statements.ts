@@ -793,7 +793,7 @@ export class ClassStatement extends Statement {
 		this.name = tokens[1];
 	}
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType {
-		const classData = new ClassVariableType(this.name.text);
+		const classData = new ClassVariableType(this);
 		for(const node of branchNode.nodeGroups[0]){
 			if(node instanceof ProgramASTBranchNode){
 				if(node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement){

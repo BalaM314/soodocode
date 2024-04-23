@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
-import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
@@ -23,11 +23,11 @@ export type VariableTypeMapping<T> =
 		never
 	) :
 	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
-	T extends RecordVariableType ? Record<string, unknown> : //replacing "unknown" with VariableTypeMapping<any> breaks ts
+	T extends RecordVariableType ? Record<string, unknown> : //TODO replacing "unknown" with VariableTypeMapping<any> breaks ts
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
-	T extends ClassVariableType ? "TODO" :
+	T extends ClassVariableType ? Record<string, unknown> :
 	never
 ;
 
@@ -198,8 +198,9 @@ export class SetVariableType extends BaseVariableType {
 	}
 }
 export class ClassVariableType extends BaseVariableType {
+	name:string = this.statement.name.text;
 	constructor(
-		public name: string, 
+		public statement: ClassStatement,
 		public properties: Record<string, ClassPropertyStatement> = {},
 		public methods: Record<string, ClassMethodData> = {},
 	){super();}
@@ -214,6 +215,31 @@ export class ClassVariableType extends BaseVariableType {
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
+	}
+	construct(runtime:Runtime, args:ExpressionASTNode[]){
+		//Initialize properties
+		const data = Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
+			typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+		])) as Record<string, unknown>;
+
+		//Call constructor
+		runtime.callClassMethod(
+			this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), this, data, args
+		);
+		return data;
+	}
+	getScope(runtime:Runtime, instance:Record<string, unknown>):VariableScope {
+		return {
+			statement: this.statement,
+			types: {},
+			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
+				type: runtime.resolveVariableType(v.varType),
+				get value(){return instance[k];},
+				set value(value){instance[k] = value;},
+				declaration: v,
+				mutable: true,
+			} as VariableData]))
+		};
 	}
 }
 

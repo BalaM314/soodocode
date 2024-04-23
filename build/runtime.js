@@ -37,7 +37,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
-import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import { ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 export class Files {
     constructor() {
@@ -190,7 +190,12 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
                     if (type == "variable")
                         fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
-                    fail(`Not yet implemented`);
+                    const clazz = this.getClass(expr.className.text);
+                    const output = clazz.construct(this, expr.args);
+                    if (type)
+                        return [type, this.coerceValue(output, clazz, type)];
+                    else
+                        return [clazz, output];
                 }
                 if (expr.operator.category == "special") {
                     switch (expr.operator) {
@@ -493,6 +498,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     if (this.scopes[i].types[name]) {
                         if (!(this.scopes[i].types[name] instanceof ClassVariableType))
                             fail(f.quote `Type ${name} is not a class, it is ${this.scopes[i].types[name]}`);
+                        return this.scopes[i].types[name];
                     }
                 }
                 fail(f.quote `Class ${name} has not been defined.`);
@@ -540,16 +546,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         .map(([k, v]) => [k, this.cloneValue(type.fields[k], v)]));
                 crash(f.quote `Cannot clone value of type ${type}`);
             }
-            callFunction(funcNode, args, requireReturnValue = false) {
-                const func = funcNode.controlStatements[0];
-                if (func instanceof ProcedureStatement) {
-                    if (requireReturnValue)
-                        fail(`Cannot use return value of ${func.name}() as it is a procedure`);
-                }
-                else if (func instanceof FunctionStatement) {
-                }
-                else
-                    crash(`Invalid function ${func.stype}`);
+            assembleScope(func, args) {
                 if (func.args.size != args.length)
                     fail(`Incorrect number of arguments for function ${func.name}`);
                 const scope = {
@@ -557,8 +554,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     variables: {},
                     types: {},
                 };
-                let i = 0;
-                for (const [name, { type, passMode }] of func.args) {
+                for (const [i, [name, { type, passMode }]] of [...func.args.entries()].entries()) {
                     const rType = this.resolveVariableType(type);
                     if (passMode == "reference") {
                         const varData = this.evaluateExpr(args[i], "variable");
@@ -581,8 +577,20 @@ help: try using DIV instead of / to produce an integer as the result`);
                             value: this.cloneValue(rType, value)
                         };
                     }
-                    i++;
                 }
+                return scope;
+            }
+            callFunction(funcNode, args, requireReturnValue = false) {
+                const func = funcNode.controlStatements[0];
+                if (func instanceof ProcedureStatement) {
+                    if (requireReturnValue)
+                        fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+                }
+                else if (func instanceof FunctionStatement) {
+                }
+                else
+                    crash(`Invalid function ${func.stype}`);
+                const scope = this.assembleScope(func, args);
                 const output = this.runBlock(funcNode.nodeGroups[0], scope);
                 if (func instanceof ProcedureStatement) {
                     return null;
@@ -591,6 +599,20 @@ help: try using DIV instead of / to produce an integer as the result`);
                     if (!output)
                         fail(f.quote `Function ${func.name} did not return a value`);
                     return output.value;
+                }
+            }
+            callClassMethod(funcNode, clazz, instance, args, requireReturnValue = false) {
+                const func = funcNode.controlStatements[0];
+                if (func instanceof ClassProcedureStatement && requireReturnValue)
+                    fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+                const classScope = clazz.getScope(this, instance);
+                const methodScope = this.assembleScope(func, args);
+                const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
+                if (func instanceof ClassProcedureStatement) {
+                    return null;
+                }
+                else {
+                    return output?.value ?? fail(f.quote `Function ${func.name} did not return a value`);
                 }
             }
             callBuiltinFunction(fn, args, returnType) {
@@ -622,9 +644,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                 else
                     return [fn.returnType, fn.impl.apply(this, processedArgs)];
             }
-            runBlock(code, scope) {
-                if (scope)
-                    this.scopes.push(scope);
+            runBlock(code, ...scopes) {
+                this.scopes.push(...scopes);
                 let returned = null;
                 for (const node of code) {
                     let result;
@@ -641,8 +662,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                         }
                     }
                 }
-                if (scope)
-                    this.scopes.pop() ?? crash(`Scope somehow disappeared`);
+                if (scopes.length > 0 && this.scopes.splice(-scopes.length).length != scopes.length)
+                    crash(`Scope somehow disappeared`);
                 if (returned !== null) {
                     return {
                         type: "function_return",

@@ -1,6 +1,7 @@
 import { Token } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
-import { BuiltinFunctionData, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
+import { BuiltinFunctionData, ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { FunctionStatement, ProcedureStatement } from "./statements.js";
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
@@ -62,10 +63,13 @@ export declare class Runtime {
     getCurrentFunction(): FunctionData | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
+    assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
     callFunction(funcNode: FunctionData, args: ExpressionAST[]): VariableValue | null;
     callFunction(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue: true): VariableValue;
+    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: Record<string, unknown>, args: ExpressionAST[]): VariableValue | null;
+    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: Record<string, unknown>, args: ExpressionAST[], requireReturnValue: true): VariableValue;
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
-    runBlock(code: ProgramASTNode[], scope?: VariableScope): void | {
+    runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";
         value: VariableValue;
     };

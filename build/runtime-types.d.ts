@@ -1,8 +1,8 @@
-import type { ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
+import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? "TODO" : never;
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? Record<string, unknown> : never;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
     is(...type: PrimitiveVariableTypeName[]): boolean;
@@ -77,14 +77,17 @@ export declare class SetVariableType extends BaseVariableType {
     getInitValue(runtime: Runtime): VariableValue | null;
 }
 export declare class ClassVariableType extends BaseVariableType {
-    name: string;
+    statement: ClassStatement;
     properties: Record<string, ClassPropertyStatement>;
     methods: Record<string, ClassMethodData>;
-    constructor(name: string, properties?: Record<string, ClassPropertyStatement>, methods?: Record<string, ClassMethodData>);
+    name: string;
+    constructor(statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, methods?: Record<string, ClassMethodData>);
     fmtText(): string;
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    construct(runtime: Runtime, args: ExpressionASTNode[]): Record<string, unknown>;
+    getScope(runtime: Runtime, instance: Record<string, unknown>): VariableScope;
 }
 export declare function typesEqual(a: VariableType, b: VariableType): boolean;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string];

@@ -10,8 +10,8 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
-import { FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
+import { ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 
 //TODO: fix coercion
@@ -187,7 +187,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
 			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
-			fail(`Not yet implemented`);
+			const clazz = this.getClass(expr.className.text);
+			const output = clazz.construct(this, expr.args);
+			if(type) return [type, this.coerceValue(output, clazz, type)];
+			else return [clazz, output];
 		}
 
 		//Operator that returns a result of unknown type
@@ -467,6 +470,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(this.scopes[i].types[name]){
 				if(!(this.scopes[i].types[name] instanceof ClassVariableType))
 					fail(f.quote`Type ${name} is not a class, it is ${this.scopes[i].types[name]}`);
+				return this.scopes[i].types[name] as ClassVariableType;
 			}
 		}
 		fail(f.quote`Class ${name} has not been defined.`);
@@ -507,25 +511,14 @@ help: try using DIV instead of / to produce an integer as the result`
 		) as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
-	callFunction(funcNode:FunctionData, args:ExpressionAST[]):VariableValue | null;
-	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue:true):VariableValue;
-	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue = false):VariableValue | null {
-		const func = funcNode.controlStatements[0];
-		if(func instanceof ProcedureStatement){
-			if(requireReturnValue) fail(`Cannot use return value of ${func.name}() as it is a procedure`);
-		} else if(func instanceof FunctionStatement){
-			//all good
-		} else crash(`Invalid function ${(func as Statement).stype}`); //unreachable
-
-		//Assemble scope
+	assembleScope(func:ProcedureStatement | FunctionStatement, args:ExpressionASTNode[]){
 		if(func.args.size != args.length) fail(`Incorrect number of arguments for function ${func.name}`);
 		const scope:VariableScope = {
 			statement: func,
 			variables: {},
 			types: {},
 		};
-		let i = 0;
-		for(const [name, {type, passMode}] of func.args){
+		for(const [i, [name, {type, passMode}]] of [...func.args.entries()].entries()){
 			const rType = this.resolveVariableType(type);
 			if(passMode == "reference"){
 				const varData = this.evaluateExpr(args[i], "variable");
@@ -546,14 +539,42 @@ help: try using DIV instead of / to produce an integer as the result`
 					value: this.cloneValue(rType, value)
 				};
 			}
-			i ++;
 		}
+		return scope;
+	}
+	callFunction(funcNode:FunctionData, args:ExpressionAST[]):VariableValue | null;
+	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue:true):VariableValue;
+	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue = false):VariableValue | null {
+		const func = funcNode.controlStatements[0];
+		if(func instanceof ProcedureStatement){
+			if(requireReturnValue) fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+		} else if(func instanceof FunctionStatement){
+			//all good
+		} else crash(`Invalid function ${(func as Statement).stype}`); //unreachable
+
+		const scope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], scope);
 		if(func instanceof ProcedureStatement){
 			return null;
 		} else { //must be functionstatement
 			if(!output) fail(f.quote`Function ${func.name} did not return a value`);
 			return output.value;
+		}
+	}
+	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:Record<string, unknown>, args:ExpressionAST[]):VariableValue | null;
+	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:Record<string, unknown>, args:ExpressionAST[], requireReturnValue:true):VariableValue;
+	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:Record<string, unknown>, args:ExpressionAST[], requireReturnValue = false):VariableValue | null {
+		const func = funcNode.controlStatements[0];
+		if(func instanceof ClassProcedureStatement && requireReturnValue)
+			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+
+		const classScope = clazz.getScope(this, instance);
+		const methodScope = this.assembleScope(func, args);
+		const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
+		if(func instanceof ClassProcedureStatement){
+			return null;
+		} else { //must be functionstatement
+			return output?.value ?? fail(f.quote`Function ${func.name} did not return a value`);
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {
@@ -579,12 +600,11 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(returnType) return [returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType)];
 		else return [fn.returnType, fn.impl.apply(this, processedArgs)];
 	}
-	runBlock(code:ProgramASTNode[], scope?:VariableScope):void | {
+	runBlock(code:ProgramASTNode[], ...scopes:VariableScope[]):void | {
 		type: "function_return";
 		value: VariableValue;
 	}{
-		if(scope)
-			this.scopes.push(scope);
+		this.scopes.push(...scopes);
 		let returned:null | VariableValue = null;
 		for(const node of code){
 			let result;
@@ -600,8 +620,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				}
 			}
 		}
-		if(scope)
-			this.scopes.pop() ?? crash(`Scope somehow disappeared`);
+		if(scopes.length > 0 && this.scopes.splice(-scopes.length).length != scopes.length) crash(`Scope somehow disappeared`);
 		if(returned !== null){
 			return {
 				type: "function_return",

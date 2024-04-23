@@ -154,11 +154,12 @@ export class SetVariableType extends BaseVariableType {
     }
 }
 export class ClassVariableType extends BaseVariableType {
-    constructor(name, properties = {}, methods = {}) {
+    constructor(statement, properties = {}, methods = {}) {
         super();
-        this.name = name;
+        this.statement = statement;
         this.properties = properties;
         this.methods = methods;
+        this.name = this.statement.name.text;
     }
     fmtText() {
         return f.text `${this.name} (user-defined class type)`;
@@ -171,6 +172,26 @@ export class ClassVariableType extends BaseVariableType {
     }
     getInitValue(runtime) {
         return null;
+    }
+    construct(runtime, args) {
+        const data = Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
+            typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+        ]));
+        runtime.callClassMethod(this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), this, data, args);
+        return data;
+    }
+    getScope(runtime, instance) {
+        return {
+            statement: this.statement,
+            types: {},
+            variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
+                    type: runtime.resolveVariableType(v.varType),
+                    get value() { return instance[k]; },
+                    set value(value) { instance[k] = value; },
+                    declaration: v,
+                    mutable: true,
+                }]))
+        };
     }
 }
 export function typesEqual(a, b) {

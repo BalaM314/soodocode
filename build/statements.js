@@ -413,7 +413,7 @@ let AssignmentStatement = (() => {
             const variable = runtime.evaluateExpr(this.target, "variable");
             if (!variable.mutable)
                 fail(f.quote `Cannot assign to constant ${this.target}`);
-            variable.value = runtime.cloneValue(...runtime.evaluateExpr(this.expr, variable.type));
+            variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
@@ -1275,7 +1275,7 @@ let ClassStatement = (() => {
             this.name = tokens[1];
         }
         initializeClass(runtime, branchNode) {
-            const classData = new ClassVariableType(this.name.text);
+            const classData = new ClassVariableType(this);
             for (const node of branchNode.nodeGroups[0]) {
                 if (node instanceof ProgramASTBranchNode) {
                     if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
