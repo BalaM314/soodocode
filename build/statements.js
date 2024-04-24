@@ -1404,6 +1404,8 @@ let ClassProcedureStatement = (() => {
         constructor(tokens) {
             super(tokens.slice(1));
             this.accessModifier = tokens[0];
+            if (this.name == "NEW" && this.accessModifier.type == "keyword.class_modifier.private")
+                fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifier);
         }
         runBlock() {
             crash(`Class sub-statements cannot be run normally`);
