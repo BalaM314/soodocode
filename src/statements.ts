@@ -867,11 +867,13 @@ export class ClassInheritsStatement extends ClassStatement {
 //TODO use interfaces on properties like accessModifier and filename
 @statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")
 export class ClassPropertyStatement extends DeclareStatement {
-	accessModifier:Token;
+	accessModifierToken: Token;
+	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
 		super(tokens);
-		this.accessModifier = tokens[0];
+		this.accessModifierToken = tokens[0];
+		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 	}
 	run(runtime:Runtime){
 		crash(`Class sub-statements cannot be run normally`);
@@ -879,13 +881,15 @@ export class ClassPropertyStatement extends DeclareStatement {
 }
 @statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "block", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ClassProcedureStatement extends ProcedureStatement {
-	accessModifier: Token;
+	accessModifierToken: Token;
+	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
 		super(tokens.slice(1));
-		this.accessModifier = tokens[0];
-		if(this.name == "NEW" && this.accessModifier.type == "keyword.class_modifier.private")
-			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifier);
+		this.accessModifierToken = tokens[0];
+		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
+		if(this.name == "NEW" && this.accessModifier == "private")
+			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
 	}
 	runBlock(){
 		crash(`Class sub-statements cannot be run normally`);
@@ -895,11 +899,13 @@ export class ClassProcedureStatement extends ProcedureStatement {
 export class ClassProcedureEndStatement extends Statement {}
 @statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
 export class ClassFunctionStatement extends FunctionStatement {
-	accessModifier: Token;
+	accessModifierToken: Token;
+	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, Token]){
 		super(tokens.slice(1));
-		this.accessModifier = tokens[0];
+		this.accessModifierToken = tokens[0];
+		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 	}
 	runBlock(){
 		crash(`Class sub-statements cannot be run normally`);

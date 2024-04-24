@@ -37,7 +37,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 export class Files {
     constructor() {
@@ -122,7 +122,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
             }
             processRecordAccess(expr, operation, arg2) {
                 if (!(expr.nodes[1] instanceof Token))
-                    impossible();
+                    crash(`Second node in record access expression was not a token`);
                 const property = expr.nodes[1].text;
                 if (operation == "set" || arg2 == "variable") {
                     const variable = this.evaluateExpr(expr.nodes[0], "variable");
@@ -145,7 +145,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         }
                     }
                     else if (variable.type instanceof ClassVariableType) {
-                        const outputType = this.resolveVariableType(variable.type.properties[property]?.varType ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]));
+                        const propertyStatement = variable.type.properties[property] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+                        if (propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type))
+                            fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`);
+                        const outputType = this.resolveVariableType(propertyStatement.varType);
                         if (arg2 == "variable") {
                             return {
                                 type: outputType,
@@ -183,10 +186,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     else if (objType instanceof ClassVariableType) {
                         if (type == "function") {
                             const method = objType.methods[property];
+                            if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
+                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`);
                             return [method, objType, obj];
                         }
                         else {
-                            const outputType = this.resolveVariableType(objType.properties[property]?.varType ?? fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
+                            const propertyStatement = objType.properties[property] ?? fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]);
+                            if (propertyStatement.accessModifier == "private" && !this.canAccessClass(objType))
+                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`);
+                            const outputType = this.resolveVariableType(propertyStatement.varType);
                             const value = obj.properties[property];
                             if (value === null)
                                 fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
@@ -558,6 +566,15 @@ help: try using DIV instead of / to produce an integer as the result`);
             }
             getCurrentScope() {
                 return this.scopes.at(-1) ?? crash(`No scope?`);
+            }
+            canAccessClass(clazz) {
+                for (const { statement } of this.scopes.slice().reverse()) {
+                    if (statement instanceof ClassStatement)
+                        return statement == clazz.statement;
+                    if (statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement)
+                        return false;
+                }
+                return false;
             }
             getFunction(name) {
                 return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);

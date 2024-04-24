@@ -1388,7 +1388,8 @@ let ClassPropertyStatement = (() => {
     var ClassPropertyStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            this.accessModifier = tokens[0];
+            this.accessModifierToken = tokens[0];
+            this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
         }
         run(runtime) {
             crash(`Class sub-statements cannot be run normally`);
@@ -1417,9 +1418,10 @@ let ClassProcedureStatement = (() => {
     var ClassProcedureStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens.slice(1));
-            this.accessModifier = tokens[0];
-            if (this.name == "NEW" && this.accessModifier.type == "keyword.class_modifier.private")
-                fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifier);
+            this.accessModifierToken = tokens[0];
+            this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
+            if (this.name == "NEW" && this.accessModifier == "private")
+                fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
         }
         runBlock() {
             crash(`Class sub-statements cannot be run normally`);
@@ -1467,7 +1469,8 @@ let ClassFunctionStatement = (() => {
     var ClassFunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens.slice(1));
-            this.accessModifier = tokens[0];
+            this.accessModifierToken = tokens[0];
+            this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
         }
         runBlock() {
             crash(`Class sub-statements cannot be run normally`);

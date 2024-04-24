@@ -274,13 +274,15 @@ export declare class ClassInheritsStatement extends ClassStatement {
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType;
 }
 export declare class ClassPropertyStatement extends DeclareStatement {
-    accessModifier: Token;
+    accessModifierToken: Token;
+    accessModifier: "public" | "private";
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, ...names: Token[], Token, ExpressionASTTypeNode]);
     run(runtime: Runtime): void;
 }
 export declare class ClassProcedureStatement extends ProcedureStatement {
-    accessModifier: Token;
+    accessModifierToken: Token;
+    accessModifier: "public" | "private";
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token]);
     runBlock(): void;
@@ -288,7 +290,8 @@ export declare class ClassProcedureStatement extends ProcedureStatement {
 export declare class ClassProcedureEndStatement extends Statement {
 }
 export declare class ClassFunctionStatement extends FunctionStatement {
-    accessModifier: Token;
+    accessModifierToken: Token;
+    accessModifier: "public" | "private";
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token, Token, Token]);
     runBlock(): void;

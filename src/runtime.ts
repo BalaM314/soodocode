@@ -11,7 +11,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 
 //TODO: fix coercion
@@ -128,7 +128,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		//note to self:
 		//do not use typescript overloads like this
 		//the extra code DRYness is not worth it
-		if(!(expr.nodes[1] instanceof Token)) impossible();
+		if(!(expr.nodes[1] instanceof Token)) crash(`Second node in record access expression was not a token`);
 		const property = expr.nodes[1].text;
 		
 		if(operation == "set" || arg2 == "variable"){
@@ -153,13 +153,14 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					(variable.value as Record<string, unknown>)[property] = this.evaluateExpr(value, outputType)[1];
 				}
 			} else if(variable.type instanceof ClassVariableType){
-				const outputType = this.resolveVariableType(variable.type.properties[property]?.varType ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]));
+				const propertyStatement = variable.type.properties[property] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`);
+				const outputType = this.resolveVariableType(propertyStatement.varType);
 				if(arg2 == "variable"){ //overload 2
-					//i see nothing wrong with this bodged variable data
 					return {
 						type: outputType,
 						declaration: variable.declaration,
-						mutable: true, //Even if the record is immutable, the property is mutable
+						mutable: true, //Even if the class instance variable is immutable, the property is mutable
 						get value(){ return ((variable.value as VariableTypeMapping<ClassVariableType>).properties as Record<string, VariableValue>)[property]; },
 						set value(val){
 							((variable.value as VariableTypeMapping<ClassVariableType>).properties as Record<string, VariableValue>)[property] = val;
@@ -182,11 +183,14 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				if(type) return [type, this.coerceValue(value, outputType, type)];
 				else return [outputType, value];
 			} else if(objType instanceof ClassVariableType){
-				if(type == "function"){
+				if(type == "function"){ //overload 3
 					const method = objType.methods[property];
+					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, );
 					return [method, objType, obj as VariableTypeMapping<ClassVariableType>];
-				} else {
-					const outputType = this.resolveVariableType(objType.properties[property]?.varType ?? fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
+				} else { //overload 1
+					const propertyStatement = objType.properties[property] ?? fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]);
+					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`);
+					const outputType = this.resolveVariableType(propertyStatement.varType);
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
 					if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
 					if(type) return [type, this.coerceValue(value, outputType, type)];
@@ -525,6 +529,16 @@ help: try using DIV instead of / to produce an integer as the result`
 	}
 	getCurrentScope():VariableScope {
 		return this.scopes.at(-1) ?? crash(`No scope?`);
+	}
+	canAccessClass(clazz:ClassVariableType):boolean {
+		for(const { statement } of this.scopes.slice().reverse()){
+			if(statement instanceof ClassStatement)
+				return statement == clazz.statement;
+			if(statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement)
+				return false; //closest relevant statement is a function, cant access classes
+			//Ignore classmethodstatement because it always has a ClassStatement just above it
+		}
+		return false;
 	}
 	getFunction(name:string):FunctionData | BuiltinFunctionData {
 		return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote`Function ${name} has not been defined.`);

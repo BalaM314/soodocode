@@ -66,6 +66,7 @@ export declare class Runtime {
     getEnumFromValue(name: string): EnumeratedVariableType | null;
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
+    canAccessClass(clazz: ClassVariableType): boolean;
     getFunction(name: string): FunctionData | BuiltinFunctionData;
     getClass(name: string): ClassVariableType;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
