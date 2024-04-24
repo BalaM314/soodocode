@@ -49,7 +49,7 @@ export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
-		public functionName: ExpressionASTNode,
+		public functionName: ExpressionASTNode, //TODO only allow Token, BranchNode, cannot be array access, function call, or class instantiation directly
 		public args: ExpressionASTNode[],
 		public allTokens: Token[],
 	){

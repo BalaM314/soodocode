@@ -34,7 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
 import { operators } from "./parser.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
 import { ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
@@ -126,36 +126,78 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 const property = expr.nodes[1].text;
                 if (operation == "set" || arg2 == "variable") {
                     const variable = this.evaluateExpr(expr.nodes[0], "variable");
-                    if (!(variable.type instanceof RecordVariableType))
-                        fail(f.quote `Cannot access property ${property} on variable of type ${variable.type} because it is not a record type and cannot have proprties`, expr.nodes[0]);
-                    const outputType = variable.type.fields[property] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
-                    if (arg2 == "variable") {
-                        return {
-                            type: outputType,
-                            declaration: variable.declaration,
-                            mutable: true,
-                            get value() { return variable.value[property]; },
-                            set value(val) {
-                                variable.value[property] = val;
-                            }
-                        };
+                    if (variable.type instanceof RecordVariableType) {
+                        const outputType = variable.type.fields[property] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+                        if (arg2 == "variable") {
+                            return {
+                                type: outputType,
+                                declaration: variable.declaration,
+                                mutable: true,
+                                get value() { return variable.value[property]; },
+                                set value(val) {
+                                    variable.value[property] = val;
+                                }
+                            };
+                        }
+                        else {
+                            const value = arg2;
+                            variable.value[property] = this.evaluateExpr(value, outputType)[1];
+                        }
                     }
-                    const value = arg2;
-                    variable.value[property] = this.evaluateExpr(value, outputType)[1];
+                    else if (variable.type instanceof ClassVariableType) {
+                        const outputType = this.resolveVariableType(variable.type.properties[property]?.varType ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]));
+                        if (arg2 == "variable") {
+                            return {
+                                type: outputType,
+                                declaration: variable.declaration,
+                                mutable: true,
+                                get value() { return variable.value.properties[property]; },
+                                set value(val) {
+                                    variable.value.properties[property] = val;
+                                }
+                            };
+                        }
+                        else {
+                            const value = arg2;
+                            variable.value[property] = this.evaluateExpr(value, outputType)[1];
+                        }
+                    }
+                    else
+                        fail(f.quote `Cannot access property ${property} on variable of type ${variable.type} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
                 }
                 else {
                     const type = arg2;
                     const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
-                    if (!(objType instanceof RecordVariableType))
-                        fail(f.quote `Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
-                    const outputType = objType.fields[property] ?? fail(f.quote `Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
-                    const value = obj[property];
-                    if (value === null)
-                        fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
-                    if (type)
-                        return [type, this.coerceValue(value, outputType, type)];
+                    if (objType instanceof RecordVariableType) {
+                        if (type == "function")
+                            fail(f.quote `Expected this expression to evaluate to a function, but found a property access on a variable of type ${type}, which cannot have functions as properties`);
+                        const outputType = objType.fields[property] ?? fail(f.quote `Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
+                        const value = obj[property];
+                        if (value === null)
+                            fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
+                        if (type)
+                            return [type, this.coerceValue(value, outputType, type)];
+                        else
+                            return [outputType, value];
+                    }
+                    else if (objType instanceof ClassVariableType) {
+                        if (type == "function") {
+                            const method = objType.methods[property];
+                            return [method, objType, obj];
+                        }
+                        else {
+                            const outputType = this.resolveVariableType(objType.properties[property]?.varType ?? fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
+                            const value = obj.properties[property];
+                            if (value === null)
+                                fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
+                            if (type)
+                                return [type, this.coerceValue(value, outputType, type)];
+                            else
+                                return [outputType, value];
+                        }
+                    }
                     else
-                        return [outputType, value];
+                        fail(f.quote `Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
                 }
             }
             evaluateExpr(expr, type, _recursive = false) {
@@ -163,33 +205,54 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     crash(`expr was ${expr}`);
                 if (expr instanceof Token)
                     return this.evaluateToken(expr, type);
-                if (expr instanceof ExpressionASTArrayAccessNode)
+                if (expr instanceof ExpressionASTArrayAccessNode) {
+                    if (type == "function")
+                        fail(`Expected this expression to evaluate to a function, but found an array access, which cannot return a function.`);
                     return this.processArrayAccess(expr, "get", type);
+                }
                 if (expr instanceof ExpressionASTFunctionCallNode) {
                     if (type == "variable")
-                        fail(`Expected this expression to evaluate to a variable, but found a function call.`);
-                    const fn = this.getFunction(expr.functionName);
-                    if ("name" in fn) {
-                        const output = this.callBuiltinFunction(fn, expr.args);
-                        if (type)
-                            return [type, this.coerceValue(output[1], output[0], type)];
-                        else
-                            return output;
+                        fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`);
+                    if (type == "function")
+                        fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`);
+                    if (expr.functionName instanceof Token) {
+                        const fn = this.getFunction(expr.functionName.text);
+                        if ("name" in fn) {
+                            const output = this.callBuiltinFunction(fn, expr.args);
+                            if (type)
+                                return [type, this.coerceValue(output[1], output[0], type)];
+                            else
+                                return output;
+                        }
+                        else {
+                            if (fn.type == "procedure")
+                                fail(f.quote `Procedure ${expr.functionName} does not return a value.`);
+                            const statement = fn.controlStatements[0];
+                            const output = this.callFunction(fn, expr.args, true);
+                            if (type)
+                                return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
+                            else
+                                return [this.resolveVariableType(statement.returnType), output];
+                        }
                     }
-                    else {
-                        if (fn.type == "procedure")
-                            fail(f.quote `Procedure ${expr.functionName} does not return a value.`);
-                        const statement = fn.controlStatements[0];
-                        const output = this.callFunction(fn, expr.args, true);
-                        if (type)
-                            return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
+                    else if (expr.functionName instanceof ExpressionASTBranchNode) {
+                        const func = this.evaluateExpr(expr.functionName, "function");
+                        if (Array.isArray(func)) {
+                            if (func[0].type == "class_procedure")
+                                fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
+                            return this.callClassMethod(func[0], func[1], func[2], expr.args, true);
+                        }
                         else
-                            return [this.resolveVariableType(statement.returnType), output];
+                            crash(`Branched function call node should not be able to return regular functions`);
                     }
+                    else
+                        crash(`Function name was an unexpected node type`);
                 }
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
                     if (type == "variable")
-                        fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression.`);
+                        fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression, which can only return a class instance, not a variable.`);
+                    if (type == "function")
+                        fail(`Expected this expression to evaluate to a function, but found a class instantiation expression, which can only return a class instance, not a function.`);
                     const clazz = this.getClass(expr.className.text);
                     const output = clazz.construct(this, expr.args);
                     if (type)
@@ -202,8 +265,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         case operators.access:
                             return this.processRecordAccess(expr, "get", type);
                         case operators.pointer_reference: {
-                            if (type == "variable")
-                                fail(`Cannot evaluate a referencing expression as a variable`);
+                            if (type == "variable" || type == "function")
+                                fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`);
                             if (type && !(type instanceof PointerVariableType))
                                 fail(f.quote `Expected result to be of type ${type}, but the reference operator will return a pointer`);
                             let variable;
@@ -231,6 +294,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                                 return [pointerType, variable];
                         }
                         case operators.pointer_dereference: {
+                            if (type == "function")
+                                fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`);
                             const [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
                             if (variableValue == null)
                                 fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
@@ -254,8 +319,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         default: impossible();
                     }
                 }
-                if (type == "variable")
-                    fail(`Cannot evaluate this expression as a variable`);
+                if (type == "variable" || type == "function")
+                    fail(`Cannot evaluate this expression as a ${type}`);
                 if (type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic") {
                     if (type && !type.is("REAL", "INTEGER"))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
@@ -359,8 +424,12 @@ help: try using DIV instead of / to produce an integer as the result`);
             }
             evaluateToken(token, type) {
                 if (token.type == "name") {
+                    if (type == "function")
+                        return this.getFunction(token.text);
                     const enumType = this.getEnumFromValue(token.text);
                     if (enumType) {
+                        if (type == "variable")
+                            fail(f.quote `Cannot evaluate token ${token.text} as a variable`);
                         if (!type || type === enumType)
                             return [enumType, token.text];
                         else
@@ -380,8 +449,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                             return [variable.type, variable.value];
                     }
                 }
-                if (type == "variable")
-                    fail(f.quote `Cannot evaluate token ${token.text} as a variable`);
+                if (type == "variable" || type == "function")
+                    fail(f.quote `Cannot evaluate token ${token.text} as a ${type}`);
                 switch (token.type) {
                     case "boolean.false":
                         if (!type || type.is("BOOLEAN"))
@@ -491,10 +560,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 return this.scopes.at(-1) ?? crash(`No scope?`);
             }
             getFunction(name) {
-                if (name instanceof Token)
-                    return this.functions[name.text] ?? builtinFunctions[name.text] ?? fail(f.quote `Function ${name} has not been defined.`);
-                else
-                    fail(`Not yet implemented`);
+                return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
             }
             getClass(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
@@ -615,7 +681,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return null;
                 }
                 else {
-                    return output?.value ?? fail(f.quote `Function ${func.name} did not return a value`);
+                    return output ? [this.resolveVariableType(func.returnType), output] : fail(f.quote `Function ${func.name} did not return a value`);
                 }
             }
             callBuiltinFunction(fn, args, returnType) {

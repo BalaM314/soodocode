@@ -11,6 +11,11 @@ export declare class Files {
     canLoadBackup(): boolean;
     loadBackup(): void;
 }
+export type ClassMethodCallInformation = [
+    method: ClassMethodData,
+    clazz: ClassVariableType,
+    instance: VariableTypeMapping<ClassVariableType>
+];
 export declare class Runtime {
     _input: (message: string) => string;
     _output: (message: string) => void;
@@ -25,14 +30,17 @@ export declare class Runtime {
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type?: VariableType | "variable"): [type: VariableType, value: VariableValue] | VariableData;
     processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type?: VariableType): [type: VariableType, value: VariableValue];
     processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type: "variable"): VariableData | ConstantData;
-    processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type?: VariableType | "variable"): [type: VariableType, value: VariableValue] | VariableData | ConstantData;
+    processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type: "function"): ClassMethodCallInformation;
+    processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type?: VariableType | "variable" | "function"): [type: VariableType, value: VariableValue] | VariableData | ConstantData | ClassMethodCallInformation;
     processRecordAccess(expr: ExpressionASTBranchNode, operation: "set", value: ExpressionAST): void;
     evaluateExpr(expr: ExpressionAST): [type: VariableType, value: VariableValue];
     evaluateExpr(expr: ExpressionAST, undefined: undefined, recursive: boolean): [type: VariableType, value: VariableValue];
     evaluateExpr(expr: ExpressionAST, type: "variable", recursive?: boolean): VariableData | ConstantData;
+    evaluateExpr(expr: ExpressionAST, type: "function", recursive?: boolean): FunctionData | ClassMethodCallInformation;
     evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T, recursive?: boolean): [type: T & {}, value: VariableTypeMapping<T>];
     evaluateToken(token: Token): [type: VariableType, value: VariableValue];
     evaluateToken(token: Token, type: "variable"): VariableData | ConstantData;
+    evaluateToken(token: Token, type: "function"): FunctionData | BuiltinFunctionData;
     evaluateToken<T extends VariableType | undefined>(token: Token, type: T): [type: T & {}, value: VariableTypeMapping<T>];
     static NotStaticError: {
         new (message?: string | undefined): {
@@ -58,7 +66,7 @@ export declare class Runtime {
     getEnumFromValue(name: string): EnumeratedVariableType | null;
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
-    getFunction(name: ExpressionASTNode): FunctionData | BuiltinFunctionData;
+    getFunction(name: string): FunctionData | BuiltinFunctionData;
     getClass(name: string): ClassVariableType;
     getCurrentFunction(): FunctionData | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
@@ -66,8 +74,8 @@ export declare class Runtime {
     assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
     callFunction(funcNode: FunctionData, args: ExpressionAST[]): VariableValue | null;
     callFunction(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue: true): VariableValue;
-    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[]): VariableValue | null;
-    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue: true): VariableValue;
+    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[]): [type: VariableType, value: VariableValue] | null;
+    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue: true): [type: VariableType, value: VariableValue];
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";

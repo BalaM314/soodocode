@@ -203,7 +203,7 @@ export class ClassVariableType extends BaseVariableType {
 	name:string = this.statement.name.text;
 	constructor(
 		public statement: ClassStatement,
-		public properties: Record<string, ClassPropertyStatement> = {},
+		public properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
 		public methods: Record<string, ClassMethodData> = {},
 	){super();}
 	fmtText(){

@@ -574,12 +574,17 @@ let CallStatement = (() => {
                 fail(`CALL can only be used to call functions or procedures`);
         }
         run(runtime) {
-            const func = runtime.getFunction(this.func.functionName);
-            if ("name" in func)
-                fail(`CALL cannot be used on builtin functions, because they have no side effects`);
-            if (func.controlStatements[0] instanceof FunctionStatement)
-                fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
-            runtime.callFunction(func, this.func.args);
+            const func = runtime.evaluateExpr(this.func.functionName, "function");
+            if (Array.isArray(func)) {
+                runtime.callClassMethod(func[0], func[1], func[2], this.func.args);
+            }
+            else {
+                if ("name" in func)
+                    fail(`CALL cannot be used on builtin functions, because they have no side effects`);
+                if (func.controlStatements[0] instanceof FunctionStatement)
+                    fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
+                runtime.callFunction(func, this.func.args);
+            }
         }
     };
     __setFunctionName(_classThis, "CallStatement");
