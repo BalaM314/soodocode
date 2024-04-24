@@ -356,7 +356,7 @@ export class InputStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const variable = runtime.getVariable(this.name);
-		if(!variable) fail(`Undeclared variable ${this.name}`);
+		if(!variable) fail(`Undeclared variable ${this.name}`, this.tokens[1]);
 		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`);
 		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`);
 		switch(variable.type){
@@ -382,7 +382,7 @@ export class InputStatement extends Statement {
 				else fail(`input was not a valid character: contained more than one character`);
 				break;
 			default:
-				fail(f.quote`Cannot INPUT variable of type ${variable.type}`);
+				fail(f.quote`Cannot INPUT variable of type ${variable.type}`, this);
 		}
 	}
 }
@@ -396,11 +396,18 @@ export class ReturnStatement extends Statement {
 	run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
 		if(!fn) fail(`RETURN is only valid within a function.`);
-		const statement = fn.controlStatements[0];
-		if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`);
+		let type;
+		if(fn instanceof ProgramASTBranchNode){
+			const statement = fn.controlStatements[0];
+			if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`, this);
+			type = statement.returnType;
+		} else {
+			if(fn instanceof ClassProcedureStatement) fail(`Procedures cannot return a value.`, this);
+			type = fn.returnType;
+		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(statement.returnType))[1]
+			value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type))[1]
 		};
 	}
 }

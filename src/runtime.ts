@@ -10,8 +10,8 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { operators } from "./parser.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
-import { ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
+import { ClassFunctionStatement, ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
 
 //TODO: fix coercion
@@ -539,13 +539,16 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 		fail(f.quote`Class ${name} has not been defined.`);
 	}
-	getCurrentFunction():FunctionData | null {
+	getCurrentFunction():FunctionData | ClassMethodStatement | null {
 		const scope = this.scopes.findLast(
-			(s):s is VariableScope & { statement: FunctionStatement | ProcedureStatement } =>
-				s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement
+			(s):s is VariableScope & { statement: FunctionStatement | ProcedureStatement | ClassFunctionStatement | ClassProcedureStatement } =>
+				s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement || s.statement instanceof ClassFunctionStatement || s.statement instanceof ClassProcedureStatement
 		);
 		if(!scope) return null;
-		return this.functions[scope.statement.name] ?? impossible();
+		if(scope.statement instanceof ClassFunctionStatement || scope.statement instanceof ClassProcedureStatement)
+			return scope.statement;
+		else
+			return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
 	}
 	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S):VariableTypeMapping<S> {
 		//typescript really hates this function, beware
@@ -638,7 +641,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(func instanceof ClassProcedureStatement){
 			return null;
 		} else { //must be functionstatement
-			return output ? [this.resolveVariableType(func.returnType), output] : fail(f.quote`Function ${func.name} did not return a value`);
+			return output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`);
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {

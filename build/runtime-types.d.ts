@@ -147,6 +147,7 @@ export type BuiltinFunctionData = {
     name: string;
     impl: (this: Runtime, ...args: VariableValue[]) => VariableValue;
 };
+export type ClassMethodStatement = ClassFunctionStatement | ClassProcedureStatement;
 export type ClassMethodData = ProgramASTBranchNode & {
     nodeGroups: [body: ProgramASTNode[]];
 } & ({
