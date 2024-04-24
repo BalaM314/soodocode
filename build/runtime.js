@@ -147,7 +147,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     else if (variable.type instanceof ClassVariableType) {
                         const propertyStatement = variable.type.properties[property] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                         if (propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type))
-                            fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`);
+                            fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
                         const outputType = this.resolveVariableType(propertyStatement.varType);
                         if (arg2 == "variable") {
                             return {
@@ -185,15 +185,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     }
                     else if (objType instanceof ClassVariableType) {
                         if (type == "function") {
-                            const method = objType.methods[property];
+                            const method = objType.methods[property] ?? fail(f.quote `Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
                             if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
-                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`);
+                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
                             return [method, objType, obj];
                         }
                         else {
                             const propertyStatement = objType.properties[property] ?? fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]);
                             if (propertyStatement.accessModifier == "private" && !this.canAccessClass(objType))
-                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`);
+                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
                             const outputType = this.resolveVariableType(propertyStatement.varType);
                             const value = obj.properties[property];
                             if (value === null)

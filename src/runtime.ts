@@ -154,7 +154,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				}
 			} else if(variable.type instanceof ClassVariableType){
 				const propertyStatement = variable.type.properties[property] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
-				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`);
+				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 				const outputType = this.resolveVariableType(propertyStatement.varType);
 				if(arg2 == "variable"){ //overload 2
 					return {
@@ -184,12 +184,12 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				else return [outputType, value];
 			} else if(objType instanceof ClassVariableType){
 				if(type == "function"){ //overload 3
-					const method = objType.methods[property];
-					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, );
+					const method = objType.methods[property] ?? fail(f.quote`Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
+					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					return [method, objType, obj as VariableTypeMapping<ClassVariableType>];
 				} else { //overload 1
 					const propertyStatement = objType.properties[property] ?? fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]);
-					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`);
+					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					const outputType = this.resolveVariableType(propertyStatement.varType);
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
 					if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
@@ -575,6 +575,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
 			else if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 		}
+		//TODO allow coercion to base classes
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}`);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
