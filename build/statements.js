@@ -1359,6 +1359,7 @@ let ClassInheritsStatement = (() => {
             var _a, _b;
             const baseClass = runtime.getClass(this.superClassName.text);
             const extensions = super.initializeClass(runtime, branchNode);
+            extensions.baseClass = baseClass;
             for (const [key, value] of Object.entries(baseClass.properties)) {
                 (_a = extensions.properties)[key] ?? (_a[key] = value);
             }

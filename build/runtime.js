@@ -613,6 +613,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                     else if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;
                 }
+                if (from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to))
+                    return value;
                 fail(f.quote `Cannot coerce value of type ${from} to ${to}`);
             }
             cloneValue(type, value) {

@@ -35,7 +35,7 @@ export declare class Operator implements IFormattable {
     fmtDebug(): string;
 }
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Omit<Record<"assignment" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "add" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
+export declare const operators: Omit<Record<"add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "assignment" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
 export declare const expressionLeafNodeTypes: TokenType[];
 export declare const parseExpressionLeafNode: (token: Token) => ExpressionASTLeafNode;
 export declare const parseExpression: (input: Token[], recursive?: any) => ExpressionASTNode;

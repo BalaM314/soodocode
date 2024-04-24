@@ -159,6 +159,7 @@ export class ClassVariableType extends BaseVariableType {
         this.properties = properties;
         this.methods = methods;
         this.name = this.statement.name.text;
+        this.baseClass = null;
     }
     fmtText() {
         return f.text `${this.name} (user-defined class type)`;
@@ -171,6 +172,9 @@ export class ClassVariableType extends BaseVariableType {
     }
     getInitValue(runtime) {
         return null;
+    }
+    inherits(other) {
+        return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
     }
     construct(runtime, args) {
         const data = {

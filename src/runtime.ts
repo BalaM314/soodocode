@@ -575,7 +575,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
 			else if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 		}
-		//TODO allow coercion to base classes
+		if(from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to)) return value as never;
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}`);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {

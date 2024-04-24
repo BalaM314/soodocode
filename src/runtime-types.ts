@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
+import { type DeclareStatement, type FunctionStatement, type ProcedureStatement, type DefineStatement, type ConstantStatement, type ForStatement, type Statement, type BuiltinFunctionArguments, type ClassStatement, type ClassFunctionStatement, type ClassProcedureStatement, type ClassPropertyStatement, ClassInheritsStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
 import { fail, crash, f } from "./utils.js";
 
@@ -201,6 +201,7 @@ export class SetVariableType extends BaseVariableType {
 }
 export class ClassVariableType extends BaseVariableType {
 	name:string = this.statement.name.text;
+	baseClass:ClassVariableType | null = null;
 	constructor(
 		public statement: ClassStatement,
 		public properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
@@ -217,6 +218,9 @@ export class ClassVariableType extends BaseVariableType {
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
+	}
+	inherits(other:ClassVariableType):boolean {
+		return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
 	}
 	construct(runtime:Runtime, args:ExpressionASTNode[]){
 		//Initialize properties

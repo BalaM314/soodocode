@@ -851,6 +851,7 @@ export class ClassInheritsStatement extends ClassStatement {
 		const baseClass = runtime.getClass(this.superClassName.text);
 		const extensions = super.initializeClass(runtime, branchNode);
 		//Apply the base class's properties and functions
+		extensions.baseClass = baseClass;
 		//TODO type check
 		for(const [key, value] of Object.entries(baseClass.properties)){
 			//If the property has not been overriden, set it to the base class's property
