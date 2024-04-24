@@ -1,11 +1,11 @@
 import "jasmine";
 import { Token, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
-import { ArrayVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_Statement, process_VariableType } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
 	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
@@ -164,6 +164,23 @@ const expressionTests = ((data:Record<string, [
 		]],
 		"INTEGER",
 		["INTEGER", 11]
+	],
+	arrayAccess_simple: [
+		["tree", ["array access", ["name", "amogus"]], [
+			["number.decimal", "5"],
+		]],
+		"INTEGER",
+		["INTEGER", 18],
+		r => {
+			r.getCurrentScope().variables["amogus"] = {
+				type: new ArrayVariableType([
+					[1, 10]
+				], PrimitiveVariableType.INTEGER),
+				declaration: null!,
+				mutable: true,
+				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0]
+			}
+		}
 	],
 	propertyAccess_simple: [
 		["tree", "access", [
@@ -418,6 +435,219 @@ const expressionTests = ((data:Record<string, [
 			}
 		]
 	})(),
+	functionCall_simple: [
+		["tree", ["function call", ["name", "amogus"]], [
+		]],
+		"INTEGER",
+		["INTEGER", 22],
+		r => {
+			r.functions["amogus"] = process_ProgramASTNode({
+				type: "function",
+				controlStatements: [
+					[FunctionStatement, [
+						["keyword.function", "FUNCTION"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["parentheses.close", ")"],
+						["keyword.returns", "RETURNS"],
+						["name", "INTEGER"],
+					]],
+					[statements.byType["function.end"], [
+						["keyword.function", "FUNCTION"],
+					]],
+				],
+				nodeGroups: [[
+					[ReturnStatement, [
+						["keyword.return", "RETURN"],
+						["number.decimal", "22"],
+					]],
+				]]
+			}) as FunctionData;
+		}
+	],
+	functionCall_args: [
+		["tree", ["function call", ["name", "amogus"]], [
+			["tree", "add", [
+				["number.decimal", "5"],
+				["number.decimal", "6"]
+			]]
+		]],
+		"REAL",
+		["REAL", 16],
+		r => {
+			r.functions["amogus"] = process_ProgramASTNode({
+				type: "function",
+				controlStatements: [
+					[FunctionStatement, [
+						["keyword.function", "FUNCTION"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["name", "arg"],
+						["punctuation.colon", ":"],
+						["name", "INTEGER"],
+						["parentheses.close", ")"],
+						["keyword.returns", "RETURNS"],
+						["name", "INTEGER"],
+					]],
+					[statements.byType["function.end"], [
+						["keyword.function", "FUNCTION"],
+					]],
+				],
+				nodeGroups: [[
+					[ReturnStatement, [
+						["keyword.return", "RETURN"],
+						["tree", "add", [
+							["number.decimal", "5"],
+							["name", "arg"]
+						]],
+					]],
+				]]
+			}) as FunctionData;
+		}
+	],
+	functionCall_invalid_wrong_type: [
+		["tree", ["function call", ["name", "amogus"]], [
+		]],
+		"DATE",
+		["error"],
+		r => {
+			r.functions["amogus"] = process_ProgramASTNode({
+				type: "function",
+				controlStatements: [
+					[FunctionStatement, [
+						["keyword.function", "FUNCTION"],
+						["name", "amogus"],
+						["parentheses.open", "("],
+						["parentheses.close", ")"],
+						["keyword.returns", "RETURNS"],
+						["name", "INTEGER"],
+					]],
+					[statements.byType["function.end"], [
+						["keyword.function", "FUNCTION"],
+					]],
+				],
+				nodeGroups: [[
+					[ReturnStatement, [
+						["keyword.return", "RETURN"],
+						["number.decimal", "22"],
+					]],
+				]]
+			}) as FunctionData;
+		}
+	],
+	class_instantiation_1: (() => {
+		const amogusClass = new ClassVariableType({
+			name: {
+				text: "Amogus"
+			}
+		} as ClassStatement, {
+			prop: {
+				varType: PrimitiveVariableType.REAL
+			} as ClassPropertyStatement
+		}, {
+			NEW: process_ProgramASTNode({
+				type: "class_procedure",
+				controlStatements: [
+					[ClassProcedureStatement, [
+						["keyword.class_modifier.public", "PUBLIC"],
+						["keyword.procedure", "PROCEDURE"],
+						["name", "NEW"],
+						["parentheses.open", "("],
+						["parentheses.close", ")"],
+					]],
+					[ClassProcedureEndStatement, [
+						["keyword.procedure_end", "ENDPROCEDURE"]
+					]]
+				],
+				nodeGroups: [[
+				]],
+			}) as ClassMethodData
+		});
+		return [
+			["tree", ["class instantiation", "Amogus"], [
+			]],
+			null,
+			[amogusClass, {
+				properties: {
+					prop: null
+				}
+			}],
+			r => {
+				r.getCurrentScope().types["Amogus"] = amogusClass;
+			}
+		]
+	})(),
+	class_instantiation_2: (() => {
+		const amogusClass = new ClassVariableType({
+			name: {
+				text: "Amogus"
+			}
+		} as ClassStatement, {
+			prop: {
+				varType: PrimitiveVariableType.REAL
+			} as ClassPropertyStatement
+		}, {
+			NEW: process_ProgramASTNode({
+				type: "class_procedure",
+				controlStatements: [
+					[ClassProcedureStatement, [
+						["keyword.class_modifier.public", "PUBLIC"],
+						["keyword.procedure", "PROCEDURE"],
+						["name", "NEW"],
+						["parentheses.open", "("],
+						["name", "arg"],
+						["punctuation.colon", ":"],
+						["name", "INTEGER"],
+						["parentheses.close", ")"],
+					]],
+					[ClassProcedureEndStatement, [
+						["keyword.procedure_end", "ENDPROCEDURE"]
+					]]
+				],
+				nodeGroups: [[
+					[AssignmentStatement, [
+						["name", "prop"],
+						["operator.assignment", "<-"],
+						["tree", "add", [
+							["name", "arg"],
+							["number.decimal", "22"]
+						]]
+					]]
+				]],
+			}) as ClassMethodData
+		});
+		return [
+			["tree", ["class instantiation", "Amogus"], [
+				["number.decimal", "43"]
+			]],
+			null,
+			[amogusClass, {
+				properties: {
+					prop: 65
+				}
+			}],
+			r => {
+				r.getCurrentScope().types["Amogus"] = amogusClass;
+			}
+		]
+	})(),
+	class_instantiation_invalid_no_constructor: [
+		["tree", ["class instantiation", "Amogus"], [
+		]],
+		null,
+		["error"],
+		r => {
+			r.getCurrentScope().types["Amogus"] = new ClassVariableType({
+				name: {
+					text: "Amogus"
+				}
+			} as ClassStatement, {
+				prop: {
+					varType: PrimitiveVariableType.REAL
+				} as ClassPropertyStatement
+			});
+		}
+	],
 });
 
 const statementTests = ((data:Record<string, [
@@ -1082,7 +1312,7 @@ const programTests = ((data:Record<string,
 			},
 			[CallStatement, [
 				["keyword.call", "CALL"],
-				["tree", ["function call",["name", "amogus"]], [
+				["tree", ["function call", ["name", "amogus"]], [
 				]]
 			]]
 		],
