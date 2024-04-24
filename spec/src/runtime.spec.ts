@@ -648,6 +648,127 @@ const expressionTests = ((data:Record<string, [
 			});
 		}
 	],
+	class_property_access: (() => {
+		const amogusClass = new ClassVariableType({
+			name: {
+				text: "Amogus"
+			}
+		} as ClassStatement, {
+			prop: {
+				varType: PrimitiveVariableType.REAL
+			} as ClassPropertyStatement
+		});
+		return [
+			["tree", "access", [
+				["name", "amogus"],
+				["name", "prop"],
+			]],
+			null,
+			["REAL", 65],
+			r => {
+				r.getCurrentScope().types["Amogus"] = amogusClass;
+				r.getCurrentScope().variables["amogus"] = {
+					declaration: null!,
+					mutable: true,
+					type: amogusClass,
+					value: {
+						properties: {
+							prop: 65
+						}
+					}
+				}
+			}
+		]
+	})(),
+	class_property_access_private: (() => {
+		const amogusClass = new ClassVariableType({
+			name: {
+				text: "Amogus"
+			}
+		} as ClassStatement, {
+			prop: {
+				varType: PrimitiveVariableType.REAL,
+				accessModifier: token("keyword.class_modifier.private", "PRIVATE")
+			} as ClassPropertyStatement
+		});
+		return [
+			["tree", "access", [
+				["name", "amogus"],
+				["name", "prop"],
+			]],
+			null,
+			["error"],
+			r => {
+				r.getCurrentScope().types["Amogus"] = amogusClass;
+				r.getCurrentScope().variables["amogus"] = {
+					declaration: null!,
+					mutable: true,
+					type: amogusClass,
+					value: {
+						properties: {
+							prop: 65
+						}
+					}
+				}
+			}
+		]
+	})(),
+	class_method_call:  [
+		["tree", ["function call", ["tree", "access", [
+			["name", "amogus"],
+			["name", "eject"],
+		]]], [
+		]],
+		null,
+		["STRING", `amogus was not The Imposter.`],
+		r => {
+			const amogusClass = new ClassVariableType({
+				name: {
+					text: "Amogus"
+				}
+			} as ClassStatement, {
+				prop: {
+					varType: PrimitiveVariableType.REAL
+				} as ClassPropertyStatement
+			}, {
+				eject: process_ProgramASTNode({
+					type: "class_procedure",
+					controlStatements: [
+						[ClassProcedureStatement, [
+							["keyword.class_modifier.public", "PUBLIC"],
+							["keyword.procedure", "PROCEDURE"],
+							["name", "NEW"],
+							["parentheses.open", "("],
+							["name", "arg"],
+							["punctuation.colon", ":"],
+							["name", "INTEGER"],
+							["parentheses.close", ")"],
+						]],
+						[ClassProcedureEndStatement, [
+							["keyword.procedure_end", "ENDPROCEDURE"]
+						]]
+					],
+					nodeGroups: [[
+						[ReturnStatement, [
+							["keyword.return", "RETURN"],
+							["string", `"amogus was not The Imposter."`],
+						]]
+					]],
+				}) as ClassMethodData
+			});
+			r.getCurrentScope().types["Amogus"] = amogusClass;
+			r.getCurrentScope().variables["amogus"] = {
+				declaration: null!,
+				mutable: true,
+				type: amogusClass,
+				value: {
+					properties: {
+						prop: 65
+					}
+				}
+			}
+		}
+	]
 });
 
 const statementTests = ((data:Record<string, [
