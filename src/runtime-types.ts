@@ -140,9 +140,9 @@ export class RecordVariableType extends BaseVariableType {
 		return `RecordVariableType [${this.name}] (fields: ${Object.keys(this.fields).join(", ")})`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableValue | null {
-		return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-			typeof v == "string" ? null : v.getInitValue(runtime, false)
-		])) as VariableValue | null;
+		return Object.fromEntries(Object.entries(this.fields)
+			.map(([k, v]) => [k, v.getInitValue(runtime, false)])
+		) as VariableValue | null;
 	}
 }
 export class PointerVariableType extends BaseVariableType {
@@ -221,8 +221,8 @@ export class ClassVariableType extends BaseVariableType {
 	construct(runtime:Runtime, args:ExpressionASTNode[]){
 		//Initialize properties
 		const data:VariableTypeMapping<ClassVariableType> = {
-			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-				typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
+				runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
 			])) as Record<string, unknown>
 		};
 

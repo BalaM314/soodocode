@@ -91,9 +91,8 @@ export class RecordVariableType extends BaseVariableType {
         return `RecordVariableType [${this.name}] (fields: ${Object.keys(this.fields).join(", ")})`;
     }
     getInitValue(runtime, requireInit) {
-        return Object.fromEntries(Object.entries(this.fields).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-            typeof v == "string" ? null : v.getInitValue(runtime, false)
-        ]));
+        return Object.fromEntries(Object.entries(this.fields)
+            .map(([k, v]) => [k, v.getInitValue(runtime, false)]));
     }
 }
 export class PointerVariableType extends BaseVariableType {
@@ -175,8 +174,8 @@ export class ClassVariableType extends BaseVariableType {
     }
     construct(runtime, args) {
         const data = {
-            properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-                typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+            properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
+                runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
             ]))
         };
         runtime.callClassMethod(this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), this, data, args);

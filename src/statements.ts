@@ -414,7 +414,7 @@ export class CallStatement extends Statement {
 		} else fail(`CALL can only be used to call functions or procedures`);
 	}
 	run(runtime:Runtime){
-		const func = runtime.getFunction(this.func);
+		const func = runtime.getFunction(this.func.functionName);
 		if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
 		if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
 		runtime.callFunction(func, this.func.args);
@@ -871,7 +871,7 @@ export class ClassProcedureStatement extends ProcedureStatement {
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
 		super(tokens.slice(1));
-		this.accessModifier = tokens[0];
+		this.accessModifier = tokens[0]; //TODO forbid private constructors as they are unreachable
 	}
 	runBlock(){
 		crash(`Class sub-statements cannot be run normally`);
