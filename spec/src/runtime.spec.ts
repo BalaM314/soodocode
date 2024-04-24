@@ -3,7 +3,7 @@ import { Token, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_VariableType } from "./spec_utils.js";
 
@@ -713,7 +713,7 @@ const expressionTests = ((data:Record<string, [
 			}
 		]
 	})(),
-	class_method_call:  [
+	class_method_call: [
 		["tree", ["function call", ["tree", "access", [
 			["name", "amogus"],
 			["name", "eject"],
@@ -721,6 +721,119 @@ const expressionTests = ((data:Record<string, [
 		]],
 		null,
 		["STRING", `amogus was not The Imposter.`],
+		r => {
+			const amogusClass = new ClassVariableType({
+				name: {
+					text: "Amogus"
+				}
+			} as ClassStatement, {
+				prop: {
+					varType: PrimitiveVariableType.REAL
+				} as ClassPropertyStatement
+			}, {
+				eject: process_ProgramASTNode({
+					type: "class_function",
+					controlStatements: [
+						[ClassFunctionStatement, [
+							["keyword.class_modifier.public", "PUBLIC"],
+							["keyword.function", "FUNCTION"],
+							["name", "eject"],
+							["parentheses.open", "("],
+							["parentheses.close", ")"],
+							["keyword.returns", "RETURNS"],
+							["name", "STRING"],
+						]],
+						[ClassFunctionEndStatement, [
+							["keyword.function_end", "ENDFUNCTION"]
+						]]
+					],
+					nodeGroups: [[
+						[ReturnStatement, [
+							["keyword.return", "RETURN"],
+							["string", `"amogus was not The Imposter."`],
+						]]
+					]],
+				}) as ClassMethodData
+			});
+			r.getCurrentScope().types["Amogus"] = amogusClass;
+			r.getCurrentScope().variables["amogus"] = {
+				declaration: null!,
+				mutable: true,
+				type: amogusClass,
+				value: {
+					properties: {
+						prop: 65
+					}
+				}
+			}
+		}
+	],
+	class_method_call_invalid_wrong_arguments: [
+		["tree", ["function call", ["tree", "access", [
+			["name", "amogus"],
+			["name", "eject"],
+		]]], [
+		]],
+		null,
+		["error"],
+		r => {
+			const amogusClass = new ClassVariableType({
+				name: {
+					text: "Amogus"
+				}
+			} as ClassStatement, {
+				prop: {
+					varType: PrimitiveVariableType.REAL
+				} as ClassPropertyStatement
+			}, {
+				eject: process_ProgramASTNode({
+					type: "class_function",
+					controlStatements: [
+						[ClassFunctionStatement, [
+							["keyword.class_modifier.public", "PUBLIC"],
+							["keyword.function", "FUNCTION"],
+							["name", "eject"],
+							["parentheses.open", "("],
+							["name", "arg"],
+							["punctuation.colon", ":"],
+							["name", "INTEGER"],
+							["parentheses.close", ")"],
+							["keyword.returns", "RETURNS"],
+							["name", "STRING"],
+						]],
+						[ClassFunctionEndStatement, [
+							["keyword.function_end", "ENDFUNCTION"]
+						]]
+					],
+					nodeGroups: [[
+						[ReturnStatement, [
+							["keyword.return", "RETURN"],
+							["string", `"amogus was not The Imposter."`],
+						]]
+					]],
+				}) as ClassMethodData
+			});
+			r.getCurrentScope().types["Amogus"] = amogusClass;
+			r.getCurrentScope().variables["amogus"] = {
+				declaration: null!,
+				mutable: true,
+				type: amogusClass,
+				value: {
+					properties: {
+						prop: 65
+					}
+				}
+			}
+		}
+	],
+	class_method_call_invalid_procedure_no_return:  [
+		["tree", ["function call", ["tree", "access", [
+			["name", "amogus"],
+			["name", "eject"],
+		]]], [
+		]],
+		null,
+		["error"],
 		r => {
 			const amogusClass = new ClassVariableType({
 				name: {
@@ -768,7 +881,7 @@ const expressionTests = ((data:Record<string, [
 				}
 			}
 		}
-	]
+	],
 });
 
 const statementTests = ((data:Record<string, [
