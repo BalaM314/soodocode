@@ -18,11 +18,11 @@ export declare class ExpressionASTBranchNode implements TextRanged, IFormattable
     fmtDebug(): string;
 }
 export declare class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
-    functionName: Token;
+    functionName: ExpressionASTNode;
     args: ExpressionASTNode[];
     allTokens: Token[];
     range: TextRange;
-    constructor(functionName: Token, args: ExpressionASTNode[], allTokens: Token[]);
+    constructor(functionName: ExpressionASTNode, args: ExpressionASTNode[], allTokens: Token[]);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;

@@ -414,8 +414,7 @@ export class CallStatement extends Statement {
 		} else fail(`CALL can only be used to call functions or procedures`);
 	}
 	run(runtime:Runtime){
-		const name = this.func.functionName.text;
-		const func = runtime.getFunction(name);
+		const func = runtime.getFunction(this.func);
 		if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
 		if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
 		runtime.callFunction(func, this.func.args);

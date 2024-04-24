@@ -117,7 +117,9 @@ export declare class ReturnStatement extends Statement {
     constructor(tokens: [Token, ExpressionAST]);
     run(runtime: Runtime): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | (string | number | boolean | Date)[] | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType>;
+        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | (string | number | boolean | Date)[] | {
+            properties: Record<string, unknown>;
+        } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType>;
     };
 }
 export declare class CallStatement extends Statement {
@@ -130,7 +132,9 @@ export declare class IfStatement extends Statement {
     constructor(tokens: [Token, ExpressionAST, Token]);
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];
+        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
+            properties: Record<string, unknown>;
+        };
     };
 }
 export declare class ElseStatement extends Statement {
@@ -164,7 +168,9 @@ export declare class ForStatement extends Statement {
     step(_runtime: Runtime): number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];
+        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
+            properties: Record<string, unknown>;
+        };
     } | undefined;
 }
 export declare class ForStepStatement extends ForStatement {
@@ -182,14 +188,18 @@ export declare class WhileStatement extends Statement {
     constructor(tokens: [Token, ExpressionAST]);
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];
+        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
+            properties: Record<string, unknown>;
+        };
     } | undefined;
 }
 export declare class DoWhileStatement extends Statement {
     static maxLoops: number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[];
+        value: string | number | boolean | Date | (string | number | boolean | Date | Record<string, unknown> | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | Record<string, unknown> | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
+            properties: Record<string, unknown>;
+        };
     } | undefined;
 }
 export declare class DoWhileEndStatement extends Statement {

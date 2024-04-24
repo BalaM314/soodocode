@@ -168,7 +168,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (expr instanceof ExpressionASTFunctionCallNode) {
                     if (type == "variable")
                         fail(`Expected this expression to evaluate to a variable, but found a function call.`);
-                    const fn = this.getFunction(expr.functionName.text);
+                    const fn = this.getFunction(expr.functionName);
                     if ("name" in fn) {
                         const output = this.callBuiltinFunction(fn, expr.args);
                         if (type)
@@ -491,7 +491,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                 return this.scopes.at(-1) ?? crash(`No scope?`);
             }
             getFunction(name) {
-                return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
+                if (name instanceof Token)
+                    return this.functions[name.text] ?? builtinFunctions[name.text] ?? fail(f.quote `Function ${name} has not been defined.`);
+                else
+                    fail(`Not yet implemented`);
             }
             getClass(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {

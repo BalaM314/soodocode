@@ -574,8 +574,7 @@ let CallStatement = (() => {
                 fail(`CALL can only be used to call functions or procedures`);
         }
         run(runtime) {
-            const name = this.func.functionName.text;
-            const func = runtime.getFunction(name);
+            const func = runtime.getFunction(this.func);
             if ("name" in func)
                 fail(`CALL cannot be used on builtin functions, because they have no side effects`);
             if (func.controlStatements[0] instanceof FunctionStatement)

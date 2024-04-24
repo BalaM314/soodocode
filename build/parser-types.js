@@ -1,5 +1,5 @@
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
-import { getTotalRange } from "./utils.js";
+import { getTotalRange, f } from "./utils.js";
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
         this.operatorToken = operatorToken;
@@ -37,10 +37,10 @@ export class ExpressionASTFunctionCallNode {
         return this.allTokens.map(t => t.text).join(" ");
     }
     fmtText() {
-        return `${this.functionName.text}(${this.args.map(n => n.fmtText()).join(", ")})`;
+        return f.text `${this.functionName}(${this.args.map(n => n.fmtText()).join(", ")})`;
     }
     fmtDebug() {
-        return `${this.functionName.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
+        return f.debug `${this.functionName}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
     }
 }
 export class ExpressionASTClassInstantiationNode {

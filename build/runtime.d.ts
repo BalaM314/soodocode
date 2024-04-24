@@ -58,7 +58,7 @@ export declare class Runtime {
     getEnumFromValue(name: string): EnumeratedVariableType | null;
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
-    getFunction(name: string): FunctionData | BuiltinFunctionData;
+    getFunction(name: ExpressionASTNode): FunctionData | BuiltinFunctionData;
     getClass(name: string): ClassVariableType;
     getCurrentFunction(): FunctionData | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
@@ -66,8 +66,8 @@ export declare class Runtime {
     assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
     callFunction(funcNode: FunctionData, args: ExpressionAST[]): VariableValue | null;
     callFunction(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue: true): VariableValue;
-    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: Record<string, unknown>, args: ExpressionAST[]): VariableValue | null;
-    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: Record<string, unknown>, args: ExpressionAST[], requireReturnValue: true): VariableValue;
+    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[]): VariableValue | null;
+    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue: true): VariableValue;
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";

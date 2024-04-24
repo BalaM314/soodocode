@@ -223,7 +223,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["parentheses.open", "("],
 			["parentheses.close", ")"],
 		],
-		["tree", ["function call", "amogus"], [
+		["tree", ["function call", ["name", "amogus"]], [
 
 		]]
 	],
@@ -234,7 +234,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["number.decimal", "5"],
 			["parentheses.close", ")"],
 		],
-		["tree", ["function call", "amogus"], [
+		["tree", ["function call", ["name", "amogus"]], [
 			["number.decimal", "5"],
 		]]
 	],
@@ -255,7 +255,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["number.decimal", "0"],
 			["parentheses.close", ")"],
 		],
-		["tree", ["function call", "amogus"], [
+		["tree", ["function call", ["name", "amogus"]], [
 			["number.decimal", "5"],
 			["number.decimal", "6"],
 			["boolean.true", "TRUE"],
@@ -344,14 +344,14 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["number.decimal", "0"],
 			["parentheses.close", ")"],
 		],
-		["tree", ["function call", "amogus"], [
+		["tree", ["function call", ["name", "amogus"]], [
 			["number.decimal", "5"],
 			["number.decimal", "6"],
-			["tree", ["function call", "sussy"], [
+			["tree", ["function call", ["name", "sussy"]], [
 
 			]],
-			["tree", ["function call", "baka"], [
-				["tree", ["function call", "sussy"], [
+			["tree", ["function call", ["name", "baka"]], [
+				["tree", ["function call", ["name", "sussy"]], [
 
 				]],
 			]],
@@ -507,7 +507,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 		["tree", ["array access", ["name", "arr"]], [
 			["tree", "add", [
 				["name", "a"],
-				["tree", ["function call", "amogus"], [
+				["tree", ["function call", ["name", "amogus"]], [
 					["number.decimal", "5"],
 					["number.decimal", "6"],
 				]]
@@ -530,7 +530,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["bracket.close", "]"],
 			["parentheses.close", ")"],
 		],
-		["tree", ["function call", "amogus"], [
+		["tree", ["function call", ["name", "amogus"]], [
 			["name", "a"],
 			["tree", "add", [
 				["name", "b"],
@@ -869,6 +869,106 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["name", "baka"],
 		]]
 	],
+	access_function_call1: [
+		[
+			["name", "amogus"],
+			["punctuation.period", "."],
+			["name", "sussy"],
+			["parentheses.open", "("],
+			["parentheses.close", ")"],
+		],
+		["tree", ["function call",
+			["tree", "access", [
+				["name", "amogus"],
+				["name", "sussy"],
+			]]
+		], []]
+	],
+	access_function_call_args: [
+		[
+			["name", "amogus"],
+			["punctuation.period", "."],
+			["name", "sussy"],
+			["parentheses.open", "("],
+			["number.decimal", "5"],
+			["punctuation.comma", ","],
+			["parentheses.open", "("],
+			["number.decimal", "6"],
+			["parentheses.close", ")"],
+			["punctuation.comma", ","],
+			["boolean.true", "TRUE"],
+			["punctuation.comma", ","],
+			["string", `"sussy"`],
+			["operator.string_concatenate", "&"],
+			["parentheses.open", "("],
+			["string", `"amogus"`],
+			["parentheses.close", ")"],
+			["punctuation.comma", ","],
+			["number.decimal", "0"],
+			["parentheses.close", ")"],
+		],
+		["tree", ["function call",
+			["tree", "access", [
+				["name", "amogus"],
+				["name", "sussy"],
+			]]
+		], [
+			["number.decimal", "5"],
+			["number.decimal", "6"],
+			["boolean.true", "TRUE"],
+			["tree", "string_concatenate", [
+				["string", `"sussy"`],
+				["string", `"amogus"`],
+			]],
+			["number.decimal", "0"],
+		]]
+	],
+	access_function_call_nested: [
+		[
+			["name", "amogus"],
+			["punctuation.period", "."],
+			["name", "sussy"],
+			["punctuation.period", "."],
+			["name", "baka"],
+			["parentheses.open", "("],
+			["number.decimal", "5"],
+			["punctuation.comma", ","],
+			["name", "amogus"],
+			["punctuation.period", "."],
+			["name", "sussy"],
+			["punctuation.period", "."],
+			["name", "baka"],
+			["parentheses.open", "("],
+			["number.decimal", "7"],
+			["punctuation.comma", ","],
+			["number.decimal", "6"],
+			["parentheses.close", ")"],
+			["parentheses.close", ")"],
+		],
+		["tree", ["function call",
+			["tree", "access", [
+				["tree", "access", [
+					["name", "amogus"],
+					["name", "sussy"],
+				]],
+				["name", "baka"],
+			]]
+		], [
+			["number.decimal", "5"],
+			["tree", ["function call",
+				["tree", "access", [
+					["tree", "access", [
+						["name", "amogus"],
+						["name", "sussy"],
+					]],
+					["name", "baka"],
+				]]
+			], [
+				["number.decimal", "7"],
+				["number.decimal", "6"],
+			]]
+		]]
+	],
 	access_invalid_property: [
 		[
 			["name", "amogus"],
@@ -1136,7 +1236,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["parentheses.close", ")"],
 		],
 		//yet another huge tree
-		["tree","add",[["tree",["function call","amogus"],[["tree","and",[["tree","greater_than",[["tree","greater_than",[["tree","subtract",[["tree","add",[["number.decimal","1"],["number.decimal","2"]]],["tree","integer_divide",[["tree","mod",[["tree","divide",[["tree","multiply",[["number.decimal","3"],["number.decimal","4"]]],["number.decimal","5"]]],["number.decimal","6"]]],["number.decimal","7"]]]]],["number.decimal","8"]]],["tree","equal_to",[["number.decimal","9"],["number.decimal","10"]]]]],["tree","not",[["number.decimal","12"]]]]],["string","\"sus\""],["tree",["array access",["name","x"]],[["number.decimal","5"]]],["tree",["function call","amogus"],[["tree",["array access",["name","arr"]],[["number.decimal","1"],["number.decimal","5"]]],["tree",["array access",["name","bigarr"]],[["tree",["function call","sussy"],[]],["tree",["function call","sussier"],[["number.decimal","37"],["tree",["array access",["name","y"]],[["tree","add",[["number.decimal","5"],["tree",["array access",["name","z"]],[["number.decimal","0"],["number.decimal","0"]]]]]]]]]]],["number.decimal","5"]]]]],["number.decimal","0"]]]
+		["tree","add",[["tree",["function call",["name", "amogus"]],[["tree","and",[["tree","greater_than",[["tree","greater_than",[["tree","subtract",[["tree","add",[["number.decimal","1"],["number.decimal","2"]]],["tree","integer_divide",[["tree","mod",[["tree","divide",[["tree","multiply",[["number.decimal","3"],["number.decimal","4"]]],["number.decimal","5"]]],["number.decimal","6"]]],["number.decimal","7"]]]]],["number.decimal","8"]]],["tree","equal_to",[["number.decimal","9"],["number.decimal","10"]]]]],["tree","not",[["number.decimal","12"]]]]],["string","\"sus\""],["tree",["array access",["name","x"]],[["number.decimal","5"]]],["tree",["function call",["name", "amogus"]],[["tree",["array access",["name","arr"]],[["number.decimal","1"],["number.decimal","5"]]],["tree",["array access",["name","bigarr"]],[["tree",["function call",["name", "sussy"]],[]],["tree",["function call",["name", "sussier"]],[["number.decimal","37"],["tree",["array access",["name","y"]],[["tree","add",[["number.decimal","5"],["tree",["array access",["name","z"]],[["number.decimal","0"],["number.decimal","0"]]]]]]]]]]],["number.decimal","5"]]]]],["number.decimal","0"]]]
 	]
 });
 

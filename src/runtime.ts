@@ -172,7 +172,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			return this.processArrayAccess(expr, "get", type);
 		if(expr instanceof ExpressionASTFunctionCallNode){
 			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a function call.`);
-			const fn = this.getFunction(expr.functionName.text);
+			const fn = this.getFunction(expr.functionName);
 			if("name" in fn){
 				const output = this.callBuiltinFunction(fn, expr.args);
 				if(type) return [type, this.coerceValue(output[1], output[0], type)];
@@ -462,8 +462,10 @@ help: try using DIV instead of / to produce an integer as the result`
 	getCurrentScope():VariableScope {
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
-	getFunction(name:string):FunctionData | BuiltinFunctionData {
-		return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote`Function ${name} has not been defined.`);
+	getFunction(name:ExpressionASTNode):FunctionData | BuiltinFunctionData {
+		if(name instanceof Token)
+			return this.functions[name.text] ?? builtinFunctions[name.text] ?? fail(f.quote`Function ${name} has not been defined.`);
+		else fail(`Not yet implemented`);
 	}
 	getClass(name:string):ClassVariableType {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
@@ -561,9 +563,9 @@ help: try using DIV instead of / to produce an integer as the result`
 			return output.value;
 		}
 	}
-	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:Record<string, unknown>, args:ExpressionAST[]):VariableValue | null;
-	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:Record<string, unknown>, args:ExpressionAST[], requireReturnValue:true):VariableValue;
-	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:Record<string, unknown>, args:ExpressionAST[], requireReturnValue = false):VariableValue | null {
+	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[]):VariableValue | null;
+	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue:true):VariableValue;
+	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue = false):VariableValue | null {
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ClassProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`);

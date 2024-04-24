@@ -2,7 +2,9 @@ import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./
 import type { Runtime } from "./runtime.js";
 import type { DeclareStatement, FunctionStatement, ProcedureStatement, DefineStatement, ConstantStatement, ForStatement, Statement, BuiltinFunctionArguments, ClassStatement, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? Record<string, unknown> : never;
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
+    properties: Record<string, unknown>;
+} : never;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
     is(...type: PrimitiveVariableTypeName[]): boolean;
@@ -86,8 +88,10 @@ export declare class ClassVariableType extends BaseVariableType {
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
-    construct(runtime: Runtime, args: ExpressionASTNode[]): Record<string, unknown>;
-    getScope(runtime: Runtime, instance: Record<string, unknown>): VariableScope;
+    construct(runtime: Runtime, args: ExpressionASTNode[]): {
+        properties: Record<string, unknown>;
+    };
+    getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
 }
 export declare function typesEqual(a: VariableType, b: VariableType): boolean;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string];

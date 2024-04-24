@@ -18,7 +18,7 @@ export type _ExpressionASTLeafNode = _Token;
 export type _ExpressionASTNode = _ExpressionASTLeafNode | _ExpressionASTBranchNode;
 export type _ExpressionASTBranchNode = [
 	"tree",
-	operator: _Operator | [type: "function call", name:string] | [type: "class instantiation", name:string] | [type: "array access", name:_ExpressionASTNode],
+	operator: _Operator | [type: "function call", name:_ExpressionASTNode] | [type: "class instantiation", name:string] | [type: "array access", name:_ExpressionASTNode],
 	nodes: _ExpressionASTNode[],
 ];
 export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
@@ -100,7 +100,7 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 			);
 		} else if(Array.isArray(input[1]) && input[1][0] == "function call"){
 			return new ExpressionASTFunctionCallNode(
-				token("name", input[1][1]),
+				process_ExpressionAST(input[1][1]),
 				input[2].map(process_ExpressionAST),
 				[token("name", "_")] //SPECNULL
 			);

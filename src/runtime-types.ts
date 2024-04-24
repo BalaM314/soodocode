@@ -27,7 +27,9 @@ export type VariableTypeMapping<T> =
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
-	T extends ClassVariableType ? Record<string, unknown> :
+	T extends ClassVariableType ? {
+		properties: Record<string, unknown>;
+	} :
 	never
 ;
 
@@ -218,9 +220,11 @@ export class ClassVariableType extends BaseVariableType {
 	}
 	construct(runtime:Runtime, args:ExpressionASTNode[]){
 		//Initialize properties
-		const data = Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-			typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
-		])) as Record<string, unknown>;
+		const data:VariableTypeMapping<ClassVariableType> = {
+			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
+				typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+			])) as Record<string, unknown>
+		};
 
 		//Call constructor
 		runtime.callClassMethod(
@@ -228,14 +232,14 @@ export class ClassVariableType extends BaseVariableType {
 		);
 		return data;
 	}
-	getScope(runtime:Runtime, instance:Record<string, unknown>):VariableScope {
+	getScope(runtime:Runtime, instance:VariableTypeMapping<ClassVariableType>):VariableScope {
 		return {
 			statement: this.statement,
 			types: {},
 			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
 				type: runtime.resolveVariableType(v.varType),
-				get value(){return instance[k];},
-				set value(value){instance[k] = value;},
+				get value(){return instance.properties[k];},
+				set value(value){instance.properties[k] = value;},
 				declaration: v,
 				mutable: true,
 			} as VariableData]))

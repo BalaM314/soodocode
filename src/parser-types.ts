@@ -10,7 +10,7 @@ import { Operator } from "./parser.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
 import { IFormattable } from "./types.js";
-import { getTotalRange } from "./utils.js";
+import { getTotalRange, f } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -49,7 +49,7 @@ export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
-		public functionName: Token,
+		public functionName: ExpressionASTNode,
 		public args: ExpressionASTNode[],
 		public allTokens: Token[],
 	){
@@ -59,10 +59,10 @@ export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 		return this.allTokens.map(t => t.text).join(" ");
 	}
 	fmtText():string {
-		return `${this.functionName.text}(${this.args.map(n => n.fmtText()).join(", ")})`;
+		return f.text`${this.functionName}(${this.args.map(n => n.fmtText()).join(", ")})`;
 	}
 	fmtDebug():string {
-		return `${this.functionName.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
+		return f.debug`${this.functionName}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
 	}
 }
 export class ExpressionASTClassInstantiationNode implements TextRanged {

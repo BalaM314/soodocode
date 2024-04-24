@@ -174,9 +174,11 @@ export class ClassVariableType extends BaseVariableType {
         return null;
     }
     construct(runtime, args) {
-        const data = Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
-            typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
-        ]));
+        const data = {
+            properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, v]).map(([k, v]) => [k,
+                typeof v == "string" ? null : runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+            ]))
+        };
         runtime.callClassMethod(this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), this, data, args);
         return data;
     }
@@ -186,8 +188,8 @@ export class ClassVariableType extends BaseVariableType {
             types: {},
             variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
                     type: runtime.resolveVariableType(v.varType),
-                    get value() { return instance[k]; },
-                    set value(value) { instance[k] = value; },
+                    get value() { return instance.properties[k]; },
+                    set value(value) { instance.properties[k] = value; },
                     declaration: v,
                     mutable: true,
                 }]))

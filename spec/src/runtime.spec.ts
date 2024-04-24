@@ -827,7 +827,7 @@ const programTests = ((data:Record<string,
 			[AssignmentStatement, [
 				["name", "x"],
 				["operator.assignment", "<-"],
-				["tree", ["function call", "TO_UPPER"], [
+				["tree", ["function call",["name", "TO_UPPER"]], [
 					["string", `"amogus SUssy"`],
 				]]
 			]],
@@ -849,7 +849,7 @@ const programTests = ((data:Record<string,
 			[AssignmentStatement, [
 				["name", "x"],
 				["operator.assignment", "<-"],
-				["tree", ["function call", "TO_UPPER"], [
+				["tree", ["function call", ["name", "TO_UPPER"]], [
 					["char", `'a'`],
 				]]
 			]],
@@ -929,7 +929,7 @@ const programTests = ((data:Record<string,
 			[AssignmentStatement, [
 				["name", "x"],
 				["operator.assignment", "<-"],
-				["tree", ["function call", "NUM_TO_STR"], [
+				["tree", ["function call",["name", "NUM_TO_STR"]], [
 					["number.decimal", "2"],
 				]],
 			]],
@@ -951,7 +951,7 @@ const programTests = ((data:Record<string,
 			[AssignmentStatement, [
 				["name", "x"],
 				["operator.assignment", "<-"],
-				["tree", ["function call", "STR_TO_NUM"], [
+				["tree", ["function call",["name", "STR_TO_NUM"]], [
 					["char", "'2'"],
 				]],
 			]],
@@ -973,7 +973,7 @@ const programTests = ((data:Record<string,
 			[AssignmentStatement, [
 				["name", "x"],
 				["operator.assignment", "<-"],
-				["tree", ["function call", "STR_TO_NUM"], [
+				["tree", ["function call",["name", "STR_TO_NUM"]], [
 					["string", `"1.2345"`],
 				]],
 			]],
@@ -1032,7 +1032,7 @@ const programTests = ((data:Record<string,
 					[WhileStatement, [
 						["keyword.while", "WHILE"],
 						["tree", "not", [
-							["tree", ["function call", "EOF"], [	
+							["tree", ["function call",["name", "EOF"]], [	
 								["string", `"amogus.txt"`],
 							]]
 						]]
@@ -1082,7 +1082,7 @@ const programTests = ((data:Record<string,
 			},
 			[CallStatement, [
 				["keyword.call", "CALL"],
-				["tree", ["function call", "amogus"], [
+				["tree", ["function call",["name", "amogus"]], [
 				]]
 			]]
 		],
@@ -1175,7 +1175,7 @@ const programTests = ((data:Record<string,
 			]],
 			[CallStatement, [
 				["keyword.call", "CALL"],
-				["tree", ["function call", "amogus"], [
+				["tree", ["function call",["name", "amogus"]], [
 					["name", "foo"]
 				]]
 			]],
@@ -1246,7 +1246,7 @@ const programTests = ((data:Record<string,
 			]],
 			[CallStatement, [
 				["keyword.call", "CALL"],
-				["tree", ["function call", "amogus"], [
+				["tree", ["function call",["name", "amogus"]], [
 					["name", "foo"]
 				]]
 			]],
