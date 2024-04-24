@@ -540,15 +540,21 @@ export const parseExpression = errorBoundary({
     }
     if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
         return parseExpression(input.slice(1, -1), true);
-    if (input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
-        return new ExpressionASTFunctionCallNode(input[0], input.length == 3
-            ? []
-            : splitTokensOnComma(input.slice(2, -1)).map(e => parseExpression(e, true)), input);
-    }
     if (input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
         return new ExpressionASTClassInstantiationNode(input[1], input.length == 4
             ? []
             : splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)), input);
+    }
+    const parenIndex = findLastNotInGroup(input, "parentheses.open");
+    if (parenIndex != null && parenIndex > 0 && input.at(-1)?.type == "parentheses.close") {
+        const target = input.slice(0, parenIndex);
+        const indicesTokens = input.slice(parenIndex + 1, -1);
+        if (target.length == 0)
+            crash(`Missing function in function call expression`);
+        const parsedTarget = parseExpression(target, true);
+        return new ExpressionASTFunctionCallNode(parsedTarget, indicesTokens.length == 0
+            ? []
+            : splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
     }
     const bracketIndex = findLastNotInGroup(input, "bracket.open");
     if (bracketIndex != null && input.at(-1)?.type == "bracket.close") {

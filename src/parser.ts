@@ -633,17 +633,6 @@ export const parseExpression = errorBoundary({
 	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
 		return parseExpression(input.slice(1, -1), true);
 
-	//Special case: function call
-	if(input[0]?.type == "name" && input[1]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
-		return new ExpressionASTFunctionCallNode(
-			input[0],
-			input.length == 3
-				? [] //If there are no arguments, don't generate a blank argument group
-				: splitTokensOnComma(input.slice(2, -1)).map(e => parseExpression(e, true)),
-			input
-		);
-	}
-
 	//Special case: Class instantiation expression
 	if(input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
 		return new ExpressionASTClassInstantiationNode(
@@ -651,6 +640,22 @@ export const parseExpression = errorBoundary({
 			input.length == 4
 				? [] //If there are no arguments, don't generate a blank argument group
 				: splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)),
+			input
+		);
+	}
+
+	//Special case: function call
+	const parenIndex = findLastNotInGroup(input, "parentheses.open");
+	if(parenIndex != null && parenIndex > 0 && input.at(-1)?.type == "parentheses.close"){
+		const target = input.slice(0, parenIndex);
+		const indicesTokens = input.slice(parenIndex + 1, -1);
+		if(target.length == 0) crash(`Missing function in function call expression`);
+		const parsedTarget = parseExpression(target, true);
+		return new ExpressionASTFunctionCallNode(
+			parsedTarget,
+			indicesTokens.length == 0
+				? [] //If there are no arguments, don't generate a blank argument group
+				: splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
 			input
 		);
 	}
