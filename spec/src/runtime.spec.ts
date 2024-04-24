@@ -655,7 +655,8 @@ const expressionTests = ((data:Record<string, [
 			}
 		} as ClassStatement, {
 			prop: {
-				varType: PrimitiveVariableType.REAL
+				varType: PrimitiveVariableType.REAL,
+				accessModifier: "public"
 			} as ClassPropertyStatement
 		});
 		return [
@@ -688,7 +689,7 @@ const expressionTests = ((data:Record<string, [
 		} as ClassStatement, {
 			prop: {
 				varType: PrimitiveVariableType.REAL,
-				accessModifier: token("keyword.class_modifier.private", "PRIVATE")
+				accessModifier: "private"
 			} as ClassPropertyStatement
 		});
 		return [
@@ -707,6 +708,76 @@ const expressionTests = ((data:Record<string, [
 					value: {
 						properties: {
 							prop: 65
+						}
+					}
+				}
+			}
+		]
+	})(),
+	class_property_access_private_valid: (() => {
+		const amogusClass = new ClassVariableType(process_Statement([ClassStatement, [
+			["keyword.class", "CLASS"],
+			["name", "amogus"]
+		]]) as ClassStatement, {
+			prop: {
+				varType: PrimitiveVariableType.REAL,
+				accessModifier: "private"
+			} as ClassPropertyStatement
+		}, {
+			access: process_ProgramASTNode({
+				type: "class_function",
+				controlStatements: [
+					[ClassFunctionStatement, [
+						["keyword.class_modifier.public", "PUBLIC"],
+						["keyword.function", "FUNCTION"],
+						["name", "access"],
+						["parentheses.open", "("],
+						["parentheses.close", ")"],
+						["keyword.returns", "RETURNS"],
+						["name", "REAL"],
+					]],
+					[ClassFunctionEndStatement, [
+						["keyword.function_end", "ENDFUNCTION"]
+					]]
+				],
+				nodeGroups: [[
+					[ReturnStatement, [
+						["keyword.return", "RETURN"],
+						["tree", "access", [
+							["name", "amogus"],
+							["name", "prop"],
+						]]
+					]]
+				]],
+			}) as ClassMethodData
+		});
+		return [
+			["tree", ["function call", ["tree", "access", [
+				["name", "sus"],
+				["name", "access"],
+			]]], [
+			]],
+			null,
+			["REAL", 90],
+			r => {
+				r.getCurrentScope().types["Amogus"] = amogusClass;
+				r.getCurrentScope().variables["amogus"] = {
+					declaration: null!,
+					mutable: true,
+					type: amogusClass,
+					value: {
+						properties: {
+							prop: 90
+						}
+					}
+				}
+				r.getCurrentScope().variables["sus"] = {
+					declaration: null!,
+					mutable: true,
+					type: amogusClass,
+					value: {
+						properties: {
+							prop: 1
 						}
 					}
 				}
