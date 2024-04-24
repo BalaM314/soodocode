@@ -591,6 +591,9 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)
 			.map(([k, v]) => [k, this.cloneValue(type.fields[k], v as VariableValue)])
 		) as VariableTypeMapping<T>;
+		if(type instanceof ClassVariableType) return Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).properties)
+			.map(([k, v]) => [k, this.cloneValue(this.resolveVariableType(type.properties[k].varType), v as VariableValue)])
+		) as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:ExpressionASTNode[]){
