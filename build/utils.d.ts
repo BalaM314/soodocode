@@ -10,6 +10,7 @@ export declare function splitTokensWithSplitter(arr: Token[], split: TokenType):
     splitter?: Token | undefined;
 }[];
 export declare function splitTokensOnComma(arr: Token[]): Token[][];
+export declare function findLastNotInGroup(arr: Token[], target: TokenType): number | null;
 export declare function getUniqueNamesFromCommaSeparatedTokenList(tokens: Token[], nextToken?: Token, validNames?: TokenType[]): Token[];
 export declare function getTotalRange(tokens: (TextRanged | TextRange)[]): TextRange;
 export declare function isRange(input: unknown): input is TextRange;

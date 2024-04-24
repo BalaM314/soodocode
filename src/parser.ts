@@ -13,7 +13,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { ClassProperties, IFormattable, PartialKey } from "./types.js";
-import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, findLastNotInGroup } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -494,7 +494,6 @@ export const parseExpression = errorBoundary({
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
 
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
-	//TODO O(mn) unnecessarily, optimize
 	for(const operatorsOfCurrentPriority of operatorsByPriority){
 		let parenNestLevel = 0, bracketNestLevel = 0;
 		//Find the index of the last (lowest priority) operator of the current priority
@@ -657,8 +656,8 @@ export const parseExpression = errorBoundary({
 	}
 
 	//Special case: array access
-	const bracketIndex = input.findIndex(t => t.type == "bracket.open");
-	if(bracketIndex != -1 && input.at(-1)?.type == "bracket.close"){
+	const bracketIndex = findLastNotInGroup(input, "bracket.open");
+	if(bracketIndex != null && input.at(-1)?.type == "bracket.close"){
 		const target = input.slice(0, bracketIndex);
 		const indicesTokens = input.slice(bracketIndex + 1, -1);
 		if(target.length == 0) fail(`Missing target in array index expression`);

@@ -76,6 +76,20 @@ export function splitTokensOnComma(arr:Token[]):Token[][] {
 	}
 	return output;
 }
+
+export function findLastNotInGroup(arr:Token[], target:TokenType):number | null {
+	let parenNestLevel = 0, bracketNestLevel = 0;
+	for(const [i, token] of [...arr.entries()].reverse()){
+		if(token.type == "parentheses.open") parenNestLevel ++;
+		else if(token.type == "parentheses.close") parenNestLevel --;
+		else if(token.type == "bracket.open") bracketNestLevel ++;
+		else if(token.type == "bracket.close") bracketNestLevel --;
+		if(parenNestLevel == 0 && bracketNestLevel == 0 && token.type == target)
+			return i;
+	}
+	return null;
+}
+
 export function getUniqueNamesFromCommaSeparatedTokenList(tokens:Token[], nextToken?:Token, validNames:TokenType[] = ["name"]):Token[] {
 	const names:Token[] = [];
 

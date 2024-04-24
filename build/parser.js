@@ -2,7 +2,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, findLastNotInGroup } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -550,8 +550,8 @@ export const parseExpression = errorBoundary({
             ? []
             : splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)), input);
     }
-    const bracketIndex = input.findIndex(t => t.type == "bracket.open");
-    if (bracketIndex != -1 && input.at(-1)?.type == "bracket.close") {
+    const bracketIndex = findLastNotInGroup(input, "bracket.open");
+    if (bracketIndex != null && input.at(-1)?.type == "bracket.close") {
         const target = input.slice(0, bracketIndex);
         const indicesTokens = input.slice(bracketIndex + 1, -1);
         if (target.length == 0)

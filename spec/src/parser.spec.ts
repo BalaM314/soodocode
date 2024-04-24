@@ -969,6 +969,29 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			]]
 		]]
 	],
+	access_array_nested: [
+		[
+			["name", "amogus"],
+			["bracket.open", "["],
+			["number.decimal", "1"],
+			["bracket.close", "]"],
+			["punctuation.period", "."],
+			["name", "sussy"],
+			["bracket.open", "["],
+			["number.decimal", "1"],
+			["bracket.close", "]"],
+		],
+		["tree", ["array access", 
+			["tree", "access", [
+				["tree", ["array access", ["name", "amogus"]], [
+					["number.decimal", "1"],
+				]],
+				["name", "sussy"],
+			]]
+		], [
+			["number.decimal", "1"],
+		]]
+	],
 	access_invalid_property: [
 		[
 			["name", "amogus"],
