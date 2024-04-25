@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, E
 import { operators } from "./parser.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, fail, f, impossible, forceType } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -627,28 +627,22 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 		return scope;
 	}
-	callFunction(funcNode:FunctionData, args:ExpressionAST[]):VariableValue | null;
-	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue:true):VariableValue;
-	callFunction(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue = false):VariableValue | null {
+	callFunction<T extends boolean>(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue?:T):VariableValue | (T extends false ? null : never) {
 		const func = funcNode.controlStatements[0];
-		if(func instanceof ProcedureStatement){
-			if(requireReturnValue) fail(`Cannot use return value of ${func.name}() as it is a procedure`);
-		} else if(func instanceof FunctionStatement){
-			//all good
-		} else crash(`Invalid function ${(func as Statement).stype}`); //unreachable
+		if(func instanceof ProcedureStatement && requireReturnValue)
+			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
 
 		const scope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], scope);
 		if(func instanceof ProcedureStatement){
-			return null;
+			//requireReturnValue satisfies false;
+			return null!;
 		} else { //must be functionstatement
 			if(!output) fail(f.quote`Function ${func.name} did not return a value`);
 			return output.value;
 		}
 	}
-	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[]):[type:VariableType, value:VariableValue] | null;
-	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue:true):[type:VariableType, value:VariableValue];
-	callClassMethod(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue = false):[type:VariableType, value:VariableValue] | null {
+	callClassMethod<T extends boolean>(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):[type:VariableType, value:VariableValue] | (T extends false ? null : never) {
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ClassProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
@@ -657,7 +651,8 @@ help: try using DIV instead of / to produce an integer as the result`
 		const methodScope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
 		if(func instanceof ClassProcedureStatement){
-			return null;
+			//requireReturnValue satisfies false;
+			return null!;
 		} else { //must be functionstatement
 			return output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`);
 		}

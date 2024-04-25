@@ -73,10 +73,8 @@ export declare class Runtime {
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
-    callFunction(funcNode: FunctionData, args: ExpressionAST[]): VariableValue | null;
-    callFunction(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue: true): VariableValue;
-    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[]): [type: VariableType, value: VariableValue] | null;
-    callClassMethod(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue: true): [type: VariableType, value: VariableValue];
+    callFunction<T extends boolean>(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue?: T): VariableValue | (T extends false ? null : never);
+    callClassMethod<T extends boolean>(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): [type: VariableType, value: VariableValue] | (T extends false ? null : never);
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";

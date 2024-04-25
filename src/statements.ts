@@ -673,8 +673,12 @@ export class ProcedureStatement extends Statement {
 	}
 }
 
+interface IFileStatement {
+	filename: ExpressionAST;
+}
+
 @statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
-export class OpenFileStatement extends Statement { //TODO filestatement?
+export class OpenFileStatement extends Statement implements IFileStatement { //TODO filestatement?
 	mode:Token;
 	filename:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, Token]){
@@ -704,7 +708,7 @@ export class OpenFileStatement extends Statement { //TODO filestatement?
 	}
 }
 @statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
-export class CloseFileStatement extends Statement {
+export class CloseFileStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST]){
 		super(tokens);
@@ -718,7 +722,7 @@ export class CloseFileStatement extends Statement {
 	}
 }
 @statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
-export class ReadFileStatement extends Statement {
+export class ReadFileStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	output:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
@@ -734,7 +738,7 @@ export class ReadFileStatement extends Statement {
 	}
 }
 @statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")
-export class WriteFileStatement extends Statement {
+export class WriteFileStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	data:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
@@ -749,7 +753,7 @@ export class WriteFileStatement extends Statement {
 }
 
 @statement("seek", `SEEK "file.txt", 5`, "keyword.seek", "expr+", "punctuation.comma", "expr+")
-export class SeekStatement extends Statement {
+export class SeekStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	index:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
@@ -765,7 +769,7 @@ export class SeekStatement extends Statement {
 	}
 }
 @statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")
-export class GetRecordStatement extends Statement {
+export class GetRecordStatement extends Statement implements IFileStatement {
 	filename: ExpressionAST;
 	variable: ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
@@ -780,7 +784,7 @@ export class GetRecordStatement extends Statement {
 	}
 }
 @statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")
-export class PutRecordStatement extends Statement {
+export class PutRecordStatement extends Statement implements IFileStatement {
 	filename: ExpressionAST;
 	variable: ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
@@ -793,6 +797,11 @@ export class PutRecordStatement extends Statement {
 		const [type, value] = runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`);
 	}
+}
+
+interface IClassMemberStatement {
+	accessModifierToken: Token;
+	accessModifier: "public" | "private";
 }
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
@@ -865,9 +874,9 @@ export class ClassInheritsStatement extends ClassStatement {
 	}
 }
 
-//TODO use interfaces on properties like accessModifier and filename
+
 @statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")
-export class ClassPropertyStatement extends DeclareStatement {
+export class ClassPropertyStatement extends DeclareStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";
@@ -881,7 +890,7 @@ export class ClassPropertyStatement extends DeclareStatement {
 	}
 }
 @statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "block", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
-export class ClassProcedureStatement extends ProcedureStatement {
+export class ClassProcedureStatement extends ProcedureStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";
@@ -899,7 +908,7 @@ export class ClassProcedureStatement extends ProcedureStatement {
 @statement("class_procedure.end", "ENDPROCEDURE", "block_end", "keyword.procedure_end")
 export class ClassProcedureEndStatement extends Statement {}
 @statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
-export class ClassFunctionStatement extends FunctionStatement {
+export class ClassFunctionStatement extends FunctionStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";

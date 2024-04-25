@@ -220,46 +220,53 @@ export declare class ProcedureStatement extends Statement {
     constructor(tokens: Token[]);
     runBlock(runtime: Runtime, node: FunctionData): void;
 }
-export declare class OpenFileStatement extends Statement {
+interface IFileStatement {
+    filename: ExpressionAST;
+}
+export declare class OpenFileStatement extends Statement implements IFileStatement {
     mode: Token;
     filename: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, Token]);
     run(runtime: Runtime): void;
 }
-export declare class CloseFileStatement extends Statement {
+export declare class CloseFileStatement extends Statement implements IFileStatement {
     filename: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
-export declare class ReadFileStatement extends Statement {
+export declare class ReadFileStatement extends Statement implements IFileStatement {
     filename: ExpressionAST;
     output: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
-export declare class WriteFileStatement extends Statement {
+export declare class WriteFileStatement extends Statement implements IFileStatement {
     filename: ExpressionAST;
     data: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
-export declare class SeekStatement extends Statement {
+export declare class SeekStatement extends Statement implements IFileStatement {
     filename: ExpressionAST;
     index: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
-export declare class GetRecordStatement extends Statement {
+export declare class GetRecordStatement extends Statement implements IFileStatement {
     filename: ExpressionAST;
     variable: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
 }
-export declare class PutRecordStatement extends Statement {
+export declare class PutRecordStatement extends Statement implements IFileStatement {
     filename: ExpressionAST;
     variable: ExpressionAST;
     constructor(tokens: [Token, ExpressionAST, Token, ExpressionAST]);
     run(runtime: Runtime): void;
+}
+interface IClassMemberStatement {
+    accessModifierToken: Token;
+    accessModifier: "public" | "private";
 }
 export declare class ClassStatement extends Statement {
     static allowOnly: Set<StatementType>;
@@ -273,14 +280,14 @@ export declare class ClassInheritsStatement extends ClassStatement {
     constructor(tokens: [Token, Token, Token, Token]);
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType;
 }
-export declare class ClassPropertyStatement extends DeclareStatement {
+export declare class ClassPropertyStatement extends DeclareStatement implements IClassMemberStatement {
     accessModifierToken: Token;
     accessModifier: "public" | "private";
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: [Token, ...names: Token[], Token, ExpressionASTTypeNode]);
     run(runtime: Runtime): void;
 }
-export declare class ClassProcedureStatement extends ProcedureStatement {
+export declare class ClassProcedureStatement extends ProcedureStatement implements IClassMemberStatement {
     accessModifierToken: Token;
     accessModifier: "public" | "private";
     static blockType: ProgramASTBranchNodeType;
@@ -289,7 +296,7 @@ export declare class ClassProcedureStatement extends ProcedureStatement {
 }
 export declare class ClassProcedureEndStatement extends Statement {
 }
-export declare class ClassFunctionStatement extends FunctionStatement {
+export declare class ClassFunctionStatement extends FunctionStatement implements IClassMemberStatement {
     accessModifierToken: Token;
     accessModifier: "public" | "private";
     static blockType: ProgramASTBranchNodeType;
@@ -298,3 +305,4 @@ export declare class ClassFunctionStatement extends FunctionStatement {
 }
 export declare class ClassFunctionEndStatement extends Statement {
 }
+export {};

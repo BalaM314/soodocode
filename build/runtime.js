@@ -674,16 +674,10 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 return scope;
             }
-            callFunction(funcNode, args, requireReturnValue = false) {
+            callFunction(funcNode, args, requireReturnValue) {
                 const func = funcNode.controlStatements[0];
-                if (func instanceof ProcedureStatement) {
-                    if (requireReturnValue)
-                        fail(`Cannot use return value of ${func.name}() as it is a procedure`);
-                }
-                else if (func instanceof FunctionStatement) {
-                }
-                else
-                    crash(`Invalid function ${func.stype}`);
+                if (func instanceof ProcedureStatement && requireReturnValue)
+                    fail(`Cannot use return value of ${func.name}() as it is a procedure`);
                 const scope = this.assembleScope(func, args);
                 const output = this.runBlock(funcNode.nodeGroups[0], scope);
                 if (func instanceof ProcedureStatement) {
@@ -695,7 +689,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return output.value;
                 }
             }
-            callClassMethod(funcNode, clazz, instance, args, requireReturnValue = false) {
+            callClassMethod(funcNode, clazz, instance, args, requireReturnValue) {
                 const func = funcNode.controlStatements[0];
                 if (func instanceof ClassProcedureStatement && requireReturnValue)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`);

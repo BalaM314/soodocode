@@ -484,7 +484,6 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 		fail(`Invalid expression leaf node`);
 });
 
-//TODO allow specifying adding a call stack message to errorBoundary(), should add "cannot parse expression" to all of these
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `
