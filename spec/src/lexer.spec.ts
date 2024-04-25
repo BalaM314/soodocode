@@ -7,9 +7,9 @@ This file contains unit tests for the lexer.
 
 import "jasmine";
 import { symbolize, tokenize } from "../../build/lexer.js";
-import { Symbol, SymbolizedProgram, Token, symbol, token } from "../../build/lexer-types.js";
+import { Symbol, SymbolizedProgram, Token } from "../../build/lexer-types.js";
 import { SoodocodeError } from "../../build/utils.js";
-import { _Symbol, _Token } from "./spec_utils.js";
+import { _Symbol, _Token, process_Token, symbol } from "./spec_utils.js";
 
 
 
@@ -219,7 +219,7 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 
 const tokenizerTests = ((data:Record<string, [input:_Symbol[], output:_Token[] | "error"]>) =>
 	Object.entries(data).map<[name:string, input:SymbolizedProgram, output:Token[] | "error"]>(([name, [input, output]]) =>
-		[name, {program: "", symbols: input.map(symbol)}, output == "error" ? "error" : output.map(token)]
+		[name, {program: "", symbols: input.map(symbol)}, output == "error" ? "error" : output.map(process_Token)]
 	)
 )({
 	simple: [

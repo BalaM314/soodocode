@@ -39,12 +39,6 @@ export class Symbol {
         return [this.range[1], this.range[1] + 1];
     }
 }
-export function symbol(type, text) {
-    if (Array.isArray(type))
-        return new Symbol(type[0], type[1], [-1, -1]);
-    else
-        return new Symbol(type, text, [-1, -1]);
-}
 export const tokenTypes = [
     "number.decimal",
     "string", "char",
@@ -105,10 +99,4 @@ export class Token {
     rangeAfter() {
         return [this.range[1], this.range[1] + 1];
     }
-}
-export function token(type, text) {
-    if (Array.isArray(type))
-        return new Token(type[0], type[1], [-1, -1]);
-    else
-        return new Token(type, text, [-1, -1]);
 }

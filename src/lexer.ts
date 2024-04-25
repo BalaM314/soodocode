@@ -51,7 +51,7 @@ export const symbolTypeData: [
 	[/^./u, "unknown"],
 ];
 
-export const tokenNameTypeData = (<T extends Record<string, TokenType>>(d:T) => d as T & {[index:string]: TokenType | undefined;})({
+export const tokenNameTypeData:Record<string, TokenType> = {
 	"AND": "operator.and",
 	"APPEND": "keyword.file_mode.append",
 	"ARRAY": "keyword.array",
@@ -111,8 +111,32 @@ export const tokenNameTypeData = (<T extends Record<string, TokenType>>(d:T) => 
 	"WHILE": "keyword.while",
 	"WRITE": "keyword.file_mode.write",
 	"WRITEFILE": "keyword.write_file",
-});
-
+	//Unused except in tests for de-boilerplating
+	"<-": "operator.assignment",
+	">=": "operator.greater_than_equal",
+	"<=": "operator.less_than_equal",
+	"<>": "operator.not_equal_to",
+	"=": "operator.equal_to",
+	">": "operator.greater_than",
+	"<": "operator.less_than",
+	"+": "operator.add",
+	"-": "operator.minus",
+	"*": "operator.multiply",
+	"/": "operator.divide",
+	"^": "operator.pointer",
+	"&": "operator.string_concatenate",
+	"(": "parentheses.open",
+	")": "parentheses.close",
+	"[": "bracket.open",
+	"]": "bracket.close",
+	"{": "brace.open",
+	"}": "brace.close",
+	":": "punctuation.colon",
+	";": "punctuation.semicolon",
+	",": "punctuation.comma",
+	".": "punctuation.period",
+};
+export const tokenTextMapping = Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
 
 /** A The name of a function on SymbolizerIO that can be used to parse a symbol. */
 type SymbolSpecifierFuncName = "isAlphanumeric" | "isNumber";

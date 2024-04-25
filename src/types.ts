@@ -36,6 +36,7 @@ declare global {
 	}
 	interface Array<T> {
 		map<TThis extends Array<T>, U>(this:TThis, fn:(v:T, i:number, a:TThis) => U): number extends TThis["length"] ? U[] : { [K in keyof TThis]: U };
+		reverse<TThis extends Array<T>, U>(this:TThis): TThis extends [infer A, infer B] ? [B, A] : T[];
 		slice<TThis extends Array<T>>(this:TThis): TThis;
 		includes(searchElement:unknown, searchIndex?:number):searchElement is T;
 	}

@@ -1,14 +1,15 @@
-import { SymbolType, Token, TokenType, token } from "../../build/lexer-types.js";
+import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Statement } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
+import { tokenTextMapping } from "../../build/lexer.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
 
 export type _Symbol = [type:SymbolType, text:string];
-export type _Token = [type:TokenType, text:string];
+export type _Token = [type:TokenType, text:string] | TokenType;
 
 export type _ExpressionAST = _ExpressionASTNode;
 export type _ExpressionASTLeafNode = _Token;
@@ -81,6 +82,17 @@ export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointe
 	"pointer_dereference": token("operator.pointer", "^"),
 }
 
+export function token(type:TokenType, text:string):Token {
+	return new Token(type, text, [-1, -1]);
+}
+export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
+	return new Symbol(type, text, [-1, -1]);
+}
+export function process_Token(input:_Token):Token {
+	if(Array.isArray(input)) return token(...input);
+	else return token(input, tokenTextMapping[input] ?? crash(`Cannot autofill text for token of type ${input}`));
+}
+
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
 	return Array.isArray(input[0]);
 }
@@ -92,8 +104,8 @@ export function process_Statement(input:_Statement):Statement {
 export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
 	return new ExpressionASTArrayTypeNode(
 		input[0].map(bounds => bounds.map(b => token("number.decimal", b.toString()))),
-		token(input[1]),
-		[token(input[1])] //SPECNULL
+		process_Token(input[1]),
+		[process_Token(input[1])] //SPECNULL
 	);
 }
 
@@ -107,8 +119,8 @@ export function process_ExpressionASTExt<TIn extends _ExpressionASTLeafNode | _E
 
 export function process_ExpressionAST<T extends _ExpressionASTNode>(input:T):Processed<T>;
 export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
-	if(input.length == 2){
-		return token(...input);
+	if(typeof input == "string" || input.length == 2){
+		return process_Token(input);
 	} else {
 		if(Array.isArray(input[1]) && input[1][0] == "array access"){
 			return new ExpressionASTArrayAccessNode(
@@ -231,4 +243,11 @@ export function applyAnyRange<TIn extends
 		crash(`Type error at applyAnyRange()`);
 	}
 	return input;
+}
+
+export function name(text:string):Token {
+	return token("name", text);
+}
+export function num(text:string):Token {
+	return token("number.decimal", text);
 }

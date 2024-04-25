@@ -1,11 +1,11 @@
 import "jasmine";
-import { Token, token } from "../../build/lexer-types.js";
+import { Token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_VariableType } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
 	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
@@ -17,7 +17,7 @@ const tokenTests = ((data:Record<string,
 		setup:(r:Runtime) => unknown
 	]>(([k, v]) => [
 		k,
-		token(v[0]),
+		process_Token(v[0]),
 		process_VariableType(v[1]),
 		v[2].length == 1 ? v[2] : [process_VariableType(v[2][0]), v[2][1]],
 		v[3] ?? (() => {})

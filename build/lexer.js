@@ -36,7 +36,7 @@ export const symbolTypeData = [
     [["isAlphanumeric"], "word"],
     [/^./u, "unknown"],
 ];
-export const tokenNameTypeData = ((d) => d)({
+export const tokenNameTypeData = {
     "AND": "operator.and",
     "APPEND": "keyword.file_mode.append",
     "ARRAY": "keyword.array",
@@ -96,7 +96,31 @@ export const tokenNameTypeData = ((d) => d)({
     "WHILE": "keyword.while",
     "WRITE": "keyword.file_mode.write",
     "WRITEFILE": "keyword.write_file",
-});
+    "<-": "operator.assignment",
+    ">=": "operator.greater_than_equal",
+    "<=": "operator.less_than_equal",
+    "<>": "operator.not_equal_to",
+    "=": "operator.equal_to",
+    ">": "operator.greater_than",
+    "<": "operator.less_than",
+    "+": "operator.add",
+    "-": "operator.minus",
+    "*": "operator.multiply",
+    "/": "operator.divide",
+    "^": "operator.pointer",
+    "&": "operator.string_concatenate",
+    "(": "parentheses.open",
+    ")": "parentheses.close",
+    "[": "bracket.open",
+    "]": "bracket.close",
+    "{": "brace.open",
+    "}": "brace.close",
+    ":": "punctuation.colon",
+    ";": "punctuation.semicolon",
+    ",": "punctuation.comma",
+    ".": "punctuation.period",
+};
+export const tokenTextMapping = Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
 class SymbolizerIO {
     constructor(string, offset = 0) {
         this.string = string;

@@ -68,13 +68,6 @@ export class Symbol implements TextRanged {
 		return [this.range[1], this.range[1] + 1];
 	}
 }
-export function symbol(type:SymbolType, text:string):Symbol;
-export function symbol(tokenLike:[type:SymbolType, text:string]):Symbol;
-export function symbol(type:SymbolType | [type:SymbolType, text:string], text?:string):Symbol {
-	if(Array.isArray(type)) return new Symbol(type[0], type[1], [-1, -1]);
-	else return new Symbol(type, text!, [-1, -1]);
-}
-
 
 export const tokenTypes = [
 	//use _ to join words
@@ -140,9 +133,4 @@ export class Token implements TextRanged, IFormattable {
 		return [this.range[1], this.range[1] + 1];
 	}
 }
-export function token(type:TokenType, text:string):Token;
-export function token(tokenLike:[type:TokenType, text:string]):Token;
-export function token(type:TokenType | [type:TokenType, text:string], text?:string):Token {
-	if(Array.isArray(type)) return new Token(type[0], type[1], [-1, -1]);
-	else return new Token(type, text!, [-1, -1]);
-}
+
