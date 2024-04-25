@@ -9,7 +9,7 @@ import { tokenTextMapping } from "../../build/lexer.js";
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
 
 export type _Symbol = [type:SymbolType, text:string];
-export type _Token = [type:TokenType, text:string] | TokenType;
+export type _Token = [type:TokenType, text:string] | TokenType | string | number;
 
 export type _ExpressionAST = _ExpressionASTNode;
 export type _ExpressionASTLeafNode = _Token;
@@ -90,11 +90,14 @@ export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
 }
 export function process_Token(input:_Token):Token {
 	if(Array.isArray(input)) return token(...input);
-	else return token(input, tokenTextMapping[input] ?? crash(`Cannot autofill text for token of type ${input}`));
+	else if(typeof input == "number") return token("number.decimal", input.toString());
+	else return tokenTextMapping[input as never] ? token(input as TokenType, tokenTextMapping[input as never]) : token("name", input);
 }
+//\[("operator\.and"|"keyword\.file_mode\.append"|"keyword\.array"|"keyword\.pass_mode\.by_reference"|"keyword\.pass_mode\.by_value"|"keyword\.call"|"keyword\.case"|"keyword\.class"|"keyword\.close_file"|"keyword\.constant"|"keyword\.declare"|"keyword\.define"|"operator\.integer_divide"|"keyword\.else"|"keyword\.case_end"|"keyword\.class_end"|"keyword\.function_end"|"keyword\.if_end"|"keyword\.procedure_end"|"keyword\.type_end"|"keyword\.while_end"|"boolean\.false"|"keyword\.for"|"keyword\.function"|"keyword\.get_record"|"keyword\.if"|"keyword\.inherits"|"keyword\.input"|"operator\.mod"|"keyword\.new"|"keyword\.for_end"|"operator\.not"|"keyword\.of"|"keyword\.open_file"|"operator\.or"|"keyword\.otherwise"|"keyword\.output"|"keyword\.class_modifier\.private"|"keyword\.procedure"|"keyword\.class_modifier\.public"|"keyword\.put_record"|"keyword\.file_mode\.random"|"keyword\.file_mode\.read"|"keyword\.read_file"|"keyword\.dowhile"|"keyword\.return"|"keyword\.returns"|"keyword\.seek"|"keyword\.set"|"keyword\.step"|"keyword\.super"|"keyword\.then"|"keyword\.to"|"boolean\.true"|"keyword\.type"|"keyword\.dowhile_end"|"keyword\.while"|"keyword\.file_mode\.write"|"keyword\.write_file"|"operator\.assignment"|"operator\.greater_than_equal"|"operator\.less_than_equal"|"operator\.not_equal_to"|"operator\.equal_to"|"operator\.greater_than"|"operator\.less_than"|"operator\.add"|"operator\.minus"|"operator\.multiply"|"operator\.divide"|"operator\.pointer"|"operator\.string_concatenate"|"parentheses\.open"|"parentheses\.close"|"bracket\.open"|"bracket\.close"|"brace\.open"|"brace\.close"|"punctuation\.colon"|"punctuation\.semicolon"|"punctuation\.comma"|"punctuation\.period"|"newline"),( ?)".+?"\]
+
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
-	return Array.isArray(input[0]);
+	return Array.isArray(input) && Array.isArray(input[0]);
 }
 
 export function process_Statement(input:_Statement):Statement {
@@ -119,7 +122,7 @@ export function process_ExpressionASTExt<TIn extends _ExpressionASTLeafNode | _E
 
 export function process_ExpressionAST<T extends _ExpressionASTNode>(input:T):Processed<T>;
 export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
-	if(typeof input == "string" || input.length == 2){
+	if(typeof input == "string" || typeof input == "number" || input.length == 2){
 		return process_Token(input);
 	} else {
 		if(Array.isArray(input[1]) && input[1][0] == "array access"){

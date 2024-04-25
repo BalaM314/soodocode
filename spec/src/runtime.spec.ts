@@ -159,15 +159,15 @@ const expressionTests = ((data:Record<string, [
 ]))({
 	addNumbers: [
 		["tree", "add", [
-			["number.decimal", "5"],
-			["number.decimal", "6"]
+			5,
+			6
 		]],
 		"INTEGER",
 		["INTEGER", 11]
 	],
 	arrayAccess_simple: [
-		["tree", ["array access", ["name", "amogus"]], [
-			["number.decimal", "5"],
+		["tree", ["array access", "amogus"], [
+			5,
 		]],
 		"INTEGER",
 		["INTEGER", 18],
@@ -184,8 +184,8 @@ const expressionTests = ((data:Record<string, [
 	],
 	propertyAccess_simple: [
 		["tree", "access", [
-			["name", "amogus"],
-			["name", "sus"],
+			"amogus",
+			"sus",
 		]],
 		"INTEGER",
 		["INTEGER", 18],
@@ -207,10 +207,10 @@ const expressionTests = ((data:Record<string, [
 	propertyAccess_nested: [
 		["tree", "access", [
 			["tree", "access", [
-				["name", "aaa"],
-				["name", "bbb"],
+				"aaa",
+				"bbb",
 			]],
-			["name", "ccc"],
+			"ccc",
 		]],
 		"INTEGER",
 		["INTEGER", 123],
@@ -237,10 +237,10 @@ const expressionTests = ((data:Record<string, [
 	],
 	propertyAccess_nested_array: [
 		["tree", "access", [
-			["tree", ["array access", ["name", "aaa"]], [
-				["number.decimal", "2"],
+			["tree", ["array access", "aaa"], [
+				2,
 			]],
-			["name", "ccc"],
+			"ccc",
 		]],
 		"INTEGER",
 		["INTEGER", 124],
@@ -261,8 +261,8 @@ const expressionTests = ((data:Record<string, [
 	],
 	propertyAccess_invalid_not_record: [
 		["tree", "access", [
-			["name", "aaa"],
-			["name", "bbb"],
+			"aaa",
+			"bbb",
 		]],
 		"INTEGER",
 		["error"],
@@ -277,8 +277,8 @@ const expressionTests = ((data:Record<string, [
 	],
 	propertyAccess_invalid_nonexistent_property: [
 		["tree", "access", [
-			["name", "amogus"],
-			["name", "sussy"],
+			"amogus",
+			"sussy",
 		]],
 		"INTEGER",
 		["error"],
@@ -307,7 +307,7 @@ const expressionTests = ((data:Record<string, [
 		};
 		return [
 			["tree", "pointer_reference", [
-				["name", "amogus"],
+				"amogus",
 			]],
 			intPointer,
 			[intPointer, intVar],
@@ -332,7 +332,7 @@ const expressionTests = ((data:Record<string, [
 		};
 		return [
 			["tree", "pointer_reference", [
-				["name", "amogus"],
+				"amogus",
 			]],
 			null,
 			[arrayPointer, arrayVar],
@@ -358,7 +358,7 @@ const expressionTests = ((data:Record<string, [
 		};
 		return [
 			["tree", "pointer_reference", [
-				["name", "amogus"],
+				"amogus",
 			]],
 			null,
 			["error"],
@@ -379,7 +379,7 @@ const expressionTests = ((data:Record<string, [
 	// 	};
 	// 	return [
 	// 		["tree", "pointer_reference", [
-	// 			["number.decimal", "5"],
+	// 			5,
 	// 		]],
 	// 		intPointer,
 	// 		["error"],
@@ -399,7 +399,7 @@ const expressionTests = ((data:Record<string, [
 		};
 		return [
 			["tree", "pointer_reference", [
-				["name", "sussybaka"],
+				"sussybaka",
 			]],
 			intPointer,
 			["error"],
@@ -412,7 +412,7 @@ const expressionTests = ((data:Record<string, [
 	pointerDeref1: (() => {
 		return [
 			["tree", "pointer_dereference", [
-				["name", "amogusPtr"],
+				"amogusPtr",
 			]],
 			"INTEGER",
 			["INTEGER", 20],
@@ -436,7 +436,7 @@ const expressionTests = ((data:Record<string, [
 		]
 	})(),
 	functionCall_simple: [
-		["tree", ["function call", ["name", "amogus"]], [
+		["tree", ["function call", "amogus"], [
 		]],
 		"INTEGER",
 		["INTEGER", 22],
@@ -445,31 +445,31 @@ const expressionTests = ((data:Record<string, [
 				type: "function",
 				controlStatements: [
 					[FunctionStatement, [
-						["keyword.function", "FUNCTION"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["parentheses.close", ")"],
-						["keyword.returns", "RETURNS"],
-						["name", "INTEGER"],
+						"keyword.function",
+						"amogus",
+						"parentheses.open",
+						"parentheses.close",
+						"keyword.returns",
+						"INTEGER",
 					]],
 					[statements.byType["function.end"], [
-						["keyword.function", "FUNCTION"],
+						"keyword.function",
 					]],
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
-						["keyword.return", "RETURN"],
-						["number.decimal", "22"],
+						"keyword.return",
+						22,
 					]],
 				]]
 			}) as FunctionData;
 		}
 	],
 	functionCall_args: [
-		["tree", ["function call", ["name", "amogus"]], [
+		["tree", ["function call", "amogus"], [
 			["tree", "add", [
-				["number.decimal", "5"],
-				["number.decimal", "6"]
+				5,
+				6
 			]]
 		]],
 		"REAL",
@@ -479,26 +479,26 @@ const expressionTests = ((data:Record<string, [
 				type: "function",
 				controlStatements: [
 					[FunctionStatement, [
-						["keyword.function", "FUNCTION"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["name", "arg"],
-						["punctuation.colon", ":"],
-						["name", "INTEGER"],
-						["parentheses.close", ")"],
-						["keyword.returns", "RETURNS"],
-						["name", "INTEGER"],
+						"keyword.function",
+						"amogus",
+						"parentheses.open",
+						"arg",
+						"punctuation.colon",
+						"INTEGER",
+						"parentheses.close",
+						"keyword.returns",
+						"INTEGER",
 					]],
 					[statements.byType["function.end"], [
-						["keyword.function", "FUNCTION"],
+						"keyword.function",
 					]],
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
-						["keyword.return", "RETURN"],
+						"keyword.return",
 						["tree", "add", [
-							["number.decimal", "5"],
-							["name", "arg"]
+							5,
+							"arg"
 						]],
 					]],
 				]]
@@ -506,7 +506,7 @@ const expressionTests = ((data:Record<string, [
 		}
 	],
 	functionCall_invalid_wrong_type: [
-		["tree", ["function call", ["name", "amogus"]], [
+		["tree", ["function call", "amogus"], [
 		]],
 		"DATE",
 		["error"],
@@ -515,21 +515,21 @@ const expressionTests = ((data:Record<string, [
 				type: "function",
 				controlStatements: [
 					[FunctionStatement, [
-						["keyword.function", "FUNCTION"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["parentheses.close", ")"],
-						["keyword.returns", "RETURNS"],
-						["name", "INTEGER"],
+						"keyword.function",
+						"amogus",
+						"parentheses.open",
+						"parentheses.close",
+						"keyword.returns",
+						"INTEGER",
 					]],
 					[statements.byType["function.end"], [
-						["keyword.function", "FUNCTION"],
+						"keyword.function",
 					]],
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
-						["keyword.return", "RETURN"],
-						["number.decimal", "22"],
+						"keyword.return",
+						22,
 					]],
 				]]
 			}) as FunctionData;
@@ -549,14 +549,14 @@ const expressionTests = ((data:Record<string, [
 				type: "class_procedure",
 				controlStatements: [
 					[ClassProcedureStatement, [
-						["keyword.class_modifier.public", "PUBLIC"],
-						["keyword.procedure", "PROCEDURE"],
-						["name", "NEW"],
-						["parentheses.open", "("],
-						["parentheses.close", ")"],
+						"keyword.class_modifier.public",
+						"keyword.procedure",
+						"NEW",
+						"parentheses.open",
+						"parentheses.close",
 					]],
 					[ClassProcedureEndStatement, [
-						["keyword.procedure_end", "ENDPROCEDURE"]
+						"keyword.procedure_end"
 					]]
 				],
 				nodeGroups: [[
@@ -592,26 +592,26 @@ const expressionTests = ((data:Record<string, [
 				type: "class_procedure",
 				controlStatements: [
 					[ClassProcedureStatement, [
-						["keyword.class_modifier.public", "PUBLIC"],
-						["keyword.procedure", "PROCEDURE"],
-						["name", "NEW"],
-						["parentheses.open", "("],
-						["name", "arg"],
-						["punctuation.colon", ":"],
-						["name", "INTEGER"],
-						["parentheses.close", ")"],
+						"keyword.class_modifier.public",
+						"keyword.procedure",
+						"NEW",
+						"parentheses.open",
+						"arg",
+						"punctuation.colon",
+						"INTEGER",
+						"parentheses.close",
 					]],
 					[ClassProcedureEndStatement, [
-						["keyword.procedure_end", "ENDPROCEDURE"]
+						"keyword.procedure_end"
 					]]
 				],
 				nodeGroups: [[
 					[AssignmentStatement, [
-						["name", "prop"],
-						["operator.assignment", "<-"],
+						"prop",
+						"operator.assignment",
 						["tree", "add", [
-							["name", "arg"],
-							["number.decimal", "22"]
+							"arg",
+							22
 						]]
 					]]
 				]],
@@ -619,7 +619,7 @@ const expressionTests = ((data:Record<string, [
 		});
 		return [
 			["tree", ["class instantiation", "Amogus"], [
-				["number.decimal", "43"]
+				43
 			]],
 			null,
 			[amogusClass, {
@@ -663,8 +663,8 @@ const expressionTests = ((data:Record<string, [
 		});
 		return [
 			["tree", "access", [
-				["name", "amogus"],
-				["name", "prop"],
+				"amogus",
+				"prop",
 			]],
 			null,
 			["REAL", 65],
@@ -697,8 +697,8 @@ const expressionTests = ((data:Record<string, [
 		});
 		return [
 			["tree", "access", [
-				["name", "amogus"],
-				["name", "prop"],
+				"amogus",
+				"prop",
 			]],
 			null,
 			["error"],
@@ -720,8 +720,8 @@ const expressionTests = ((data:Record<string, [
 	})(),
 	class_property_access_private_valid: (() => {
 		const amogusClass = new ClassVariableType(process_Statement([ClassStatement, [
-			["keyword.class", "CLASS"],
-			["name", "amogus"]
+			"keyword.class",
+			"amogus"
 		]]) as ClassStatement, {
 			prop: {
 				varType: PrimitiveVariableType.REAL,
@@ -732,24 +732,24 @@ const expressionTests = ((data:Record<string, [
 				type: "class_function",
 				controlStatements: [
 					[ClassFunctionStatement, [
-						["keyword.class_modifier.public", "PUBLIC"],
-						["keyword.function", "FUNCTION"],
-						["name", "access"],
-						["parentheses.open", "("],
-						["parentheses.close", ")"],
-						["keyword.returns", "RETURNS"],
-						["name", "REAL"],
+						"keyword.class_modifier.public",
+						"keyword.function",
+						"access",
+						"parentheses.open",
+						"parentheses.close",
+						"keyword.returns",
+						"REAL",
 					]],
 					[ClassFunctionEndStatement, [
-						["keyword.function_end", "ENDFUNCTION"]
+						"keyword.function_end"
 					]]
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
-						["keyword.return", "RETURN"],
+						"keyword.return",
 						["tree", "access", [
-							["name", "amogus"],
-							["name", "prop"],
+							"amogus",
+							"prop",
 						]]
 					]]
 				]],
@@ -757,8 +757,8 @@ const expressionTests = ((data:Record<string, [
 		});
 		return [
 			["tree", ["function call", ["tree", "access", [
-				["name", "sus"],
-				["name", "access"],
+				"sus",
+				"access",
 			]]], [
 			]],
 			null,
@@ -792,8 +792,8 @@ const expressionTests = ((data:Record<string, [
 	})(),
 	class_method_call: [
 		["tree", ["function call", ["tree", "access", [
-			["name", "amogus"],
-			["name", "eject"],
+			"amogus",
+			"eject",
 		]]], [
 		]],
 		null,
@@ -812,21 +812,21 @@ const expressionTests = ((data:Record<string, [
 					type: "class_function",
 					controlStatements: [
 						[ClassFunctionStatement, [
-							["keyword.class_modifier.public", "PUBLIC"],
-							["keyword.function", "FUNCTION"],
-							["name", "eject"],
-							["parentheses.open", "("],
-							["parentheses.close", ")"],
-							["keyword.returns", "RETURNS"],
-							["name", "STRING"],
+							"keyword.class_modifier.public",
+							"keyword.function",
+							"eject",
+							"parentheses.open",
+							"parentheses.close",
+							"keyword.returns",
+							"STRING",
 						]],
 						[ClassFunctionEndStatement, [
-							["keyword.function_end", "ENDFUNCTION"]
+							"keyword.function_end"
 						]]
 					],
 					nodeGroups: [[
 						[ReturnStatement, [
-							["keyword.return", "RETURN"],
+							"keyword.return",
 							["string", `"amogus was not The Imposter."`],
 						]]
 					]],
@@ -848,8 +848,8 @@ const expressionTests = ((data:Record<string, [
 	],
 	class_method_call_invalid_wrong_arguments: [
 		["tree", ["function call", ["tree", "access", [
-			["name", "amogus"],
-			["name", "eject"],
+			"amogus",
+			"eject",
 		]]], [
 		]],
 		null,
@@ -868,24 +868,24 @@ const expressionTests = ((data:Record<string, [
 					type: "class_function",
 					controlStatements: [
 						[ClassFunctionStatement, [
-							["keyword.class_modifier.public", "PUBLIC"],
-							["keyword.function", "FUNCTION"],
-							["name", "eject"],
-							["parentheses.open", "("],
-							["name", "arg"],
-							["punctuation.colon", ":"],
-							["name", "INTEGER"],
-							["parentheses.close", ")"],
-							["keyword.returns", "RETURNS"],
-							["name", "STRING"],
+							"keyword.class_modifier.public",
+							"keyword.function",
+							"eject",
+							"parentheses.open",
+							"arg",
+							"punctuation.colon",
+							"INTEGER",
+							"parentheses.close",
+							"keyword.returns",
+							"STRING",
 						]],
 						[ClassFunctionEndStatement, [
-							["keyword.function_end", "ENDFUNCTION"]
+							"keyword.function_end"
 						]]
 					],
 					nodeGroups: [[
 						[ReturnStatement, [
-							["keyword.return", "RETURN"],
+							"keyword.return",
 							["string", `"amogus was not The Imposter."`],
 						]]
 					]],
@@ -907,8 +907,8 @@ const expressionTests = ((data:Record<string, [
 	],
 	class_method_call_invalid_procedure_no_return:  [
 		["tree", ["function call", ["tree", "access", [
-			["name", "amogus"],
-			["name", "eject"],
+			"amogus",
+			"eject",
 		]]], [
 		]],
 		null,
@@ -927,22 +927,22 @@ const expressionTests = ((data:Record<string, [
 					type: "class_procedure",
 					controlStatements: [
 						[ClassProcedureStatement, [
-							["keyword.class_modifier.public", "PUBLIC"],
-							["keyword.procedure", "PROCEDURE"],
-							["name", "NEW"],
-							["parentheses.open", "("],
-							["name", "arg"],
-							["punctuation.colon", ":"],
-							["name", "INTEGER"],
-							["parentheses.close", ")"],
+							"keyword.class_modifier.public",
+							"keyword.procedure",
+							"NEW",
+							"parentheses.open",
+							"arg",
+							"punctuation.colon",
+							"INTEGER",
+							"parentheses.close",
 						]],
 						[ClassProcedureEndStatement, [
-							["keyword.procedure_end", "ENDPROCEDURE"]
+							"keyword.procedure_end"
 						]]
 					],
 					nodeGroups: [[
 						[ReturnStatement, [
-							["keyword.return", "RETURN"],
+							"keyword.return",
 							["string", `"amogus was not The Imposter."`],
 						]]
 					]],
@@ -977,10 +977,10 @@ const statementTests = ((data:Record<string, [
 ))({
 	declare1: [
 		[DeclareStatement, [
-			["keyword.declare", "DECLARE"],
-			["name", "x"],
-			["punctuation.colon", ":"],
-			["name", "DATE"],
+			"keyword.declare",
+			"x",
+			"punctuation.colon",
+			"DATE",
 		]],
 		r => {},
 		r => expect(r.scopes[0]?.variables?.x).toEqual({
@@ -992,11 +992,11 @@ const statementTests = ((data:Record<string, [
 	],
 	typePointer1: [
 		[TypePointerStatement, [
-			["keyword.type", "TYPE"],
-			["name", "amogus"],
-			["operator.equal_to", "="],
-			["operator.pointer", "^"],
-			["name", "INTEGER"],
+			"keyword.type",
+			"amogus",
+			"operator.equal_to",
+			"operator.pointer",
+			"INTEGER",
 		]],
 		r => {},
 		r => {
@@ -1005,25 +1005,25 @@ const statementTests = ((data:Record<string, [
 	],
 	typePointer_invalid_nonexistent: [
 		[TypePointerStatement, [
-			["keyword.type", "TYPE"],
-			["name", "amogus"],
-			["operator.equal_to", "="],
-			["operator.pointer", "^"],
-			["name", "sussy"],
+			"keyword.type",
+			"amogus",
+			"operator.equal_to",
+			"operator.pointer",
+			"sussy",
 		]],
 		r => {},
 		"error"
 	],
 	typeEnum1: [
 		[TypeEnumStatement, [
-			["keyword.type", "TYPE"],
-			["name", "amog"],
-			["operator.equal_to", "="],
-			["parentheses.open", "("],
-			["name", "amogus"],
-			["punctuation.comma", ","],
-			["name", "sugoma"],
-			["parentheses.close", ")"],
+			"keyword.type",
+			"amog",
+			"operator.equal_to",
+			"parentheses.open",
+			"amogus",
+			"punctuation.comma",
+			"sugoma",
+			"parentheses.close",
 		]],
 		r => {},
 		r => {
@@ -1033,12 +1033,12 @@ const statementTests = ((data:Record<string, [
 	],
 	typeSet1: [
 		[TypeSetStatement, [
-			["keyword.type", "TYPE"],
-			["name", "amog"],
-			["operator.equal_to", "="],
-			["keyword.set", "SET"],
-			["keyword.of", "OF"],
-			["name", "INTEGER"],
+			"keyword.type",
+			"amog",
+			"operator.equal_to",
+			"keyword.set",
+			"keyword.of",
+			"INTEGER",
 		]],
 		r => {},
 		r => {
@@ -1058,19 +1058,19 @@ const programTests = ((data:Record<string,
 	declare_assign_output: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "STRING"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"STRING",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
+				"x",
+				"operator.assignment",
 				["string", `"amogus"`],
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "x"],
+				"keyword.output",
+				"x",
 			]],
 		],
 		`amogus`
@@ -1078,25 +1078,25 @@ const programTests = ((data:Record<string,
 	define: [
 		[
 			[TypeSetStatement, [
-				["keyword.type", "TYPE"],
-				["name", "setofinteger"],
-				["operator.equal_to", "="],
-				["keyword.set", "SET"],
-				["keyword.of", "OF"],
-				["name", "INTEGER"],
+				"keyword.type",
+				"setofinteger",
+				"operator.equal_to",
+				"keyword.set",
+				"keyword.of",
+				"INTEGER",
 			]],
 			[DefineStatement, [
-				["keyword.define", "DEFINE"],
-				["name", "amogus"],
-				["parentheses.open", "("],
-				["number.decimal", "1"],
-				["punctuation.comma", ","],
-				["number.decimal", "2"],
-				["punctuation.comma", ","],
-				["number.decimal", "3"],
-				["parentheses.close", ")"],
-				["punctuation.colon", ":"],
-				["name", "setofinteger"],
+				"keyword.define",
+				"amogus",
+				"parentheses.open",
+				1,
+				"punctuation.comma",
+				2,
+				"punctuation.comma",
+				3,
+				"parentheses.close",
+				"punctuation.colon",
+				"setofinteger",
 			]]
 		],
 		``
@@ -1104,21 +1104,21 @@ const programTests = ((data:Record<string,
 	define_invalid_type: [
 		[
 			[TypeSetStatement, [
-				["keyword.type", "TYPE"],
-				["name", "setofinteger"],
-				["operator.equal_to", "="],
-				["keyword.set", "SET"],
-				["keyword.of", "OF"],
-				["name", "INTEGER"],
+				"keyword.type",
+				"setofinteger",
+				"operator.equal_to",
+				"keyword.set",
+				"keyword.of",
+				"INTEGER",
 			]],
 			[DefineStatement, [
-				["keyword.define", "DEFINE"],
-				["name", "amogus"],
-				["parentheses.open", "("],
+				"keyword.define",
+				"amogus",
+				"parentheses.open",
 				["char", "'c'"],
-				["parentheses.close", ")"],
-				["punctuation.colon", ":"],
-				["name", "setofinteger"],
+				"parentheses.close",
+				"punctuation.colon",
+				"setofinteger",
 			]]
 		],
 		["error"]
@@ -1126,47 +1126,47 @@ const programTests = ((data:Record<string,
 	case_simple: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "INTEGER"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"INTEGER",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["number.decimal", `2`],
+				"x",
+				"operator.assignment",
+				2,
 			]],
 			{
 				type: "switch",
 				controlStatements: [
 					[SwitchStatement, [
-						["keyword.case", "CASE"],
-						["keyword.of", "OF"],
-						["name", "x"],
+						"keyword.case",
+						"keyword.of",
+						"x",
 					]],
 					[CaseBranchStatement, [
-						["number.decimal", "1"],
-						["punctuation.colon", ":"],
+						1,
+						"punctuation.colon",
 					]],
 					[CaseBranchStatement, [
-						["number.decimal", "2"],
-						["punctuation.colon", ":"],
+						2,
+						"punctuation.colon",
 					]],
 					[statements.byType["switch.end"], [
-						["keyword.case_end", "ENDCASE"],
+						"keyword.case_end",
 					]],
 				],
 				nodeGroups: [
 					[],
 					[
 						[OutputStatement, [
-							["keyword.output", "OUTPUT"],
+							"keyword.output",
 							["string", `"a"`],
 						]],
 					],
 					[
 						[OutputStatement, [
-							["keyword.output", "OUTPUT"],
+							"keyword.output",
 							["string", `"b"`],	
 						]]
 					],
@@ -1178,37 +1178,37 @@ const programTests = ((data:Record<string,
 	case_variable_input_type_mismatch: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "INTEGER"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"INTEGER",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["number.decimal", `2`],
+				"x",
+				"operator.assignment",
+				2,
 			]],
 			{
 				type: "switch",
 				controlStatements: [
 					[SwitchStatement, [
-						["keyword.case", "CASE"],
-						["keyword.of", "OF"],
-						["name", "x"],
+						"keyword.case",
+						"keyword.of",
+						"x",
 					]],
 					[CaseBranchStatement, [
 						["number.decimal", "2.1"],
-						["punctuation.colon", ":"],
+						"punctuation.colon",
 					]],
 					[statements.byType["switch.end"], [
-						["keyword.case_end", "ENDCASE"],
+						"keyword.case_end",
 					]],
 				],
 				nodeGroups: [
 					[],
 					[
 						[OutputStatement, [
-							["keyword.output", "OUTPUT"],
+							"keyword.output",
 							["string", `"a"`],
 						]],
 					],
@@ -1223,23 +1223,23 @@ const programTests = ((data:Record<string,
 				type: "switch",
 				controlStatements: [
 					[SwitchStatement, [
-						["keyword.case", "CASE"],
-						["keyword.of", "OF"],
-						["number.decimal", "2"],
+						"keyword.case",
+						"keyword.of",
+						2,
 					]],
 					[CaseBranchStatement, [
 						["number.decimal", "2.1"],
-						["punctuation.colon", ":"],
+						"punctuation.colon",
 					]],
 					[statements.byType["switch.end"], [
-						["keyword.case_end", "ENDCASE"],
+						"keyword.case_end",
 					]],
 				],
 				nodeGroups: [
 					[],
 					[
 						[OutputStatement, [
-							["keyword.output", "OUTPUT"],
+							"keyword.output",
 							["string", `"a"`],
 						]],
 					],
@@ -1253,22 +1253,22 @@ const programTests = ((data:Record<string,
 			type: "for",
 			controlStatements: [
 				[ForStatement, [
-					["keyword.for", "FOR"],
-					["name", "x"],
-					["operator.assignment", "<-"],
-					["number.decimal", "1"],
-					["keyword.to", "TO"],
-					["number.decimal", "10"],
+					"keyword.for",
+					"x",
+					"operator.assignment",
+					1,
+					"keyword.to",
+					10,
 				]],
 				[ForEndStatement, [
-					["keyword.for_end", "NEXT"],
-					["name", "x"],
+					"keyword.for_end",
+					"x",
 				]]
 			],
 			nodeGroups: [[
 				[OutputStatement, [
-					["keyword.output", "OUTPUT"],
-					["name", "x"],
+					"keyword.output",
+					"x",
 				]],
 			]],
 		}],
@@ -1279,24 +1279,24 @@ const programTests = ((data:Record<string,
 			type: "for",
 			controlStatements: [
 				[ForStepStatement, [
-					["keyword.for", "FOR"],
-					["name", "x"],
-					["operator.assignment", "<-"],
-					["number.decimal", "1"],
-					["keyword.to", "TO"],
-					["number.decimal", "15"],
-					["keyword.step", "STEP"],
-					["number.decimal", "2"],
+					"keyword.for",
+					"x",
+					"operator.assignment",
+					1,
+					"keyword.to",
+					15,
+					"keyword.step",
+					2,
 				]],
 				[ForEndStatement, [
-					["keyword.for_end", "NEXT"],
-					["name", "x"],
+					"keyword.for_end",
+					"x",
 				]]
 			],
 			nodeGroups: [[
 				[OutputStatement, [
-					["keyword.output", "OUTPUT"],
-					["name", "x"],
+					"keyword.output",
+					"x",
 				]],
 			]],
 		}],
@@ -1305,13 +1305,13 @@ const programTests = ((data:Record<string,
 	builtin_function_left: [
 		[
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "LEFT"],
-				["parentheses.open", "("],
+				"keyword.output",
+				"LEFT",
+				"parentheses.open",
 				["string", `"amogus sussy"`],
-				["punctuation.comma", ","],
-				["number.decimal", "5"],
-				["parentheses.close", ")"],
+				"punctuation.comma",
+				5,
+				"parentheses.close",
 			]]
 		],
 		`amogu`
@@ -1319,13 +1319,13 @@ const programTests = ((data:Record<string,
 	builtin_function_left_invalid_negative: [
 		[
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "LEFT"],
-				["parentheses.open", "("],
+				"keyword.output",
+				"LEFT",
+				"parentheses.open",
 				["string", `"amogus sussy"`],
-				["punctuation.comma", ","],
-				["number.decimal", "-5"],
-				["parentheses.close", ")"],
+				"punctuation.comma",
+				-5,
+				"parentheses.close",
 			]]
 		],
 		["error"],
@@ -1333,13 +1333,13 @@ const programTests = ((data:Record<string,
 	builtin_function_left_invalid_too_large: [
 		[
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "LEFT"],
-				["parentheses.open", "("],
+				"keyword.output",
+				"LEFT",
+				"parentheses.open",
 				["string", `"amogus sussy"`],
-				["punctuation.comma", ","],
-				["number.decimal", "55"],
-				["parentheses.close", ")"],
+				"punctuation.comma",
+				55,
+				"parentheses.close",
 			]]
 		],
 		["error"],
@@ -1347,15 +1347,15 @@ const programTests = ((data:Record<string,
 	builtin_function_mid: [
 		[
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "MID"],
-				["parentheses.open", "("],
+				"keyword.output",
+				"MID",
+				"parentheses.open",
 				["string", `"amogus sussy"`],
-				["punctuation.comma", ","],
-				["number.decimal", "2"],
-				["punctuation.comma", ","],
-				["number.decimal", "3"],
-				["parentheses.close", ")"],
+				"punctuation.comma",
+				2,
+				"punctuation.comma",
+				3,
+				"parentheses.close",
 			]]
 		],
 		`mog`
@@ -1363,21 +1363,21 @@ const programTests = ((data:Record<string,
 	builtin_function_to_upper_string: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "STRING"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"STRING",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["tree", ["function call",["name", "TO_UPPER"]], [
+				"x",
+				"operator.assignment",
+				["tree", ["function call","TO_UPPER"], [
 					["string", `"amogus SUssy"`],
 				]]
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "x"],
+				"keyword.output",
+				"x",
 			]]
 		],
 		`AMOGUS SUSSY`
@@ -1385,21 +1385,21 @@ const programTests = ((data:Record<string,
 	builtin_function_to_upper_char: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "CHAR"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"CHAR",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["tree", ["function call", ["name", "TO_UPPER"]], [
+				"x",
+				"operator.assignment",
+				["tree", ["function call", "TO_UPPER"], [
 					["char", `'a'`],
 				]]
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "x"],
+				"keyword.output",
+				"x",
 			]]
 		],
 		`A`
@@ -1407,11 +1407,11 @@ const programTests = ((data:Record<string,
 	builtin_function_num_to_str_literal: [
 		[
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "NUM_TO_STR"],
-				["parentheses.open", "("],
-				["number.decimal", "571"],
-				["parentheses.close", ")"],
+				"keyword.output",
+				"NUM_TO_STR",
+				"parentheses.open",
+				571,
+				"parentheses.close",
 			]]
 		],
 		`571`
@@ -1419,22 +1419,22 @@ const programTests = ((data:Record<string,
 	builtin_function_num_to_str_integer_string: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "INTEGER"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"INTEGER",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["number.decimal", `2`],
+				"x",
+				"operator.assignment",
+				2,
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "NUM_TO_STR"],
-				["parentheses.open", "("],
-				["name", "x"],
-				["parentheses.close", ")"],
+				"keyword.output",
+				"NUM_TO_STR",
+				"parentheses.open",
+				"x",
+				"parentheses.close",
 			]]
 		],
 		`2`
@@ -1442,22 +1442,22 @@ const programTests = ((data:Record<string,
 	builtin_function_num_to_str_real_string: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "REAL"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"REAL",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
+				"x",
+				"operator.assignment",
 				["number.decimal", `2.21`],
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "NUM_TO_STR"],
-				["parentheses.open", "("],
-				["name", "x"],
-				["parentheses.close", ")"],
+				"keyword.output",
+				"NUM_TO_STR",
+				"parentheses.open",
+				"x",
+				"parentheses.close",
 			]]
 		],
 		`2.21`
@@ -1465,21 +1465,21 @@ const programTests = ((data:Record<string,
 	builtin_function_num_to_str_int_char: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "CHAR"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"CHAR",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["tree", ["function call",["name", "NUM_TO_STR"]], [
-					["number.decimal", "2"],
+				"x",
+				"operator.assignment",
+				["tree", ["function call","NUM_TO_STR"], [
+					2,
 				]],
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "x"],
+				"keyword.output",
+				"x",
 			]]
 		],
 		`2`
@@ -1487,21 +1487,21 @@ const programTests = ((data:Record<string,
 	builtin_function_str_to_num_char_int: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "INTEGER"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"INTEGER",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["tree", ["function call",["name", "STR_TO_NUM"]], [
+				"x",
+				"operator.assignment",
+				["tree", ["function call","STR_TO_NUM"], [
 					["char", "'2'"],
 				]],
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "x"],
+				"keyword.output",
+				"x",
 			]]
 		],
 		`2`
@@ -1509,21 +1509,21 @@ const programTests = ((data:Record<string,
 	builtin_function_str_to_num_string_real: [
 		[
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "REAL"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"REAL",
 			]],
 			[AssignmentStatement, [
-				["name", "x"],
-				["operator.assignment", "<-"],
-				["tree", ["function call",["name", "STR_TO_NUM"]], [
+				"x",
+				"operator.assignment",
+				["tree", ["function call","STR_TO_NUM"], [
 					["string", `"1.2345"`],
 				]],
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "x"],
+				"keyword.output",
+				"x",
 			]]
 		],
 		`1.2345`
@@ -1531,75 +1531,75 @@ const programTests = ((data:Record<string,
 	files_eof: [
 		[
 			[OpenFileStatement, [
-				["keyword.open_file", "OPENFILE"],
+				"keyword.open_file",
 				["string", `"amogus.txt"`],
-				["keyword.for", "FOR"],
-				["keyword.file_mode.write", "WRITE"],
+				"keyword.for",
+				"keyword.file_mode.write",
 			]],
 			[WriteFileStatement, [
-				["keyword.write_file", "WRITEFILE"],
+				"keyword.write_file",
 				["string", `"amogus.txt"`],
-				["punctuation.comma", ","],
+				"punctuation.comma",
 				["string", `"a"`],
 			]],
 			[WriteFileStatement, [
-				["keyword.write_file", "WRITEFILE"],
+				"keyword.write_file",
 				["string", `"amogus.txt"`],
-				["punctuation.comma", ","],
+				"punctuation.comma",
 				["string", `"b"`],
 			]],
 			[WriteFileStatement, [
-				["keyword.write_file", "WRITEFILE"],
+				"keyword.write_file",
 				["string", `"amogus.txt"`],
-				["punctuation.comma", ","],
+				"punctuation.comma",
 				["string", `"c"`],
 			]],
 			[CloseFileStatement, [
-				["keyword.close_file", "CLOSEFILE"],
+				"keyword.close_file",
 				["string", `"amogus.txt"`],
 			]],
 			[OpenFileStatement, [
-				["keyword.open_file", "OPENFILE"],
+				"keyword.open_file",
 				["string", `"amogus.txt"`],
-				["keyword.for", "FOR"],
-				["keyword.file_mode.write", "READ"],
+				"keyword.for",
+				"keyword.file_mode.read",
 			]],
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "x"],
-				["punctuation.colon", ":"],
-				["name", "STRING"],
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"STRING",
 			]],
 			{
 				type: "while",
 				controlStatements: [
 					[WhileStatement, [
-						["keyword.while", "WHILE"],
+						"keyword.while",
 						["tree", "not", [
-							["tree", ["function call",["name", "EOF"]], [	
+							["tree", ["function call","EOF"], [	
 								["string", `"amogus.txt"`],
 							]]
 						]]
 					]],
 					[statements.byType["while.end"], [
-						["keyword.while_end", "ENDWHILE"],
+						"keyword.while_end",
 					]]
 				],
 				nodeGroups: [[
 					[ReadFileStatement, [
-						["keyword.read_file", "READFILE"],
+						"keyword.read_file",
 						["string", `"amogus.txt"`],
-						["punctuation.comma", ","],
-						["name", "x"],
+						"punctuation.comma",
+						"x",
 					]],
 					[OutputStatement, [
-						["keyword.output", "OUTPUT"],
-						["name", "x"],
+						"keyword.output",
+						"x",
 					]],
 				]],
 			},
 			[CloseFileStatement, [
-				["keyword.close_file", "CLOSEFILE"],
+				"keyword.close_file",
 				["string", `"amogus.txt"`],
 			]],
 		],
@@ -1611,22 +1611,22 @@ const programTests = ((data:Record<string,
 				type: "procedure",
 				controlStatements: [
 					[ProcedureStatement, [
-						["keyword.procedure", "PROCEDURE"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["parentheses.close", ")"],
+						"keyword.procedure",
+						"amogus",
+						"parentheses.open",
+						"parentheses.close",
 					]]
 				],
 				nodeGroups: [[
 					[OutputStatement, [
-						["keyword.output", "OUTPUT"],
+						"keyword.output",
 						["string", `"hi"`]
 					]]
 				]]
 			},
 			[CallStatement, [
-				["keyword.call", "CALL"],
-				["tree", ["function call", ["name", "amogus"]], [
+				"keyword.call",
+				["tree", ["function call", "amogus"], [
 				]]
 			]]
 		],
@@ -1638,26 +1638,26 @@ const programTests = ((data:Record<string,
 				type: "function",
 				controlStatements: [
 					[FunctionStatement, [
-						["keyword.function", "FUNCTION"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["parentheses.close", ")"],
-						["keyword.returns", "RETURNS"],
-						["name", "INTEGER"]
+						"keyword.function",
+						"amogus",
+						"parentheses.open",
+						"parentheses.close",
+						"keyword.returns",
+						"INTEGER"
 					]]
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
-						["keyword.return", "RETURN"],
-						["number.decimal", "5"]
+						"keyword.return",
+						5
 					]]
 				]]
 			},
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "amogus"],
-				["parentheses.open", "("],
-				["parentheses.close", ")"],
+				"keyword.output",
+				"amogus",
+				"parentheses.open",
+				"parentheses.close",
 			]]
 		],
 		`5`
@@ -1668,67 +1668,67 @@ const programTests = ((data:Record<string,
 				type: "procedure",
 				controlStatements: [
 					[ProcedureStatement, [
-						["keyword.procedure", "PROCEDURE"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["keyword.pass_mode.by_value", "BYVAL"],
-						["name", "arr"],
-						["punctuation.colon", ":"],
-						["keyword.array", "ARRAY"],
-						["bracket.open", "["],
-						["number.decimal", "1"],
-						["punctuation.colon", ":"],
-						["number.decimal", "10"],
-						["bracket.close", "]"],
-						["keyword.of", "OF"],
-						["name", "INTEGER"],
-						["parentheses.close", ")"],
+						"keyword.procedure",
+						"amogus",
+						"parentheses.open",
+						"keyword.pass_mode.by_value",
+						"arr",
+						"punctuation.colon",
+						"keyword.array",
+						"bracket.open",
+						1,
+						"punctuation.colon",
+						10,
+						"bracket.close",
+						"keyword.of",
+						"INTEGER",
+						"parentheses.close",
 					]]
 				],
 				nodeGroups: [[
 					[AssignmentStatement, [
-						["tree", ["array access", ["name", "arr"]], [
-							["number.decimal", "1"],
+						["tree", ["array access", "arr"], [
+							1,
 						]],
-						["operator.assignment", "<-"],
-						["number.decimal", "6"]
+						"operator.assignment",
+						6
 					]],
 					[OutputStatement, [
-						["keyword.output", "OUTPUT"],
-						["name", "arr"],
-						["bracket.open", "["],
-						["number.decimal", "1"],
-						["bracket.close", "]"],
+						"keyword.output",
+						"arr",
+						"bracket.open",
+						1,
+						"bracket.close",
 					]],
 				]]
 			},
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "foo"],
-				["punctuation.colon", ":"],
+				"keyword.declare",
+				"foo",
+				"punctuation.colon",
 				[[
 					[1, 10]
-				], ["name", "INTEGER"]]
+				], "INTEGER"]
 			]],
 			[AssignmentStatement, [
-				["tree", ["array access", ["name", "foo"]], [
-					["number.decimal", "1"],
+				["tree", ["array access", "foo"], [
+					1,
 				]],
-				["operator.assignment", "<-"],
-				["number.decimal", "5"]
+				"operator.assignment",
+				5
 			]],
 			[CallStatement, [
-				["keyword.call", "CALL"],
-				["tree", ["function call",["name", "amogus"]], [
-					["name", "foo"]
+				"keyword.call",
+				["tree", ["function call","amogus"], [
+					"foo"
 				]]
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "foo"],
-				["bracket.open", "["],
-				["number.decimal", "1"],
-				["bracket.close", "]"],
+				"keyword.output",
+				"foo",
+				"bracket.open",
+				1,
+				"bracket.close",
 			]],
 		],
 		`6\n5`
@@ -1739,67 +1739,67 @@ const programTests = ((data:Record<string,
 				type: "procedure",
 				controlStatements: [
 					[ProcedureStatement, [
-						["keyword.procedure", "PROCEDURE"],
-						["name", "amogus"],
-						["parentheses.open", "("],
-						["keyword.pass_mode.by_reference", "BYREF"],
-						["name", "arr"],
-						["punctuation.colon", ":"],
-						["keyword.array", "ARRAY"],
-						["bracket.open", "["],
-						["number.decimal", "1"],
-						["punctuation.colon", ":"],
-						["number.decimal", "10"],
-						["bracket.close", "]"],
-						["keyword.of", "OF"],
-						["name", "INTEGER"],
-						["parentheses.close", ")"],
+						"keyword.procedure",
+						"amogus",
+						"parentheses.open",
+						"keyword.pass_mode.by_reference",
+						"arr",
+						"punctuation.colon",
+						"keyword.array",
+						"bracket.open",
+						1,
+						"punctuation.colon",
+						10,
+						"bracket.close",
+						"keyword.of",
+						"INTEGER",
+						"parentheses.close",
 					]]
 				],
 				nodeGroups: [[
 					[AssignmentStatement, [
-						["tree", ["array access", ["name", "arr"]], [
-							["number.decimal", "1"],
+						["tree", ["array access", "arr"], [
+							1,
 						]],
-						["operator.assignment", "<-"],
-						["number.decimal", "6"]
+						"operator.assignment",
+						6
 					]],
 					[OutputStatement, [
-						["keyword.output", "OUTPUT"],
-						["name", "arr"],
-						["bracket.open", "["],
-						["number.decimal", "1"],
-						["bracket.close", "]"],
+						"keyword.output",
+						"arr",
+						"bracket.open",
+						1,
+						"bracket.close",
 					]],
 				]]
 			},
 			[DeclareStatement, [
-				["keyword.declare", "DECLARE"],
-				["name", "foo"],
-				["punctuation.colon", ":"],
+				"keyword.declare",
+				"foo",
+				"punctuation.colon",
 				[[
 					[1, 10]
-				], ["name", "INTEGER"]]
+				], "INTEGER"]
 			]],
 			[AssignmentStatement, [
-				["tree", ["array access", ["name", "foo"]], [
-					["number.decimal", "1"],
+				["tree", ["array access", "foo"], [
+					1,
 				]],
-				["operator.assignment", "<-"],
-				["number.decimal", "5"]
+				"operator.assignment",
+				5
 			]],
 			[CallStatement, [
-				["keyword.call", "CALL"],
-				["tree", ["function call",["name", "amogus"]], [
-					["name", "foo"]
+				"keyword.call",
+				["tree", ["function call","amogus"], [
+					"foo"
 				]]
 			]],
 			[OutputStatement, [
-				["keyword.output", "OUTPUT"],
-				["name", "foo"],
-				["bracket.open", "["],
-				["number.decimal", "1"],
-				["bracket.close", "]"],
+				"keyword.output",
+				"foo",
+				"bracket.open",
+				1,
+				"bracket.close",
 			]],
 		],
 		`6\n6`
