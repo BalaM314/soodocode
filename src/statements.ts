@@ -643,17 +643,17 @@ export class DoWhileEndStatement extends Statement {
 	}
 }
 
-@statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
+@statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
 	argsRange:TextRange;
 	returnType:UnresolvedVariableType;
-	returnTypeToken:Token;
+	returnTypeToken:ExpressionASTTypeNode;
 	name:string;
-	constructor(tokens:Token[]){
+	constructor(tokens:[Token, Token, Token, ...Token[], Token, Token, ExpressionASTTypeNode]){
 		super(tokens);
-		this.args = parseFunctionArguments(tokens.slice(3, -3));
+		this.args = parseFunctionArguments(tokens.slice(3, -3) as Token[]);
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
 		this.returnType = processTypeData(tokens.at(-1)!);
 		this.returnTypeToken = tokens.at(-1)!;
@@ -932,14 +932,14 @@ export class ClassProcedureStatement extends ProcedureStatement implements IClas
 }
 @statement("class_procedure.end", "ENDPROCEDURE", "block_end", "keyword.procedure_end")
 export class ClassProcedureEndStatement extends Statement {}
-@statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")
+@statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")
 export class ClassFunctionStatement extends FunctionStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
 	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
-	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, Token]){
-		super(tokens.slice(1));
+	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, ExpressionASTTypeNode]){
+		super(tokens.slice(1) as never);
 		this.tokens.unshift(tokens[0]);
 		this.accessModifierToken = tokens[0];
 		this.methodKeywordToken = tokens[1];

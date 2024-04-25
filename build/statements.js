@@ -1013,7 +1013,7 @@ let DoWhileEndStatement = (() => {
 })();
 export { DoWhileEndStatement };
 let FunctionStatement = (() => {
-    let _classDecorators = [statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
+    let _classDecorators = [statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1498,7 +1498,7 @@ let ClassProcedureEndStatement = (() => {
 })();
 export { ClassProcedureEndStatement };
 let ClassFunctionStatement = (() => {
-    let _classDecorators = [statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "name")];
+    let _classDecorators = [statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
