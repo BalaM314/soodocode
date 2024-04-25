@@ -29,9 +29,29 @@ OUTPUT "There are " & primeCount & " primes in the range 2-" & limit
 `)));
 const runtime = new sc.Runtime(() => sc.crash("No input in perf test runtime"), () => {});
 
+function jsSieve(limit:number){
+    let primeCount = 0;
+    const isPrime:boolean[] = Array(limit).fill(true);
+
+    for(let n = 2; n <= limit; n ++){
+        if(isPrime[n]){
+            // Print n if it is prime
+            // OUTPUT n
+            primeCount ++;
+            
+            // Then mark all its multiples as not prime
+            for(let i = 2; i <= limit; i += n){
+                isPrime[i] = false;
+            }
+        }
+    }
+    return isPrime;
+}
+
 for(let i = 0; i < 10; i ++){
     performance.mark("execution");
-    runtime.runProgram(program.nodes);
+    // runtime.runProgram(program.nodes);
+    console.log(jsSieve(10_000_000).join("\n").length);
     console.log(performance.measure("execution", "execution").duration.toFixed(4) + "ms");
 }
 
