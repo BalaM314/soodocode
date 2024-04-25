@@ -343,16 +343,20 @@ function executeSoodocode() {
         console.log(`[Runtime] ${m}`);
     });
     try {
+        console.time("parsing");
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
         const program = parser.parse(tokens);
+        console.timeEnd("parsing");
         if (shouldDump) {
             Object.assign(window, {
                 symbols, tokens, program, runtime
             });
         }
         runtime.fs.makeBackup();
+        console.time("execution");
         runtime.runProgram(program.nodes);
+        console.timeEnd("execution");
         const outputText = output.join("\n") || "<no output>";
         outputDiv.innerText = outputText;
         if (lastOutputText == outputText) {

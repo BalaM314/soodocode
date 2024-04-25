@@ -1,0 +1,531 @@
+Statistical profiling result from isolate-00000235A4D5F020-27476-v8.log, (1355 ticks, 291 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+    828   61.1%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+     35    2.6%          C:\WINDOWS\SYSTEM32\ntdll.dll
+      1    0.1%          C:\WINDOWS\System32\KERNEL32.DLL
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+     60    4.4%   12.2%  JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+     56    4.1%   11.4%  JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     28    2.1%    5.7%  JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     22    1.6%    4.5%  JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     14    1.0%    2.9%  JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5    0.4%    1.0%  JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      5    0.4%    1.0%  JS: *get value file:///C:/coding/soodocode/build/statements.js:845:38
+      3    0.2%    0.6%  JS: *set value file:///C:/coding/soodocode/build/runtime.js:133:38
+      2    0.1%    0.4%  JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2    0.1%    0.4%  JS: *coerceValue file:///C:/coding/soodocode/build/runtime.js:640:24
+      1    0.1%    0.2%  JS: ^processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      1    0.1%    0.2%  JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1    0.1%    0.2%  JS: *resolveVariableType file:///C:/coding/soodocode/build/runtime.js:568:32
+
+ [C++]:
+   ticks  total  nonlib   name
+
+ [Summary]:
+   ticks  total  nonlib   name
+    200   14.8%   40.7%  JavaScript
+      0    0.0%    0.0%  C++
+    203   15.0%   41.3%  GC
+    864   63.8%          Shared libraries
+    291   21.5%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+    828   61.1%  C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+    603   72.8%    C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+    346   57.4%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+    289   83.5%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+    163   56.4%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+    125   76.7%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     38   23.3%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+    113   39.1%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+    113  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+     13    4.5%          JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     13  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     50   14.5%        JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     27   54.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+     27  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+     20   40.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     16   80.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4   20.0%            JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3    6.0%          JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      3  100.0%            JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      7    2.0%        JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      7  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      7  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+    148   24.5%      JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+    146   98.6%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     97   66.4%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     92   94.8%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5    5.2%            JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     49   33.6%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     49  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2    1.4%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      2  100.0%          JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%            JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     48    8.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     45   93.8%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     43   95.6%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     33   76.7%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     10   23.3%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2    4.4%          JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      3    6.3%        JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   66.7%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   33.3%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+     17    2.8%      JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+     17  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     10   58.8%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     10  100.0%            JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      7   41.2%          JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      7  100.0%            JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     15    2.5%      JS: *<anonymous> file:///C:/coding/soodocode/build/runtime-types.js:75:57
+     15  100.0%        C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+     15  100.0%          JS: ~getInitValue file:///C:/coding/soodocode/build/runtime-types.js:71:17
+     15  100.0%            JS: ~run file:///C:/coding/soodocode/build/statements.js:208:12
+     26    3.1%    JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+     24   92.3%      JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     16   66.7%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     16  100.0%          JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     16  100.0%            JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      5   20.8%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3   12.5%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   33.3%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   33.3%            JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   33.3%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2    7.7%      JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   50.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   50.0%            JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     15    1.8%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     14   93.3%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     14  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      8   57.1%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      8  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      6   42.9%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      6  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1    6.7%      JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+
+    291   21.5%  UNKNOWN
+    166   57.0%    JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+    166  100.0%      JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+    100   60.2%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     97   97.0%          JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     97  100.0%            JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1    1.0%          JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1    1.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1    1.0%          JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     31   18.7%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     30   96.8%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     28   93.3%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2    6.7%            JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1    3.2%          JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     18   10.8%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     16   88.9%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      9   56.3%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      5   31.3%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2   12.5%            JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2   11.1%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   50.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   50.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     17   10.2%        JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     17  100.0%          JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      8   47.1%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5   29.4%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      4   23.5%            JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     33   11.3%    JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     16   48.5%      JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     12   75.0%        JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     12  100.0%          JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      7   58.3%            JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      3   25.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2   16.7%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   12.5%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1    6.3%        JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1    6.3%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     10   30.3%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      7   70.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      7  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      7  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3   30.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2   66.7%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   33.3%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      5   15.2%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3   60.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2   40.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2    6.1%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   50.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   50.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     29   10.0%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     23   79.3%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     13   56.5%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      9   69.2%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      8   88.9%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   11.1%            JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4   30.8%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      6   26.1%        JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      6  100.0%          Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      6  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      4   17.4%        JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      4  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      6   20.7%      JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4   66.7%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      3   75.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   25.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   16.7%        JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%          Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1   16.7%        JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%          JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     17    5.8%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     15   88.2%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     15  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      8   53.3%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      8  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      7   46.7%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      7  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1    5.9%      JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%        Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1    5.9%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+     15    5.2%    JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     13   86.7%      JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      8   61.5%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      4   50.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4   50.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3   23.1%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      3  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   15.4%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   13.3%      JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      2  100.0%        JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5    1.7%    JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2   40.0%      JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      2  100.0%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      2  100.0%          JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%            JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1   20.0%      JS: ^replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%        JS: ^processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      1  100.0%          JS: ^replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%            JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1   20.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   20.0%      JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%        JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      1  100.0%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%            JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      5    1.7%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      5  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      4    1.4%    JS: *coerceValue file:///C:/coding/soodocode/build/runtime.js:640:24
+      4  100.0%      JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+      4  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      4  100.0%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      4  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3    1.0%    C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      2   66.7%      JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      2  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1   50.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   50.0%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   33.3%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+
+     60    4.4%  JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+     52   86.7%    JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     31   59.6%      JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     28   90.3%        JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     28  100.0%          JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     19   67.9%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5   17.9%            JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      4   14.3%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2    6.5%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1    3.2%        JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+     17   32.7%      JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     17  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     10   58.8%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      8   80.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2   20.0%            JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5   29.4%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      5  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2   11.8%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   50.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   50.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3    5.8%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   66.7%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   33.3%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1    1.9%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3    5.0%    JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      3  100.0%      JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      3  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2    3.3%    JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      2  100.0%      JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      2  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      2  100.0%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1    1.7%    JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1    1.7%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1    1.7%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%        JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+
+     56    4.1%  JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+     53   94.6%    JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+     25   47.2%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     25  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     24   96.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     15   62.5%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      9   37.5%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1    4.0%          JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+     15   28.3%      JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+     15  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     11   73.3%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      7   63.6%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2   18.2%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2   18.2%            JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      4   26.7%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   50.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   25.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   25.0%            JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     13   24.5%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      9   69.2%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5   55.6%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      4   44.4%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      4   30.8%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2    3.6%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1    1.8%    JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%      JS: ^evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1  100.0%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+
+     35    2.6%  C:\WINDOWS\SYSTEM32\ntdll.dll
+      6   17.1%    C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      2   33.3%      JS: *<anonymous> file:///C:/coding/soodocode/build/runtime-types.js:75:57
+      2  100.0%        C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      2  100.0%          JS: ~getInitValue file:///C:/coding/soodocode/build/runtime-types.js:71:17
+      2  100.0%            JS: ~run file:///C:/coding/soodocode/build/statements.js:208:12
+      1   16.7%      JS: ~symbolize file:///C:/coding/soodocode/build/lexer.js:173:26
+      1  100.0%        Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1   16.7%      JS: ~FileHandle node:internal/fs/promises:145:14
+      1  100.0%        JS: ^open node:internal/fs/promises:608:20
+      1  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1   16.7%      JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1   16.7%      JS: *evaluateToken file:///C:/coding/soodocode/build/runtime.js:472:26
+      1  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+
+     28    2.1%  JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     18   64.3%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      9   50.0%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      5   55.6%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3   60.0%          JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2   40.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4   44.4%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3   75.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1   25.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      8   44.4%      JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      8  100.0%        Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      8  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      8  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1    5.6%      JS: ~runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      8   28.6%    JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      5   62.5%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      3   60.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3  100.0%          JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2   40.0%        JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%          JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3   37.5%      JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      3  100.0%        Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      3  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      3  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      2    7.1%    JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%      JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2  100.0%        Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      2  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      2  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+
+     22    1.6%  JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      8   36.4%    JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      5   62.5%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      4   80.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      3   75.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   25.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   20.0%        JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      3   37.5%      JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      3  100.0%        JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      1   33.3%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   33.3%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   33.3%          JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      5   22.7%    JS: *processArrayAccess file:///C:/coding/soodocode/build/runtime.js:103:31
+      5  100.0%      JS: *evaluateExpr file:///C:/coding/soodocode/build/runtime.js:250:25
+      3   60.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2   66.7%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   33.3%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   20.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   20.0%        JS: *replacedFunction file:///C:/coding/soodocode/build/utils.js:184:41
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      4   18.2%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      3   75.0%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2   66.7%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   33.3%        JS: ~runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1   25.0%      JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      3   13.6%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      2   66.7%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%        JS: ^runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      2  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1   33.3%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2    9.1%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1   50.0%        JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%          Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1   50.0%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+
+     14    1.0%  JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     12   85.7%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+     12  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+     10   83.3%        JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+     10  100.0%          JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      9   90.0%            JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1   10.0%            JS: ^runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      2   16.7%        JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      2  100.0%          Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      2  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1    7.1%    JS: *runBlock file:///C:/coding/soodocode/build/statements.js:643:17
+      1  100.0%      JS: *runBlock file:///C:/coding/soodocode/build/statements.js:828:17
+      1  100.0%        JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%          JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%            Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1    7.1%    JS: *runBlock file:///C:/coding/soodocode/build/runtime.js:777:21
+      1  100.0%      JS: ~runProgram file:///C:/coding/soodocode/build/runtime.js:804:23
+      1  100.0%        Script: ~<anonymous> file:///C:/coding/soodocode/scripts/profiler.js:1:1
+      1  100.0%          C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+      1  100.0%            C:\Users\mail2_bchn2r7\AppData\Local\pnpm\node.exe
+
