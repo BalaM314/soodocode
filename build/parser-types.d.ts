@@ -1,8 +1,7 @@
 import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { Operator } from "./parser.js";
 import { ArrayVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
-import { IFormattable } from "./types.js";
+import type { ClassProperties, IFormattable } from "./types.js";
 export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode | ExpressionASTClassInstantiationNode;
 export type ExpressionASTLeafNode = Token;
@@ -59,6 +58,20 @@ export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormatta
 }
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
+export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
+export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";
+export declare class Operator implements IFormattable {
+    token: TokenType;
+    name: string;
+    type: OperatorMode;
+    category: OperatorCategory;
+    constructor(args: ClassProperties<Operator>);
+    fmtText(): string;
+    fmtDebug(): string;
+}
+export declare const operatorsByPriority: Operator[][];
+export declare const operators: Omit<Record<"assignment" | "add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;

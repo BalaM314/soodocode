@@ -9,11 +9,10 @@ which is the preferred representation of the program.
 
 
 import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode } from "./parser-types.js";
 import { PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { ClassProperties, IFormattable, PartialKey } from "./types.js";
-import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, findLastNotInGroup } from "./utils.js";
+import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -330,141 +329,6 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 	if(j != input.length) return { message: f.quote`Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
 	return output;
 });
-
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
-export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
-export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
-export class Operator implements IFormattable {
-	token!: TokenType;
-	name!: string;
-	type!: OperatorMode;
-	category!: OperatorCategory;
-	constructor(args:ClassProperties<Operator>){
-		Object.assign(this, args);
-	}
-	fmtText(){
-		return `${this.name}`; //TODO display name
-	}
-	fmtDebug(){
-		return `Operator [${this.name}] (${this.category} ${this.type})`;
-	}
-}
-
-/** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-export const operatorsByPriority = ((input:(PartialKey<ClassProperties<Operator>, "type" | "name">)[][]):Operator[][] =>
-	input.map(row => row.map(o =>
-		new Operator({
-			token: o.token,
-			category: o.category,
-			type: o.type ?? "binary",
-			name: o.name ?? o.token,
-		})
-	))
-)([
-	[
-		{
-			token: "operator.or",
-			category: "logical"
-		}
-	],[
-		{
-			token: "operator.and",
-			category: "logical"
-		}
-	],[
-		{
-			token: "operator.equal_to",
-			category: "logical"
-		},{
-			token: "operator.not_equal_to",
-			category: "logical"
-		}
-	],[
-		{
-			token: "operator.less_than",
-			category: "logical"
-		},{
-			token: "operator.less_than_equal",
-			category: "logical"
-		},{
-			token: "operator.greater_than",
-			category: "logical"
-		},{
-			token: "operator.greater_than_equal",
-			category: "logical"
-		}
-	],[
-		{
-			token: "operator.add",
-			category: "arithmetic"
-		},{
-			name: "operator.subtract",
-			token: "operator.minus",
-			category: "arithmetic",
-			type: "binary_o_unary_prefix"
-		},{
-			token: "operator.string_concatenate",
-			category: "string"
-		}
-	],[
-		{
-			token: "operator.multiply",
-			category: "arithmetic"
-		},{
-			token: "operator.divide",
-			category: "arithmetic"
-		},{
-			token: "operator.integer_divide",
-			category: "arithmetic"
-		},{
-			token: "operator.mod",
-			category: "arithmetic"
-		}
-	],
-	//no exponentiation operator?
-	[
-		{
-			token: "operator.pointer",
-			name: "operator.pointer_reference",
-			category: "special",
-			type: "unary_prefix_o_postfix"
-		},
-		{
-			token: "operator.not",
-			category: "logical",
-			type: "unary_prefix"
-		},
-		{
-			token: "operator.minus",
-			name: "operator.negate",
-			category: "arithmetic",
-			type: "unary_prefix"
-		},
-	],
-	[
-		{
-			token: "operator.pointer",
-			name: "operator.pointer_dereference",
-			category: "special",
-			type: "unary_postfix_o_prefix"
-		}
-	],
-	[
-		{
-			token: "punctuation.period",
-			name: "operator.access",
-			category: "special",
-		}
-	]
-	//(function call)
-	//(array access)
-]);
-/** Indexed by OperatorType */
-export const operators = Object.fromEntries(
-	operatorsByPriority.flat().map(o => [
-		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
-	] as const)
-) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
 function cannotEndExpression(token:Token){
 	//TODO is this the best way?

@@ -1,11 +1,8 @@
 import { SymbolType, Token, TokenType, token } from "../../build/lexer-types.js";
-import {
-	ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTNodeExt, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode
-} from "../../build/parser-types.js";
-import { operators, OperatorType } from "../../build/parser.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, operators } from "../../build/parser-types.js";
+import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Statement } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
-import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.

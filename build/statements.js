@@ -40,9 +40,9 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, checkClassMethodsCompatible } from "./runtime-types.js";
-import { Runtime } from "./runtime.js";
-import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
+import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statements = {
     byStartKeyword: {},
     byType: {},
@@ -1000,7 +1000,7 @@ let FunctionStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.args = parseFunctionArguments(tokens.slice(3, -3));
-            this.argsRange = getTotalRange(tokens.slice(3, -3));
+            this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
             this.returnType = processTypeData(tokens.at(-1));
             this.name = tokens[1].text;
         }
@@ -1033,7 +1033,7 @@ let ProcedureStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.args = parseFunctionArguments(tokens.slice(3, -1));
-            this.argsRange = getTotalRange(tokens.slice(3, -1));
+            this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {

@@ -1,5 +1,5 @@
 import { Symbol, Token } from "./lexer-types.js";
-import { crash, fail, impossible, f } from "./utils.js";
+import { crash, f, fail, impossible } from "./utils.js";
 const symbolTypeData = [
     [/<-{1,2}/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],

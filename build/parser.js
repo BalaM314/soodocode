@@ -1,8 +1,8 @@
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode } from "./parser-types.js";
 import { PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, errorBoundary, fail, f, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, findLastNotInGroup } from "./utils.js";
+import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -306,121 +306,6 @@ export const checkStatement = errorBoundary()((statement, input) => {
         return { message: f.quote `Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
     return output;
 });
-export class Operator {
-    constructor(args) {
-        Object.assign(this, args);
-    }
-    fmtText() {
-        return `${this.name}`;
-    }
-    fmtDebug() {
-        return `Operator [${this.name}] (${this.category} ${this.type})`;
-    }
-}
-export const operatorsByPriority = ((input) => input.map(row => row.map(o => new Operator({
-    token: o.token,
-    category: o.category,
-    type: o.type ?? "binary",
-    name: o.name ?? o.token,
-}))))([
-    [
-        {
-            token: "operator.or",
-            category: "logical"
-        }
-    ], [
-        {
-            token: "operator.and",
-            category: "logical"
-        }
-    ], [
-        {
-            token: "operator.equal_to",
-            category: "logical"
-        }, {
-            token: "operator.not_equal_to",
-            category: "logical"
-        }
-    ], [
-        {
-            token: "operator.less_than",
-            category: "logical"
-        }, {
-            token: "operator.less_than_equal",
-            category: "logical"
-        }, {
-            token: "operator.greater_than",
-            category: "logical"
-        }, {
-            token: "operator.greater_than_equal",
-            category: "logical"
-        }
-    ], [
-        {
-            token: "operator.add",
-            category: "arithmetic"
-        }, {
-            name: "operator.subtract",
-            token: "operator.minus",
-            category: "arithmetic",
-            type: "binary_o_unary_prefix"
-        }, {
-            token: "operator.string_concatenate",
-            category: "string"
-        }
-    ], [
-        {
-            token: "operator.multiply",
-            category: "arithmetic"
-        }, {
-            token: "operator.divide",
-            category: "arithmetic"
-        }, {
-            token: "operator.integer_divide",
-            category: "arithmetic"
-        }, {
-            token: "operator.mod",
-            category: "arithmetic"
-        }
-    ],
-    [
-        {
-            token: "operator.pointer",
-            name: "operator.pointer_reference",
-            category: "special",
-            type: "unary_prefix_o_postfix"
-        },
-        {
-            token: "operator.not",
-            category: "logical",
-            type: "unary_prefix"
-        },
-        {
-            token: "operator.minus",
-            name: "operator.negate",
-            category: "arithmetic",
-            type: "unary_prefix"
-        },
-    ],
-    [
-        {
-            token: "operator.pointer",
-            name: "operator.pointer_dereference",
-            category: "special",
-            type: "unary_postfix_o_prefix"
-        }
-    ],
-    [
-        {
-            token: "punctuation.period",
-            name: "operator.access",
-            category: "special",
-        }
-    ]
-]);
-export const operators = Object.fromEntries(operatorsByPriority.flat().map(o => [
-    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
-]));
 function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }

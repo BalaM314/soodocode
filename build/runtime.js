@@ -34,11 +34,36 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
-import { operators } from "./parser.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesEqual } from "./runtime-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators } from "./parser-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, crash, errorBoundary, fail, f, impossible } from "./utils.js";
+import { SoodocodeError, crash, errorBoundary, f, fail, impossible, zip } from "./utils.js";
+export function typesEqual(a, b) {
+    return a == b ||
+        (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
+        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (a.type == b.type ||
+            Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1])) ||
+        (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
+        (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
+}
+export function checkClassMethodsCompatible(base, derived) {
+    if (base.accessModifier != derived.accessModifier)
+        fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
+    if (base.stype != derived.stype)
+        fail(f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
+    if (base.args.size != derived.args.size)
+        fail(`Functions have different numbers of arguments.`, derived.argsRange);
+    for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
+        if (!typesEqual(aType.type, bType.type))
+            fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
+        if (aType.passMode != bType.passMode)
+            fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+    }
+    if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
+        if (!typesEqual(derived.returnType, base.returnType))
+            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`);
+    }
+}
 export class Files {
     constructor() {
         this.files = {};

@@ -5,12 +5,12 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
-import { TextRange, Token } from "./lexer-types.js";
 import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import { type BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, type ClassPropertyStatement, type ClassStatement, type ConstantStatement, type DeclareStatement, type DefineStatement, type ForStatement, type FunctionStatement, type ProcedureStatement, type Statement } from "./statements.js";
+import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-import { crash, f, fail, zip } from "./utils.js";
+import { crash, f, fail } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> =
@@ -253,41 +253,6 @@ export class ClassVariableType extends BaseVariableType {
 				mutable: true,
 			} as VariableData]))
 		};
-	}
-}
-
-export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType):boolean {
-	return a == b ||
-		(Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
-		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (
-			a.type == b.type ||
-			Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1]
-		)) ||
-		(a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
-		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
-	;
-}
-export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:ClassMethodStatement & {argsRange:TextRange; accessModifierToken:Token; methodKeywordToken:Token;}){ //eslint broke
-
-	if(base.accessModifier != derived.accessModifier)
-		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
-
-	if(base.stype != derived.stype)
-		fail(f.text`Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
-
-	if(base.args.size != derived.args.size)
-		fail(`Functions have different numbers of arguments.`, derived.argsRange);
-	for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
-		//Changing the name is fine
-		if(!typesEqual(aType.type, bType.type))
-			fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
-		if(aType.passMode != bType.passMode)
-			fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
-	}
-
-	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
-		if(!typesEqual(derived.returnType, base.returnType)) //TODO allow making the type more specific, eg Dog instead of Animal, also in checkArgTypesCompatible
-			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`);
 	}
 }
 

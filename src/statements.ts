@@ -10,10 +10,10 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, ClassMethodData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue, typesEqual, checkClassMethodsCompatible } from "./runtime-types.js";
-import { Runtime } from "./runtime.js";
-import { IFormattable } from "./types.js";
-import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma, getRange } from "./utils.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
+import type { IFormattable } from "./types.js";
+import { Abstract, crash, f, fail, getRange, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
 //TODO snake case

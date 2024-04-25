@@ -9,7 +9,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 
 
 import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
-import { crash, fail, impossible, f } from "./utils.js";
+import { crash, f, fail, impossible } from "./utils.js";
 
 
 const symbolTypeData: [

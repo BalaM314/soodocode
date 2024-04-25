@@ -20,7 +20,10 @@ export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
 		Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
-				args: new Map(data.args.map(a => [a[0], {passMode: "reference", type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t => PrimitiveVariableType.get(t))}])),
+				args: new Map(data.args.map(a => [a[0], {
+					passMode: "reference",
+					type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t => PrimitiveVariableType.get(t))
+				}])),
 				name,
 				impl: data.impl,
 				returnType: PrimitiveVariableType.get(data.returnType)

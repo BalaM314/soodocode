@@ -5,8 +5,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { UnresolvedVariableType } from "./runtime-types.js";
+import type { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
+import type { UnresolvedVariableType } from "./runtime-types.js";
 import type { IFormattable, TagFunction } from "./types.js";
 
 

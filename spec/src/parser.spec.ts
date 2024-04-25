@@ -10,22 +10,10 @@ import "jasmine";
 import { Token, TokenizedProgram, token } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
-import { UnresolvedVariableType, ArrayVariableType, PrimitiveVariableType, PrimitiveVariableTypeName } from "../../build/runtime-types.js";
-import {
-	AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement,
-	InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements
-} from "../../build/statements.js";
+import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements } from "../../build/statements.js";
 import { SoodocodeError } from "../../build/utils.js";
-import {
-	_ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token,
-	_UnresolvedVariableType,
-	_VariableType,
-	applyAnyRange,
-	fakeStatement,
-	process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement,
-	process_UnresolvedVariableType,
-	process_VariableType,
-} from "./spec_utils.js";
+import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_UnresolvedVariableType } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 

@@ -1,4 +1,4 @@
-import { IFormattable } from "./types.js";
+import type { IFormattable } from "./types.js";
 export type TextRange = [start: number, end: number];
 export type TextRanged = {
     range: TextRange | (() => TextRange);

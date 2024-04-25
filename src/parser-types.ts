@@ -6,11 +6,10 @@ This file contains the types for the parser.
 */
 
 import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { Operator } from "./parser.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
-import { IFormattable } from "./types.js";
-import { getTotalRange, f } from "./utils.js";
+import type { ClassProperties, IFormattable, PartialKey } from "./types.js";
+import { f, getTotalRange } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -113,7 +112,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	){
 		this.range = getTotalRange(allTokens);
 	}
-	toData():ArrayVariableType {
+	toData():ArrayVariableType { //TODO make this from instead
 		return new ArrayVariableType(
 			this.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
 			PrimitiveVariableType.resolve(this.elementType.text)
@@ -160,6 +159,142 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 /** Represents an "extended" expression AST node, which may also be an array type node */
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
+
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
+export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
+export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
+export class Operator implements IFormattable {
+	token!: TokenType;
+	name!: string;
+	type!: OperatorMode;
+	category!: OperatorCategory;
+	constructor(args:ClassProperties<Operator>){
+		Object.assign(this, args);
+	}
+	fmtText(){
+		return `${this.name}`; //TODO display name
+	}
+	fmtDebug(){
+		return `Operator [${this.name}] (${this.category} ${this.type})`;
+	}
+}
+
+/** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
+export const operatorsByPriority = ((input:(PartialKey<ClassProperties<Operator>, "type" | "name">)[][]):Operator[][] =>
+	input.map(row => row.map(o =>
+		new Operator({
+			token: o.token,
+			category: o.category,
+			type: o.type ?? "binary",
+			name: o.name ?? o.token,
+		})
+	))
+)([
+	[
+		{
+			token: "operator.or",
+			category: "logical"
+		}
+	],[
+		{
+			token: "operator.and",
+			category: "logical"
+		}
+	],[
+		{
+			token: "operator.equal_to",
+			category: "logical"
+		},{
+			token: "operator.not_equal_to",
+			category: "logical"
+		}
+	],[
+		{
+			token: "operator.less_than",
+			category: "logical"
+		},{
+			token: "operator.less_than_equal",
+			category: "logical"
+		},{
+			token: "operator.greater_than",
+			category: "logical"
+		},{
+			token: "operator.greater_than_equal",
+			category: "logical"
+		}
+	],[
+		{
+			token: "operator.add",
+			category: "arithmetic"
+		},{
+			name: "operator.subtract",
+			token: "operator.minus",
+			category: "arithmetic",
+			type: "binary_o_unary_prefix"
+		},{
+			token: "operator.string_concatenate",
+			category: "string"
+		}
+	],[
+		{
+			token: "operator.multiply",
+			category: "arithmetic"
+		},{
+			token: "operator.divide",
+			category: "arithmetic"
+		},{
+			token: "operator.integer_divide",
+			category: "arithmetic"
+		},{
+			token: "operator.mod",
+			category: "arithmetic"
+		}
+	],
+	//no exponentiation operator?
+	[
+		{
+			token: "operator.pointer",
+			name: "operator.pointer_reference",
+			category: "special",
+			type: "unary_prefix_o_postfix"
+		},
+		{
+			token: "operator.not",
+			category: "logical",
+			type: "unary_prefix"
+		},
+		{
+			token: "operator.minus",
+			name: "operator.negate",
+			category: "arithmetic",
+			type: "unary_prefix"
+		},
+	],
+	[
+		{
+			token: "operator.pointer",
+			name: "operator.pointer_dereference",
+			category: "special",
+			type: "unary_postfix_o_prefix"
+		}
+	],
+	[
+		{
+			token: "punctuation.period",
+			name: "operator.access",
+			category: "special",
+		}
+	]
+	//(function call)
+	//(array access)
+]);
+/** Indexed by OperatorType */
+export const operators = Object.fromEntries(
+	operatorsByPriority.flat().map(o => [
+		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
+	] as const)
+) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
+
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";

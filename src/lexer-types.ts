@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains types for the lexer, such as Symbol and Token.
 */
 
-import { IFormattable } from "./types.js";
+import type { IFormattable } from "./types.js";
 import { crash, getRange, getTotalRange } from "./utils.js";
 
 export type TextRange = [start:number, end:number];

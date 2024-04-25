@@ -1,7 +1,13 @@
-import { Token } from "./lexer-types.js";
+import { TextRange, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
+export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType): boolean;
+export declare function checkClassMethodsCompatible(base: ClassMethodStatement, derived: ClassMethodStatement & {
+    argsRange: TextRange;
+    accessModifierToken: Token;
+    methodKeywordToken: Token;
+}): void;
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
