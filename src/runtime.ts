@@ -182,12 +182,32 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				if(type) return [type, this.coerceValue(value, outputType, type)];
 				else return [outputType, value];
 			} else if(objType instanceof ClassVariableType){
+				const classInstance = obj as VariableTypeMapping<ClassVariableType>;
+				const classType = classInstance.type; //Use the real type (Dog, not the variable type Animal) only when searching for methods
 				if(type == "function"){ //overload 3
-					const method = objType.methods[property] ?? fail(f.quote`Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
+					const method = objType.methods[property]
+						? (classType.methods[property] ?? crash(`Inherited method not present`)) //Use the real type
+						: classType.methods[property]
+							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
+`Method ${property} does not exist on type ${objType}.
+The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the method, \
+but the type of the variable is ${objType.fmtPlain()}.
+help: change the type of the variable to ${classType.fmtPlain()}`,
+							expr.nodes[1])
+							: fail(f.quote`Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
 					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-					return [method, objType, obj as VariableTypeMapping<ClassVariableType>];
+					return [method, classInstance];
 				} else { //overload 1
-					const propertyStatement = objType.properties[property] ?? fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]);
+					const propertyStatement = objType.properties[property] ?? (
+						//No need to use the real type, properties cannot be overriden
+						classType.methods[property]
+							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
+`Property ${property} does not exist on type ${objType}.
+The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
+but the type of the variable is ${objType.fmtPlain()}.
+help: change the type of the variable to ${classType.fmtPlain()}`,
+							expr.nodes[1])
+							: fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
 					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					const outputType = this.resolveVariableType(propertyStatement.varType);
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
