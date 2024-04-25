@@ -647,7 +647,7 @@ export class FunctionStatement extends Statement {
 	constructor(tokens:Token[]){
 		super(tokens);
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
-		this.argsRange = getTotalRange(tokens.slice(3, -3));
+		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
 		this.returnType = processTypeData(tokens.at(-1)!);
 		this.name = tokens[1].text;
 	}
@@ -668,7 +668,7 @@ export class ProcedureStatement extends Statement {
 	constructor(tokens:Token[]){
 		super(tokens);
 		this.args = parseFunctionArguments(tokens.slice(3, -1));
-		this.argsRange = getTotalRange(tokens.slice(3, -1));
+		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
