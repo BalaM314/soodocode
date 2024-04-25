@@ -424,7 +424,7 @@ export class CallStatement extends Statement {
 		const func = runtime.evaluateExpr(this.func.functionName, "function");
 		if(Array.isArray(func)){
 			//Class method
-			runtime.callClassMethod(func[0], func[1], func[2], this.func.args); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
+			runtime.callClassMethod(func[0], func[1], this.func.args); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
 			if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
@@ -849,7 +849,7 @@ export class ClassStatement extends Statement {
 		runtime.getCurrentScope().types[this.name.text] = data;
 	}
 }
-@statement("class.inherits", "CLASS Dog", "block", "keyword.class", "name", "keyword.inherits", "name")
+@statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
 export class ClassInheritsStatement extends ClassStatement {
 	superClassName:Token;
 	constructor(tokens:[Token, Token, Token, Token]){

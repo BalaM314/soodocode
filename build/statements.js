@@ -585,7 +585,7 @@ let CallStatement = (() => {
         run(runtime) {
             const func = runtime.evaluateExpr(this.func.functionName, "function");
             if (Array.isArray(func)) {
-                runtime.callClassMethod(func[0], func[1], func[2], this.func.args);
+                runtime.callClassMethod(func[0], func[1], this.func.args);
             }
             else {
                 if ("name" in func)
@@ -1345,7 +1345,7 @@ let ClassStatement = (() => {
 })();
 export { ClassStatement };
 let ClassInheritsStatement = (() => {
-    let _classDecorators = [statement("class.inherits", "CLASS Dog", "block", "keyword.class", "name", "keyword.inherits", "name")];
+    let _classDecorators = [statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;

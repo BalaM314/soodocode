@@ -13,7 +13,6 @@ export declare class Files {
 }
 export type ClassMethodCallInformation = [
     method: ClassMethodData,
-    clazz: ClassVariableType,
     instance: VariableTypeMapping<ClassVariableType>
 ];
 export declare class Runtime {
@@ -74,7 +73,7 @@ export declare class Runtime {
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
     callFunction<T extends boolean>(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue?: T): VariableValue | (T extends false ? null : never);
-    callClassMethod<T extends boolean>(funcNode: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): [type: VariableType, value: VariableValue] | (T extends false ? null : never);
+    callClassMethod<T extends boolean>(funcNode: ClassMethodData, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): [type: VariableType, value: VariableValue] | (T extends false ? null : never);
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";

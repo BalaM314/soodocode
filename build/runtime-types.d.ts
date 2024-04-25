@@ -4,6 +4,7 @@ import { type DeclareStatement, type FunctionStatement, type ProcedureStatement,
 import { IFormattable } from "./types.js";
 export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
     properties: Record<string, unknown>;
+    type: ClassVariableType;
 } : never;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
@@ -86,12 +87,14 @@ export declare class ClassVariableType extends BaseVariableType {
     baseClass: ClassVariableType | null;
     constructor(statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, methods?: Record<string, ClassMethodData>);
     fmtText(): string;
+    fmtPlain(): string;
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
     inherits(other: ClassVariableType): boolean;
     construct(runtime: Runtime, args: ExpressionASTNode[]): {
         properties: Record<string, unknown>;
+        type: ClassVariableType;
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
 }

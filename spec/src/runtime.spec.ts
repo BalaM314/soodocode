@@ -570,7 +570,8 @@ const expressionTests = ((data:Record<string, [
 			[amogusClass, {
 				properties: {
 					prop: null
-				}
+				},
+				type: amogusClass
 			}],
 			r => {
 				r.getCurrentScope().types["Amogus"] = amogusClass;
@@ -624,7 +625,8 @@ const expressionTests = ((data:Record<string, [
 			[amogusClass, {
 				properties: {
 					prop: 65
-				}
+				},
+				type: amogusClass
 			}],
 			r => {
 				r.getCurrentScope().types["Amogus"] = amogusClass;
@@ -675,9 +677,10 @@ const expressionTests = ((data:Record<string, [
 					value: {
 						properties: {
 							prop: 65
-						}
+						},
+						type: amogusClass
 					}
-				}
+				} satisfies VariableData<ClassVariableType>;
 			}
 		]
 	})(),
@@ -708,9 +711,10 @@ const expressionTests = ((data:Record<string, [
 					value: {
 						properties: {
 							prop: 65
-						}
+						},
+						type: amogusClass
 					}
-				}
+				} satisfies VariableData<ClassVariableType>;
 			}
 		]
 	})(),
@@ -768,9 +772,10 @@ const expressionTests = ((data:Record<string, [
 					value: {
 						properties: {
 							prop: 90
-						}
+						},
+						type: amogusClass
 					}
-				}
+				} satisfies VariableData<ClassVariableType>;
 				r.getCurrentScope().variables["sus"] = {
 					declaration: null!,
 					mutable: true,
@@ -778,9 +783,10 @@ const expressionTests = ((data:Record<string, [
 					value: {
 						properties: {
 							prop: 1
-						}
+						},
+						type: amogusClass
 					}
-				}
+				} satisfies VariableData<ClassVariableType>;
 			}
 		]
 	})(),
@@ -834,9 +840,10 @@ const expressionTests = ((data:Record<string, [
 				value: {
 					properties: {
 						prop: 65
-					}
+					},
+					type: amogusClass
 				}
-			}
+			} satisfies VariableData<ClassVariableType>
 		}
 	],
 	class_method_call_invalid_wrong_arguments: [
@@ -892,9 +899,10 @@ const expressionTests = ((data:Record<string, [
 				value: {
 					properties: {
 						prop: 65
-					}
+					},
+					type: amogusClass
 				}
-			}
+			} satisfies VariableData<ClassVariableType>
 		}
 	],
 	class_method_call_invalid_procedure_no_return:  [
@@ -948,9 +956,10 @@ const expressionTests = ((data:Record<string, [
 				value: {
 					properties: {
 						prop: 65
-					}
+					},
+					type: amogusClass
 				}
-			}
+			} satisfies VariableData<ClassVariableType>;
 		}
 	],
 });

@@ -184,14 +184,28 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                             return [outputType, value];
                     }
                     else if (objType instanceof ClassVariableType) {
+                        const classInstance = obj;
+                        const classType = classInstance.type;
                         if (type == "function") {
-                            const method = objType.methods[property] ?? fail(f.quote `Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
+                            const method = objType.methods[property]
+                                ? (classType.methods[property] ?? crash(`Inherited method not present`))
+                                : classType.methods[property]
+                                    ? fail(f.quote `Method ${property} does not exist on type ${objType}.
+The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the method, \
+but the type of the variable is ${objType.fmtPlain()}.
+help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1])
+                                    : fail(f.quote `Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
                             if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
                                 fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                            return [method, objType, obj];
+                            return [method, classInstance];
                         }
                         else {
-                            const propertyStatement = objType.properties[property] ?? fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]);
+                            const propertyStatement = objType.properties[property] ?? (classType.methods[property]
+                                ? fail(f.quote `Property ${property} does not exist on type ${objType}.
+The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
+but the type of the variable is ${objType.fmtPlain()}.
+help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1])
+                                : fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
                             if (propertyStatement.accessModifier == "private" && !this.canAccessClass(objType))
                                 fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
                             const outputType = this.resolveVariableType(propertyStatement.varType);
@@ -248,7 +262,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         if (Array.isArray(func)) {
                             if (func[0].type == "class_procedure")
                                 fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
-                            return this.callClassMethod(func[0], func[1], func[2], expr.args, true);
+                            return this.callClassMethod(func[0], func[1], expr.args, true);
                         }
                         else
                             crash(`Branched function call node should not be able to return regular functions`);
@@ -636,8 +650,11 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return Object.fromEntries(Object.entries(value)
                         .map(([k, v]) => [k, this.cloneValue(type.fields[k], v)]));
                 if (type instanceof ClassVariableType)
-                    return Object.fromEntries(Object.entries(value.properties)
-                        .map(([k, v]) => [k, this.cloneValue(this.resolveVariableType(type.properties[k].varType), v)]));
+                    return {
+                        properties: Object.fromEntries(Object.entries(value.properties)
+                            .map(([k, v]) => [k, this.cloneValue(this.resolveVariableType(type.properties[k].varType), v)])),
+                        type: value.type
+                    };
                 crash(f.quote `Cannot clone value of type ${type}`);
             }
             assembleScope(func, args) {
@@ -689,11 +706,11 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return output.value;
                 }
             }
-            callClassMethod(funcNode, clazz, instance, args, requireReturnValue) {
+            callClassMethod(funcNode, instance, args, requireReturnValue) {
                 const func = funcNode.controlStatements[0];
                 if (func instanceof ClassProcedureStatement && requireReturnValue)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`);
-                const classScope = clazz.getScope(this, instance);
+                const classScope = instance.type.getScope(this, instance);
                 const methodScope = this.assembleScope(func, args);
                 const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
                 if (func instanceof ClassProcedureStatement) {

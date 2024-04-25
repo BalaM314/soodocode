@@ -164,6 +164,9 @@ export class ClassVariableType extends BaseVariableType {
     fmtText() {
         return f.text `${this.name} (user-defined class type)`;
     }
+    fmtPlain() {
+        return this.name;
+    }
     toQuotedString() {
         return f.quote `"${this.name}" (user-defined class type)`;
     }
@@ -180,9 +183,10 @@ export class ClassVariableType extends BaseVariableType {
         const data = {
             properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
                 runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
-            ]))
+            ])),
+            type: this
         };
-        runtime.callClassMethod(this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), this, data, args);
+        runtime.callClassMethod(this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), data, args);
         return data;
     }
     getScope(runtime, instance) {

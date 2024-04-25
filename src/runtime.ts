@@ -39,7 +39,6 @@ export class Files {
 }
 export type ClassMethodCallInformation = [
 	method: ClassMethodData,
-	clazz: ClassVariableType,
 	instance: VariableTypeMapping<ClassVariableType>,
 ];
 export class Runtime {
@@ -243,7 +242,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				if(Array.isArray(func)){
 					if(func[0].type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
 					//Class method
-					return this.callClassMethod(func[0], func[1], func[2], expr.args, true); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
+					return this.callClassMethod(func[0], func[1], expr.args, true);
 				} else crash(`Branched function call node should not be able to return regular functions`);
 			} else crash(`Function name was an unexpected node type`);
 		}
@@ -642,12 +641,12 @@ help: try using DIV instead of / to produce an integer as the result`
 			return output.value;
 		}
 	}
-	callClassMethod<T extends boolean>(funcNode:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):[type:VariableType, value:VariableValue] | (T extends false ? null : never) {
+	callClassMethod<T extends boolean>(funcNode:ClassMethodData, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):[type:VariableType, value:VariableValue] | (T extends false ? null : never) {
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ClassProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
 
-		const classScope = clazz.getScope(this, instance);
+		const classScope = instance.type.getScope(this, instance);
 		const methodScope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
 		if(func instanceof ClassProcedureStatement){
