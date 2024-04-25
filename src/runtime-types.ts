@@ -279,7 +279,12 @@ export type VariableType =
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 
-export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
+export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"] as const;
+export type FileMode = typeof fileModes extends ReadonlyArray<infer T> ? T : never;
+export function FileMode(input:string):FileMode {
+	if(fileModes.includes(input)) return input;
+	crash(`${input} is not a valid file mode`);
+}
 export type File = {
 	name: string;
 	text: string;

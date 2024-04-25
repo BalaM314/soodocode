@@ -40,7 +40,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statementTypes = [
@@ -1087,7 +1087,7 @@ let OpenFileStatement = (() => {
         }
         run(runtime) {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-            const mode = this.mode.text;
+            const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
             const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(`File ${name} does not exist.`);
             if (mode == "READ") {
                 runtime.openFiles[name] = {

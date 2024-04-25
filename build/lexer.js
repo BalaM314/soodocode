@@ -119,6 +119,7 @@ export const tokenNameTypeData = {
     ";": "punctuation.semicolon",
     ",": "punctuation.comma",
     ".": "punctuation.period",
+    "\n": "newline",
 };
 export const tokenTextMapping = Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
 class SymbolizerIO {

@@ -699,7 +699,7 @@ export class OpenFileStatement extends Statement implements IFileStatement { //T
 	}
 	run(runtime:Runtime){
 		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
-		const mode = this.mode.text as FileMode;
+		const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
 		const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(`File ${name} does not exist.`);
 		if(mode == "READ"){
 			runtime.openFiles[name] = {

@@ -203,3 +203,9 @@ export class ClassVariableType extends BaseVariableType {
         };
     }
 }
+export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"];
+export function FileMode(input) {
+    if (fileModes.includes(input))
+        return input;
+    crash(`${input} is not a valid file mode`);
+}

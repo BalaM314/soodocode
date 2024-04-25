@@ -103,7 +103,9 @@ export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType |
 export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType | ClassVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;
-export type FileMode = "READ" | "WRITE" | "APPEND" | "RANDOM";
+export declare const fileModes: readonly ["READ", "WRITE", "APPEND", "RANDOM"];
+export type FileMode = typeof fileModes extends ReadonlyArray<infer T> ? T : never;
+export declare function FileMode(input: string): FileMode;
 export type File = {
     name: string;
     text: string;
