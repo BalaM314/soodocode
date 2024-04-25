@@ -228,6 +228,14 @@ export function parseError(thing) {
         return "Unable to parse error object";
     }
 }
+export function* zip(...iters) {
+    while (true) {
+        const values = iters.map(i => i.next());
+        if (values.some(v => v.done))
+            break;
+        yield values.map(v => v.value);
+    }
+}
 export function tagProcessor(transformer) {
     return function (stringChunks, ...varChunks) {
         return String.raw({ raw: stringChunks }, ...varChunks.map((chunk, i) => transformer(chunk, i, stringChunks, varChunks)));

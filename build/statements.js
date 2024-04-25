@@ -40,7 +40,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, checkClassMethodsCompatible } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statements = {
@@ -1000,6 +1000,7 @@ let FunctionStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.args = parseFunctionArguments(tokens.slice(3, -3));
+            this.argsRange = getTotalRange(tokens.slice(3, -3));
             this.returnType = processTypeData(tokens.at(-1));
             this.name = tokens[1].text;
         }
@@ -1032,6 +1033,7 @@ let ProcedureStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.args = parseFunctionArguments(tokens.slice(3, -1));
+            this.argsRange = getTotalRange(tokens.slice(3, -1));
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
@@ -1356,15 +1358,26 @@ let ClassInheritsStatement = (() => {
             this.superClassName = tokens[3];
         }
         initializeClass(runtime, branchNode) {
-            var _a, _b;
             const baseClass = runtime.getClass(this.superClassName.text);
             const extensions = super.initializeClass(runtime, branchNode);
             extensions.baseClass = baseClass;
             for (const [key, value] of Object.entries(baseClass.properties)) {
-                (_a = extensions.properties)[key] ?? (_a[key] = value);
+                if (extensions.properties[key]) {
+                    fail(f.quote `Property ${key} has already been defined in base class ${this.superClassName.text}`, extensions.properties[key]);
+                }
+                else {
+                    extensions.properties[key] = value;
+                }
             }
             for (const [key, value] of Object.entries(baseClass.methods)) {
-                (_b = extensions.methods)[key] ?? (_b[key] = value);
+                if (extensions.methods[key]) {
+                    const base = extensions.methods[key].controlStatements[0];
+                    const derived = baseClass.methods[key].controlStatements[0];
+                    checkClassMethodsCompatible(base, derived);
+                }
+                else {
+                    extensions.methods[key] = value;
+                }
             }
             return extensions;
         }
@@ -1419,7 +1432,9 @@ let ClassProcedureStatement = (() => {
     var ClassProcedureStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens.slice(1));
+            this.tokens.unshift(tokens[0]);
             this.accessModifierToken = tokens[0];
+            this.methodKeywordToken = tokens[1];
             this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
             if (this.name == "NEW" && this.accessModifier == "private")
                 fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
@@ -1470,7 +1485,9 @@ let ClassFunctionStatement = (() => {
     var ClassFunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens.slice(1));
+            this.tokens.unshift(tokens[0]);
             this.accessModifierToken = tokens[0];
+            this.methodKeywordToken = tokens[1];
             this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
         }
         runBlock() {

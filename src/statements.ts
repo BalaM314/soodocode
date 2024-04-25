@@ -10,10 +10,10 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, ClassMethodData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ClassVariableType, ClassMethodData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue, typesEqual, checkClassMethodsCompatible } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { IFormattable } from "./types.js";
-import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, crash, fail, f, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma, getRange } from "./utils.js";
 
 
 //TODO snake case
@@ -641,11 +641,13 @@ export class DoWhileEndStatement extends Statement {
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
+	argsRange:TextRange;
 	returnType:UnresolvedVariableType;
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
+		this.argsRange = getTotalRange(tokens.slice(3, -3));
 		this.returnType = processTypeData(tokens.at(-1)!);
 		this.name = tokens[1].text;
 	}
@@ -661,10 +663,12 @@ export class FunctionStatement extends Statement {
 export class ProcedureStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
+	argsRange:TextRange;
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		this.args = parseFunctionArguments(tokens.slice(3, -1));
+		this.argsRange = getTotalRange(tokens.slice(3, -1));
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
@@ -859,16 +863,25 @@ export class ClassInheritsStatement extends ClassStatement {
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType {
 		const baseClass = runtime.getClass(this.superClassName.text);
 		const extensions = super.initializeClass(runtime, branchNode);
+
 		//Apply the base class's properties and functions
 		extensions.baseClass = baseClass;
-		//TODO type check
 		for(const [key, value] of Object.entries(baseClass.properties)){
-			//If the property has not been overriden, set it to the base class's property
-			extensions.properties[key] ??= value;
+			if(extensions.properties[key]){
+				fail(f.quote`Property ${key} has already been defined in base class ${this.superClassName.text}`, extensions.properties[key]);
+			} else {
+				extensions.properties[key] = value;
+			}
 		}
 		for(const [key, value] of Object.entries(baseClass.methods)){
 			//If the method has not been overriden, set it to the base class's method
-			extensions.methods[key] ??= value;
+			if(extensions.methods[key]){
+				const base = extensions.methods[key].controlStatements[0];
+				const derived = baseClass.methods[key].controlStatements[0];
+				checkClassMethodsCompatible(base, derived);
+			} else {
+				extensions.methods[key] = value;
+			}
 		}
 		return extensions;
 	}
@@ -893,10 +906,13 @@ export class ClassPropertyStatement extends DeclareStatement implements IClassMe
 export class ClassProcedureStatement extends ProcedureStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
+	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
 		super(tokens.slice(1));
+		this.tokens.unshift(tokens[0]);
 		this.accessModifierToken = tokens[0];
+		this.methodKeywordToken = tokens[1];
 		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
@@ -911,10 +927,13 @@ export class ClassProcedureEndStatement extends Statement {}
 export class ClassFunctionStatement extends FunctionStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
+	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, Token]){
 		super(tokens.slice(1));
+		this.tokens.unshift(tokens[0]);
 		this.accessModifierToken = tokens[0];
+		this.methodKeywordToken = tokens[1];
 		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 	}
 	runBlock(){

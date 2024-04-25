@@ -36,6 +36,10 @@ export declare function errorBoundary({ predicate, message }?: Partial<{
 }>): <T extends (...args: any[]) => unknown>(func: T, _ctx?: ClassMethodDecoratorContext) => T;
 export declare function escapeHTML(input?: string): string;
 export declare function parseError(thing: unknown): string;
+type Iterators<T extends unknown[]> = {
+    [P in keyof T]: Iterator<T[P]>;
+};
+export declare function zip<T extends unknown[]>(...iters: Iterators<T>): IterableIterator<T>;
 export declare function tagProcessor<T>(transformer: (chunk: T, index: number, allStringChunks: readonly string[], allVarChunks: readonly T[]) => string): TagFunction<T, string>;
 export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType;
 export declare const f: {
@@ -44,3 +48,4 @@ export declare const f: {
     debug: TagFunction<Formattable, string>;
 };
 export declare function forceType<T>(input: unknown): asserts input is T;
+export {};

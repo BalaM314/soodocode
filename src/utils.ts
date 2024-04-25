@@ -239,6 +239,19 @@ export function parseError(thing:unknown):string {
 	}
 }
 
+type Iterators<T extends unknown[]> = {
+	[P in keyof T]: Iterator<T[P]>;
+};
+
+export function* zip<T extends unknown[]>(...iters:Iterators<T>):IterableIterator<T> {
+	while(true){
+		const values = iters.map(i => i.next());
+		if(values.some(v => v.done)) break;
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+		yield values.map(v => v.value) as T;
+	}
+}
+
 /** Generates a tag template processor from a function that processes one value at a time. */
 export function tagProcessor<T>(
 	transformer:(chunk:T, index:number, allStringChunks:readonly string[], allVarChunks:readonly T[]) => string
