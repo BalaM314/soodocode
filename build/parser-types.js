@@ -1,5 +1,5 @@
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
-import { f, getTotalRange } from "./utils.js";
+import { crash, f, getTotalRange } from "./utils.js";
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
         this.operatorToken = operatorToken;
@@ -218,4 +218,10 @@ export class ProgramASTBranchNode {
     range() {
         return getTotalRange(this.controlStatements.concat(this.nodeGroups.flat()));
     }
+}
+export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class_function", "class_procedure"];
+export function ProgramASTBranchNodeType(input) {
+    if (programASTBranchNodeTypes.includes(input))
+        return input;
+    crash(`"${input}" is not a valid program AST branch node type`);
 }

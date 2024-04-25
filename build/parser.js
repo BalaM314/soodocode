@@ -1,5 +1,5 @@
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
 import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
@@ -118,7 +118,7 @@ export function parse({ program, tokens }) {
             getActiveBuffer().push(statement);
         }
         else if (statement.category == "block") {
-            const node = new ProgramASTBranchNode(statement.stype, [statement], [[]]);
+            const node = new ProgramASTBranchNode(ProgramASTBranchNodeType(statement.stype), [statement], [[]]);
             getActiveBuffer().push(node);
             blockStack.push(node);
         }

@@ -37,12 +37,34 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token } from "./lexer-types.js";
-import { ExpressionASTFunctionCallNode, ProgramASTBranchNode } from "./parser-types.js";
+import { Token, TokenType } from "./lexer-types.js";
+import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+export const statementTypes = [
+    "declare", "define", "constant", "assignment", "output", "input", "return", "call",
+    "type", "type.pointer", "type.enum", "type.set", "type.end",
+    "if", "if.end", "else",
+    "switch", "switch.end", "case", "case.range",
+    "for", "for.step", "for.end",
+    "while", "while.end",
+    "dowhile", "dowhile.end",
+    "function", "function.end",
+    "procedure", "procedure.end",
+    "openfile", "readfile", "writefile", "closefile",
+    "seek", "getrecord", "putrecord",
+    "class", "class.inherits", "class.end",
+    "class_property",
+    "class_procedure", "class_procedure.end",
+    "class_function", "class_function.end",
+];
+export function StatementType(input) {
+    if (statementTypes.includes(input))
+        return input;
+    crash(`"${input}" is not a valid statement type`);
+}
 export const statements = {
     byStartKeyword: {},
     byType: {},
@@ -70,7 +92,7 @@ let Statement = (() => {
         static blockEndStatement() {
             if (this.category != "block")
                 crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
-            return statements.byType[this.type.split(".")[0] + ".end"];
+            return statements.byType[StatementType(this.type.split(".")[0] + ".end")] ?? crash(`${name} is not a valid statement type`);
         }
         example() {
             return this.type.example;
@@ -124,9 +146,9 @@ function statement(type, example, ...args) {
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(type + ".end", "[unknown]", "block_end", args[0] + "_end")((_h = class __endStatement extends Statement {
+            statement(StatementType(type + ".end"), "[unknown]", "block_end", TokenType(args[0] + "_end"))((_h = class __endStatement extends Statement {
                 },
-                _h.blockType = type,
+                _h.blockType = ProgramASTBranchNodeType(type),
                 _h));
         }
         if (args.length < 1)

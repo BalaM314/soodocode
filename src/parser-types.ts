@@ -9,7 +9,7 @@ import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, PartialKey } from "./types.js";
-import { f, getTotalRange } from "./utils.js";
+import { crash, f, getTotalRange } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -324,4 +324,9 @@ export class ProgramASTBranchNode implements TextRanged {
 	}
 }
 /** The valid types for a branch node in a program AST. */
-export type ProgramASTBranchNodeType = | "if" | "for" | "for.step" | "while" | "dowhile" | "function" | "procedure" | "switch" | "type" | "class" | "class_function" | "class_procedure";
+export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class_function", "class_procedure"] as const;
+export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
+export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType {
+	if(programASTBranchNodeTypes.includes(input)) return input;
+	crash(`"${input}" is not a valid program AST branch node type`);
+}

@@ -20,10 +20,7 @@ export class Symbol {
         this.range = range;
     }
     toToken() {
-        if (tokenTypes.includes(this.type))
-            return new Token(this.type, this.text, this.range);
-        else
-            crash(`Cannot convert symbol ${this.fmtDebug()} to a token: type is not a valid token type`);
+        return new Token(TokenType(this.type), this.text, this.range);
     }
     fmtDebug() {
         return `Symbol [${this.type} ${this.text}]`;
@@ -74,6 +71,11 @@ export const tokenTypes = [
     "newline",
     "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ];
+export function TokenType(input) {
+    if (tokenTypes.includes(input))
+        return input;
+    crash(`"${input}" is not a valid token type`);
+}
 export class Token {
     constructor(type, text, range) {
         this.type = type;

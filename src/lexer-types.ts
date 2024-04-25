@@ -49,9 +49,7 @@ export class Symbol implements TextRanged {
 	){}
 	/** type must be a valid token type */
 	toToken(){
-		if(tokenTypes.includes(this.type as TokenType)) //typescript being dumb
-			return new Token(this.type as TokenType, this.text, this.range);
-		else crash(`Cannot convert symbol ${this.fmtDebug()} to a token: type is not a valid token type`);
+		return new Token(TokenType(this.type), this.text, this.range);
 	}
 	fmtDebug(){
 		return `Symbol [${this.type} ${this.text}]`;
@@ -106,6 +104,10 @@ export const tokenTypes = [
 	"operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
 ] as const;
 export type TokenType = typeof tokenTypes extends ReadonlyArray<infer T> ? T : never;
+export function TokenType(input:string):TokenType {
+	if(tokenTypes.includes(input)) return input;
+	crash(`"${input}" is not a valid token type`);
+}
 
 /** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
 export class Token implements TextRanged, IFormattable {

@@ -13,27 +13,33 @@ import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArgum
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
 import type { IFormattable } from "./types.js";
-import { Abstract, crash, f, fail, getRange, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
 //TODO snake case
-export type StatementType =
-	| "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call"
-	| "type" | "type.pointer" | "type.enum" | "type.set" | "type.end"
-	| "if" | "if.end" | "else"
-	| "switch" | "switch.end" | "case" | "case.range"
-	| "for" | "for.step" | "for.end"
-	| "while" | "while.end"
-	| "dowhile" | "dowhile.end"
-	| "function" | "function.end"
-	| "procedure" | "procedure.end"
-	| "openfile" | "readfile" | "writefile" | "closefile"
-	| "seek" | "getrecord" | "putrecord"
-	| "class" | "class.inherits" | "class.end"
-	| "class_property"
-	| "class_procedure" | "class_procedure.end"
-	| "class_function" | "class_function.end"
-;
+export const statementTypes = [
+	"declare", "define", "constant", "assignment", "output", "input", "return", "call",
+	"type", "type.pointer", "type.enum", "type.set", "type.end",
+	"if", "if.end", "else",
+	"switch", "switch.end", "case", "case.range",
+	"for", "for.step", "for.end",
+	"while", "while.end",
+	"dowhile", "dowhile.end",
+	"function", "function.end",
+	"procedure", "procedure.end",
+	"openfile", "readfile", "writefile", "closefile",
+	"seek", "getrecord", "putrecord",
+	"class", "class.inherits", "class.end",
+	"class_property",
+	"class_procedure", "class_procedure.end",
+	"class_function", "class_function.end",
+] as const;
+export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never
+export function StatementType(input:string):StatementType {
+	if(statementTypes.includes(input)) return input;
+	crash(`"${input}" is not a valid statement type`);
+}
+
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
 export const statements = {
@@ -89,7 +95,7 @@ export class Statement implements TextRanged, IFormattable {
 		TOut extends typeof Statement | Function = typeof Statement
 	>():typeof Statement extends TOut ? TOut : unknown { //hack
 		if(this.category != "block") crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
-		return statements.byType[this.type.split(".")[0] + ".end" as StatementType] as never; //REFACTOR CHECK
+		return statements.byType[StatementType(this.type.split(".")[0] + ".end")] as never ?? crash(`${name} is not a valid statement type`);
 	}
 	example(){
 		return this.type.example;
@@ -139,9 +145,9 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		}
 		if(args[0] == "auto" && input.category == "block"){
 			args.shift();
-			statement(type + ".end" as StatementType, "[unknown]", "block_end", args[0] + "_end" as TokenType)( //REFACTOR CHECK //TODO very bad, caused bugs
+			statement(StatementType(type + ".end"), "[unknown]", "block_end", TokenType(args[0] + "_end"))( //REFACTOR CHECK
 				class __endStatement extends Statement {
-					static blockType = type as ProgramASTBranchNodeType; //TODO valiate casts
+					static blockType = ProgramASTBranchNodeType(type);
 				}
 			);
 		}

@@ -1,6 +1,6 @@
 import { Symbol, Token } from "./lexer-types.js";
 import { crash, f, fail, impossible } from "./utils.js";
-const symbolTypeData = [
+export const symbolTypeData = [
     [/<-{1,2}/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],
     ["<=", "operator.less_than_equal"],
@@ -36,7 +36,7 @@ const symbolTypeData = [
     [["isAlphanumeric"], "word"],
     [/^./u, "unknown"],
 ];
-const tokenNameTypeData = ((d) => d)({
+export const tokenNameTypeData = ((d) => d)({
     "AND": "operator.and",
     "APPEND": "keyword.file_mode.append",
     "ARRAY": "keyword.array",

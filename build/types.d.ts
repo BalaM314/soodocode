@@ -18,6 +18,14 @@ declare global {
             [K in keyof TThis]: U;
         };
         slice<TThis extends Array<T>>(this: TThis): TThis;
+        includes(searchElement: unknown, searchIndex?: number): searchElement is T;
+    }
+    interface ReadonlyArray<T> {
+        map<TThis extends Array<T>, U>(this: TThis, fn: (v: T, i: number, a: TThis) => U): number extends TThis["length"] ? U[] : {
+            [K in keyof TThis]: U;
+        };
+        slice<TThis extends Array<T>>(this: TThis): TThis;
+        includes(searchElement: unknown, searchIndex?: number): searchElement is T;
     }
     interface ArrayConstructor {
         isArray(arg: any): arg is unknown[];

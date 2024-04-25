@@ -12,7 +12,7 @@ import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, Tok
 import { crash, f, fail, impossible } from "./utils.js";
 
 
-const symbolTypeData: [
+export const symbolTypeData: [
 	identifier: string | [SymbolSpecifierFuncName] | RegExp, symbol:SymbolType
 ][] = [
 	[/<-{1,2}/, "operator.assignment"],
@@ -51,7 +51,7 @@ const symbolTypeData: [
 	[/^./u, "unknown"],
 ];
 
-const tokenNameTypeData = (<T extends Record<string, TokenType>>(d:T) => d as T & {[index:string]: TokenType | undefined;})({
+export const tokenNameTypeData = (<T extends Record<string, TokenType>>(d:T) => d as T & {[index:string]: TokenType | undefined;})({
 	"AND": "operator.and",
 	"APPEND": "keyword.file_mode.append",
 	"ARRAY": "keyword.array",
