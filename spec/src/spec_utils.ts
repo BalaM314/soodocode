@@ -1,5 +1,5 @@
 import { SymbolType, Token, TokenType, token } from "../../build/lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, operators } from "../../build/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Statement } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
@@ -37,6 +37,25 @@ export type _ProgramASTBranchNode = {
 	nodeGroups: _ProgramASTNode[][];
 }
 
+export type Processed<T> =
+	T extends _Symbol ? Symbol :
+	T extends _Token ? Token :
+	T extends _ExpressionAST ? ExpressionAST :
+	T extends _ExpressionASTLeafNode ? ExpressionASTLeafNode :
+	T extends _ExpressionASTOperatorBranchNode ? ExpressionASTBranchNode :
+	T extends _ExpressionASTBranchNode ? ExpressionASTBranchNode | ExpressionASTArrayAccessNode | ExpressionASTFunctionCallNode | ExpressionASTClassInstantiationNode :
+	T extends _ExpressionASTArrayTypeNode ? ExpressionASTArrayTypeNode :
+	T extends _ExpressionASTExt ? ExpressionAST | ExpressionASTArrayTypeNode :
+	T extends _VariableType ? VariableType :
+	T extends _UnresolvedVariableType ? UnresolvedVariableType :
+	T extends _Operator ? Operator :
+	T extends _Statement ? Statement :
+	T extends _ProgramAST ? ProgramAST :
+	T extends _ProgramASTLeafNode ? ProgramASTLeafNode :
+	T extends _ProgramASTNode ? ProgramASTNode :
+	T extends _ProgramASTBranchNode ? ProgramASTBranchNode :
+	never
+;
 
 
 export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointer">, Token> = {
@@ -83,9 +102,10 @@ export function process_ExpressionASTExt<TIn extends _ExpressionASTLeafNode | _E
 		? (ExpressionASTArrayTypeNode | ExpressionASTLeafNode)
 		: (ExpressionASTNodeExt) {
 	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
-	else return process_ExpressionAST(input) as ExpressionASTLeafNode;
+	else return (process_ExpressionAST(input) satisfies ExpressionASTNodeExt) as never;
 }
 
+export function process_ExpressionAST<T extends _ExpressionASTNode>(input:T):Processed<T>;
 export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 	if(input.length == 2){
 		return token(...input);
