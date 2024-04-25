@@ -18,9 +18,10 @@ export type _ExpressionASTLeafNode = _Token;
 export type _ExpressionASTNode = _ExpressionASTLeafNode | _ExpressionASTBranchNode;
 export type _ExpressionASTBranchNode = [
 	"tree",
-	operator: _Operator | [type: "function call", name:_ExpressionASTNode] | [type: "class instantiation", name:string] | [type: "array access", name:_ExpressionASTNode],
+	operator: _Operator | [type: "function call", name:_ExpressionASTLeafNode | _ExpressionASTOperatorBranchNode] | [type: "class instantiation", name:string] | [type: "array access", name:_ExpressionASTNode],
 	nodes: _ExpressionASTNode[],
 ];
+export type _ExpressionASTOperatorBranchNode = _ExpressionASTBranchNode & [unknown, _Operator, _ExpressionASTNode[]];
 export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
 export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
 
@@ -99,11 +100,14 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 				[token("name", "_")] //SPECNULL
 			);
 		} else if(Array.isArray(input[1]) && input[1][0] == "function call"){
-			return new ExpressionASTFunctionCallNode(
-				process_ExpressionAST(input[1][1]),
-				input[2].map(process_ExpressionAST),
-				[token("name", "_")] //SPECNULL
-			);
+			const functionName = process_ExpressionAST(input[1][1]);
+			if(functionName instanceof ExpressionASTBranchNode || functionName instanceof Token)
+				return new ExpressionASTFunctionCallNode(
+					functionName,
+					input[2].map(process_ExpressionAST),
+					[token("name", "_")] //SPECNULL
+				);
+			else crash(`Invalid _ExpressionAST; function name must be an operator branch node or a leaf node`);
 		} else if(Array.isArray(input[1]) && input[1][0] == "class instantiation"){
 			return new ExpressionASTClassInstantiationNode(
 				token("name", input[1][1]),

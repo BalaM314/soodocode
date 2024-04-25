@@ -538,8 +538,6 @@ export const parseExpression = errorBoundary({
             impossible();
         }
     }
-    if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
-        return parseExpression(input.slice(1, -1), true);
     if (input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
         return new ExpressionASTClassInstantiationNode(input[1], input.length == 4
             ? []
@@ -552,10 +550,15 @@ export const parseExpression = errorBoundary({
         if (target.length == 0)
             crash(`Missing function in function call expression`);
         const parsedTarget = parseExpression(target, true);
-        return new ExpressionASTFunctionCallNode(parsedTarget, indicesTokens.length == 0
-            ? []
-            : splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
+        if (parsedTarget instanceof Token || parsedTarget instanceof ExpressionASTBranchNode)
+            return new ExpressionASTFunctionCallNode(parsedTarget, indicesTokens.length == 0
+                ? []
+                : splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
+        else
+            fail(f.quote `${parsedTarget} is not a valid function name, function names must be a single word, or the result of a property access`);
     }
+    if (input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
+        return parseExpression(input.slice(1, -1), true);
     const bracketIndex = findLastNotInGroup(input, "bracket.open");
     if (bracketIndex != null && input.at(-1)?.type == "bracket.close") {
         const target = input.slice(0, bracketIndex);

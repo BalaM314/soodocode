@@ -201,7 +201,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 		],
 		"error"
 	],
-	parenbad5: [
+	parenspam: [
 		[
 			["parentheses.open", "("],
 			["name", "x"],
@@ -215,7 +215,16 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["parentheses.close", ")"],
 			["parentheses.close", ")"],
 		],
-		"error"
+		["tree", "multiply", [
+			["name", "x"],
+			["tree", ["function call",
+				["name", "y"]
+			], [
+				["tree", "negate", [
+					["name", "z"]
+				]]
+			]]
+		]]
 	],
 	functioncall1: [
 		[
@@ -224,7 +233,6 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			["parentheses.close", ")"],
 		],
 		["tree", ["function call", ["name", "amogus"]], [
-
 		]]
 	],
 	functioncall2: [
@@ -239,6 +247,19 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 		]]
 	],
 	functioncall3: [
+		[
+			["parentheses.open", "("],
+			["name", "amogus"],
+			["parentheses.close", ")"],
+			["parentheses.open", "("],
+			["number.decimal", "5"],
+			["parentheses.close", ")"],
+		],
+		["tree", ["function call", ["name", "amogus"]], [
+			["number.decimal", "5"],
+		]]
+	],
+	functioncall4: [
 		[
 			["name", "amogus"],
 			["parentheses.open", "("],

@@ -627,12 +627,6 @@ export const parseExpression = errorBoundary({
 		//No operators of the current priority found, look for operator with the next level higher priority
 	}
 
-	//If the whole expression is surrounded by parentheses, parse the inner expression
-	//Must be after the main loop to avoid triggering on ( 2)+(2 )
-	//Possible optimization: allow this to run before the loop if token length is <= 4
-	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
-		return parseExpression(input.slice(1, -1), true);
-
 	//Special case: Class instantiation expression
 	if(input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
 		return new ExpressionASTClassInstantiationNode(
@@ -651,14 +645,22 @@ export const parseExpression = errorBoundary({
 		const indicesTokens = input.slice(parenIndex + 1, -1);
 		if(target.length == 0) crash(`Missing function in function call expression`);
 		const parsedTarget = parseExpression(target, true);
-		return new ExpressionASTFunctionCallNode(
-			parsedTarget,
-			indicesTokens.length == 0
-				? [] //If there are no arguments, don't generate a blank argument group
-				: splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
-			input
-		);
+		if(parsedTarget instanceof Token || parsedTarget instanceof ExpressionASTBranchNode)
+			return new ExpressionASTFunctionCallNode(
+				parsedTarget,
+				indicesTokens.length == 0
+					? [] //If there are no arguments, don't generate a blank argument group
+					: splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
+				input
+			);
+		else fail(f.quote`${parsedTarget} is not a valid function name, function names must be a single word, or the result of a property access`);
 	}
+
+	//If the whole expression is surrounded by parentheses, parse the inner expression
+	//Must be after the main loop to avoid triggering on ( 2)+(2 )
+	//Possible optimization: allow this to run before the loop if token length is <= 3
+	if(input[0]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close")
+		return parseExpression(input.slice(1, -1), true);
 
 	//Special case: array access
 	const bracketIndex = findLastNotInGroup(input, "bracket.open");
