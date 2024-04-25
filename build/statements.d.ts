@@ -216,6 +216,7 @@ export declare class FunctionStatement extends Statement {
     args: FunctionArguments;
     argsRange: TextRange;
     returnType: UnresolvedVariableType;
+    returnTypeToken: Token;
     name: string;
     constructor(tokens: Token[]);
     runBlock(runtime: Runtime, node: FunctionData): void;

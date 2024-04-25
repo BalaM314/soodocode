@@ -643,12 +643,14 @@ export class FunctionStatement extends Statement {
 	args:FunctionArguments;
 	argsRange:TextRange;
 	returnType:UnresolvedVariableType;
+	returnTypeToken:Token;
 	name:string;
 	constructor(tokens:Token[]){
 		super(tokens);
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
 		this.returnType = processTypeData(tokens.at(-1)!);
+		this.returnTypeToken = tokens.at(-1)!;
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
@@ -876,9 +878,10 @@ export class ClassInheritsStatement extends ClassStatement {
 		for(const [key, value] of Object.entries(baseClass.methods)){
 			//If the method has not been overriden, set it to the base class's method
 			if(extensions.methods[key]){
-				const base = extensions.methods[key].controlStatements[0];
-				const derived = baseClass.methods[key].controlStatements[0];
-				checkClassMethodsCompatible(base, derived);
+				checkClassMethodsCompatible(
+					baseClass.methods[key].controlStatements[0],
+					extensions.methods[key].controlStatements[0],
+				);
 			} else {
 				extensions.methods[key] = value;
 			}

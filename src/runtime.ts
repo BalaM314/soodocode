@@ -48,7 +48,7 @@ export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:C
 
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
 		if(!typesEqual(derived.returnType, base.returnType)) //TODO allow making the type more specific, eg Dog instead of Animal, also in checkArgTypesCompatible
-			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`);
+			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
 	}
 }
 

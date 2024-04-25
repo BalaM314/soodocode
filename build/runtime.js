@@ -61,7 +61,7 @@ export function checkClassMethodsCompatible(base, derived) {
     }
     if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
         if (!typesEqual(derived.returnType, base.returnType))
-            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`);
+            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
     }
 }
 export class Files {
