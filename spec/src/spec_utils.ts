@@ -1,7 +1,7 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
-import { Statement } from "../../build/statements.js";
+import { ClassFunctionStatement, ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
 import { tokenTextMapping } from "../../build/lexer.js";
 
@@ -28,7 +28,8 @@ export type _UnresolvedVariableType = string;
 
 export type _Operator = Exclude<OperatorType, "assignment" | "pointer">;
 
-export type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]];
+export type StatementUnion<T extends keyof typeof statementCreators = keyof typeof statementCreators> = T extends unknown ? [statementType:T, ...Parameters<(typeof statementCreators)[T]>] : never;
+export type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]] | StatementUnion;
 export type _ProgramAST = _ProgramASTNode[];
 export type _ProgramASTLeafNode = _Statement;
 export type _ProgramASTNode = _ProgramASTLeafNode | _ProgramASTBranchNode;
@@ -101,7 +102,8 @@ export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _Expression
 }
 
 export function process_Statement(input:_Statement):Statement {
-	return new input[0](input[1].map(process_ExpressionASTExt));
+	if(typeof input[0] == "string") return statement(...(input as any as [any]))
+	else return new input[0](input[1].map(process_ExpressionASTExt));
 }
 
 export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
@@ -254,3 +256,64 @@ export function name(text:string):Token {
 export function num(text:string):Token {
 	return token("number.decimal", text);
 }
+
+const statementCreators = {
+	ProcedureStatement: (name:string, args:[string, string | _Token[]][]) => new ProcedureStatement(([
+		"keyword.procedure",
+		["name", name],
+		"parentheses.open",
+		...args.flatMap(([argName, type]) => [
+			["name", argName],
+			"punctuation.colon",
+			...(Array.isArray(type) ? type : [["name", type] as _Token]),
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"parentheses.close",
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	FunctionStatement: (name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new FunctionStatement(([
+		"keyword.function",
+		["name", name],
+		"parentheses.open",
+		...args.flatMap(([argName, type]) => [
+			["name", argName],
+			"punctuation.colon",
+			...(Array.isArray(type) ? type : [["name", type] as _Token]),
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"parentheses.close",
+		"keyword.returns",
+		returnType
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	ClassProcedureStatement: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][]) => new ClassProcedureStatement(([
+		TokenType("keyword.class_modifier." + accessModifier),
+		"keyword.procedure",
+		["name", name],
+		"parentheses.open",
+		...args.flatMap(([argName, type]) => [
+			["name", argName],
+			"punctuation.colon",
+			...(Array.isArray(type) ? type : [["name", type] as _Token]),
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"parentheses.close",
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	ClassFunctionStatement: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new ClassFunctionStatement(([
+		TokenType("keyword.class_modifier." + accessModifier),
+		"keyword.function",
+		["name", name],
+		"parentheses.open",
+		...args.flatMap(([argName, type]) => [
+			["name", argName],
+			"punctuation.colon",
+			...(Array.isArray(type) ? type : [["name", type] as _Token]),
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"parentheses.close",
+		"keyword.returns",
+		returnType
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+};
+export function statement<T extends keyof typeof statementCreators>(statementName:T, ...args:Parameters<(typeof statementCreators)[T]>){
+	return (statementCreators[statementName] as any).apply(null, args) as Statement;
+}
+
