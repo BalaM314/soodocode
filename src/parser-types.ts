@@ -324,7 +324,7 @@ export class ProgramASTBranchNode implements TextRanged {
 	}
 }
 /** The valid types for a branch node in a program AST. */
-export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class_function", "class_procedure"] as const;
+export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType {
 	if(programASTBranchNodeTypes.includes(input)) return input;

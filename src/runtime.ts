@@ -230,7 +230,7 @@ but the type of the variable is ${objType.fmtPlain()}.
 help: change the type of the variable to ${classType.fmtPlain()}`,
 							expr.nodes[1])
 							: fail(f.quote`Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
-					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
+					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					return [method, classInstance];
 				} else { //overload 1
 					const propertyStatement = objType.properties[property] ?? (

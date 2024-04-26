@@ -219,7 +219,7 @@ export class ProgramASTBranchNode {
         return getTotalRange(this.controlStatements.concat(this.nodeGroups.flat()));
     }
 }
-export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class_function", "class_procedure"];
+export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export function ProgramASTBranchNodeType(input) {
     if (programASTBranchNodeTypes.includes(input))
         return input;

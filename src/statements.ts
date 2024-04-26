@@ -925,6 +925,7 @@ export class ClassProcedureStatement extends ProcedureStatement implements IClas
 		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
+		//TODO can they actually be run from subclasses?
 	}
 	runBlock(){
 		crash(`Class sub-statements cannot be run normally`);

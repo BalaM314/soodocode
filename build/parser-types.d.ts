@@ -71,7 +71,7 @@ export declare class Operator implements IFormattable {
     fmtDebug(): string;
 }
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Omit<Record<"assignment" | "add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
+export declare const operators: Omit<Record<"negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "add" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "assignment" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;
@@ -86,6 +86,6 @@ export declare class ProgramASTBranchNode implements TextRanged {
     constructor(type: ProgramASTBranchNodeType, controlStatements: Statement[], nodeGroups: ProgramASTNode[][]);
     range(): TextRange;
 }
-export declare const programASTBranchNodeTypes: readonly ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class_function", "class_procedure"];
+export declare const programASTBranchNodeTypes: readonly ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 export declare function ProgramASTBranchNodeType(input: string): ProgramASTBranchNodeType;

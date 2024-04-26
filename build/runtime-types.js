@@ -186,7 +186,7 @@ export class ClassVariableType extends BaseVariableType {
             ])),
             type: this
         };
-        runtime.callClassMethod(this.methods["NEW"] ?? fail(`No constructor was defined for class ${this.name}`), data, args);
+        runtime.callClassMethod(this.methods["NEW"] ?? fail(f.quote `No constructor was defined for class ${this.name}`), data, args);
         return data;
     }
     getScope(runtime, instance) {
