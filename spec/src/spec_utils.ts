@@ -1,7 +1,7 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, FunctionStatement, ProcedureStatement, Statement } from "../../build/statements.js";
+import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
 import { tokenTextMapping } from "../../build/lexer.js";
 
@@ -92,7 +92,11 @@ export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
 export function process_Token(input:_Token):Token {
 	if(Array.isArray(input)) return token(...input);
 	else if(typeof input == "number") return token("number.decimal", input.toString());
-	else return tokenTextMapping[input as never] ? token(input as TokenType, tokenTextMapping[input as never]) : token("name", input);
+	else return (
+		tokenTextMapping[input as never] ? token(input as TokenType, tokenTextMapping[input as never]) :
+		input.includes(".") ? crash(`Invalid name type token shorthand ${input}`) :
+		token("name", input)
+	);
 }
 //\[("operator\.and"|"keyword\.file_mode\.append"|"keyword\.array"|"keyword\.pass_mode\.by_reference"|"keyword\.pass_mode\.by_value"|"keyword\.call"|"keyword\.case"|"keyword\.class"|"keyword\.close_file"|"keyword\.constant"|"keyword\.declare"|"keyword\.define"|"operator\.integer_divide"|"keyword\.else"|"keyword\.case_end"|"keyword\.class_end"|"keyword\.function_end"|"keyword\.if_end"|"keyword\.procedure_end"|"keyword\.type_end"|"keyword\.while_end"|"boolean\.false"|"keyword\.for"|"keyword\.function"|"keyword\.get_record"|"keyword\.if"|"keyword\.inherits"|"keyword\.input"|"operator\.mod"|"keyword\.new"|"keyword\.for_end"|"operator\.not"|"keyword\.of"|"keyword\.open_file"|"operator\.or"|"keyword\.otherwise"|"keyword\.output"|"keyword\.class_modifier\.private"|"keyword\.procedure"|"keyword\.class_modifier\.public"|"keyword\.put_record"|"keyword\.file_mode\.random"|"keyword\.file_mode\.read"|"keyword\.read_file"|"keyword\.dowhile"|"keyword\.return"|"keyword\.returns"|"keyword\.seek"|"keyword\.set"|"keyword\.step"|"keyword\.super"|"keyword\.then"|"keyword\.to"|"boolean\.true"|"keyword\.type"|"keyword\.dowhile_end"|"keyword\.while"|"keyword\.file_mode\.write"|"keyword\.write_file"|"operator\.assignment"|"operator\.greater_than_equal"|"operator\.less_than_equal"|"operator\.not_equal_to"|"operator\.equal_to"|"operator\.greater_than"|"operator\.less_than"|"operator\.add"|"operator\.minus"|"operator\.multiply"|"operator\.divide"|"operator\.pointer"|"operator\.string_concatenate"|"parentheses\.open"|"parentheses\.close"|"bracket\.open"|"bracket\.close"|"brace\.open"|"brace\.close"|"punctuation\.colon"|"punctuation\.semicolon"|"punctuation\.comma"|"punctuation\.period"|"newline"),( ?)".+?"\]
 
@@ -258,7 +262,20 @@ export function num(text:string):Token {
 }
 
 const statementCreators = {
-	ProcedureStatement: (name:string, args:[string, string | _Token[]][]) => new ProcedureStatement(([
+	Declare: (variables:string | string[], type:string | _ExpressionASTArrayTypeNode) => new DeclareStatement(([
+		"keyword.declare",
+		...[variables].flat().flatMap(variable => [
+			["name", variable],
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"punctuation.colon",
+		typeof type == "string" ? ["name", type] : type,
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	Output: (...variables:_Token[]) => new OutputStatement(([
+		"keyword.output",
+		...(variables.flatMap(v => [v, "punctuation.comma"]).slice(0, -1)),
+	] satisfies _Token[] as _Token[]).map(process_ExpressionASTExt) as never),
+	Procedure: (name:string, args:[string, string | _Token[]][]) => new ProcedureStatement(([
 		"keyword.procedure",
 		["name", name],
 		"parentheses.open",
@@ -270,7 +287,7 @@ const statementCreators = {
 		] satisfies _Token[] as _Token[]).slice(0, -1),
 		"parentheses.close",
 	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
-	FunctionStatement: (name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new FunctionStatement(([
+	Function: (name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new FunctionStatement(([
 		"keyword.function",
 		["name", name],
 		"parentheses.open",
@@ -284,7 +301,63 @@ const statementCreators = {
 		"keyword.returns",
 		returnType
 	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
-	ClassProcedureStatement: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][]) => new ClassProcedureStatement(([
+	FunctionEnd: () => new statements.byType["function.end"](([
+		"keyword.function_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	ProcedureEnd: () => new statements.byType["procedure.end"](([
+		"keyword.procedure_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	TypeEnd: () => new statements.byType["type.end"](([
+		"keyword.type_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	IfEnd: () => new statements.byType["if.end"](([
+		"keyword.if_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	Switch: (expr:_ExpressionAST) => new SwitchStatement(([
+		"keyword.case",
+		"keyword.of",
+		expr
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	SwitchEnd: () => new statements.byType["switch.end"](([
+		"keyword.case_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	ForEnd: (variable:string) => new ForEndStatement(([
+		"keyword.for_end",
+		["name", variable]
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	WhileEnd: () => new statements.byType["while.end"](([
+		"keyword.while_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	DoWhile: () => new statements.byType["dowhile"](([
+		"keyword.dowhile"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	DoWhileEnd: (expr:_ExpressionASTNode) => new DoWhileEndStatement(([
+		"keyword.dowhile_end",
+		expr
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	Class: (name:string) => new ClassStatement(([
+		"keyword.class",
+		["name", name]
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	ClassInherits: (name:string, base:string) => new ClassInheritsStatement(([
+		"keyword.class",
+		["name", name],
+		"keyword.inherits",
+		["name", base]
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	ClassEnd: () => new statements.byType["class.end"](([
+		"keyword.class_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	ClassProperty: (accessModifier:"public" | "private", variables:string | string[], type:string | _ExpressionASTArrayTypeNode) => new ClassPropertyStatement(([
+		TokenType("keyword.class_modifier." + accessModifier),
+		...[variables].flat().flatMap(variable => [
+			["name", variable],
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"punctuation.colon",
+		typeof type == "string" ? ["name", type] : type,
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	ClassProcedure: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][]) => new ClassProcedureStatement(([
 		TokenType("keyword.class_modifier." + accessModifier),
 		"keyword.procedure",
 		["name", name],
@@ -297,7 +370,7 @@ const statementCreators = {
 		] satisfies _Token[] as _Token[]).slice(0, -1),
 		"parentheses.close",
 	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
-	ClassFunctionStatement: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new ClassFunctionStatement(([
+	ClassFunction: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new ClassFunctionStatement(([
 		TokenType("keyword.class_modifier." + accessModifier),
 		"keyword.function",
 		["name", name],
@@ -312,6 +385,12 @@ const statementCreators = {
 		"keyword.returns",
 		returnType
 	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
+	ClassProcedureEnd: () => new statements.byType["class_procedure.end"](([
+		"keyword.procedure_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
+	ClassFunctionEnd: () => new statements.byType["class_function.end"](([
+		"keyword.function_end"
+	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
 };
 export function statement<T extends keyof typeof statementCreators>(statementName:T, ...args:Parameters<(typeof statementCreators)[T]>){
 	return (statementCreators[statementName] as any).apply(null, args) as Statement;

@@ -11,7 +11,7 @@ import { Token, TokenizedProgram } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, OutputStatement, PassMode, ProcedureStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, statements } from "../../build/statements.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, OutputStatement, PassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
 import { SoodocodeError } from "../../build/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
@@ -1287,10 +1287,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.output",
 			["string", `"amogus"`],
 		],
-		[OutputStatement, [
-			"keyword.output",
-			["string", `"amogus"`],
-		]]
+		["Output", ["string", `"amogus"`]]
 	],
 	output2: [
 		[
@@ -1299,12 +1296,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.comma",
 			["string", `"amogus"`],
 		],
-		[OutputStatement, [
-			"keyword.output",
-			["string", `"amogus"`],
-			"punctuation.comma",
-			["string", `"amogus"`],
-		]]
+		["Output", ["string", `"amogus"`], ["string", `"amogus"`]]
 	],
 	output3: [
 		[
@@ -1315,14 +1307,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.comma",
 			["string", `"amogus"`],
 		],
-		[OutputStatement, [
-			"keyword.output",
-			["string", `"amogus"`],
-			"punctuation.comma",
-			5,
-			"punctuation.comma",
-			["string", `"amogus"`],
-		]]
+		["Output", ["string", `"amogus"`], 5, ["string", `"amogus"`]]
 	],
 	outputBad1: [
 		[
@@ -1377,12 +1362,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.colon",
 			"INTEGER",
 		],
-		[DeclareStatement, [
-			"keyword.declare",
-			"amogus",
-			"punctuation.colon",
-			"INTEGER",
-		]]
+		["Declare", "amogus", "INTEGER"]
 	],
 	declare2: [
 		[
@@ -1393,14 +1373,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.colon",
 			"INTEGER",
 		],
-		[DeclareStatement, [
-			"keyword.declare",
-			"amogus",
-			"punctuation.comma",
-			"sussy",
-			"punctuation.colon",
-			"INTEGER",
-		]]
+		["Declare", ["amogus", "sussy"], "INTEGER"]
 	],
 	declare3: [
 		[
@@ -1416,17 +1389,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.of",
 			"INTEGER",
 		],
-		[DeclareStatement, [
-			"keyword.declare",
-			"amogus",
-			"punctuation.colon",
-			[
-				[
-					[0, 99]
-				],
-				"INTEGER",
-			],
-		]]
+		["Declare", "amogus", [[[0, 99]], "INTEGER"]],
 	],
 	declareBad1: [
 		[
@@ -1705,11 +1668,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.of",
 			"x",
 		],
-		[SwitchStatement, [
-			"keyword.case",
-			"keyword.of",
-			"x",
-		]]
+		["Switch", "x"]
 	],
 	switch2: [
 		[
@@ -1717,11 +1676,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.of",
 			["string", `"hello"`],
 		],
-		[SwitchStatement, [
-			"keyword.case",
-			"keyword.of",
-			["string", `"hello"`],
-		]]
+		["Switch", ["string", `"hello"`]]
 	],
 	casebranch1: [
 		[
@@ -1982,13 +1937,10 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.less_than",
 			"x",
 		],
-		[DoWhileEndStatement, [
-			"keyword.dowhile_end",
-			["tree", "less_than", [
-				5,
-				"x",
-			]],
-		]],
+		["DoWhileEnd", ["tree", "less_than", [
+			5,
+			"x",
+		]]],
 		["dowhile", DoWhileStatement]
 	],
 	until2: [
@@ -1997,12 +1949,9 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.not",
 			"x",
 		],
-		[DoWhileEndStatement, [
-			"keyword.dowhile_end",
-			["tree", "not", [
-					"x",
-				]],
-		]],
+		["DoWhileEnd", ["tree", "not", [
+			"x",
+		]]],
 		["dowhile", DoWhileStatement]
 	],
 	procedure1: [
@@ -2012,12 +1961,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"parentheses.open",
 			"parentheses.close",
 		],
-		[ProcedureStatement, [
-			"keyword.procedure",
-			"func",
-			"parentheses.open",
-			"parentheses.close",
-		]]
+		["Procedure", "func", []]
 	],
 	procedure2: [
 		[
@@ -2029,15 +1973,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"INTEGER",
 			"parentheses.close",
 		],
-		[ProcedureStatement, [
-			"keyword.procedure",
-			"func",
-			"parentheses.open",
-			"x",
-			"punctuation.colon",
-			"INTEGER",
-			"parentheses.close",
-		]]
+		["Procedure", "func", [["x", "INTEGER"]]]
 	],
 	classproperty1: [
 		[
@@ -2046,12 +1982,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.colon",
 			"INTEGER",
 		],
-		[ClassPropertyStatement, [
-			"keyword.class_modifier.public",
-			"x",
-			"punctuation.colon",
-			"INTEGER",
-		]],
+		["ClassProperty", "public", "x", "INTEGER"],
 		["class", ClassStatement]
 	],
 	classproperty_multiple: [
@@ -2065,16 +1996,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.colon",
 			"INTEGER",
 		],
-		[ClassPropertyStatement, [
-			"keyword.class_modifier.public",
-			"x",
-			"punctuation.comma",
-			"y",
-			"punctuation.comma",
-			"z",
-			"punctuation.colon",
-			"INTEGER",
-		]],
+		["ClassProperty", "public", ["x", "y", "z"], "INTEGER"],
 		["class", ClassStatement]
 	],
 	classproperty_multiple_type: [
@@ -2095,21 +2017,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.of",
 			"INTEGER",
 		],
-		[ClassPropertyStatement, [
-			"keyword.class_modifier.public",
-			"x",
-			"punctuation.comma",
-			"y",
-			"punctuation.comma",
-			"z",
-			"punctuation.colon",
-			[
-				[
-					[1, 10]
-				],
-				"INTEGER",
-			]
-		]],
+		["ClassProperty", "public", ["x", "y", "z"], [[[1, 10]], "INTEGER"]],
 		["class", ClassStatement]
 	],
 	classproperty_invalid_context: [
@@ -2129,30 +2037,18 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"parentheses.open",
 			"parentheses.close",
 		],
-		[ClassProcedureStatement, [
-			"keyword.class_modifier.public",
-			"keyword.procedure",
-			"x",
-			"parentheses.open",
-			"parentheses.close",
-		]],
+		["ClassProcedure", "public", "x", []],
 		["class", ClassStatement]
 	],
 	classprocedure_new: [
 		[
 			"keyword.class_modifier.public",
 			"keyword.procedure",
-			"keyword.new",
+			"NEW",
 			"parentheses.open",
 			"parentheses.close",
 		],
-		[ClassProcedureStatement, [
-			"keyword.class_modifier.public",
-			"keyword.procedure",
-			"keyword.new",
-			"parentheses.open",
-			"parentheses.close",
-		]],
+		["ClassProcedure", "public", "NEW", []],
 		["class", ClassStatement]
 	],
 	classprocedure_args: [
@@ -2170,20 +2066,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"STRING",
 			"parentheses.close",
 		],
-		[ClassProcedureStatement, [
-			"keyword.class_modifier.public",
-			"keyword.procedure",
-			"x",
-			"parentheses.open",
-			"y",
-			"punctuation.colon",
-			"INTEGER",
-			"punctuation.comma",
-			"z",
-			"punctuation.colon",
-			"STRING",
-			"parentheses.close",
-		]],
+		["ClassProcedure", "public", "x", [["y", "INTEGER"], ["z", "STRING"]]],
 		["class", ClassStatement]
 	],
 	classfunction_args: [
@@ -2203,22 +2086,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.returns",
 			"STRING",
 		],
-		[ClassFunctionStatement, [
-			"keyword.class_modifier.public",
-			"keyword.function",
-			"x",
-			"parentheses.open",
-			"y",
-			"punctuation.colon",
-			"INTEGER",
-			"punctuation.comma",
-			"z",
-			"punctuation.colon",
-			"STRING",
-			"parentheses.close",
-			"keyword.returns",
-			"STRING",
-		]],
+		["ClassFunction", "public", "x", [["y", "INTEGER"], ["z", "STRING"]], "STRING"],
 		["class", ClassStatement]
 	],
 	classprocedure_invalid_context: [
@@ -2368,11 +2236,9 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			"keyword.output",
 			["string", `"amogus"`],
 			"newline",
-		],
-		[[OutputStatement, [
-			"keyword.output",
-			["string", `"amogus"`],
-		]]]
+		],[
+			["Output", ["string", `"amogus"`]],
+		]
 	],
 	outputInputDeclareAssign: [
 		[
@@ -2390,22 +2256,13 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			"amogus",
 			"operator.assignment",
 			31415,
-		],
-		[
-			[OutputStatement, [
-				"keyword.output",
-				["string", `"amogus"`],
-			]],
+		],[
+			["Output", ["string", `"amogus"`]],
 			[InputStatement, [
 				"keyword.input",
 				"amogus",
 			]],
-			[DeclareStatement, [
-				"keyword.declare",
-				"amogus",
-				"punctuation.colon",
-				"INTEGER",
-			]],
+			["Declare", "amogus", "INTEGER"],
 			[AssignmentStatement, [
 				"amogus",
 				"operator.assignment",
@@ -2445,15 +2302,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 						]],
 						"keyword.then",
 					]],
-					[statements.byType["if.end"], [
-						"keyword.if_end",
-					]]
+					["IfEnd"]
 				],
 				nodeGroups: [[
-					[OutputStatement, [
-						"keyword.output",
-						["string", `"amogus"`],
-					]],
+					["Output", ["string", `"amogus"`]],
 				]],
 			}
 		],
@@ -2501,15 +2353,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 						]],
 						"keyword.then",
 					]],
-					[statements.byType["if.end"], [
-						"keyword.if_end",
-					]],
+					["IfEnd"],
 				],
 				nodeGroups: [[
-					[OutputStatement, [
-						"keyword.output",
-						["string", `"X is less than 5"`],
-					]],
+					["Output", ["string", `"X is less than 5"`]],
 					{
 						type: "if",
 						controlStatements: [
@@ -2521,15 +2368,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 								]],
 								"keyword.then",
 							]],
-							[statements.byType["if.end"], [
-								"keyword.if_end",
-							]]
+							["IfEnd"]
 						],
 						nodeGroups: [[
-							[OutputStatement, [
-								"keyword.output",
-								["string", `"X is also less than 2"`],
-							]],
+							["Output", ["string", `"X is also less than 2"`]],
 						]],
 					}
 				]],
@@ -2561,23 +2403,11 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 						"keyword.type",
 						"amogus",
 					]],
-					[statements.byType["type.end"], [
-						"keyword.type_end",
-					]],
+					["TypeEnd"],
 				],
 				nodeGroups: [[
-					[DeclareStatement, [
-						"keyword.declare",
-						"prop1",
-						"punctuation.colon",
-						"INTEGER",
-					]],
-					[DeclareStatement, [
-						"keyword.declare",
-						"prop2",
-						"punctuation.colon",
-						"udt",
-					]],
+					["Declare", "prop1", "INTEGER"],
+					["Declare", "prop2", "udt"],
 				]]
 			}
 		]
@@ -2629,11 +2459,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		[{
 			type: "switch",
 			controlStatements: [
-				[SwitchStatement, [
-					"keyword.case",
-					"keyword.of",
-					"x",
-				]],
+				["Switch", "x"],
 				[CaseBranchStatement, [
 					1,
 					"punctuation.colon",
@@ -2642,27 +2468,16 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					2,
 					"punctuation.colon",
 				]],
-				[statements.byType["switch.end"], [
-					"keyword.case_end",
-				]],
+				["SwitchEnd"],
 			],
 			nodeGroups: [
 				[],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						"x",
-					]],
-					[OutputStatement, [
-						"keyword.output",
-						["string", `"amogus"`],	
-					]]
+					["Output", "x"],
+					["Output", ["string", `"amogus"`]],
 				],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						["string", `"sussy"`],	
-					]]
+					["Output", ["string", `"sussy"`]],
 				],
 			]
 		}]
@@ -2723,11 +2538,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		[{
 			type: "switch",
 			controlStatements: [
-				[SwitchStatement, [
-					"keyword.case",
-					"keyword.of",
-					"x",
-				]],
+				["Switch", "x"],
 				[CaseBranchStatement, [
 					1,
 					"punctuation.colon",
@@ -2758,9 +2569,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					"keyword.otherwise",
 					"punctuation.colon",
 				]],
-				[statements.byType["switch.end"], [
-					"keyword.case_end",
-				]],
+				["SwitchEnd"],
 			],
 			nodeGroups: [
 				[],
@@ -2768,51 +2577,28 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					{
 						type: "dowhile",
 						controlStatements: [
-							[DoWhileStatement, [
-								"keyword.dowhile",
-							]],
-							[DoWhileEndStatement, [
-								"keyword.dowhile_end",
-								"boolean.true",
-							]],
+							["DoWhile"],
+							["DoWhileEnd", "boolean.true"],
 						],
 						nodeGroups: [[
-							[OutputStatement, [
-								"keyword.output",
-								"x",
-							]],
+							["Output", "x"],
 						]]
 					},
 				],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						"x",
-					]],
+					["Output", "x"],
 				],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						"x",
-					]],
+					["Output", "x"],
 				],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						"x",
-					]],
+					["Output", "x"],
 				],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						"x",
-					]],
+					["Output", "x"],
 				],
 				[
-					[OutputStatement, [
-						"keyword.output",
-						["string", `"nope"`],	
-					]]
+					["Output", ["string", `"nope"`]],
 				]
 			]
 		}]
@@ -2870,16 +2656,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					"keyword.to",
 					10,
 				]],
-				[ForEndStatement, [
-					"keyword.for_end",
-					"x",
-				]]
+				["ForEnd", "x"]
 			],
 			nodeGroups: [[
-				[OutputStatement, [
-					"keyword.output",
-					"x",
-				]]
+				["Output", "x"],
 			]],
 		}]
 	],
@@ -2914,16 +2694,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 						"14",
 					]]
 				]],
-				[ForEndStatement, [
-					"keyword.for_end",
-					"x",
-				]]
+				["ForEnd", "x"]
 			],
 			nodeGroups: [[
-				[OutputStatement, [
-					"keyword.output",
-					"x",
-				]]
+				["Output", "x"],
 			]],
 		}]
 	],
@@ -2962,16 +2736,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					"keyword.step",
 					2,
 				]],
-				[ForEndStatement, [
-					"keyword.for_end",
-					"x",
-				]]
+				["ForEnd", "x"]
 			],
 			nodeGroups: [[
-				[OutputStatement, [
-					"keyword.output",
-					"x",
-				]]
+				["Output", "x"],
 			]],
 		}]
 	],
@@ -2992,7 +2760,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			"newline",
 			"keyword.class_modifier.public",
 			"keyword.procedure",
-			"keyword.new",
+			"NEW",
 			"parentheses.open",
 			"Name",
 			"punctuation.colon",
@@ -3018,47 +2786,17 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		[{
 			type: "class",
 			controlStatements: [
-				[ClassStatement, [
-					"keyword.class",
-					"amogus",
-				]],
-				[statements.byType["class.end"], [
-					"keyword.class_end",
-				]]
+				["Class", "amogus"],
+				["ClassEnd"]
 			],
 			nodeGroups: [[
-				[ClassPropertyStatement, [
-					"keyword.class_modifier.public",
-					"name",
-					"punctuation.colon",
-					"STRING",
-				]],
-				[ClassPropertyStatement, [
-					"keyword.class_modifier.public",
-					"susLevel",
-					"punctuation.colon",
-					"INTEGER",
-				]],
+				["ClassProperty", "public", "name", "STRING"],
+				["ClassProperty", "public", "susLevel", "INTEGER"],
 				{
 					type: "class_procedure",
 					controlStatements: [
-						[ClassProcedureStatement, [
-							"keyword.class_modifier.public",
-							"keyword.procedure",
-							"keyword.new",
-							"parentheses.open",
-							"Name",
-							"punctuation.colon",
-							"STRING",
-							"punctuation.comma",
-							"SusLevel",
-							"punctuation.colon",
-							"INTEGER",
-							"parentheses.close",
-						]],
-						[ClassProcedureEndStatement, [
-							"keyword.procedure_end",
-						]],
+						["ClassProcedure", "public", "NEW", [["Name", "STRING"], ["SusLevel", "INTEGER"]]],
+						["ClassProcedureEnd"],
 					],
 					nodeGroups: [[
 						[AssignmentStatement, [
