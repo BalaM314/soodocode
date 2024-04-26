@@ -893,6 +893,21 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			]]
 		], []]
 	],
+	access_function_call2: [
+		[
+			"keyword.super",
+			"punctuation.period",
+			"keyword.new",
+			"parentheses.open",
+			"parentheses.close",
+		],
+		["tree", ["function call",
+			["tree", "access", [
+				"amogus",
+				"sussy",
+			]]
+		], []]
+	],
 	access_function_call_args: [
 		[
 			"amogus",

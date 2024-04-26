@@ -521,7 +521,7 @@ CALL a.pub()
 OUTPUT "done"`,
 ["pub", "priv, 5", "done, 5"]
 ],
-call_class_polymorphism: [
+call_class_method_polymorphically: [
 `CLASS Animal
 	PUBLIC Name: STRING
 	PUBLIC PROCEDURE NEW(name: STRING)
@@ -548,7 +548,7 @@ OUTPUT animal.isSus()
 OUTPUT dog.isSus()`,
 ["TRUE", "FALSE"]
 ],
-illegal_polymorphism: [
+illegal_call_class_method_polymorphically: [
 `CLASS Animal
 	PUBLIC Name: STRING
 	PUBLIC PROCEDURE NEW(name: STRING)
@@ -573,6 +573,80 @@ DECLARE dog: Animal
 dog <- NEW Dog("doggy")
 CALL dog.bark()`,
 `Method "bark" does not exist`
+],
+call_class_method_in_function_polymorphically: [
+`CLASS Animal
+	PUBLIC Name: STRING
+	PUBLIC PROCEDURE NEW(name: STRING)
+		Name <- name
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		RETURN TRUE
+	ENDFUNCTION
+ENDCLASS
+CLASS Dog INHERITS Animal
+	PUBLIC PROCEDURE NEW(name: STRING)
+		CALL SUPER.NEW(name)
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		RETURN FALSE
+	ENDFUNCTION
+ENDCLASS
+
+DECLARE animal: Animal
+animal <- NEW Animal("animal")
+DECLARE dog: Dog
+dog <- NEW Dog("doggy")
+DECLARE dogAnimal: Animal
+dog <- NEW Dog("doggy2")
+PROCEDURE test(BYREF arg:Animal)
+	OUTPUT arg.isSus()
+ENDPROCEDURE
+CALL test(animal)
+CALL test(dog)
+CALL test(dogAnimal)`,
+["TRUE", "FALSE", "FALSE"]
+],
+call_class_method_in_function_polymorphically_and_mutate_byval: [
+`CLASS Animal
+	PUBLIC Name: STRING
+	PUBLIC PROCEDURE NEW(name: STRING)
+		Name <- name
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		OUTPUT "Animal ", Name, " is sus"
+		RETURN TRUE
+	ENDFUNCTION
+ENDCLASS
+CLASS Dog INHERITS Animal
+	PUBLIC PROCEDURE NEW(name: STRING)
+		CALL SUPER.NEW(name)
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		OUTPUT "Dog ", Name, " is not sus"
+		RETURN FALSE
+	ENDFUNCTION
+ENDCLASS
+
+DECLARE animal: Animal
+animal <- NEW Animal("animal")
+DECLARE dog: Dog
+dog <- NEW Dog("doggy")
+DECLARE dogAnimal: Animal
+dog <- NEW Dog("doggy2")
+PROCEDURE test(BYVAL arg:Animal)
+	OUTPUT arg.isSus()
+	arg.name <- arg.name & "_checked"
+	OUTPUT arg.isSus()
+ENDPROCEDURE
+CALL test(animal)
+CALL test(dog)
+CALL test(dogAnimal)`,
+[
+	"Animal animal is sus", "TRUE", "Animal animal_checked is sus", "TRUE",
+	"Dog doggy is not sus", "FALSE", "Animal doggy_checked is not sus", "FALSE",
+	"Dog doggy2 is not sus", "FALSE", "Animal doggy2_checked is not sus", "FALSE",
+]
 ],
 };
 
