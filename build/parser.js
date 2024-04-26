@@ -8,7 +8,7 @@ export const parseFunctionArguments = errorBoundary()((tokens) => {
         return new Map();
     let passMode = "value";
     let type = null;
-    const argumentz = splitTokens(tokens, "punctuation.comma").map(section => {
+    const argumentz = splitTokensOnComma(tokens).map(section => {
         let passMode;
         let type;
         let offset = 0;

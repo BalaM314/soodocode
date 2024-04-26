@@ -24,7 +24,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 	let passMode:PassMode = "value";
 	let type:UnresolvedVariableType | null = null;
 	//Split the array on commas (no paren handling necessary)
-	const argumentz = splitTokens(tokens, "punctuation.comma").map<FunctionArgumentDataPartial>(section => {
+	const argumentz = splitTokensOnComma(tokens).map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:PassMode | null;
 		let type:UnresolvedVariableType | null;

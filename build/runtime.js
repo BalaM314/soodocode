@@ -119,9 +119,9 @@ but found ${expr.indices.length} indices`, expr.indices);
                     fail(`Array index out of bounds: \
 value ${indexes[invalidIndexIndex][1]} was not in range \
 (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, indexes[invalidIndexIndex][0]);
-                const index = indexes.reduce((acc, [_expr, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index]), 0);
+                const index = indexes.reduce((acc, [_expr, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index + 1]), 0);
                 if (index >= variable.value.length)
-                    crash(`Array index bounds check failed`);
+                    crash(`Array index bounds check failed: ${indexes.map(v => v[1])}; ${index} > ${variable.value.length}`);
                 if (operation == "get") {
                     const type = arg2;
                     if (type == "variable") {
@@ -647,9 +647,11 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (from.is("REAL") && to.is("INTEGER"))
                     return Math.trunc(value);
                 if (to.is("STRING")) {
-                    if (from.is("BOOLEAN", "CHAR", "DATE", "INTEGER", "REAL", "STRING"))
+                    if (from.is("BOOLEAN"))
+                        return value.toString().toUpperCase();
+                    if (from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE"))
                         return value.toString();
-                    else if (from instanceof ArrayVariableType)
+                    if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;
                 }
                 if (from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to))
@@ -684,7 +686,7 @@ help: try using DIV instead of / to produce an integer as the result`);
             }
             assembleScope(func, args) {
                 if (func.args.size != args.length)
-                    fail(`Incorrect number of arguments for function ${func.name}`);
+                    fail(f.quote `Incorrect number of arguments for function ${func.name}`);
                 const scope = {
                     statement: func,
                     variables: {},

@@ -123,9 +123,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`,
 			indexes[invalidIndexIndex][0]);
 		const index = indexes.reduce((acc, [_expr, value], index) =>
-			(acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index]),
+			(acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index + 1]),
 		0);
-		if(index >= variable.value.length) crash(`Array index bounds check failed`);
+		if(index >= variable.value.length) crash(`Array index bounds check failed: ${indexes.map(v => v[1])}; ${index} > ${variable.value.length}`);
 		if(operation == "get"){
 			const type = arg2 as VariableType | "variable";
 			if(type == "variable"){
@@ -495,6 +495,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			}
 		}
 		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${token.text} as a ${type}`);
+		//TODO move the string conversions to VariableType
 		switch(token.type){
 			case "boolean.false":
 				//TODO bad coercion
@@ -625,9 +626,9 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(from.is("INTEGER") && to.is("REAL")) return value as never;
 		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as never) as never;
 		if(to.is("STRING")){
-			if(from.is("BOOLEAN", "CHAR", "DATE", "INTEGER", "REAL", "STRING"))
-				return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
-			else if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
+			if(from.is("BOOLEAN")) return value.toString().toUpperCase() as never;
+			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE")) return value.toString() as never;
+			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 		}
 		if(from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to)) return value as never;
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}`);
@@ -654,7 +655,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:ExpressionASTNode[]){
-		if(func.args.size != args.length) fail(`Incorrect number of arguments for function ${func.name}`);
+		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`);
 		const scope:VariableScope = {
 			statement: func,
 			variables: {},

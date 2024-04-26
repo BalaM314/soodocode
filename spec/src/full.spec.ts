@@ -101,7 +101,7 @@ run_procedure_complex_args: [
 `PROCEDURE name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
 OUTPUT x
 OUTPUT y
-OUTPUT z[0][0]
+OUTPUT z[0, 0]
 FOR i <- 0 TO 50
 	OUTPUT z[i, 5]
 NEXT i
@@ -128,7 +128,7 @@ run_function_complex_args: [
 `FUNCTION name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
 OUTPUT x
 OUTPUT y
-OUTPUT z[0][0]
+OUTPUT z[0, 0]
 FOR i <- 0 TO 50
 	OUTPUT aa_aaaa[i, 5]
 NEXT i
@@ -138,7 +138,7 @@ DECLARE a: ARRAY[0:50, 0:10] OF BOOLEAN
 a[50, 5] <- TRUE
 a[0, 5] <- TRUE
 a[0, 0] <- TRUE
-CALL name(10, -52, a, a)`,
+OUTPUT name(10, -52, a, a)`,
 ["10", "-52", "TRUE", "TRUE", ...Array<string>(49).fill("FALSE"), "TRUE", "11"]
 ],
 parse_procedure_complex_args_pass_mode: [

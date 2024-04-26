@@ -278,7 +278,7 @@ function formatQuoted(input:Formattable):string {
 	} else return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
 	
 	if(str.length == 0) str = `[empty]`;
-	return `${str}`;
+	return `"${str}"`;
 }
 function formatDebug(input:Formattable):string {
 	if(typeof input == "string") return input;

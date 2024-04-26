@@ -265,7 +265,7 @@ function formatQuoted(input) {
         return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
     if (str.length == 0)
         str = `[empty]`;
-    return `${str}`;
+    return `"${str}"`;
 }
 function formatDebug(input) {
     if (typeof input == "string")
