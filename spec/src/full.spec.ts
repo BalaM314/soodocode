@@ -1,3 +1,10 @@
+/**
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains blackbox tests that can be applied to other pseudocode engines.
+*/
+/* eslint-disable indent */
 import "jasmine";
 import { symbolize, tokenize } from "../../build/lexer.js";
 import { parse } from "../../build/parser.js";
@@ -7,17 +14,192 @@ import { SoodocodeError, fail, forceType } from "../../build/utils.js";
 type ErrorData = string;
 
 const fullTests:Record<string, [code:string, output:string[] | ErrorData, inputs?:string[]]> = {
-	empty: [
+empty: [
 ``,
-		[]
-	],
-	mostlyEmpty: [
+[]
+],
+mostlyEmpty: [
 `\t
-   \t 
+\t 
 
- `,
-		[]
-	],
+`,
+[]
+],
+parse_procedure_blank: [
+`PROCEDURE name()
+ENDPROCEDURE`,
+[]
+],
+parse_function_mostly_blank: [
+`FUNCTION name() RETURNS INTEGER
+RETURN 0
+ENDFUNCTION`,
+[]
+],
+parse_procedure_simple_args: [
+`PROCEDURE name(x:INTEGER, y:STRING)
+OUTPUT x
+OUTPUT y
+ENDPROCEDURE`,
+[]
+],
+parse_function_simple_args: [
+`FUNCTION name(x:INTEGER, y:STRING) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+RETURN x + 1
+ENDFUNCTION`,
+[]
+],
+parse_procedure_complex_args: [
+`PROCEDURE name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT z[i, 5]
+NEXT i
+ENDPROCEDURE`,
+[]
+],
+parse_function_complex_args: [
+`FUNCTION name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+RETURN x + 1
+ENDFUNCTION`,
+[]
+],
+parse_procedure_complex_args_pass_mode: [
+`PROCEDURE name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+ENDPROCEDURE`,
+[]
+],
+parse_function_complex_args_pass_mode: [
+`FUNCTION name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+RETURN x + 1
+ENDFUNCTION`,
+[]
+],
+parse_class_blank: [
+`CLASS amogus
+ENDCLASS`,
+[]
+],
+parse_class_proprties: [
+`CLASS amogus
+PUBLIC x: INTEGER
+PRIVATE y: STRING
+ENDCLASS`,
+[]
+],
+parse_class_properties_complex: [
+`CLASS amogus
+PUBLIC aaa, bbb, ccc: INTEGER
+PRIVATE y: ARRAY[1:100, 1:10] OF STRING
+ENDCLASS`,
+[]
+],
+parse_class_procedure_blank: [
+`CLASS amogus
+PUBLIC PROCEDURE name()
+ENDPROCEDURE
+ENDCLASS`,
+[]
+],
+parse_class_function_mostly_blank: [
+`CLASS amogus
+PUBLIC FUNCTION name() RETURNS INTEGER
+RETURN 0
+ENDFUNCTION
+ENDCLASS`,
+[]
+],
+parse_class_procedure_simple_args: [
+`CLASS amogus
+PUBLIC PROCEDURE name(x:INTEGER, y:STRING)
+OUTPUT x
+OUTPUT y
+ENDPROCEDURE
+ENDCLASS`,
+[]
+],
+parse_class_function_simple_args: [
+`CLASS amogus
+PUBLIC FUNCTION name(x:INTEGER, y:STRING) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+RETURN x + 1
+ENDFUNCTION
+ENDCLASS`,
+[]
+],
+parse_class_procedure_complex_args: [
+`CLASS amogus
+PUBLIC PROCEDURE name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT z[i, 5]
+NEXT i
+ENDPROCEDURE
+ENDCLASS`,
+[]
+],
+parse_class_function_complex_args: [
+`CLASS amogus
+PUBLIC FUNCTION name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+RETURN x + 1
+ENDFUNCTION
+ENDCLASS`,
+[]
+],
+parse_class_procedure_complex_args_pass_mode: [
+`CLASS amogus
+PUBLIC PROCEDURE name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+ENDPROCEDURE
+ENDCLASS`,
+[]
+],
+parse_class_function_complex_args_pass_mode: [
+`CLASS amogus
+PUBLIC FUNCTION name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+RETURN x + 1
+ENDFUNCTION
+ENDCLASS`,
+[]
+],
+parse_class_inherits: [
+``,
+[]
+],
 };
 
 describe("soodocode", () => {
