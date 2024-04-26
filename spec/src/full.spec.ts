@@ -30,11 +30,30 @@ parse_procedure_blank: [
 ENDPROCEDURE`,
 []
 ],
+run_procedure_blank: [
+`PROCEDURE name()
+ENDPROCEDURE
+CALL name()`,
+[]
+],
+run_procedure_blank_wrong_arg_count: [
+`PROCEDURE name()
+ENDPROCEDURE
+CALL name(2)`,
+`Incorrect number of arguments for function "name"`
+],
 parse_function_mostly_blank: [
 `FUNCTION name() RETURNS INTEGER
 RETURN 0
 ENDFUNCTION`,
 []
+],
+run_function_mostly_blank: [
+`FUNCTION name() RETURNS INTEGER
+RETURN 0
+ENDFUNCTION
+OUTPUT name()`,
+["0"]
 ],
 parse_procedure_simple_args: [
 `PROCEDURE name(x:INTEGER, y:STRING)
@@ -43,6 +62,14 @@ OUTPUT y
 ENDPROCEDURE`,
 []
 ],
+run_procedure_simple_args: [
+`PROCEDURE name(x:INTEGER, y:STRING)
+OUTPUT x
+OUTPUT y
+ENDPROCEDURE
+CALL name(12, "hi")`,
+["12", "hi"]
+],
 parse_function_simple_args: [
 `FUNCTION name(x:INTEGER, y:STRING) RETURNS INTEGER
 OUTPUT x
@@ -50,6 +77,15 @@ OUTPUT y
 RETURN x + 1
 ENDFUNCTION`,
 []
+],
+run_function_simple_args: [
+`FUNCTION name(x:INTEGER, y:STRING) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+RETURN x + 1
+ENDFUNCTION
+OUTPUT name(12, "hi")`,
+["12", "hi", "13"]
 ],
 parse_procedure_complex_args: [
 `PROCEDURE name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
@@ -61,6 +97,22 @@ NEXT i
 ENDPROCEDURE`,
 []
 ],
+run_procedure_complex_args: [
+`PROCEDURE name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
+OUTPUT x
+OUTPUT y
+OUTPUT z[0][0]
+FOR i <- 0 TO 50
+	OUTPUT z[i, 5]
+NEXT i
+ENDPROCEDURE
+DECLARE a: ARRAY[0:50, 0:10] OF BOOLEAN
+a[50, 5] <- TRUE
+a[0, 5] <- TRUE
+a[0, 0] <- TRUE
+CALL name(10, -52, a, a)`,
+["10", "-52", "TRUE", "TRUE", ...Array<string>(49).fill("FALSE"), "TRUE"]
+],
 parse_function_complex_args: [
 `FUNCTION name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
 OUTPUT x
@@ -71,6 +123,23 @@ NEXT i
 RETURN x + 1
 ENDFUNCTION`,
 []
+],
+run_function_complex_args: [
+`FUNCTION name(x, y: INTEGER, z, aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
+OUTPUT x
+OUTPUT y
+OUTPUT z[0][0]
+FOR i <- 0 TO 50
+	OUTPUT aa_aaaa[i, 5]
+NEXT i
+RETURN x + 1
+ENDFUNCTION
+DECLARE a: ARRAY[0:50, 0:10] OF BOOLEAN
+a[50, 5] <- TRUE
+a[0, 5] <- TRUE
+a[0, 0] <- TRUE
+CALL name(10, -52, a, a)`,
+["10", "-52", "TRUE", "TRUE", ...Array<string>(49).fill("FALSE"), "TRUE", "11"]
 ],
 parse_procedure_complex_args_pass_mode: [
 `PROCEDURE name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN)
