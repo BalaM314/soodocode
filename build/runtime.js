@@ -34,7 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { SoodocodeError, crash, errorBoundary, f, fail, impossible, zip } from "./utils.js";
@@ -272,42 +272,33 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                         fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`);
                     if (type == "function")
                         fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`);
-                    if (expr.functionName instanceof Token) {
-                        const fn = this.getFunction(expr.functionName.text);
-                        if ("name" in fn) {
-                            const output = this.callBuiltinFunction(fn, expr.args);
-                            if (type)
-                                return [type, this.coerceValue(output[1], output[0], type)];
-                            else
-                                return output;
-                        }
-                        else {
-                            if (fn.type == "procedure")
-                                fail(f.quote `Procedure ${expr.functionName} does not return a value.`);
-                            const statement = fn.controlStatements[0];
-                            const output = this.callFunction(fn, expr.args, true);
-                            if (type)
-                                return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
-                            else
-                                return [this.resolveVariableType(statement.returnType), output];
-                        }
-                    }
-                    else if (expr.functionName instanceof ExpressionASTBranchNode) {
-                        const func = this.evaluateExpr(expr.functionName, "function");
-                        if ("clazz" in func) {
-                            if (func.method.type == "class_procedure")
-                                fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
-                            const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
-                            if (type)
-                                return [type, this.coerceValue(output, outputType, type)];
-                            else
-                                return [outputType, output];
-                        }
+                    const func = this.evaluateExpr(expr.functionName, "function");
+                    if ("clazz" in func) {
+                        if (func.method.type == "class_procedure")
+                            fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
+                        const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
+                        if (type)
+                            return [type, this.coerceValue(output, outputType, type)];
                         else
-                            crash(`Branched function call node should not be able to return regular functions`);
+                            return [outputType, output];
                     }
-                    else
-                        crash(`Function name was an unexpected node type`);
+                    else if ("name" in func) {
+                        const output = this.callBuiltinFunction(func, expr.args);
+                        if (type)
+                            return [type, this.coerceValue(output[1], output[0], type)];
+                        else
+                            return output;
+                    }
+                    else {
+                        if (func.type == "procedure")
+                            fail(f.quote `Procedure ${expr.functionName} does not return a value.`);
+                        const statement = func.controlStatements[0];
+                        const output = this.callFunction(func, expr.args, true);
+                        if (type)
+                            return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
+                        else
+                            return [this.resolveVariableType(statement.returnType), output];
+                    }
                 }
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
                     if (type == "variable")
@@ -630,7 +621,12 @@ help: try using DIV instead of / to produce an integer as the result`);
                 return false;
             }
             getFunction(name) {
-                return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
+                if (this.classData && this.classData.clazz.allMethods[name]) {
+                    const [clazz, method] = this.classData.clazz.allMethods[name];
+                    return { clazz, method, instance: this.classData.instance };
+                }
+                else
+                    return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
             }
             getClass(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {

@@ -47,7 +47,7 @@ export declare class Runtime {
     evaluateExpr(expr: ExpressionAST): [type: VariableType, value: VariableValue];
     evaluateExpr(expr: ExpressionAST, undefined: undefined, recursive: boolean): [type: VariableType, value: VariableValue];
     evaluateExpr(expr: ExpressionAST, type: "variable", recursive?: boolean): VariableData | ConstantData;
-    evaluateExpr(expr: ExpressionAST, type: "function", recursive?: boolean): FunctionData | ClassMethodCallInformation;
+    evaluateExpr(expr: ExpressionAST, type: "function", recursive?: boolean): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T, recursive?: boolean): [type: T & {}, value: VariableTypeMapping<T>];
     evaluateToken(token: Token): [type: VariableType, value: VariableValue];
     evaluateToken(token: Token, type: "variable"): VariableData | ConstantData;
@@ -78,7 +78,7 @@ export declare class Runtime {
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
-    getFunction(name: string): FunctionData | BuiltinFunctionData;
+    getFunction(name: string): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     getClass(name: string): ClassVariableType;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
