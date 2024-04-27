@@ -312,7 +312,7 @@ function cannotEndExpression(token) {
 function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
 }
-export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
 export const parseExpressionLeafNode = errorBoundary()((token) => {
     if (expressionLeafNodeTypes.includes(token.type))
         return token;
@@ -327,6 +327,7 @@ export const parseExpression = errorBoundary({
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     if (input.length == 1)
         return parseExpressionLeafNode(input[0]);
+    let error = null;
     for (const operatorsOfCurrentPriority of operatorsByPriority) {
         let parenNestLevel = 0, bracketNestLevel = 0;
         for (let i = input.length - 1; i >= 0; i--) {
@@ -391,8 +392,10 @@ export const parseExpression = errorBoundary({
                             continue;
                     }
                     if (operator == operators.access) {
-                        if (!(right.length == 1 && right[0].type == "name"))
+                        if (!(right.length == 1 && (right[0].type == "name" || right[0].type == "keyword.new"))) {
+                            error = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
                             continue;
+                        }
                     }
                     return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left, true), parseExpression(right, true)], input);
                 }
@@ -455,5 +458,7 @@ export const parseExpression = errorBoundary({
         const parsedTarget = parseExpression(target, true);
         return new ExpressionASTArrayAccessNode(parsedTarget, splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
     }
+    if (error)
+        error();
     fail(`No operators found`);
 });

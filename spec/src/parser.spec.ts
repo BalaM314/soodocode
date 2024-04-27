@@ -903,8 +903,8 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 		],
 		["tree", ["function call",
 			["tree", "access", [
-				"amogus",
-				"sussy",
+				"keyword.super",
+				"keyword.new",
 			]]
 		], []]
 	],

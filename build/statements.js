@@ -606,8 +606,8 @@ let CallStatement = (() => {
         }
         run(runtime) {
             const func = runtime.evaluateExpr(this.func.functionName, "function");
-            if (Array.isArray(func)) {
-                runtime.callClassMethod(func[0], func[1], this.func.args);
+            if ("clazz" in func) {
+                runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args);
             }
             else {
                 if ("name" in func)

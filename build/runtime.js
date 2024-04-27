@@ -98,6 +98,7 @@ let Runtime = (() => {
                 this.scopes = [];
                 this.functions = {};
                 this.openFiles = {};
+                this.classData = null;
                 this.fs = new Files();
             }
             processArrayAccess(expr, operation, arg2) {
@@ -195,6 +196,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 }
                 else {
                     const type = arg2;
+                    if (expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super") {
+                        if (!this.classData)
+                            fail(`SUPER is only valid within a class`, expr.nodes[0]);
+                        const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
+                        const method = baseType.methods[property] ?? fail(f.quote `Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
+                        return {
+                            clazz: baseType, method, instance: this.classData.instance
+                        };
+                    }
                     const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
                     if (objType instanceof RecordVariableType) {
                         if (type == "function")
@@ -222,10 +232,10 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                                     : fail(f.quote `Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
                             if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
                                 fail(f.quote `Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                            return [method, classInstance];
+                            return { method, instance: classInstance, clazz: classType };
                         }
                         else {
-                            const propertyStatement = objType.properties[property] ?? (classType.methods[property]
+                            const propertyStatement = objType.properties[property] ?? (classType.properties[property]
                                 ? fail(f.quote `Property ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
 but the type of the variable is ${objType.fmtPlain()}.
@@ -284,10 +294,14 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                     }
                     else if (expr.functionName instanceof ExpressionASTBranchNode) {
                         const func = this.evaluateExpr(expr.functionName, "function");
-                        if (Array.isArray(func)) {
-                            if (func[0].type == "class_procedure")
+                        if ("clazz" in func) {
+                            if (func.method.type == "class_procedure")
                                 fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
-                            return this.callClassMethod(func[0], func[1], expr.args, true);
+                            const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
+                            if (type)
+                                return [type, this.coerceValue(output, outputType, type)];
+                            else
+                                return [outputType, output];
                         }
                         else
                             crash(`Branched function call node should not be able to return regular functions`);
@@ -549,7 +563,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         else
                             fail(f.quote `Cannot convert value ${token} to type ${type}`);
                         break;
-                    default: fail(f.quote `Cannot evaluate token ${token} of type ${token.type}`);
+                    default: fail(f.quote `Cannot evaluate token ${token}`);
                 }
             }
             static evaluateToken(token, type) {
@@ -733,13 +747,16 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return output.value;
                 }
             }
-            callClassMethod(funcNode, instance, args, requireReturnValue) {
-                const func = funcNode.controlStatements[0];
+            callClassMethod(method, clazz, instance, args, requireReturnValue) {
+                const func = method.controlStatements[0];
                 if (func instanceof ClassProcedureStatement && requireReturnValue)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`);
                 const classScope = instance.type.getScope(this, instance);
                 const methodScope = this.assembleScope(func, args);
-                const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
+                const previousClassData = this.classData;
+                this.classData = { instance, method, clazz };
+                const output = this.runBlock(method.nodeGroups[0], classScope, methodScope);
+                this.classData = previousClassData;
                 if (func instanceof ClassProcedureStatement) {
                     return null;
                 }

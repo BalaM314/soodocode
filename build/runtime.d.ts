@@ -17,16 +17,22 @@ export declare class Files {
     canLoadBackup(): boolean;
     loadBackup(): void;
 }
-export type ClassMethodCallInformation = [
-    method: ClassMethodData,
-    instance: VariableTypeMapping<ClassVariableType>
-];
+export type ClassMethodCallInformation = {
+    clazz: ClassVariableType;
+    instance: VariableTypeMapping<ClassVariableType>;
+    method: ClassMethodData;
+};
 export declare class Runtime {
     _input: (message: string) => string;
     _output: (message: string) => void;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
     openFiles: Record<string, OpenedFile | undefined>;
+    classData: {
+        clazz: ClassVariableType;
+        instance: VariableTypeMapping<ClassVariableType>;
+        method: ClassMethodData;
+    } | null;
     fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type?: VariableType): [type: VariableType, value: VariableValue];
@@ -79,7 +85,7 @@ export declare class Runtime {
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
     callFunction<T extends boolean>(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue?: T): VariableValue | (T extends false ? null : never);
-    callClassMethod<T extends boolean>(funcNode: ClassMethodData, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): [type: VariableType, value: VariableValue] | (T extends false ? null : never);
+    callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): [type: VariableType, value: VariableValue] | (T extends false ? null : never);
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";

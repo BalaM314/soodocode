@@ -338,7 +338,7 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
 }
 
-export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"]; //TODO refactor this with methods on Token
 
 export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionASTLeafNode => {
 	//Number, string, char, boolean, and variables can be parsed as-is
@@ -356,6 +356,7 @@ export const parseExpression = errorBoundary({
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
 
+	let error: typeof impossible | null = null;
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
 	for(const operatorsOfCurrentPriority of operatorsByPriority){
 		let parenNestLevel = 0, bracketNestLevel = 0;
@@ -450,9 +451,10 @@ export const parseExpression = errorBoundary({
 						if(cannotEndExpression(input[i - 1])) continue; //Binary operator can't fit here, this must be the unary operator
 					}
 					if(operator == operators.access){
-						if(!(right.length == 1 && right[0].type == "name"))
+						if(!(right.length == 1 && (right[0].type == "name" || right[0].type == "keyword.new"))){ //TODO properly handle keywords being names, everywhere
+							error = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
 							continue;
-							//fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+						}
 					} 
 					return new ExpressionASTBranchNode(
 						input[i],
@@ -541,5 +543,6 @@ export const parseExpression = errorBoundary({
 	}
 
 	//No operators found at all, something went wrong
+	if(error) error();
 	fail(`No operators found`);
 });

@@ -648,6 +648,56 @@ CALL test(dogAnimal)`,
 	"Dog doggy2 is not sus", "FALSE", "Animal doggy2_checked is not sus", "FALSE",
 ]
 ],
+run_double_inheritance: [
+`CLASS A
+	PUBLIC PROCEDURE NEW()
+	ENDPROCEDURE
+	PUBLIC PROCEDURE test()
+		OUTPUT "A"
+	ENDPROCEDURE
+ENDCLASS
+CLASS B INHERITS A
+	PUBLIC PROCEDURE NEW()
+		CALL SUPER.NEW()
+	ENDPROCEDURE
+	PUBLIC PROCEDURE test()
+		OUTPUT "B"
+		CALL SUPER.test()
+	ENDPROCEDURE
+	PUBLIC PROCEDURE test2()
+		OUTPUT "B2"
+		CALL SUPER.test()
+	ENDPROCEDURE
+ENDCLASS
+CLASS C INHERITS B
+	PUBLIC PROCEDURE NEW()
+		CALL SUPER.NEW()
+	ENDPROCEDURE
+	PUBLIC PROCEDURE test()
+		OUTPUT "C"
+		CALL SUPER.test()
+	ENDPROCEDURE
+ENDCLASS
+
+DECLARE bb: B
+DECLARE bc: B
+DECLARE cc: C
+bb <- NEW B()
+bc <- NEW C()
+cc <- NEW C()
+CALL bb.test()
+OUTPUT " "
+CALL bc.test()
+OUTPUT " "
+CALL cc.test()
+OUTPUT "  "
+CALL bb.test2()
+OUTPUT " "
+CALL bc.test2()
+OUTPUT " "
+CALL cc.test2()`,
+["B", "A", " ", "C", "B", "A", " ", "C", "B", "A", "  ", "B2", "A", " ", "B2", "A", " ", "B2", "A"]
+]
 };
 
 describe("soodocode", () => {

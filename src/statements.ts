@@ -428,9 +428,9 @@ export class CallStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		const func = runtime.evaluateExpr(this.func.functionName, "function");
-		if(Array.isArray(func)){
+		if("clazz" in func){
 			//Class method
-			runtime.callClassMethod(func[0], func[1], this.func.args); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
+			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
 			if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);

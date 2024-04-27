@@ -72,14 +72,23 @@ export class Files {
 		if(this.backupFiles) this.files = JSON.parse(this.backupFiles) as Record<string, File>;
 	}
 }
-export type ClassMethodCallInformation = [
-	method: ClassMethodData,
-	instance: VariableTypeMapping<ClassVariableType>,
-];
+export type ClassMethodCallInformation = {
+	/** This is the class type that the method is linked to, NOT the class type of the instance. Used to determine what SUPER is. */
+	clazz: ClassVariableType;
+	instance: VariableTypeMapping<ClassVariableType>;
+	method: ClassMethodData;
+};
 export class Runtime {
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
 	openFiles: Record<string, OpenedFile | undefined> = {};
+	/** While a class method is executing, this variable is set to data about the class method. */
+	classData: {
+		/** This is the class type that the method is linked to, NOT the class type of the instance. Used to determine what SUPER is. */
+		clazz:ClassVariableType;
+		instance:VariableTypeMapping<ClassVariableType>;
+		method:ClassMethodData;
+	 } | null = null;
 	fs = new Files();
 	constructor(
 		public _input: (message:string) => string,
@@ -208,6 +217,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			} else fail(f.quote`Cannot access property ${property} on variable of type ${variable.type} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
 		} else { //overloads 1 and 3
 			const type = arg2 as VariableType | "function";
+			if(expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super"){
+				//Super method calls
+				if(!this.classData) fail(`SUPER is only valid within a class`, expr.nodes[0]);
+				const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
+				const method = baseType.methods[property] ?? fail(f.quote`Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
+				return {
+					clazz: baseType, method, instance: this.classData.instance
+				} satisfies ClassMethodCallInformation;
+			}
 			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
 			if(objType instanceof RecordVariableType){
 				if(type == "function") fail(f.quote`Expected this expression to evaluate to a function, but found a property access on a variable of type ${type}, which cannot have functions as properties`);
@@ -230,12 +248,13 @@ but the type of the variable is ${objType.fmtPlain()}.
 help: change the type of the variable to ${classType.fmtPlain()}`,
 							expr.nodes[1])
 							: fail(f.quote`Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
-					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-					return [method, classInstance];
+					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
+						fail(f.quote`Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
+					return { method, instance: classInstance, clazz: classType };
 				} else { //overload 1
 					const propertyStatement = objType.properties[property] ?? (
 						//No need to use the real type, properties cannot be overriden
-						classType.methods[property]
+						classType.properties[property]
 							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
 `Property ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
@@ -294,10 +313,12 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 				}
 			} else if(expr.functionName instanceof ExpressionASTBranchNode){
 				const func = this.evaluateExpr(expr.functionName, "function");
-				if(Array.isArray(func)){
-					if(func[0].type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
+				if("clazz" in func){
+					if(func.method.type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
 					//Class method
-					return this.callClassMethod(func[0], func[1], expr.args, true);
+					const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
+					if(type) return [type, this.coerceValue(output, outputType, type)];
+					else return [outputType, output];
 				} else crash(`Branched function call node should not be able to return regular functions`);
 			} else crash(`Function name was an unexpected node type`);
 		}
@@ -534,7 +555,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				if(!type || type.is("CHAR")) return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
 				else fail(f.quote`Cannot convert value ${token} to type ${type}`);
 				break;
-			default: fail(f.quote`Cannot evaluate token ${token} of type ${token.type}`);
+			default: fail(f.quote`Cannot evaluate token ${token}`);
 		}
 	}
 	static NotStaticError = class extends Error {};
@@ -586,6 +607,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
 	canAccessClass(clazz:ClassVariableType):boolean {
+		//CONFIG privilege delegation to other functions?
 		for(const { statement } of this.scopes.slice().reverse()){
 			if(statement instanceof ClassStatement)
 				return statement == clazz.statement;
@@ -700,14 +722,17 @@ help: try using DIV instead of / to produce an integer as the result`
 			return output.value;
 		}
 	}
-	callClassMethod<T extends boolean>(funcNode:ClassMethodData, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):[type:VariableType, value:VariableValue] | (T extends false ? null : never) {
-		const func = funcNode.controlStatements[0];
+	callClassMethod<T extends boolean>(method:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):[type:VariableType, value:VariableValue] | (T extends false ? null : never) {
+		const func = method.controlStatements[0];
 		if(func instanceof ClassProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
 
 		const classScope = instance.type.getScope(this, instance);
 		const methodScope = this.assembleScope(func, args);
-		const output = this.runBlock(funcNode.nodeGroups[0], classScope, methodScope);
+		const previousClassData = this.classData;
+		this.classData = {instance, method, clazz};
+		const output = this.runBlock(method.nodeGroups[0], classScope, methodScope);
+		this.classData = previousClassData;
 		if(func instanceof ClassProcedureStatement){
 			//requireReturnValue satisfies false;
 			return null!;
