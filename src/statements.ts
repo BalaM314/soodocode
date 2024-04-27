@@ -830,11 +830,14 @@ export class ClassStatement extends Statement {
 			if(node instanceof ProgramASTBranchNode){
 				if(node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement){
 					const method = node.controlStatements[0];
-					if(classData.methods[method.name]){
-						fail(f.quote`Duplicate declaration of class method ${method.name}`, this, classData.methods[method.name]);
+					if(classData.ownMethods[method.name]){
+						fail(f.quote`Duplicate declaration of class method ${method.name}`, this, classData.ownMethods[method.name]);
 					} else {
 						node.controlStatements[0] satisfies (ClassFunctionStatement | ClassProcedureStatement);
-						classData.methods[method.name] = node as ClassMethodData;
+						classData.allMethods[method.name] = [
+							classData,
+							classData.ownMethods[method.name] = node as ClassMethodData
+						];
 					}
 				} else {
 					console.error({branchNode, node});
@@ -881,15 +884,15 @@ export class ClassInheritsStatement extends ClassStatement {
 				extensions.properties[key] = value;
 			}
 		}
-		for(const [key, value] of Object.entries(baseClass.methods)){
+		for(const [name, value] of Object.entries(baseClass.allMethods)){
 			//If the method has not been overriden, set it to the base class's method
-			if(extensions.methods[key]){
+			if(extensions.ownMethods[name]){
 				checkClassMethodsCompatible(
-					baseClass.methods[key].controlStatements[0],
-					extensions.methods[key].controlStatements[0],
+					baseClass.allMethods[name][1].controlStatements[0],
+					extensions.ownMethods[name].controlStatements[0],
 				);
 			} else {
-				extensions.methods[key] = value;
+				extensions.allMethods[name] = value;
 			}
 		}
 		return extensions;

@@ -207,8 +207,11 @@ export class ClassVariableType extends BaseVariableType {
 	baseClass:ClassVariableType | null = null;
 	constructor(
 		public statement: ClassStatement,
+		/** Stores regular and inherited properties. */
 		public properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
-		public methods: Record<string, ClassMethodData> = {},
+		/** Does not store inherited methods. */
+		public ownMethods: Record<string, ClassMethodData> = {},
+		public allMethods: Record<string, [ClassVariableType, ClassMethodData]> = {},
 	){super();}
 	fmtText(){
 		return f.text`${this.name} (user-defined class type)`;
@@ -222,6 +225,7 @@ export class ClassVariableType extends BaseVariableType {
 	fmtDebug(){
 		return f.debug`ClassVariableType [${this.name}]`;
 	}
+
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
@@ -238,7 +242,8 @@ export class ClassVariableType extends BaseVariableType {
 		};
 
 		//Call constructor
-		runtime.callClassMethod(this.methods["NEW"] ?? fail(f.quote`No constructor was defined for class ${this.name}`), this, data, args);
+		const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote`No constructor was defined for class ${this.name}`);
+		runtime.callClassMethod(method, clazz, data, args);
 		return data;
 	}
 	getScope(runtime:Runtime, instance:VariableTypeMapping<ClassVariableType>):VariableScope {

@@ -221,9 +221,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				//Super method calls
 				if(!this.classData) fail(`SUPER is only valid within a class`, expr.nodes[0]);
 				const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
-				const method = baseType.methods[property] ?? fail(f.quote`Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
+				const [clazz, method] = baseType.allMethods[property] ?? fail(f.quote`Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
 				return {
-					clazz: baseType, method, instance: this.classData.instance
+					clazz, method, instance: this.classData.instance
 				} satisfies ClassMethodCallInformation;
 			}
 			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
@@ -236,12 +236,13 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				else return [outputType, value];
 			} else if(objType instanceof ClassVariableType){
 				const classInstance = obj as VariableTypeMapping<ClassVariableType>;
-				const classType = classInstance.type; //Use the real type (Dog, not the variable type Animal) only when searching for methods
+				const classType = classInstance.type; //Use the instance's type (Dog, not the variable type Animal) only when searching for methods
 				if(type == "function"){ //overload 3
-					const method = objType.methods[property]
-						? (classType.methods[property] ?? crash(`Inherited method not present`)) //Use the real type
-						: classType.methods[property]
+					const [clazz, method] = objType.allMethods[property]
+						? (classType.allMethods[property] ?? crash(`Inherited method not present`)) //Use the instance's type to get the method implementation
+						: classType.allMethods[property]
 							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
+							//If it doesn't exist on the variable type but does exist on the instance type, long error message
 `Method ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the method, \
 but the type of the variable is ${objType.fmtPlain()}.
@@ -250,7 +251,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 							: fail(f.quote`Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
 					if(method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
 						fail(f.quote`Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-					return { method, instance: classInstance, clazz: classType };
+					return { method, instance: classInstance, clazz };
 				} else { //overload 1
 					const propertyStatement = objType.properties[property] ?? (
 						//No need to use the real type, properties cannot be overriden

@@ -200,9 +200,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         if (!this.classData)
                             fail(`SUPER is only valid within a class`, expr.nodes[0]);
                         const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
-                        const method = baseType.methods[property] ?? fail(f.quote `Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
+                        const [clazz, method] = baseType.allMethods[property] ?? fail(f.quote `Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
                         return {
-                            clazz: baseType, method, instance: this.classData.instance
+                            clazz, method, instance: this.classData.instance
                         };
                     }
                     const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
@@ -222,9 +222,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         const classInstance = obj;
                         const classType = classInstance.type;
                         if (type == "function") {
-                            const method = objType.methods[property]
-                                ? (classType.methods[property] ?? crash(`Inherited method not present`))
-                                : classType.methods[property]
+                            const [clazz, method] = objType.allMethods[property]
+                                ? (classType.allMethods[property] ?? crash(`Inherited method not present`))
+                                : classType.allMethods[property]
                                     ? fail(f.quote `Method ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the method, \
 but the type of the variable is ${objType.fmtPlain()}.
@@ -232,7 +232,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                                     : fail(f.quote `Method ${property} does not exist on type ${objType}`, expr.nodes[1]);
                             if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(objType))
                                 fail(f.quote `Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                            return { method, instance: classInstance, clazz: classType };
+                            return { method, instance: classInstance, clazz };
                         }
                         else {
                             const propertyStatement = objType.properties[property] ?? (classType.properties[property]

@@ -83,10 +83,11 @@ export declare class SetVariableType extends BaseVariableType {
 export declare class ClassVariableType extends BaseVariableType {
     statement: ClassStatement;
     properties: Record<string, ClassPropertyStatement>;
-    methods: Record<string, ClassMethodData>;
+    ownMethods: Record<string, ClassMethodData>;
+    allMethods: Record<string, [ClassVariableType, ClassMethodData]>;
     name: string;
     baseClass: ClassVariableType | null;
-    constructor(statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, methods?: Record<string, ClassMethodData>);
+    constructor(statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [ClassVariableType, ClassMethodData]>);
     fmtText(): string;
     fmtPlain(): string;
     toQuotedString(): string;

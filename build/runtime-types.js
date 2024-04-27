@@ -153,11 +153,12 @@ export class SetVariableType extends BaseVariableType {
     }
 }
 export class ClassVariableType extends BaseVariableType {
-    constructor(statement, properties = {}, methods = {}) {
+    constructor(statement, properties = {}, ownMethods = {}, allMethods = {}) {
         super();
         this.statement = statement;
         this.properties = properties;
-        this.methods = methods;
+        this.ownMethods = ownMethods;
+        this.allMethods = allMethods;
         this.name = this.statement.name.text;
         this.baseClass = null;
     }
@@ -186,7 +187,8 @@ export class ClassVariableType extends BaseVariableType {
             ])),
             type: this
         };
-        runtime.callClassMethod(this.methods["NEW"] ?? fail(f.quote `No constructor was defined for class ${this.name}`), this, data, args);
+        const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote `No constructor was defined for class ${this.name}`);
+        runtime.callClassMethod(method, clazz, data, args);
         return data;
     }
     getScope(runtime, instance) {

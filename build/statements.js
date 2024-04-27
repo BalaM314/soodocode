@@ -1318,12 +1318,15 @@ let ClassStatement = (() => {
                 if (node instanceof ProgramASTBranchNode) {
                     if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
                         const method = node.controlStatements[0];
-                        if (classData.methods[method.name]) {
-                            fail(f.quote `Duplicate declaration of class method ${method.name}`, this, classData.methods[method.name]);
+                        if (classData.ownMethods[method.name]) {
+                            fail(f.quote `Duplicate declaration of class method ${method.name}`, this, classData.ownMethods[method.name]);
                         }
                         else {
                             node.controlStatements[0];
-                            classData.methods[method.name] = node;
+                            classData.allMethods[method.name] = [
+                                classData,
+                                classData.ownMethods[method.name] = node
+                            ];
                         }
                     }
                     else {
@@ -1392,12 +1395,12 @@ let ClassInheritsStatement = (() => {
                     extensions.properties[key] = value;
                 }
             }
-            for (const [key, value] of Object.entries(baseClass.methods)) {
-                if (extensions.methods[key]) {
-                    checkClassMethodsCompatible(baseClass.methods[key].controlStatements[0], extensions.methods[key].controlStatements[0]);
+            for (const [name, value] of Object.entries(baseClass.allMethods)) {
+                if (extensions.ownMethods[name]) {
+                    checkClassMethodsCompatible(baseClass.allMethods[name][1].controlStatements[0], extensions.ownMethods[name].controlStatements[0]);
                 }
                 else {
-                    extensions.methods[key] = value;
+                    extensions.allMethods[name] = value;
                 }
             }
             return extensions;
