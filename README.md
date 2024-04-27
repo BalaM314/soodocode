@@ -10,6 +10,7 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax.
 * [x] CASE OF statements
 * [x] FOR STEP statements
 * [x] Functions/Procedures
+* [x] Passing by value/reference
 * [x] Builtin functions
 * [x] Enums
 * [x] Pointers
