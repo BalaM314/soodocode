@@ -466,6 +466,7 @@ call_class_method_recursive: [
 	PUBLIC x: INTEGER
 	PUBLIC PROCEDURE NEW(X: INTEGER)
 		x <- X
+		OUTPUT "Constructed"
 	ENDPROCEDURE
 	PUBLIC PROCEDURE a()
 		OUTPUT "a"
@@ -506,6 +507,7 @@ legal_call_private_class_procedure: [
 	PUBLIC x: INTEGER
 	PUBLIC PROCEDURE NEW(X: INTEGER)
 		x <- X
+		OUTPUT "Constructed"
 	ENDPROCEDURE
 	PRIVATE PROCEDURE priv()
 		OUTPUT "priv, ", x
@@ -519,7 +521,7 @@ DECLARE a: amogus
 a <- NEW amogus(5)
 CALL a.pub()
 OUTPUT "done"`,
-["pub", "priv, 5", "done, 5"]
+["Constructed", "pub, 5", "priv, 5", "done"]
 ],
 call_class_method_polymorphically: [
 `CLASS Animal
