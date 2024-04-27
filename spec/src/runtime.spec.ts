@@ -5,7 +5,7 @@ import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariab
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
 	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
@@ -536,7 +536,7 @@ const expressionTests = ((data:Record<string, [
 		}
 	],
 	class_instantiation_1: (() => {
-		const amogusClass = new ClassVariableType({
+		const amogusClass = classType({
 			name: {
 				text: "Amogus"
 			}
@@ -545,7 +545,7 @@ const expressionTests = ((data:Record<string, [
 				varType: PrimitiveVariableType.REAL
 			} as ClassPropertyStatement
 		}, {
-			NEW: process_ProgramASTNode({
+			NEW: {
 				type: "class_procedure",
 				controlStatements: [
 					[ClassProcedureStatement, [
@@ -561,7 +561,7 @@ const expressionTests = ((data:Record<string, [
 				],
 				nodeGroups: [[
 				]],
-			}) as ClassMethodData
+			}
 		});
 		return [
 			["tree", ["class instantiation", "Amogus"], [
@@ -579,7 +579,7 @@ const expressionTests = ((data:Record<string, [
 		]
 	})(),
 	class_instantiation_2: (() => {
-		const amogusClass = new ClassVariableType({
+		const amogusClass = classType({
 			name: {
 				text: "Amogus"
 			}
@@ -588,7 +588,7 @@ const expressionTests = ((data:Record<string, [
 				varType: PrimitiveVariableType.REAL
 			} as ClassPropertyStatement
 		}, {
-			NEW: process_ProgramASTNode({
+			NEW: {
 				type: "class_procedure",
 				controlStatements: [
 					[ClassProcedureStatement, [
@@ -615,7 +615,7 @@ const expressionTests = ((data:Record<string, [
 						]]
 					]]
 				]],
-			}) as ClassMethodData
+			}
 		});
 		return [
 			["tree", ["class instantiation", "Amogus"], [
@@ -639,7 +639,7 @@ const expressionTests = ((data:Record<string, [
 		null,
 		["error"],
 		r => {
-			r.getCurrentScope().types["Amogus"] = new ClassVariableType({
+			r.getCurrentScope().types["Amogus"] = classType({
 				name: {
 					text: "Amogus"
 				}
@@ -651,7 +651,7 @@ const expressionTests = ((data:Record<string, [
 		}
 	],
 	class_property_access: (() => {
-		const amogusClass = new ClassVariableType({
+		const amogusClass = classType({
 			name: {
 				text: "Amogus"
 			}
@@ -685,7 +685,7 @@ const expressionTests = ((data:Record<string, [
 		]
 	})(),
 	class_property_access_private: (() => {
-		const amogusClass = new ClassVariableType({
+		const amogusClass = classType({
 			name: {
 				text: "Amogus"
 			}
@@ -719,7 +719,7 @@ const expressionTests = ((data:Record<string, [
 		]
 	})(),
 	class_property_access_private_valid: (() => {
-		const amogusClass = new ClassVariableType(process_Statement([ClassStatement, [
+		const amogusClass = classType(process_Statement([ClassStatement, [
 			"keyword.class",
 			"amogus"
 		]]) as ClassStatement, {
@@ -728,7 +728,7 @@ const expressionTests = ((data:Record<string, [
 				accessModifier: "private"
 			} as ClassPropertyStatement
 		}, {
-			access: process_ProgramASTNode({
+			access: {
 				type: "class_function",
 				controlStatements: [
 					[ClassFunctionStatement, [
@@ -753,7 +753,7 @@ const expressionTests = ((data:Record<string, [
 						]]
 					]]
 				]],
-			}) as ClassMethodData
+			}
 		});
 		return [
 			["tree", ["function call", ["tree", "access", [
@@ -799,7 +799,7 @@ const expressionTests = ((data:Record<string, [
 		null,
 		["STRING", `amogus was not The Imposter.`],
 		r => {
-			const amogusClass = new ClassVariableType({
+			const amogusClass = classType({
 				name: {
 					text: "Amogus"
 				}
@@ -808,7 +808,7 @@ const expressionTests = ((data:Record<string, [
 					varType: PrimitiveVariableType.REAL
 				} as ClassPropertyStatement
 			}, {
-				eject: process_ProgramASTNode({
+				eject: {
 					type: "class_function",
 					controlStatements: [
 						[ClassFunctionStatement, [
@@ -830,7 +830,7 @@ const expressionTests = ((data:Record<string, [
 							["string", `"amogus was not The Imposter."`],
 						]]
 					]],
-				}) as ClassMethodData
+				}
 			});
 			r.getCurrentScope().types["Amogus"] = amogusClass;
 			r.getCurrentScope().variables["amogus"] = {
@@ -855,7 +855,7 @@ const expressionTests = ((data:Record<string, [
 		null,
 		["error"],
 		r => {
-			const amogusClass = new ClassVariableType({
+			const amogusClass = classType({
 				name: {
 					text: "Amogus"
 				}
@@ -864,7 +864,7 @@ const expressionTests = ((data:Record<string, [
 					varType: PrimitiveVariableType.REAL
 				} as ClassPropertyStatement
 			}, {
-				eject: process_ProgramASTNode({
+				eject: {
 					type: "class_function",
 					controlStatements: [
 						[ClassFunctionStatement, [
@@ -889,7 +889,7 @@ const expressionTests = ((data:Record<string, [
 							["string", `"amogus was not The Imposter."`],
 						]]
 					]],
-				}) as ClassMethodData
+				}
 			});
 			r.getCurrentScope().types["Amogus"] = amogusClass;
 			r.getCurrentScope().variables["amogus"] = {
@@ -914,7 +914,7 @@ const expressionTests = ((data:Record<string, [
 		null,
 		["error"],
 		r => {
-			const amogusClass = new ClassVariableType({
+			const amogusClass = classType({
 				name: {
 					text: "Amogus"
 				}
@@ -923,7 +923,7 @@ const expressionTests = ((data:Record<string, [
 					varType: PrimitiveVariableType.REAL
 				} as ClassPropertyStatement
 			}, {
-				eject: process_ProgramASTNode({
+				eject: {
 					type: "class_procedure",
 					controlStatements: [
 						[ClassProcedureStatement, [
@@ -946,7 +946,7 @@ const expressionTests = ((data:Record<string, [
 							["string", `"amogus was not The Imposter."`],
 						]]
 					]],
-				}) as ClassMethodData
+				}
 			});
 			r.getCurrentScope().types["Amogus"] = amogusClass;
 			r.getCurrentScope().variables["amogus"] = {

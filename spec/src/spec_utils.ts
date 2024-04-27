@@ -1,6 +1,6 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
-import { PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
+import { ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
 import { crash } from "../../build/utils.js";
 import { tokenTextMapping } from "../../build/lexer.js";
@@ -396,3 +396,20 @@ export function statement<T extends keyof typeof statementCreators>(statementNam
 	return (statementCreators[statementName] as any).apply(null, args) as Statement;
 }
 
+export function classType(
+	statement: ClassStatement,
+	properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
+	ownMethods: Record<string, _ProgramASTBranchNode> = {},
+	allMethods?: Record<string, [ClassVariableType, ClassMethodData]>,
+){
+	const clazz = new ClassVariableType(
+		statement,
+		properties,
+		Object.fromEntries(Object.entries(ownMethods).map(([k, v]) => [k, process_ProgramASTNode(v) as ClassMethodData])),
+		allMethods
+	);
+	if(!allMethods) clazz.allMethods = Object.fromEntries(Object.entries(clazz.ownMethods).map(
+		([k, v]) => [k, [clazz, v]]
+	));
+	return clazz;
+}

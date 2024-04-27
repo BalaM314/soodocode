@@ -633,19 +633,22 @@ animal <- NEW Animal("animal")
 DECLARE dog: Dog
 dog <- NEW Dog("doggy")
 DECLARE dogAnimal: Animal
-dog <- NEW Dog("doggy2")
+dogAnimal <- NEW Dog("doggy2")
 PROCEDURE test(BYVAL arg:Animal)
 	OUTPUT arg.isSus()
-	arg.name <- arg.name & "_checked"
+	arg.Name <- arg.Name & "_checked"
 	OUTPUT arg.isSus()
 ENDPROCEDURE
 CALL test(animal)
+OUTPUT animal.isSus()
 CALL test(dog)
-CALL test(dogAnimal)`,
+OUTPUT dog.isSus()
+CALL test(dogAnimal)
+OUTPUT dogAnimal.isSus()`,
 [
-	"Animal animal is sus", "TRUE", "Animal animal_checked is sus", "TRUE",
-	"Dog doggy is not sus", "FALSE", "Animal doggy_checked is not sus", "FALSE",
-	"Dog doggy2 is not sus", "FALSE", "Animal doggy2_checked is not sus", "FALSE",
+	"Animal animal is sus", "TRUE", "Animal animal_checked is sus", "TRUE", "Animal animal is sus", "TRUE",
+	"Dog doggy is not sus", "FALSE", "Dog doggy_checked is not sus", "FALSE", "Dog doggy is not sus", "FALSE",
+	"Dog doggy2 is not sus", "FALSE", "Dog doggy2_checked is not sus", "FALSE", "Dog doggy2 is not sus", "FALSE",
 ]
 ],
 run_double_inheritance: [
