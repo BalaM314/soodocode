@@ -25,6 +25,31 @@ mostlyEmpty: [
 `,
 []
 ],
+run_array_basic: [
+`DECLARE x: ARRAY[1:10] OF INTEGER
+x[10] <- 5
+OUTPUT x[10]`,
+["5"]
+],
+illegal_array_type_in_variable: [
+`DECLARE x: ARRAY OF INTEGER`,
+``
+],
+legal_array_type_in_function: [
+`FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
+	RETURN LENGTH(x)
+ENDIF`,
+``
+],
+call_array_type_in_function: [
+`FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
+	RETURN LENGTH(x)
+ENDIF
+DECLARE x: ARRAY[1:10] OF INTEGER
+x[1] <- 5
+OUTPUT amogus(x)`,
+["5"],
+],
 parse_procedure_blank: [
 `PROCEDURE name()
 ENDPROCEDURE`,
