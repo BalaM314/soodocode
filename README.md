@@ -22,6 +22,6 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax.
 * [ ] File GUI
 * [x] Classes
 * [x] Public/private class members, inheritance
-* [ ] SUPER in classes
+* [x] SUPER in classes
 
 View the site [here](https://balam314.github.io/soodocode)
