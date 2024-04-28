@@ -9,7 +9,7 @@ import "jasmine";
 import { symbolize, tokenize } from "../../build/lexer.js";
 import { parse } from "../../build/parser.js";
 import { Runtime } from "../../build/runtime.js";
-import { SoodocodeError, crash, fail, forceType } from "../../build/utils.js";
+import { SoodocodeError, crash, fail } from "../../build/utils.js";
 
 type ErrorData = string;
 
@@ -33,22 +33,54 @@ OUTPUT x[10]`,
 ],
 illegal_array_type_in_variable: [
 `DECLARE x: ARRAY OF INTEGER`,
-``
+`length must be specified`
 ],
 legal_array_type_in_function: [
 `FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
 	RETURN LENGTH(x)
-ENDIF`,
-``
+ENDFUNCTION`,
+[]
 ],
-call_array_type_in_function: [
+function_variable_length_array_arg: [
 `FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
+	OUTPUT x[7]
 	RETURN LENGTH(x)
 ENDFUNCTION
 DECLARE x: ARRAY[1:10] OF INTEGER
-x[1] <- 5
+x[7] <- 15
 OUTPUT amogus(x)`,
-["5"],
+["15", "10"],
+],
+function_fixed_length_array_arg: [
+`FUNCTION amogus(x: ARRAY[1:10] OF INTEGER) RETURNS INTEGER
+	OUTPUT x[7]
+	RETURN LENGTH(x)
+ENDFUNCTION
+DECLARE x: ARRAY[1:10] OF INTEGER
+x[7] <- 15
+OUTPUT amogus(x)`,
+["15", "10"],
+],
+function_different_valid_fixed_length_array_arg: [
+`FUNCTION amogus(x: ARRAY[0:9] OF INTEGER) RETURNS INTEGER
+	OUTPUT x[7]
+	OUTPUT x[6]
+	RETURN LENGTH(x)
+ENDFUNCTION
+DECLARE x: ARRAY[1:10] OF INTEGER
+x[7] <- 15
+OUTPUT amogus(x)`,
+["0", "15", "10"],
+],
+function_different_invalid_fixed_length_array_arg: [
+`FUNCTION amogus(x: ARRAY[0:10] OF INTEGER) RETURNS INTEGER
+	OUTPUT x[7]
+	RETURN LENGTH(x)
+ENDFUNCTION
+DECLARE x: ARRAY[1:10] OF INTEGER
+x[7] <- 15
+OUTPUT amogus(x)`,
+`Cannot coerce`,
 ],
 parse_procedure_blank: [
 `PROCEDURE name()
@@ -548,6 +580,32 @@ CALL a.pub()
 OUTPUT "done"`,
 ["Constructed", "pub, 5", "priv, 5", "done"]
 ],
+private_class_property_returned_pointer: [
+`TYPE pINTEGER = ^INTEGER
+CLASS a
+	PRIVATE x: INTEGER
+	PUBLIC PROCEDURE NEW()
+		x <- 5
+	ENDPROCEDURE
+	PUBLIC FUNCTION x() RETURNS pINTEGER
+		RETURN ^x
+	ENDFUNCTION
+	PUBLIC PROCEDURE printX()
+		OUTPUT x
+	ENDPROCEDURE
+ENDCLASS
+DECLARE a: a
+DECLARE p: pINTEGER
+a <- NEW a()
+CALL a.printX()
+(a.x())^ <- 6
+CALL a.printX()
+p <- a.x()
+p^ <- 7
+OUTPUT p^
+CALL a.printX()`,
+["5", "6", "7", "7"]
+],
 call_class_method_polymorphically: [
 `CLASS Animal
 	PUBLIC Name: STRING
@@ -742,7 +800,7 @@ describe("soodocode", () => {
 				let err;
 				try {
 					runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
-					fail(`Execution did not throw an error`);
+					crash(`Execution did not throw an error`);
 				} catch(e){ err = e; }
 				if(!(err instanceof SoodocodeError)) throw err;
 				expect(err.message).toContain(expectedOutput);
