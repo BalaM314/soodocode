@@ -5,3 +5,4 @@ build/.tsbuildinfo
 scripts/tsconfig.tsbuildinfo
 spec/build
 spec/build/.tsbuildinfo
+scripts/isolate-*
