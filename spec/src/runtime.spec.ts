@@ -1,7 +1,8 @@
+/* eslint-disable indent */
 import "jasmine";
 import { Token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
-import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail } from "../../build/utils.js";
@@ -179,7 +180,7 @@ const expressionTests = ((data:Record<string, [
 				declaration: null!,
 				mutable: true,
 				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0]
-			}
+			};
 		}
 	],
 	propertyAccess_simple: [
@@ -201,7 +202,7 @@ const expressionTests = ((data:Record<string, [
 				value: {
 					sus: 18
 				}
-			}
+			};
 		}
 	],
 	propertyAccess_nested: [
@@ -232,7 +233,7 @@ const expressionTests = ((data:Record<string, [
 						ccc: 123
 					}
 				}
-			}
+			};
 		}
 	],
 	propertyAccess_nested_array: [
@@ -256,7 +257,7 @@ const expressionTests = ((data:Record<string, [
 				value: [null, {
 					ccc: 124
 				}, null, null, null]
-			}
+			};
 		}
 	],
 	propertyAccess_invalid_not_record: [
@@ -272,7 +273,7 @@ const expressionTests = ((data:Record<string, [
 				declaration: null!,
 				mutable: true,
 				value: Date.now()
-			}
+			};
 		}
 	],
 	propertyAccess_invalid_nonexistent_property: [
@@ -294,7 +295,7 @@ const expressionTests = ((data:Record<string, [
 				value: {
 					sus: 18
 				}
-			}
+			};
 		}
 	],
 	pointerRef1: (() => {
@@ -315,7 +316,7 @@ const expressionTests = ((data:Record<string, [
 				r.getCurrentScope().types["intPtr"] = intPointer;
 				r.getCurrentScope().variables["amogus"] = intVar;
 			}
-		]
+		];
 	})(),
 	pointerRef_array_udt: (() => {
 		const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
@@ -341,7 +342,7 @@ const expressionTests = ((data:Record<string, [
 				r.getCurrentScope().types["arrayPointer"] = arrayPointer;
 				r.getCurrentScope().variables["amogus"] = arrayVar;
 			}
-		]
+		];
 	})(),
 	pointerRef_array_udt_invalid: (() => {
 		const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
@@ -367,7 +368,7 @@ const expressionTests = ((data:Record<string, [
 				//r.getCurrentScope().types["arrayPointer"] = arrayPointer;
 				r.getCurrentScope().variables["amogus"] = arrayVar;
 			}
-		]
+		];
 	})(),
 	// pointerRef_invalid_bad_target: (() => {
 	// 	const intPointer = new PointerVariableType("intPtr", "INTEGER");
@@ -407,7 +408,7 @@ const expressionTests = ((data:Record<string, [
 				r.getCurrentScope().types["intPtr"] = intPointer;
 				r.getCurrentScope().variables["amogus"] = intVar;
 			}
-		]
+		];
 	})(),
 	pointerDeref1: (() => {
 		return [
@@ -433,7 +434,7 @@ const expressionTests = ((data:Record<string, [
 					value: amogusVar
 				};
 			}
-		]
+		];
 	})(),
 	functionCall_simple: [
 		["tree", ["function call", "amogus"], [
@@ -576,7 +577,7 @@ const expressionTests = ((data:Record<string, [
 			r => {
 				r.getCurrentScope().types["Amogus"] = amogusClass;
 			}
-		]
+		];
 	})(),
 	class_instantiation_2: (() => {
 		const amogusClass = classType({
@@ -631,7 +632,7 @@ const expressionTests = ((data:Record<string, [
 			r => {
 				r.getCurrentScope().types["Amogus"] = amogusClass;
 			}
-		]
+		];
 	})(),
 	class_instantiation_invalid_no_constructor: [
 		["tree", ["class instantiation", "Amogus"], [
@@ -682,7 +683,7 @@ const expressionTests = ((data:Record<string, [
 					}
 				} satisfies VariableData<ClassVariableType>;
 			}
-		]
+		];
 	})(),
 	class_property_access_private: (() => {
 		const amogusClass = classType({
@@ -716,7 +717,7 @@ const expressionTests = ((data:Record<string, [
 					}
 				} satisfies VariableData<ClassVariableType>;
 			}
-		]
+		];
 	})(),
 	class_property_access_private_valid: (() => {
 		const amogusClass = classType(process_Statement([ClassStatement, [
@@ -788,7 +789,7 @@ const expressionTests = ((data:Record<string, [
 					}
 				} satisfies VariableData<ClassVariableType>;
 			}
-		]
+		];
 	})(),
 	class_method_call: [
 		["tree", ["function call", ["tree", "access", [
@@ -843,7 +844,7 @@ const expressionTests = ((data:Record<string, [
 					},
 					type: amogusClass
 				}
-			} satisfies VariableData<ClassVariableType>
+			} satisfies VariableData<ClassVariableType>;
 		}
 	],
 	class_method_call_invalid_wrong_arguments: [
@@ -902,7 +903,7 @@ const expressionTests = ((data:Record<string, [
 					},
 					type: amogusClass
 				}
-			} satisfies VariableData<ClassVariableType>
+			} satisfies VariableData<ClassVariableType>;
 		}
 	],
 	class_method_call_invalid_procedure_no_return:  [
@@ -1818,7 +1819,7 @@ describe("runtime's token evaluator", () => {
 			});
 			setup(runtime);
 			if(output[0] == "error")
-				expect(() => runtime.evaluateToken(token, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
+				expect(() => runtime.evaluateToken(token, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
 			else
 				expect(runtime.evaluateToken(token, type ?? undefined)).toEqual(output);
 		});
@@ -1837,7 +1838,7 @@ describe("runtime's expression evaluator", () => {
 			});
 			setup(runtime);
 			if(output[0] == "error")
-				(expect as expect_)(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError)
+				(expect as expect_)(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
 			else
 				(expect as expect_)(runtime.evaluateExpr(expression, type ?? undefined)).toEqual(output);
 		});
@@ -1871,7 +1872,7 @@ describe("runtime's statement executor", () => {
 describe("runtime's program execution", () => {
 	for(const [name, program, output, inputs] of programTests){
 		it(`should produce the expected output for ${name}`, () => {
-			let outputs:string[] = [];
+			const outputs:string[] = [];
 			const runtime = new Runtime(
 				() => inputs.shift() ?? fail(`Program required input, but none was available`),
 				str => outputs.push(str)

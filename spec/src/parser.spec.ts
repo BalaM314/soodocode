@@ -11,14 +11,13 @@ import { Token, TokenizedProgram } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, OutputStatement, PassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, PassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
 import { SoodocodeError } from "../../build/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 
 //i miss rust macros
-//TODO major dedupe: in progress
 
 const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_ExpressionAST | "error"]>) =>
 	Object.entries(d).map<
@@ -27,8 +26,8 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 		name,
 		program.map(process_Token),
 		output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
-	]
-))({
+	])
+)({
 	number: [
 		[
 			5,
@@ -1295,8 +1294,8 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 		program.map(process_Token),
 		output == "error" ? "error" : applyAnyRange(process_Statement(output)),
 		context ? [context[0], fakeStatement(context[1])] : null
-	]
-))({
+	])
+)({
 	output1: [
 		[
 			"keyword.output",
@@ -2244,8 +2243,8 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			tokens: program.map(process_Token)
 		},
 		output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
-	]
-))({
+	])
+)({
 	output: [
 		[
 			"keyword.output",
@@ -2841,9 +2840,9 @@ const functionArgumentTests = ((data:Record<string,
 	name,
 	input: input.map(process_Token),
 	output: output == "error" ? "error" :
-		output.map(
-			([name, type, passMode]) => [name, {type: process_UnresolvedVariableType(type), passMode: passMode ?? jasmine.any(String)}]
-		)
+	output.map(
+		([name, type, passMode]) => [name, {type: process_UnresolvedVariableType(type), passMode: passMode ?? jasmine.any(String)}]
+	)
 })))({
 	blank: [[
 
@@ -3101,24 +3100,28 @@ const functionArgumentTests = ((data:Record<string,
 
 
 const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _ExpressionASTArrayTypeNode | "error"]>({
-	simpleType1: [[
-		"INTEGER",
-	],
+	simpleType1: [
+		[
+			"INTEGER",
+		],
 		"INTEGER"
 	],
-	simpleType2: [[
+	simpleType2: [
+		[
+			"BOOLEAN",
+		],
 		"BOOLEAN",
 	],
-		"BOOLEAN",
-	],
-	simpleType3: [[
+	simpleType3: [
+		[
+			"STRING",
+		],
 		"STRING",
 	],
-		"STRING",
-	],
-	simpleType4: [[
-		"CHAR",
-	],
+	simpleType4: [
+		[
+			"CHAR",
+		],
 		"CHAR",
 	],
 	"1dArray": [[
@@ -3390,7 +3393,7 @@ describe("ArrayTypeData", () => {
 	it(`should handle correct inputs`, () => {
 		expect(() => new ArrayVariableType([[0, 0]], PrimitiveVariableType.CHAR)).not.toThrow();
 		expect(() => new ArrayVariableType([[5, 5]], PrimitiveVariableType.CHAR)).not.toThrow();
-	})
+	});
 	it(`should handle incorrect inputs`, () => {
 		expect(() => new ArrayVariableType([[0, -1]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
 		expect(() => new ArrayVariableType([[2, 1]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);

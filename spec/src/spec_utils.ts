@@ -81,7 +81,7 @@ export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointe
 	"access": token("punctuation.period", "."),
 	"pointer_reference": token("operator.pointer", "^"),
 	"pointer_dereference": token("operator.pointer", "^"),
-}
+};
 
 export function token(type:TokenType, text:string):Token {
 	return new Token(type, text, [-1, -1]);
@@ -106,7 +106,7 @@ export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _Expression
 }
 
 export function process_Statement(input:_Statement):Statement {
-	if(typeof input[0] == "string") return statement(...(input as any as [any]))
+	if(typeof input[0] == "string") return statement(...(input as any as [any]));
 	else return new input[0](input[1].map(process_ExpressionASTExt));
 }
 
@@ -203,44 +203,44 @@ export function applyAnyRange<TIn extends
 >(input:TIn):jasmine.Expected<TIn> {
 	if(input instanceof Token){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 	} else if(input instanceof Statement){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 		input.tokens.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTBranchNode){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 		input.allTokens;
-		(input as any).allTokens = jasmine.any(Array);
-		applyAnyRange(input.operatorToken)
+		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		applyAnyRange(input.operatorToken);
 		input.nodes.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTArrayAccessNode){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 		input.allTokens;
-		(input as any).allTokens = jasmine.any(Array);
-		applyAnyRange(input.target)
+		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		applyAnyRange(input.target);
 		input.indices.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTFunctionCallNode){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 		input.allTokens;
-		(input as any).allTokens = jasmine.any(Array);
-		applyAnyRange(input.functionName)
+		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		applyAnyRange(input.functionName);
 		input.args.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTClassInstantiationNode){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 		input.allTokens;
-		(input as any).allTokens = jasmine.any(Array);
-		applyAnyRange(input.className)
+		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		applyAnyRange(input.className);
 		input.args.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTArrayTypeNode){
 		input.range;
-		(input as any).range = anyRange;
+		(input as Record<string, any>).range = anyRange;
 		input.allTokens;
-		(input as any).allTokens = jasmine.any(Array);
+		(input as Record<string, any>).allTokens = jasmine.any(Array);
 		applyAnyRange(input.elementType);
 	} else if(input instanceof ProgramASTBranchNode){
 		input.controlStatements.forEach(applyAnyRange);
@@ -393,7 +393,8 @@ const statementCreators = {
 	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt)),
 };
 export function statement<T extends keyof typeof statementCreators>(statementName:T, ...args:Parameters<(typeof statementCreators)[T]>){
-	return (statementCreators[statementName] as any).apply(null, args) as Statement;
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	return (statementCreators[statementName] as any)(...args) as Statement;
 }
 
 export function classType(

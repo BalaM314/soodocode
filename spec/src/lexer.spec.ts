@@ -331,11 +331,11 @@ const tokenizerTests = ((data:Record<string, [input:_Symbol[], output:_Token[] |
 			["parentheses.open", "("],
 			["quote.single", "'"],
 			["operator.not_equal_to", "<>"],
-			["quote.double", `\"`],
+			["quote.double", `"`],
 			["operator.and", "AND"],
 			["space", " "],
 			["numeric_fragment", "501"],
-			["quote.double", `\"`],
+			["quote.double", `"`],
 			["parentheses.close", ")"],
 		], [
 			["punctuation.semicolon", ";"],
