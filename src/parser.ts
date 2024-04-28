@@ -330,7 +330,18 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 			} else return { message: f.text`Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 5, range: input[j].range };
 		}
 	}
-	if(j != input.length) return { message: f.quote`Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
+	if(j != input.length){
+		//Extra tokens found
+		//Note: j is pointing to the first unused token
+		if(j > 0){
+			try {
+				//Check if the rest of the line is valid
+				parseStatement(input.slice(j), null);
+				return { message: f.quote`Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
+			} catch(err){void err;}
+		}
+		return { message: f.quote`Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
+	}
 	return output;
 });
 

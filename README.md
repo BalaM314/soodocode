@@ -6,7 +6,7 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax.
 * [x] Basic statements
 * [x] Basic operators
 * [x] n-dimensional arrays
-* [ ] Arrays with variable size
+* [x] Arrays with variable size
 * [x] CASE OF statements
 * [x] FOR STEP statements
 * [x] Functions/Procedures

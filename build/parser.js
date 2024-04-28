@@ -306,8 +306,18 @@ export const checkStatement = errorBoundary()((statement, input) => {
                 return { message: f.text `Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 5, range: input[j].range };
         }
     }
-    if (j != input.length)
+    if (j != input.length) {
+        if (j > 0) {
+            try {
+                parseStatement(input.slice(j), null);
+                return { message: f.quote `Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
+            }
+            catch (err) {
+                void err;
+            }
+        }
         return { message: f.quote `Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
+    }
     return output;
 });
 function cannotEndExpression(token) {

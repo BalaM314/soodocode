@@ -564,7 +564,13 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (type instanceof PrimitiveVariableType || type instanceof ArrayVariableType)
                     return type;
                 else
-                    return this.getType(type[1]) ?? fail(f.quote `Type ${type[1]} does not exist`);
+                    return this.getType(type[1]) ?? this.handleNonexistentType(type[1]);
+            }
+            handleNonexistentType(name) {
+                if (PrimitiveVariableType.get(name.toUpperCase()))
+                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`);
+                else
+                    fail(f.quote `Type ${name} does not exist`);
             }
             getVariable(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {

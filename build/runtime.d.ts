@@ -74,6 +74,7 @@ export declare class Runtime {
     };
     static evaluateToken(token: Token, type?: VariableType): [type: VariableType, value: VariableValue];
     resolveVariableType(type: UnresolvedVariableType): VariableType;
+    handleNonexistentType(name: string): never;
     getVariable(name: string): VariableData | ConstantData | null;
     getType(name: string): VariableType | null;
     getEnumFromValue(name: string): EnumeratedVariableType | null;
