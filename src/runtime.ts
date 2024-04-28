@@ -113,6 +113,10 @@ export class Runtime {
 		public _input: (message:string) => string,
 		public _output: (message:string) => void,
 	){}
+	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):[type:VariableType, value:VariableValue] {
+		if(to) return [to, this.coerceValue(value, from, to)];
+		else return [from, value];
+	}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type:"variable"):VariableData;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"set", value:ExpressionAST):void;
@@ -170,8 +174,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			}
 			const output = variable.value[index];
 			if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-			if(type) return [type, this.coerceValue(output, this.resolveVariableType(varTypeData.type), type)];
-			else return [this.resolveVariableType(varTypeData.type), output];
+			return this.finishEvaluation(output, this.resolveVariableType(varTypeData.type), type);
 		} else {
 			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, this.resolveVariableType(varTypeData.type))[1];
 		}
@@ -253,8 +256,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				const outputType = objType.fields[property] ?? fail(f.quote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
 				const value = (obj as Record<string, VariableValue>)[property];
 				if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
-				if(type) return [type, this.coerceValue(value, outputType, type)];
-				else return [outputType, value];
+				return this.finishEvaluation(value, outputType, type);
 			} else if(objType instanceof ClassVariableType){
 				const classInstance = obj as VariableTypeMapping<ClassVariableType>;
 				const classType = classInstance.type; //Use the instance's type (Dog, not the variable type Animal) only when searching for methods
@@ -288,8 +290,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 					const outputType = this.resolveVariableType(propertyStatement.varType);
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
 					if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
-					if(type) return [type, this.coerceValue(value, outputType, type)];
-					else return [outputType, value];
+					return this.finishEvaluation(value, outputType, type);
 				}
 			} else fail(f.quote`Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
 		}
@@ -325,18 +326,15 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 				if(func.method.type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
 				//Class method
 				const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
-				if(type) return [type, this.coerceValue(output, outputType, type)];
-				else return [outputType, output];
+				return this.finishEvaluation(output, outputType, type);
 			} else if("name" in func){
 				const output = this.callBuiltinFunction(func, expr.args);
-				if(type) return [type, this.coerceValue(output[1], output[0], type)];
-				else return output;
+				return this.finishEvaluation(output[1], output[0], type);
 			} else {
 				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`);
 				const statement = func.controlStatements[0];
 				const output = this.callFunction(func, expr.args, true);
-				if(type) return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
-				else return [this.resolveVariableType(statement.returnType), output];
+				return this.finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
 			}
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
@@ -344,8 +342,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 			if(type == "function") fail(`Expected this expression to evaluate to a function, but found a class instantiation expression, which can only return a class instance, not a function.`);
 			const clazz = this.getClass(expr.className.text);
 			const output = clazz.construct(this, expr.args);
-			if(type) return [type, this.coerceValue(output, clazz, type)];
-			else return [clazz, output];
+			return this.finishEvaluation(output, clazz, type);
 		}
 
 		//Operator that returns a result of unknown type
@@ -368,17 +365,16 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 							const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
 							//Guess the type
 							const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`);
-							return [pointerType, {
+							return this.finishEvaluation({
 								type: targetType,
 								declaration: "dynamic",
 								mutable: true,
 								value: targetValue
-							} satisfies VariableData];
+							}, pointerType, type);
 						} else throw err;
 					}
 					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`);
-					if(type) return [pointerType, this.coerceValue(variable, pointerType, type)];
-					else return [pointerType, variable];
+					return this.finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
 					if(type == "function") fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`);
@@ -391,8 +387,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 						return pointerVariableData;
 					} else {
 						if(pointerVariableData.value == null) fail(f.quote`Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
-						if(type) return [pointerVariableType.target, this.coerceValue(pointerVariableData.value, pointerVariableType.target, type)];
-						else return [pointerVariableType.target, pointerVariableData.value];
+						return this.finishEvaluation(pointerVariableData.value, pointerVariableType.target, type);
 					}
 				}
 				default: impossible();
@@ -520,16 +515,14 @@ help: try using DIV instead of / to produce an integer as the result`
 
 			const enumType = this.getEnumFromValue(token.text);
 			if(enumType){
-				if(type == "variable") fail(f.quote`Cannot evaluate token ${token.text} as a variable`);
-				if(!type || type === enumType) return [enumType, token.text];
-				else fail(f.quote`Cannot convert value of type ${enumType} to ${type}`);
+				if(type == "variable") fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`);
+				return this.finishEvaluation(token.text, enumType, type);
 			} else {
 				const variable = this.getVariable(token.text);
 				if(!variable) fail(f.quote`Undeclared variable ${token}`);
 				if(type == "variable") return variable;
 				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`);
-				if(type !== undefined) return [type, this.coerceValue(variable.value, variable.type, type)];
-				else return [variable.type, variable.value];
+				return this.finishEvaluation(variable.value, variable.type, type);
 			}
 		}
 		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${token.text} as a ${type}`);

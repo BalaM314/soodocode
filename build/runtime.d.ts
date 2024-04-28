@@ -36,6 +36,7 @@ export declare class Runtime {
     } | null;
     fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
+    finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type?: VariableType): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "get", type: "variable"): VariableData;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, operation: "set", value: ExpressionAST): void;

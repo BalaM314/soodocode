@@ -111,6 +111,12 @@ let Runtime = (() => {
                 this.classData = null;
                 this.fs = new Files();
             }
+            finishEvaluation(value, from, to) {
+                if (to)
+                    return [to, this.coerceValue(value, from, to)];
+                else
+                    return [from, value];
+            }
             processArrayAccess(expr, operation, arg2) {
                 const _variable = this.evaluateExpr(expr.target, "variable");
                 if (!(_variable.type instanceof ArrayVariableType))
@@ -149,10 +155,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const output = variable.value[index];
                     if (output == null)
                         fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-                    if (type)
-                        return [type, this.coerceValue(output, this.resolveVariableType(varTypeData.type), type)];
-                    else
-                        return [this.resolveVariableType(varTypeData.type), output];
+                    return this.finishEvaluation(output, this.resolveVariableType(varTypeData.type), type);
                 }
                 else {
                     variable.value[index] = this.evaluateExpr(arg2, this.resolveVariableType(varTypeData.type))[1];
@@ -225,10 +228,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         const value = obj[property];
                         if (value === null)
                             fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
-                        if (type)
-                            return [type, this.coerceValue(value, outputType, type)];
-                        else
-                            return [outputType, value];
+                        return this.finishEvaluation(value, outputType, type);
                     }
                     else if (objType instanceof ClassVariableType) {
                         const classInstance = obj;
@@ -259,10 +259,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                             const value = obj.properties[property];
                             if (value === null)
                                 fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
-                            if (type)
-                                return [type, this.coerceValue(value, outputType, type)];
-                            else
-                                return [outputType, value];
+                            return this.finishEvaluation(value, outputType, type);
                         }
                     }
                     else
@@ -289,27 +286,18 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                         if (func.method.type == "class_procedure")
                             fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
                         const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
-                        if (type)
-                            return [type, this.coerceValue(output, outputType, type)];
-                        else
-                            return [outputType, output];
+                        return this.finishEvaluation(output, outputType, type);
                     }
                     else if ("name" in func) {
                         const output = this.callBuiltinFunction(func, expr.args);
-                        if (type)
-                            return [type, this.coerceValue(output[1], output[0], type)];
-                        else
-                            return output;
+                        return this.finishEvaluation(output[1], output[0], type);
                     }
                     else {
                         if (func.type == "procedure")
                             fail(f.quote `Procedure ${expr.functionName} does not return a value.`);
                         const statement = func.controlStatements[0];
                         const output = this.callFunction(func, expr.args, true);
-                        if (type)
-                            return [type, this.coerceValue(output, this.resolveVariableType(statement.returnType), type)];
-                        else
-                            return [this.resolveVariableType(statement.returnType), output];
+                        return this.finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
                     }
                 }
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
@@ -319,10 +307,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                         fail(`Expected this expression to evaluate to a function, but found a class instantiation expression, which can only return a class instance, not a function.`);
                     const clazz = this.getClass(expr.className.text);
                     const output = clazz.construct(this, expr.args);
-                    if (type)
-                        return [type, this.coerceValue(output, clazz, type)];
-                    else
-                        return [clazz, output];
+                    return this.finishEvaluation(output, clazz, type);
                 }
                 if (expr.operator.category == "special") {
                     switch (expr.operator) {
@@ -341,21 +326,18 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                                 if (err instanceof SoodocodeError) {
                                     const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
                                     const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`);
-                                    return [pointerType, {
-                                            type: targetType,
-                                            declaration: "dynamic",
-                                            mutable: true,
-                                            value: targetValue
-                                        }];
+                                    return this.finishEvaluation({
+                                        type: targetType,
+                                        declaration: "dynamic",
+                                        mutable: true,
+                                        value: targetValue
+                                    }, pointerType, type);
                                 }
                                 else
                                     throw err;
                             }
                             const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote `Cannot find a pointer type for ${variable.type}`);
-                            if (type)
-                                return [pointerType, this.coerceValue(variable, pointerType, type)];
-                            else
-                                return [pointerType, variable];
+                            return this.finishEvaluation(variable, pointerType, type);
                         }
                         case operators.pointer_dereference: {
                             if (type == "function")
@@ -374,10 +356,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                             else {
                                 if (pointerVariableData.value == null)
                                     fail(f.quote `Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
-                                if (type)
-                                    return [pointerVariableType.target, this.coerceValue(pointerVariableData.value, pointerVariableType.target, type)];
-                                else
-                                    return [pointerVariableType.target, pointerVariableData.value];
+                                return this.finishEvaluation(pointerVariableData.value, pointerVariableType.target, type);
                             }
                         }
                         default: impossible();
@@ -493,11 +472,8 @@ help: try using DIV instead of / to produce an integer as the result`);
                     const enumType = this.getEnumFromValue(token.text);
                     if (enumType) {
                         if (type == "variable")
-                            fail(f.quote `Cannot evaluate token ${token.text} as a variable`);
-                        if (!type || type === enumType)
-                            return [enumType, token.text];
-                        else
-                            fail(f.quote `Cannot convert value of type ${enumType} to ${type}`);
+                            fail(f.quote `Cannot evaluate enum value ${token.text} as a variable`);
+                        return this.finishEvaluation(token.text, enumType, type);
                     }
                     else {
                         const variable = this.getVariable(token.text);
@@ -507,10 +483,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                             return variable;
                         if (variable.value == null)
                             fail(`Cannot use the value of uninitialized variable ${token.text}`);
-                        if (type !== undefined)
-                            return [type, this.coerceValue(variable.value, variable.type, type)];
-                        else
-                            return [variable.type, variable.value];
+                        return this.finishEvaluation(variable.value, variable.type, type);
                     }
                 }
                 if (type == "variable" || type == "function")
