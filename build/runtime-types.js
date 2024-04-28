@@ -74,6 +74,9 @@ export class ArrayVariableType extends BaseVariableType {
             crash(`Attempted to initialize array of arrays`);
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
+    static from(node) {
+        return new ArrayVariableType(node.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), PrimitiveVariableType.resolve(node.elementType.text));
+    }
 }
 export class RecordVariableType extends BaseVariableType {
     constructor(name, fields) {

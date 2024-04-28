@@ -10,7 +10,7 @@ which is the preferred representation of the program.
 
 import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode } from "./parser-types.js";
-import { PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
+import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
@@ -79,7 +79,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):UnresolvedVariableType => {
 	if(typeNode instanceof Token){
 		return PrimitiveVariableType.get(typeNode.text) ?? ["unresolved", typeNode.text];
-	} else return typeNode.toData();
+	} else return ArrayVariableType.from(typeNode);
 });
 
 export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode => {

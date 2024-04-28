@@ -1,4 +1,4 @@
-import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
+import { TextRange, TextRanged, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { ClassVariableType, FunctionData, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
@@ -160,7 +160,7 @@ export declare class CaseBranchStatement extends Statement {
 export declare class CaseBranchRangeStatement extends CaseBranchStatement {
     upperBound: Token;
     static blockType: ProgramASTBranchNodeType;
-    static allowedTypes: TokenType[];
+    static allowedTypes: ("number.decimal" | "char")[];
     constructor(tokens: [Token, Token, Token, Token]);
     branchMatches(switchType: VariableType, switchValue: VariableValue): boolean;
 }

@@ -199,7 +199,7 @@ dumpExpressionTreeButton.addEventListener("click", () => {
 			if(char == "\t"){
 				outputText += "  ";
 				linePos ++;
-			} else if(['+','-','*','/'].includes(char)) outputText += `<span style="color:white;font-weight:bold;">${char}</span>`;
+			} else if((['+','-','*','/'] as const).includes(char)) outputText += `<span style="color:white;font-weight:bold;">${char}</span>`;
 			else if(/\d/.test(char)) outputText += `<span style="color:#B5CEA8;">${char}</span>`;
 			else if(dumpExpressionTreeVerbose.checked && ['(',')'].includes(char)){
 				lineParenColor ??= `hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%)`;

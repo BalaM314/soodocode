@@ -3,6 +3,7 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, E
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType): boolean;
+export declare function typesAssignable(base: VariableType | UnresolvedVariableType, ext: VariableType | UnresolvedVariableType): boolean;
 export declare function checkClassMethodsCompatible(base: ClassMethodStatement, derived: ClassMethodStatement & {
     argsRange: TextRange;
     accessModifierToken: Token;
@@ -85,7 +86,7 @@ export declare class Runtime {
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: ExpressionASTNode[]): VariableScope;
     callFunction<T extends boolean>(funcNode: FunctionData, args: ExpressionAST[], requireReturnValue?: T): VariableValue | (T extends false ? null : never);
-    callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): [type: VariableType, value: VariableValue] | (T extends false ? null : never);
+    callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: ExpressionAST[], requireReturnValue?: T): (T extends false ? null : T extends undefined ? [type: VariableType, value: VariableValue] | null : T extends true ? [type: VariableType, value: VariableValue] : never);
     callBuiltinFunction(fn: BuiltinFunctionData, args: ExpressionAST[], returnType?: VariableType): [type: VariableType, value: VariableValue];
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";

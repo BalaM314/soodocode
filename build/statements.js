@@ -92,7 +92,7 @@ let Statement = (() => {
         static blockEndStatement() {
             if (this.category != "block")
                 crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
-            return statements.byType[StatementType(this.type.split(".")[0] + ".end")] ?? crash(`${name} is not a valid statement type`);
+            return statements.byType[StatementType(this.type.split(".")[0] + ".end")];
         }
         example() {
             return this.type.example;
@@ -607,7 +607,7 @@ let CallStatement = (() => {
         run(runtime) {
             const func = runtime.evaluateExpr(this.func.functionName, "function");
             if ("clazz" in func) {
-                runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args);
+                runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
             }
             else {
                 if ("name" in func)

@@ -1,4 +1,3 @@
-import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { crash, f, getTotalRange } from "./utils.js";
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
@@ -83,9 +82,6 @@ export class ExpressionASTArrayTypeNode {
         this.elementType = elementType;
         this.allTokens = allTokens;
         this.range = getTotalRange(allTokens);
-    }
-    toData() {
-        return new ArrayVariableType(this.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), PrimitiveVariableType.resolve(this.elementType.text));
     }
     fmtText() {
         return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;

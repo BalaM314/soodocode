@@ -46,6 +46,15 @@ export function typesEqual(a, b) {
         (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
 }
+export function typesAssignable(base, ext) {
+    return base == ext ||
+        (Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
+        (base instanceof ArrayVariableType && ext instanceof ArrayVariableType && ((base.arraySizes.toString() == ext.arraySizes.toString() && (base.type == ext.type ||
+            Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1])))) ||
+        (base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
+        (base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
+        (base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base));
+}
 export function checkClassMethodsCompatible(base, derived) {
     if (base.accessModifier != derived.accessModifier)
         fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
@@ -122,7 +131,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`, indexes[invalidIndexIndex][0]);
                 const index = indexes.reduce((acc, [_expr, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index + 1]), 0);
                 if (index >= variable.value.length)
-                    crash(`Array index bounds check failed: ${indexes.map(v => v[1])}; ${index} > ${variable.value.length}`);
+                    crash(`Array index bounds check failed: ${indexes.map(v => v[1]).join(", ")}; ${index} > ${variable.value.length}`);
                 if (operation == "get") {
                     const type = arg2;
                     if (type == "variable") {
@@ -707,7 +716,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     if (passMode == "reference") {
                         const varData = this.evaluateExpr(args[i], "variable");
                         if (!typesEqual(varData.type, rType))
-                            fail(f.quote `Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type.`);
+                            fail(f.quote `Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type or change the pass mode to BYVAL.`, args[i]);
                         scope.variables[name] = {
                             declaration: func,
                             mutable: true,
@@ -745,8 +754,10 @@ help: try using DIV instead of / to produce an integer as the result`);
             }
             callClassMethod(method, clazz, instance, args, requireReturnValue) {
                 const func = method.controlStatements[0];
-                if (func instanceof ClassProcedureStatement && requireReturnValue)
+                if (func instanceof ClassProcedureStatement && requireReturnValue === true)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+                if (func instanceof ClassFunctionStatement && requireReturnValue === false)
+                    fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
                 const classScope = instance.type.getScope(this, instance);
                 const methodScope = this.assembleScope(func, args);
                 const previousClassData = this.classData;
@@ -757,7 +768,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return null;
                 }
                 else {
-                    return output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote `Function ${func.name} did not return a value`);
+                    return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote `Function ${func.name} did not return a value`));
                 }
             }
             callBuiltinFunction(fn, args, returnType) {

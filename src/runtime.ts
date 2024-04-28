@@ -28,6 +28,23 @@ export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableTy
 	;
 }
 
+
+export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:VariableType | UnresolvedVariableType):boolean {
+	return base == ext ||
+		(Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
+		(base instanceof ArrayVariableType && ext instanceof ArrayVariableType && (
+			(base.arraySizes.toString() == ext.arraySizes.toString() && (
+				base.type == ext.type ||
+				Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]
+			))
+			//TODO handle the any array size here
+		)) ||
+		(base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
+		(base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
+		(base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base))
+	;
+}
+
 export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:ClassMethodStatement & {argsRange:TextRange; accessModifierToken:Token; methodKeywordToken:Token;}){ //eslint broke
 
 	if(base.accessModifier != derived.accessModifier)
@@ -134,7 +151,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		const index = indexes.reduce((acc, [_expr, value], index) =>
 			(acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index + 1]),
 		0);
-		if(index >= variable.value.length) crash(`Array index bounds check failed: ${indexes.map(v => v[1])}; ${index} > ${variable.value.length}`);
+		if(index >= variable.value.length) crash(`Array index bounds check failed: ${indexes.map(v => v[1]).join(", ")}; ${index} > ${variable.value.length}`);
 		if(operation == "get"){
 			const type = arg2 as VariableType | "variable";
 			if(type == "variable"){
@@ -241,8 +258,8 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					const [clazz, method] = objType.allMethods[property]
 						? (classType.allMethods[property] ?? crash(`Inherited method not present`)) //Use the instance's type to get the method implementation
 						: classType.allMethods[property]
-							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
-							//If it doesn't exist on the variable type but does exist on the instance type, long error message
+							? fail(f.quote //If it doesn't exist on the variable type but does exist on the instance type, long error message
+							// eslint-disable-next-line no-unexpected-multiline
 `Method ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the method, \
 but the type of the variable is ${objType.fmtPlain()}.
@@ -647,8 +664,8 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(from.is("INTEGER") && to.is("REAL")) return value as never;
 		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as never) as never;
 		if(to.is("STRING")){
-			if(from.is("BOOLEAN")) return value.toString().toUpperCase() as never;
-			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE")) return value.toString() as never;
+			if(from.is("BOOLEAN")) return (value as boolean).toString().toUpperCase() as never;
+			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE")) return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
 			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 		}
 		if(from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to)) return value as never;
@@ -686,7 +703,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			const rType = this.resolveVariableType(type);
 			if(passMode == "reference"){
 				const varData = this.evaluateExpr(args[i], "variable");
-				if(!typesEqual(varData.type, rType)) fail(f.quote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type.`);
+				if(!typesEqual(varData.type, rType)) fail(f.quote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type or change the pass mode to BYVAL.`, args[i]);
 				scope.variables[name] = {
 					declaration: func,
 					mutable: true,
@@ -721,10 +738,17 @@ help: try using DIV instead of / to produce an integer as the result`
 			return output.value;
 		}
 	}
-	callClassMethod<T extends boolean>(method:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):[type:VariableType, value:VariableValue] | (T extends false ? null : never) {
+	callClassMethod<T extends boolean>(method:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):(
+		T extends false ? null :
+		T extends undefined ? [type:VariableType, value:VariableValue] | null :
+		T extends true ? [type:VariableType, value:VariableValue] :
+		never
+	) {
 		const func = method.controlStatements[0];
-		if(func instanceof ClassProcedureStatement && requireReturnValue)
+		if(func instanceof ClassProcedureStatement && requireReturnValue === true)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+		if(func instanceof ClassFunctionStatement && requireReturnValue === false)
+			fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
 
 		const classScope = instance.type.getScope(this, instance);
 		const methodScope = this.assembleScope(func, args);
@@ -736,7 +760,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			//requireReturnValue satisfies false;
 			return null!;
 		} else { //must be functionstatement
-			return output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`);
+			return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`)) as never;
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {

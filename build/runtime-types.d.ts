@@ -1,4 +1,4 @@
-import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -43,6 +43,7 @@ export declare class ArrayVariableType extends BaseVariableType {
     fmtText(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;
+    static from(node: ExpressionASTArrayTypeNode): ArrayVariableType;
 }
 export declare class RecordVariableType extends BaseVariableType {
     name: string;

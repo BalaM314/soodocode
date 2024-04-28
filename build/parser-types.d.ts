@@ -1,5 +1,4 @@
 import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { ArrayVariableType } from "./runtime-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable } from "./types.js";
 export type ExpressionAST = ExpressionASTNode;
@@ -52,7 +51,6 @@ export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormatta
     allTokens: Token[];
     range: TextRange;
     constructor(lengthInformation: [low: Token, high: Token][], elementType: Token, allTokens: Token[]);
-    toData(): ArrayVariableType;
     fmtText(): string;
     fmtDebug(): string;
 }

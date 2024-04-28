@@ -95,7 +95,7 @@ export class Statement implements TextRanged, IFormattable {
 		TOut extends typeof Statement | Function = typeof Statement
 	>():typeof Statement extends TOut ? TOut : unknown { //hack
 		if(this.category != "block") crash(`Statement ${this.type} has no block end statement because it is not a block statement`);
-		return statements.byType[StatementType(this.type.split(".")[0] + ".end")] as never ?? crash(`${name} is not a valid statement type`);
+		return statements.byType[StatementType(this.type.split(".")[0] + ".end")] as never;
 	}
 	example(){
 		return this.type.example;
@@ -430,7 +430,7 @@ export class CallStatement extends Statement {
 		const func = runtime.evaluateExpr(this.func.functionName, "function");
 		if("clazz" in func){
 			//Class method
-			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
+			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`);
 			if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
@@ -520,7 +520,7 @@ export class CaseBranchStatement extends Statement {
 export class CaseBranchRangeStatement extends CaseBranchStatement {
 	upperBound:Token;
 	static blockType:ProgramASTBranchNodeType = "switch";
-	static allowedTypes:TokenType[] = ["number.decimal", "char"];
+	static allowedTypes = ["number.decimal", "char"] satisfies TokenType[];
 	constructor(tokens:[Token, Token, Token, Token]){
 		super(tokens as never);
 		if(!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))

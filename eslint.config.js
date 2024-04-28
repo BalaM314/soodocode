@@ -39,6 +39,7 @@ export default tseslint.config(
 			"@typescript-eslint/no-unused-vars": "off",
 			"@typescript-eslint/unbound-method": "off",
 			"@typescript-eslint/no-explicit-any": "off",
+			"@typescript-eslint/no-redundant-type-constituents": "off",
 			"@typescript-eslint/ban-types": [
 				"error",
 				{

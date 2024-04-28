@@ -112,12 +112,6 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	){
 		this.range = getTotalRange(allTokens);
 	}
-	toData():ArrayVariableType { //TODO make this from instead
-		return new ArrayVariableType(
-			this.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
-			PrimitiveVariableType.resolve(this.elementType.text)
-		);
-	}
 	fmtText():string {
 		return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;
 	}

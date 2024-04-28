@@ -1,6 +1,6 @@
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
-import { PrimitiveVariableType } from "./runtime-types.js";
+import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
 import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
@@ -60,7 +60,7 @@ export const processTypeData = errorBoundary()((typeNode) => {
         return PrimitiveVariableType.get(typeNode.text) ?? ["unresolved", typeNode.text];
     }
     else
-        return typeNode.toData();
+        return ArrayVariableType.from(typeNode);
 });
 export const parseType = errorBoundary()((tokens) => {
     if (tokens.length == 1) {

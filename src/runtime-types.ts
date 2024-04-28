@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
-import type { ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -126,6 +126,12 @@ export class ArrayVariableType extends BaseVariableType {
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
 		return Array.from({length: this.totalLength}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
+	}
+	static from(node:ExpressionASTArrayTypeNode){
+		return new ArrayVariableType(
+			node.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
+			PrimitiveVariableType.resolve(node.elementType.text)
+		);
 	}
 }
 export class RecordVariableType extends BaseVariableType {
