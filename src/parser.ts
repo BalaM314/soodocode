@@ -91,9 +91,13 @@ export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode 
 	//Array type
 	if(!(
 		tokens[0]?.type == "keyword.array" &&
-		tokens[1]?.type == "bracket.open" &&
 		tokens.at(-2)?.type == "keyword.of" &&
 		tokens.at(-1)?.type == "name"
+	)) fail(f.quote`Cannot parse type from ${tokens}`);
+	if(tokens.length == 3) return new ExpressionASTArrayTypeNode(null, tokens.at(-1)!, tokens);
+	if(!(
+		tokens[1]?.type == "bracket.open" &&
+		tokens.at(-3)?.type == "bracket.close"
 	)) fail(f.quote`Cannot parse type from ${tokens}`);
 	return new ExpressionASTArrayTypeNode(
 		splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({group, splitter}) => {

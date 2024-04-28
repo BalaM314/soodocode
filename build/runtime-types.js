@@ -55,27 +55,35 @@ export class ArrayVariableType extends BaseVariableType {
         super();
         this.lengthInformation = lengthInformation;
         this.type = type;
-        if (this.lengthInformation.some(b => b[1] < b[0]))
-            fail(`Invalid length information: upper bound cannot be less than lower bound`);
-        if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
-            fail(`Invalid length information: bound was not an integer`);
-        this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
-        this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+        this.totalLength = null;
+        this.arraySizes = null;
+        if (this.lengthInformation) {
+            if (this.lengthInformation.some(b => b[1] < b[0]))
+                fail(`Invalid length information: upper bound cannot be less than lower bound`);
+            if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
+                fail(`Invalid length information: bound was not an integer`);
+            this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
+            this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+        }
     }
     fmtText() {
-        return f.text `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
+        return f.text `ARRAY${rangeText} OF ${this.type}`;
     }
     fmtDebug() {
-        return f.debug `ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
+        return f.debug `ARRAY${rangeText} OF ${this.type}`;
     }
     getInitValue(runtime, requireInit) {
         const type = runtime.resolveVariableType(this.type);
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
+        if (!this.lengthInformation)
+            fail(f.quote `${this} is not a valid variable type: length must be specified here`);
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
     static from(node) {
-        return new ArrayVariableType(node.lengthInformation.map(bounds => bounds.map(t => Number(t.text))), PrimitiveVariableType.resolve(node.elementType.text));
+        return new ArrayVariableType(node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text))) ?? null, PrimitiveVariableType.resolve(node.elementType.text));
     }
 }
 export class RecordVariableType extends BaseVariableType {

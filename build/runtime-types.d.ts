@@ -35,11 +35,11 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
 export declare class ArrayVariableType extends BaseVariableType {
-    lengthInformation: [low: number, high: number][];
+    lengthInformation: [low: number, high: number][] | null;
     type: Exclude<UnresolvedVariableType, ArrayVariableType>;
-    totalLength: number;
-    arraySizes: number[];
-    constructor(lengthInformation: [low: number, high: number][], type: Exclude<UnresolvedVariableType, ArrayVariableType>);
+    totalLength: number | null;
+    arraySizes: number[] | null;
+    constructor(lengthInformation: [low: number, high: number][] | null, type: Exclude<UnresolvedVariableType, ArrayVariableType>);
     fmtText(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;

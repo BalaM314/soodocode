@@ -19,7 +19,7 @@ import { SoodocodeError, crash, errorBoundary, f, fail, impossible, zip } from "
 export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType):boolean {
 	return a == b ||
 		(Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
-		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (
+		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (
 			a.type == b.type ||
 			Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1]
 		)) ||
@@ -33,11 +33,13 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	return base == ext ||
 		(Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
 		(base instanceof ArrayVariableType && ext instanceof ArrayVariableType && (
-			(base.arraySizes.toString() == ext.arraySizes.toString() && (
+			base.arraySizes == null ||
+			base.arraySizes.toString() == ext.arraySizes?.toString()
+		) && (
+			(
 				base.type == ext.type ||
 				Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]
-			))
-			//TODO handle the any array size here
+			)
 		)) ||
 		(base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
 		(base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
@@ -129,10 +131,12 @@ export class Runtime {
 		if(arg2 instanceof ArrayVariableType)
 			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
 
-		if(expr.indices.length != variable.type.lengthInformation.length)
+		if(!varTypeData.lengthInformation) crash(`Cannot access elements in an array of unknown length`);
+
+		if(expr.indices.length != varTypeData.lengthInformation.length)
 			fail(
 `Cannot evaluate expression starting with "array access": \
-${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
+${varTypeData.lengthInformation.length}-dimensional array requires ${varTypeData.lengthInformation.length} indices, \
 but found ${expr.indices.length} indices`,
 				expr.indices
 			);
@@ -140,8 +144,8 @@ but found ${expr.indices.length} indices`,
 		let invalidIndexIndex;
 		if(
 			(invalidIndexIndex = indexes.findIndex(([_expr, value], index) =>
-				value > varTypeData.lengthInformation[index][1] ||
-				value < varTypeData.lengthInformation[index][0])
+				value > varTypeData.lengthInformation![index][1] ||
+				value < varTypeData.lengthInformation![index][0])
 			) != -1
 		) fail(
 `Array index out of bounds: \
@@ -149,7 +153,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 (${varTypeData.lengthInformation[invalidIndexIndex].join(" to ")})`,
 			indexes[invalidIndexIndex][0]);
 		const index = indexes.reduce((acc, [_expr, value], index) =>
-			(acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index + 1]),
+			(acc + value - varTypeData.lengthInformation![index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes![index + 1]),
 		0);
 		if(index >= variable.value.length) crash(`Array index bounds check failed: ${indexes.map(v => v[1]).join(", ")}; ${index} > ${variable.value.length}`);
 		if(operation == "get"){
@@ -659,7 +663,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	}
 	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S):VariableTypeMapping<S> {
 		//typescript really hates this function, beware
-		if(typesEqual(from, to)) return value as never;
+		if(typesAssignable(to, from)) return value as never;
 		if(from.is("STRING") && to.is("CHAR")) return value as never;
 		if(from.is("INTEGER") && to.is("REAL")) return value as never;
 		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as never) as never;
@@ -668,7 +672,6 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE")) return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
 			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 		}
-		if(from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to)) return value as never;
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}`);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
@@ -712,11 +715,12 @@ help: try using DIV instead of / to produce an integer as the result`
 					set value(value){ varData.value = value; }
 				};
 			} else {
-				const value = this.evaluateExpr(args[i], rType)[1];
+				const [type, value] = this.evaluateExpr(args[i], rType);
+				if(type instanceof ArrayVariableType && !type.lengthInformation) crash(f.quote`evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
 				scope.variables[name] = {
 					declaration: func,
 					mutable: true,
-					type: rType,
+					type,
 					value: this.cloneValue(rType, value)
 				};
 			}

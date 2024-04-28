@@ -41,7 +41,7 @@ import { SoodocodeError, crash, errorBoundary, f, fail, impossible, zip } from "
 export function typesEqual(a, b) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
-        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes.toString() == b.arraySizes.toString() && (a.type == b.type ||
+        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.type == b.type ||
             Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1])) ||
         (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
@@ -49,8 +49,9 @@ export function typesEqual(a, b) {
 export function typesAssignable(base, ext) {
     return base == ext ||
         (Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
-        (base instanceof ArrayVariableType && ext instanceof ArrayVariableType && ((base.arraySizes.toString() == ext.arraySizes.toString() && (base.type == ext.type ||
-            Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1])))) ||
+        (base instanceof ArrayVariableType && ext instanceof ArrayVariableType && (base.arraySizes == null ||
+            base.arraySizes.toString() == ext.arraySizes?.toString()) && ((base.type == ext.type ||
+            Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]))) ||
         (base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
         (base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
         (base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base));
@@ -118,9 +119,11 @@ let Runtime = (() => {
                 const varTypeData = variable.type;
                 if (arg2 instanceof ArrayVariableType)
                     fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
-                if (expr.indices.length != variable.type.lengthInformation.length)
+                if (!varTypeData.lengthInformation)
+                    crash(`Cannot access elements in an array of unknown length`);
+                if (expr.indices.length != varTypeData.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
-${variable.type.lengthInformation.length}-dimensional array requires ${variable.type.lengthInformation.length} indices, \
+${varTypeData.lengthInformation.length}-dimensional array requires ${varTypeData.lengthInformation.length} indices, \
 but found ${expr.indices.length} indices`, expr.indices);
                 const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER)[1]]);
                 let invalidIndexIndex;
@@ -657,7 +660,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
             }
             coerceValue(value, from, to) {
-                if (typesEqual(from, to))
+                if (typesAssignable(to, from))
                     return value;
                 if (from.is("STRING") && to.is("CHAR"))
                     return value;
@@ -673,8 +676,6 @@ help: try using DIV instead of / to produce an integer as the result`);
                     if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;
                 }
-                if (from instanceof ClassVariableType && to instanceof ClassVariableType && from.inherits(to))
-                    return value;
                 fail(f.quote `Cannot coerce value of type ${from} to ${to}`);
             }
             cloneValue(type, value) {
@@ -726,11 +727,13 @@ help: try using DIV instead of / to produce an integer as the result`);
                         };
                     }
                     else {
-                        const value = this.evaluateExpr(args[i], rType)[1];
+                        const [type, value] = this.evaluateExpr(args[i], rType);
+                        if (type instanceof ArrayVariableType && !type.lengthInformation)
+                            crash(f.quote `evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
                         scope.variables[name] = {
                             declaration: func,
                             mutable: true,
-                            type: rType,
+                            type,
                             value: this.cloneValue(rType, value)
                         };
                     }

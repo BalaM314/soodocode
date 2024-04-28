@@ -104,32 +104,37 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType extends BaseVariableType {
-	totalLength:number;
-	arraySizes:number[];
+	totalLength:number | null = null;
+	arraySizes:number[] | null = null;
 	constructor(
-		public lengthInformation: [low:number, high:number][],
+		public lengthInformation: [low:number, high:number][] | null,
 		public type: Exclude<UnresolvedVariableType, ArrayVariableType>,
 	){
 		super();
-		if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
-		if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
-		this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
-		this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+		if(this.lengthInformation){
+			if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
+			if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
+			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
+			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+		}
 	}
 	fmtText(){
-		return f.text`ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
+		return f.text`ARRAY${rangeText} OF ${this.type}`;
 	}
 	fmtDebug(){
-		return f.debug`ARRAY[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}] OF ${this.type}`;
+		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
+		return f.debug`ARRAY${rangeText} OF ${this.type}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		return Array.from({length: this.totalLength}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
+		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`);
+		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType(
-			node.lengthInformation.map(bounds => bounds.map(t => Number(t.text)) as [number, number]),
+			node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text)) as [number, number]) ?? null,
 			PrimitiveVariableType.resolve(node.elementType.text)
 		);
 	}

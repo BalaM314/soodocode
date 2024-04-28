@@ -9,7 +9,7 @@ import "jasmine";
 import { symbolize, tokenize } from "../../build/lexer.js";
 import { parse } from "../../build/parser.js";
 import { Runtime } from "../../build/runtime.js";
-import { SoodocodeError, fail, forceType } from "../../build/utils.js";
+import { SoodocodeError, crash, fail, forceType } from "../../build/utils.js";
 
 type ErrorData = string;
 
@@ -44,7 +44,7 @@ ENDIF`,
 call_array_type_in_function: [
 `FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
 	RETURN LENGTH(x)
-ENDIF
+ENDFUNCTION
 DECLARE x: ARRAY[1:10] OF INTEGER
 x[1] <- 5
 OUTPUT amogus(x)`,
@@ -744,8 +744,7 @@ describe("soodocode", () => {
 					runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
 					fail(`Execution did not throw an error`);
 				} catch(e){ err = e; }
-				expect(err).toBeInstanceOf(SoodocodeError);
-				forceType<SoodocodeError>(err);
+				if(!(err instanceof SoodocodeError)) throw err;
 				expect(err.message).toContain(expectedOutput);
 			}
 		});

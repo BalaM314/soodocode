@@ -3248,14 +3248,17 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 		"keyword.array",
 		"keyword.of",
 		"INTEGER",
-	], "error"],
+	],[
+		null,
+		"INTEGER"
+	]],
 	noTypeInfo_udt: [[
 		"keyword.array",
 		"keyword.of",
 		"udt",
 	],[
 		null,
-		"INTEGER"
+		"udt"
 	]],
 	arrayButWithBraces: [[
 		"keyword.array",

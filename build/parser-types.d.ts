@@ -46,11 +46,11 @@ export declare class ExpressionASTArrayAccessNode implements TextRanged, IFormat
     fmtDebug(): string;
 }
 export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
-    lengthInformation: [low: Token, high: Token][];
+    lengthInformation: [low: Token, high: Token][] | null;
     elementType: Token;
     allTokens: Token[];
     range: TextRange;
-    constructor(lengthInformation: [low: Token, high: Token][], elementType: Token, allTokens: Token[]);
+    constructor(lengthInformation: [low: Token, high: Token][] | null, elementType: Token, allTokens: Token[]);
     fmtText(): string;
     fmtDebug(): string;
 }

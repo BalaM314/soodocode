@@ -84,10 +84,12 @@ export class ExpressionASTArrayTypeNode {
         this.range = getTotalRange(allTokens);
     }
     fmtText() {
-        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}] OF ${this.elementType.text}`;
+        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}]` : "";
+        return `ARRAY OF ${this.elementType.text}`;
     }
     fmtDebug() {
-        return `ARRAY[${this.lengthInformation.map(([l, h]) => `${l.fmtDebug()} : ${h.fmtDebug()}`).join(", ")}] OF ${this.elementType.fmtDebug()}`;
+        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l.fmtDebug()} : ${h.fmtDebug()}`).join(", ")}]` : "";
+        return `ARRAY${rangeText} OF ${this.elementType.fmtDebug()}`;
     }
 }
 export class Operator {

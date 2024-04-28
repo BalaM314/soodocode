@@ -20,7 +20,7 @@ export type _ExpressionASTBranchNode = [
 	nodes: _ExpressionASTNode[],
 ];
 export type _ExpressionASTOperatorBranchNode = _ExpressionASTBranchNode & [unknown, _Operator, _ExpressionASTNode[]];
-export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][], type:_Token];
+export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][] | null, type:_Token];
 export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
 
 export type _VariableType = Exclude<VariableType, PrimitiveVariableType> | PrimitiveVariableTypeName;
@@ -102,7 +102,7 @@ export function process_Token(input:_Token):Token {
 
 
 export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
-	return Array.isArray(input) && Array.isArray(input[0]);
+	return Array.isArray(input) && (input[0] === null || Array.isArray(input[0]));
 }
 
 export function process_Statement(input:_Statement):Statement {
@@ -112,7 +112,7 @@ export function process_Statement(input:_Statement):Statement {
 
 export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
 	return new ExpressionASTArrayTypeNode(
-		input[0].map(bounds => bounds.map(b => token("number.decimal", b.toString()))),
+		input[0]?.map(bounds => bounds.map(b => token("number.decimal", b.toString()))) ?? null,
 		process_Token(input[1]),
 		[process_Token(input[1])] //SPECNULL
 	);
