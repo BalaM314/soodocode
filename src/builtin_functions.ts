@@ -6,13 +6,13 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import { BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableValue } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableValue } from "./runtime-types.js";
 import type { Runtime } from "./runtime.js";
 import { fail, f } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
-	args: [name:string, type:PrimitiveVariableTypeName | PrimitiveVariableTypeName[]][];
+	args: [name:string, type:PrimitiveVariableTypeName | PrimitiveVariableTypeName[] | [PrimitiveVariableTypeName | "ANY"][]][];
 	returnType: PrimitiveVariableTypeName;
 	impl(this:Runtime, ...args:VariableValue[]):VariableValue;
 };
@@ -22,7 +22,11 @@ export const builtinFunctions = (
 			[name, {
 				args: new Map(data.args.map(a => [a[0], {
 					passMode: "reference",
-					type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t => PrimitiveVariableType.get(t))
+					type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t =>
+						Array.isArray(t)
+							? new ArrayVariableType(null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]))
+							: PrimitiveVariableType.get(t)
+					)
 				}])),
 				name,
 				impl: data.impl,
@@ -74,7 +78,7 @@ export const builtinFunctions = (
 	//source: spec 5.5
 	LENGTH: {
 		args: [
-			["ThisString", "STRING"],
+			["ThisString", [["ANY"]]],
 		],
 		returnType: "INTEGER",
 		impl(str:string){

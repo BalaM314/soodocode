@@ -108,7 +108,7 @@ export class ArrayVariableType extends BaseVariableType {
 	arraySizes:number[] | null = null;
 	constructor(
 		public lengthInformation: [low:number, high:number][] | null,
-		public type: Exclude<UnresolvedVariableType, ArrayVariableType>,
+		public type: Exclude<UnresolvedVariableType, ArrayVariableType> | null,
 	){
 		super();
 		if(this.lengthInformation){
@@ -120,16 +120,17 @@ export class ArrayVariableType extends BaseVariableType {
 	}
 	fmtText(){
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
-		return f.text`ARRAY${rangeText} OF ${this.type}`;
+		return f.text`ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
 	}
 	fmtDebug(){
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
-		return f.debug`ARRAY${rangeText} OF ${this.type}`;
+		return f.debug`ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
+		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`);
+		if(!this.type) fail(f.quote`${this} is not a valid variable type: element type must be specified here`);
 		const type = runtime.resolveVariableType(this.type);
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`);
 		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 	static from(node:ExpressionASTArrayTypeNode){

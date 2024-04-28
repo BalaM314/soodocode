@@ -50,7 +50,7 @@ export const statements = {
 
 export type PassMode = "value" | "reference";
 export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:PassMode}>;
-export type BuiltinFunctionArguments = Map<string, {type:PrimitiveVariableType[], passMode:PassMode}>;
+export type BuiltinFunctionArguments = Map<string, {type:VariableType[], passMode:PassMode}>;
 export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:PassMode}];
 export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:PassMode | null}];
 

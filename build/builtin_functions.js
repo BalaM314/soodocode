@@ -1,9 +1,11 @@
-import { PrimitiveVariableType } from "./runtime-types.js";
+import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { fail, f } from "./utils.js";
 export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
         args: new Map(data.args.map(a => [a[0], {
                 passMode: "reference",
-                type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t => PrimitiveVariableType.get(t))
+                type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t => Array.isArray(t)
+                    ? new ArrayVariableType(null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]))
+                    : PrimitiveVariableType.get(t))
             }])),
         name,
         impl: data.impl,
@@ -56,7 +58,7 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
     },
     LENGTH: {
         args: [
-            ["ThisString", "STRING"],
+            ["ThisString", [["ANY"]]],
         ],
         returnType: "INTEGER",
         impl(str) {

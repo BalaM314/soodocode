@@ -36,10 +36,10 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
 }
 export declare class ArrayVariableType extends BaseVariableType {
     lengthInformation: [low: number, high: number][] | null;
-    type: Exclude<UnresolvedVariableType, ArrayVariableType>;
+    type: Exclude<UnresolvedVariableType, ArrayVariableType> | null;
     totalLength: number | null;
     arraySizes: number[] | null;
-    constructor(lengthInformation: [low: number, high: number][] | null, type: Exclude<UnresolvedVariableType, ArrayVariableType>);
+    constructor(lengthInformation: [low: number, high: number][] | null, type: Exclude<UnresolvedVariableType, ArrayVariableType> | null);
     fmtText(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;

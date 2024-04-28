@@ -18,7 +18,7 @@ export type FunctionArguments = Map<string, {
     passMode: PassMode;
 }>;
 export type BuiltinFunctionArguments = Map<string, {
-    type: PrimitiveVariableType[];
+    type: VariableType[];
     passMode: PassMode;
 }>;
 export type FunctionArgumentData = [name: string, {

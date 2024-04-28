@@ -37,6 +37,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 			base.arraySizes.toString() == ext.arraySizes?.toString()
 		) && (
 			(
+				base.type == null ||
 				base.type == ext.type ||
 				Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]
 			)
@@ -114,7 +115,9 @@ export class Runtime {
 		public _output: (message:string) => void,
 	){}
 	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):[type:VariableType, value:VariableValue] {
-		if(to) return [to, this.coerceValue(value, from, to)];
+		if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.type))
+			return [from, this.coerceValue(value, from, to)]; //don't have a varlength array as the output type
+		else if(to) return [to, this.coerceValue(value, from, to)];
 		else return [from, value];
 	}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
@@ -129,13 +132,14 @@ export class Runtime {
 		if(!(_variable.type instanceof ArrayVariableType)) fail(f.quote`Cannot convert variable of type ${_variable.type} to an array`, expr.target);
 		const variable = _variable as VariableData<ArrayVariableType, never>;
 		const varTypeData = variable.type;
+		if(!varTypeData.lengthInformation) crash(`Cannot access elements in an array of unknown length`);
+		if(!varTypeData.type) crash(`Cannot access elements in an array of unknown type`);
 
 		//TODO is there any way of getting a 1D array out of a 2D array?
 		//Forbids getting any arrays from arrays
 		if(arg2 instanceof ArrayVariableType)
 			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
 
-		if(!varTypeData.lengthInformation) crash(`Cannot access elements in an array of unknown length`);
 
 		if(expr.indices.length != varTypeData.lengthInformation.length)
 			fail(
@@ -674,7 +678,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(typeof value == "boolean") return value;
 		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
 		if(Array.isArray(value)) return value.slice().map(v =>
-			this.cloneValue(this.resolveVariableType((type as ArrayVariableType).type), v)
+			this.cloneValue(this.resolveVariableType((type as ArrayVariableType).type ?? crash(`Cannot clone value in an array of unknown type`)), v)
 		) as VariableTypeMapping<T>;
 		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)

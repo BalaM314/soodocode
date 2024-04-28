@@ -50,7 +50,8 @@ export function typesAssignable(base, ext) {
     return base == ext ||
         (Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
         (base instanceof ArrayVariableType && ext instanceof ArrayVariableType && (base.arraySizes == null ||
-            base.arraySizes.toString() == ext.arraySizes?.toString()) && ((base.type == ext.type ||
+            base.arraySizes.toString() == ext.arraySizes?.toString()) && ((base.type == null ||
+            base.type == ext.type ||
             Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]))) ||
         (base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
         (base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
@@ -112,7 +113,9 @@ let Runtime = (() => {
                 this.fs = new Files();
             }
             finishEvaluation(value, from, to) {
-                if (to)
+                if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.type))
+                    return [from, this.coerceValue(value, from, to)];
+                else if (to)
                     return [to, this.coerceValue(value, from, to)];
                 else
                     return [from, value];
@@ -123,10 +126,12 @@ let Runtime = (() => {
                     fail(f.quote `Cannot convert variable of type ${_variable.type} to an array`, expr.target);
                 const variable = _variable;
                 const varTypeData = variable.type;
-                if (arg2 instanceof ArrayVariableType)
-                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
                 if (!varTypeData.lengthInformation)
                     crash(`Cannot access elements in an array of unknown length`);
+                if (!varTypeData.type)
+                    crash(`Cannot access elements in an array of unknown type`);
+                if (arg2 instanceof ArrayVariableType)
+                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
                 if (expr.indices.length != varTypeData.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
 ${varTypeData.lengthInformation.length}-dimensional array requires ${varTypeData.lengthInformation.length} indices, \
@@ -663,7 +668,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (value instanceof Date)
                     return new Date(value);
                 if (Array.isArray(value))
-                    return value.slice().map(v => this.cloneValue(this.resolveVariableType(type.type), v));
+                    return value.slice().map(v => this.cloneValue(this.resolveVariableType(type.type ?? crash(`Cannot clone value in an array of unknown type`)), v));
                 if (type instanceof PointerVariableType)
                     return value;
                 if (type instanceof RecordVariableType)
