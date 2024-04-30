@@ -9,10 +9,11 @@ which is the preferred representation of the program.
 
 
 import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
+import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, findLastNotInGroup, forceType, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -339,8 +340,9 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 });
 
 function getMessage(expected:TokenMatcher, found:Token){
-	//TODO caps check
-	//TODO biased levenshtein
+	if(isKey(tokenTextMapping, expected) && tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
+		return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`;
+
 	return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
 }
 

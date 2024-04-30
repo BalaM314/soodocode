@@ -11,6 +11,7 @@ export class PrimitiveVariableType extends BaseVariableType {
     constructor(name) {
         super();
         this.name = name;
+        PrimitiveVariableType.all.push(this);
     }
     fmtDebug() {
         return `PrimitiveVariableType ${this.name}`;
@@ -44,6 +45,7 @@ export class PrimitiveVariableType extends BaseVariableType {
             return null;
     }
 }
+PrimitiveVariableType.all = [];
 PrimitiveVariableType.INTEGER = new PrimitiveVariableType("INTEGER");
 PrimitiveVariableType.REAL = new PrimitiveVariableType("REAL");
 PrimitiveVariableType.STRING = new PrimitiveVariableType("STRING");

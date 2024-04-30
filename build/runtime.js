@@ -37,7 +37,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, crash, errorBoundary, f, fail, impossible, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, zip } from "./utils.js";
 export function typesEqual(a, b) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
@@ -567,10 +567,18 @@ help: try using DIV instead of / to produce an integer as the result`);
                     return this.getType(type[1]) ?? this.handleNonexistentType(type[1]);
             }
             handleNonexistentType(name) {
+                const allTypes = [
+                    ...this.scopes.flatMap(s => Object.entries(s.types)),
+                    ...PrimitiveVariableType.all.map(t => [t.name, t])
+                ];
                 if (PrimitiveVariableType.get(name.toUpperCase()))
                     fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`);
-                else
-                    fail(f.quote `Type ${name} does not exist`);
+                let found;
+                if ((found =
+                    min(allTypes, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
+                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`);
+                }
+                fail(f.quote `Type ${name} does not exist`);
             }
             getVariable(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {

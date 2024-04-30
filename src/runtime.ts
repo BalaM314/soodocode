@@ -7,11 +7,11 @@ This file contains the runtime, which executes the program AST.
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { TextRange, Token } from "./lexer-types.js";
+import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, crash, errorBoundary, f, fail, impossible, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, zip } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -588,10 +588,20 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(type instanceof PrimitiveVariableType || type instanceof ArrayVariableType) return type;
 		else return this.getType(type[1]) ?? this.handleNonexistentType(type[1]);
 	}
-	handleNonexistentType(name:string):never {
+	handleNonexistentType(name:string, range:TextRangeLike):never {
+		const allTypes:(readonly [string, VariableType])[] = [
+			...this.scopes.flatMap(s => Object.entries(s.types)),
+			...PrimitiveVariableType.all.map(t => [t.name, t] as const)
+		];
 		if(PrimitiveVariableType.get(name.toUpperCase()))
-			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`);
-		else fail(f.quote`Type ${name} does not exist`); //TODO range
+			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
+		let found;
+		if((found =
+			min(allTypes, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)
+		) != undefined){
+			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
+		}
+		fail(f.quote`Type ${name} does not exist`, range);
 	}
 	/** Returned variable may not be initialized */
 	getVariable(name:string):VariableData | ConstantData | null {

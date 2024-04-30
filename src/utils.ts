@@ -327,3 +327,46 @@ export function access<TVal, TNull>(record:Record<PropertyKey, TVal>, key:Proper
 	return record[key] ?? fallback;
 }
 
+export function min<T>(input:T[], predicate:(arg:T) => number, threshold = Infinity):T | null {
+	let min = threshold;
+	let minItem:T | null = null;
+	for(const item of input){
+		const score = predicate(item);
+		if(score < min){
+			min = score;
+			minItem = item;
+		}
+	}
+	return minItem;
+}
+
+export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):number | null {
+	//case insensitive
+	a = a.toLowerCase();
+	b = b.toLowerCase();
+
+	const length = (a.length + 1) * (b.length + 1);
+	if(length > maxLengthProduct) return null; //fail safe to prevent allocating a huge array due to user input
+	const matrix = new Uint8Array(length);
+
+	let ij = 0;
+	for(let i = 0; i <= a.length; i ++){
+		for(let j = 0; j <= b.length; j ++, ij ++){
+			matrix[ij] =
+				(i == 0) ? j : (j == 0) ? i : //edges of matrix simply count up in order
+				Math.min(
+					//Pick the lowest of the three options (add to a, add to b, substitute)
+					(matrix[(i - 1) * (b.length + 1) + j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1)),
+					matrix[(i - 1) * (b.length + 1) + j] + 1,
+					matrix[i * (b.length + 1) + j - 1] + 1,
+				);
+		}
+	}
+
+	const out = matrix.at(-1)!; //bottom right corner of matrix
+	//apply weighting
+	if(b.startsWith(a) || a.startsWith(b)) return out * 0.3;
+	if(b.includes(a) || a.includes(b)) return out * 0.6;
+	return out;
+}
+

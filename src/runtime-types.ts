@@ -60,6 +60,8 @@ export type PrimitiveVariableTypeName =
 ;
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
 export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
+	static all:PrimitiveVariableType[] = [];
+
 	static INTEGER = new PrimitiveVariableType("INTEGER");
 	static REAL = new PrimitiveVariableType("REAL");
 	static STRING = new PrimitiveVariableType("STRING");
@@ -69,7 +71,10 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 
 	private constructor(
 		public name: T,
-	){super();}
+	){
+		super();
+		PrimitiveVariableType.all.push(this);
+	}
 	fmtDebug(){
 		return `PrimitiveVariableType ${this.name}`;
 	}

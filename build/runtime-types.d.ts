@@ -18,6 +18,7 @@ export type PrimitiveVariableTypeName = "INTEGER" | "REAL" | "STRING" | "CHAR" |
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
 export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
     name: T;
+    static all: PrimitiveVariableType[];
     static INTEGER: PrimitiveVariableType<"INTEGER">;
     static REAL: PrimitiveVariableType<"REAL">;
     static STRING: PrimitiveVariableType<"STRING">;
