@@ -311,3 +311,6 @@ export function forceType(input) { }
 export function isKey(record, key) {
     return key in record;
 }
+export function access(record, key, fallback) {
+    return record[key] ?? fallback;
+}

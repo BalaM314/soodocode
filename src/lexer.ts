@@ -9,7 +9,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 
 
 import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
-import { crash, f, fail, impossible } from "./utils.js";
+import { access, crash, f, fail, impossible } from "./utils.js";
 
 
 export const symbolTypeData: [
@@ -51,7 +51,7 @@ export const symbolTypeData: [
 	[/^./u, "unknown"],
 ];
 
-export const tokenNameTypeData:Record<string, TokenType> = {
+export const tokenNameTypeData = {
 	"AND": "operator.and",
 	"APPEND": "keyword.file_mode.append",
 	"ARRAY": "keyword.array",
@@ -136,9 +136,9 @@ export const tokenNameTypeData:Record<string, TokenType> = {
 	",": "punctuation.comma",
 	".": "punctuation.period",
 	"\n": "newline",
-} as const;
-export const tokenTextMapping:Record<Exclude<TokenType, "string" | "number.decimal" | "char" | "name">, string> =
-	Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse())); //TODO fix typedef
+} as const satisfies Record<string, TokenType>;
+export const tokenTextMapping =
+	Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
 
 /** A The name of a function on SymbolizerIO that can be used to parse a symbol. */
 type SymbolSpecifierFuncName = "isAlphanumeric" | "isNumber";
@@ -310,7 +310,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
 			tokens.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
 		} else if(symbol.type === "word"){
-			write(tokenNameTypeData[symbol.text] ?? "name");
+			write(access(tokenNameTypeData, symbol.text, "name"));
 		} else {
 			symbol.type satisfies TokenType;
 			tokens.push(symbol.toToken());

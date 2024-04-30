@@ -1,5 +1,5 @@
 import { Symbol, Token } from "./lexer-types.js";
-import { crash, f, fail, impossible } from "./utils.js";
+import { access, crash, f, fail, impossible } from "./utils.js";
 export const symbolTypeData = [
     [/<-{1,2}/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],
@@ -308,7 +308,7 @@ export function tokenize(input) {
             tokens.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
         }
         else if (symbol.type === "word") {
-            write(tokenNameTypeData[symbol.text] ?? "name");
+            write(access(tokenNameTypeData, symbol.text, "name"));
         }
         else {
             symbol.type;

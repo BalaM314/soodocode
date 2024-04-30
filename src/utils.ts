@@ -323,3 +323,7 @@ export function forceType<T>(input:unknown):asserts input is T {}
 export function isKey<T extends Record<PropertyKey, unknown>>(record:T, key:PropertyKey):key is keyof T {
 	return key in record;
 }
+export function access<TVal, TNull>(record:Record<PropertyKey, TVal>, key:PropertyKey, fallback:TNull):TVal | TNull {
+	return record[key] ?? fallback;
+}
+

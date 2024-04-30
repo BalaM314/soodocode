@@ -77,7 +77,7 @@ export const tokenTypes = [
 	"bracket.open", "bracket.close",
 	"parentheses.open", "parentheses.close",
 	"punctuation.colon", "punctuation.semicolon", "punctuation.comma", "punctuation.period",
-	"name", //TODO rename to identifier
+	"name",
 	"boolean.true", "boolean.false",
 	"keyword.declare", "keyword.define", "keyword.constant", "keyword.output", "keyword.input", "keyword.call",
 	"keyword.if", "keyword.then", "keyword.else", "keyword.if_end",
