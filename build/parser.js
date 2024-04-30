@@ -2,7 +2,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, findLastNotInGroup, forceType, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -237,6 +237,7 @@ export const checkStatement = errorBoundary()((statement, input) => {
     const output = [];
     let i, j;
     for (i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i++) {
+        forceType(statement.tokens);
         if (statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+") {
             const allowEmpty = statement.tokens[i] == ".*";
             const start = j;
@@ -245,10 +246,7 @@ export const checkStatement = errorBoundary()((statement, input) => {
                     continue;
                 else
                     return {
-                        message: statement.tokens[i] == ".+" ? `Expected something, got end of line` :
-                            statement.tokens[i] == "expr+" ? `Expected an expression, got end of line` :
-                                statement.tokens[i] == "type+" ? `Expected a type, got end of line` :
-                                    impossible(),
+                        message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`,
                         priority: 4,
                         range: input.at(-1).rangeAfter()
                     };
@@ -260,16 +258,13 @@ export const checkStatement = errorBoundary()((statement, input) => {
                 if (j >= input.length) {
                     if (i == statement.tokens.length - 1)
                         break;
-                    return { message: `Expected a ${statement.tokens[i + 1]}, got end of line`, priority: 4, range: input.at(-1).rangeAfter() };
+                    return { message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
                 }
             }
             const end = j - 1;
             if (!anyTokensSkipped && !allowEmpty)
                 return {
-                    message: statement.tokens[i] == ".+" ? `Expected something before this token` :
-                        statement.tokens[i] == "expr+" ? `Expected an expression before this token` :
-                            statement.tokens[i] == "type+" ? `Expected a type before this token` :
-                                impossible(),
+                    message: `Expected ${displayTokenMatcher(statement.tokens[i])} before this token`,
                     priority: 6,
                     range: input[j].range
                 };
@@ -282,7 +277,7 @@ export const checkStatement = errorBoundary()((statement, input) => {
         }
         else {
             if (j >= input.length)
-                return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
+                return { message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
             if (statement.tokens[i] == "#")
                 impossible();
             else if (statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")) || (statement.tokens[i] == "class_modifier" && input[j].type.startsWith("keyword.class_modifier.")) || (statement.tokens[i] == "name" && input[j].type == "keyword.new")) {
@@ -300,10 +295,10 @@ export const checkStatement = errorBoundary()((statement, input) => {
                     j += 2;
                 }
                 else
-                    return { message: f.text `Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 8, range: input[j].range };
+                    return { message: getMessage(statement.tokens[i], input[j]), priority: 8, range: input[j].range };
             }
             else
-                return { message: f.text `Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 5, range: input[j].range };
+                return { message: getMessage(statement.tokens[i], input[j]), priority: 5, range: input[j].range };
         }
     }
     if (j != input.length) {
@@ -320,6 +315,9 @@ export const checkStatement = errorBoundary()((statement, input) => {
     }
     return output;
 });
+function getMessage(expected, found) {
+    return f.text `Expected ${displayTokenMatcher(expected)}, got "${found}"`;
+}
 function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }

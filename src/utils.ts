@@ -5,7 +5,9 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import type { TextRange, TextRangeLike, TextRanged, Token, TokenType } from "./lexer-types.js";
+import { tokenTypes, type TextRange, type TextRangeLike, type TextRanged, type Token, type TokenType } from "./lexer-types.js";
+import { tokenTextMapping } from "./lexer.js";
+import { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
 import type { IFormattable, TagFunction } from "./types.js";
 
@@ -14,6 +16,21 @@ export function getText(tokens:Token[]){
 	return tokens.map(t => t.text).join(" ");
 }
 
+export function displayTokenMatcher(input:TokenMatcher):string {
+	if(tokenTypes.includes(input)){
+		return `the keyword "${tokenTextMapping[input]}"`;
+	} else return {
+		".": "one token",
+		".*": "anything",
+		".+": "something",
+		"class_modifier": `"PRIVATE" or "PUBLIC"`,
+		"expr+": "an expression",
+		"file_mode": `"READ", "WRITE", "APPEND", or "RANDOM"`,
+		"literal": "a literal",
+		"literal|otherwise": `a literal or "OTHERWISE"`,
+		"type+": "a type"
+	}[input];
+}
 
 /** Ranges must telescope inwards */
 export function applyRangeTransformers(text:string, ranges:[range:TextRange, start:string, end:string, transformer?:(rangeText:string) => string][]){

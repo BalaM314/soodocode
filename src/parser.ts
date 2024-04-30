@@ -9,10 +9,10 @@ which is the preferred representation of the program.
 
 
 import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { crash, errorBoundary, f, fail, findLastNotInGroup, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, findLastNotInGroup, forceType, impossible, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -263,17 +263,14 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 	const output:StatementCheckTokenRange[] = [];
 	let i, j;
 	for(i = (statement.tokens[0] == "#") ? 1 : 0, j = 0; i < statement.tokens.length; i ++){
+		forceType<TokenMatcher[]>(statement.tokens);
 		if(statement.tokens[i] == ".+" || statement.tokens[i] == ".*" || statement.tokens[i] == "expr+" || statement.tokens[i] == "type+"){
 			const allowEmpty = statement.tokens[i] == ".*";
 			const start = j;
 			if(j >= input.length){
 				if(allowEmpty) continue; //Consumed all tokens
 				else return {
-					message:
-						statement.tokens[i] == ".+" ? `Expected something, got end of line` :
-						statement.tokens[i] == "expr+" ? `Expected an expression, got end of line` :
-						statement.tokens[i] == "type+" ? `Expected a type, got end of line` :
-						impossible(),
+					message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`,
 					priority: 4,
 					range: input.at(-1)!.rangeAfter()
 				};
@@ -284,17 +281,13 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 				j ++;
 				if(j >= input.length){ //end reached
 					if(i == statement.tokens.length - 1) break; //Consumed all tokens
-					return { message: `Expected a ${statement.tokens[i + 1]}, got end of line`, priority: 4, range: input.at(-1)!.rangeAfter() }; //TODO display name
+					return { message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
 				}
 			}
 			const end = j - 1;
 			if(!anyTokensSkipped && !allowEmpty) //this triggers on input like `IF THEN`, where the expression is missing
 				return {
-					message:
-						statement.tokens[i] == ".+" ? `Expected something before this token` :
-						statement.tokens[i] == "expr+" ? `Expected an expression before this token` :
-						statement.tokens[i] == "type+" ? `Expected a type before this token` :
-						impossible(),
+					message: `Expected ${displayTokenMatcher(statement.tokens[i])} before this token`,
 					priority: 6,
 					range: input[j].range
 				};
@@ -305,8 +298,8 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 			else
 				output.push(...input.slice(start, end + 1));
 		} else {
-			if(j >= input.length) return { message: `Expected ${statement.tokens[i]}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() }; //TODO display name
-			if(statement.tokens[i] == "#") impossible();
+			if(j >= input.length) return { message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
+			if(statement.tokens[i] as string == "#") impossible();
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (
 				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
 			) || (
@@ -326,8 +319,8 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 					negativeNumber.text = input[j].text + negativeNumber.text;
 					output.push(negativeNumber);
 					j += 2;
-				} else return { message: f.text`Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 8, range: input[j].range };
-			} else return { message: f.text`Expected a ${statement.tokens[i]}, got "${input[j]}"`, priority: 5, range: input[j].range };
+				} else return { message: getMessage(statement.tokens[i], input[j]), priority: 8, range: input[j].range };
+			} else return { message: getMessage(statement.tokens[i], input[j]), priority: 5, range: input[j].range };
 		}
 	}
 	if(j != input.length){
@@ -344,6 +337,12 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 	}
 	return output;
 });
+
+function getMessage(expected:TokenMatcher, found:Token){
+	//TODO caps check
+	//TODO biased levenshtein
+	return f.text`Expected ${displayTokenMatcher(expected)}, got "${found}"`;
+}
 
 function cannotEndExpression(token:Token){
 	//TODO is this the best way?

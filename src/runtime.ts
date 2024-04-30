@@ -591,7 +591,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	handleNonexistentType(name:string):never {
 		if(PrimitiveVariableType.get(name.toUpperCase()))
 			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`);
-		else fail(f.quote`Type ${name} does not exist`);
+		else fail(f.quote`Type ${name} does not exist`); //TODO range
 	}
 	/** Returned variable may not be initialized */
 	getVariable(name:string):VariableData | ConstantData | null {

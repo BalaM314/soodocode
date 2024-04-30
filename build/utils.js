@@ -1,5 +1,24 @@
+import { tokenTypes } from "./lexer-types.js";
+import { tokenTextMapping } from "./lexer.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
+}
+export function displayTokenMatcher(input) {
+    if (tokenTypes.includes(input)) {
+        return `the keyword "${tokenTextMapping[input]}"`;
+    }
+    else
+        return {
+            ".": "one token",
+            ".*": "anything",
+            ".+": "something",
+            "class_modifier": `"PRIVATE" or "PUBLIC"`,
+            "expr+": "an expression",
+            "file_mode": `"READ", "WRITE", "APPEND", or "RANDOM"`,
+            "literal": "a literal",
+            "literal|otherwise": `a literal or "OTHERWISE"`,
+            "type+": "a type"
+        }[input];
 }
 export function applyRangeTransformers(text, ranges) {
     let offset = 0;
