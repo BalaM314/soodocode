@@ -79,7 +79,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 
 export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):UnresolvedVariableType => {
 	if(typeNode instanceof Token){
-		return PrimitiveVariableType.get(typeNode.text) ?? ["unresolved", typeNode.text];
+		return PrimitiveVariableType.resolve(typeNode);
 	} else return ArrayVariableType.from(typeNode);
 });
 

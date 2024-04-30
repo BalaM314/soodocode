@@ -5,6 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
+import { TextRange, Token } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
@@ -92,8 +93,8 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	static get(type:string):PrimitiveVariableType | undefined{
 		return this.valid(type) ? this[type] : undefined;
 	}
-	static resolve(type:string):Exclude<UnresolvedVariableType, ArrayVariableType> {
-		return this.get(type) ?? ["unresolved", type];
+	static resolve(token:Token):Exclude<UnresolvedVariableType, ArrayVariableType> {
+		return this.get(token.text) ?? ["unresolved", token.text, token.range];
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):number | string | boolean | Date | null {
 		if(requireInit) return {
@@ -141,7 +142,7 @@ export class ArrayVariableType extends BaseVariableType {
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType(
 			node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text)) as [number, number]) ?? null,
-			PrimitiveVariableType.resolve(node.elementType.text)
+			PrimitiveVariableType.resolve(node.elementType)
 		);
 	}
 }
@@ -281,7 +282,7 @@ export class ClassVariableType extends BaseVariableType {
 export type UnresolvedVariableType =
 	| PrimitiveVariableType
 	| ArrayVariableType
-	| ["unresolved", name:string]
+	| ["unresolved", name:string, range:TextRange]
 ;
 export type VariableType =
 	| PrimitiveVariableType<"INTEGER">

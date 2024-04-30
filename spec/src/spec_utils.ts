@@ -187,7 +187,7 @@ export function process_VariableType(input:_VariableType | null):VariableType | 
 	return input;
 }
 export function process_UnresolvedVariableType(input:_UnresolvedVariableType):UnresolvedVariableType {
-	return PrimitiveVariableType.get(input) ?? ["unresolved", input];
+	return PrimitiveVariableType.get(input) ?? ["unresolved", input, [-1, -1]];
 }
 export function fakeStatement(type:typeof Statement):Statement {
 	//lol wut

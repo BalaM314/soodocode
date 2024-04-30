@@ -564,21 +564,21 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (type instanceof PrimitiveVariableType || type instanceof ArrayVariableType)
                     return type;
                 else
-                    return this.getType(type[1]) ?? this.handleNonexistentType(type[1]);
+                    return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
             }
-            handleNonexistentType(name) {
+            handleNonexistentType(name, range) {
                 const allTypes = [
                     ...this.scopes.flatMap(s => Object.entries(s.types)),
                     ...PrimitiveVariableType.all.map(t => [t.name, t])
                 ];
                 if (PrimitiveVariableType.get(name.toUpperCase()))
-                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`);
+                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
                 let found;
                 if ((found =
                     min(allTypes, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
-                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`);
+                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
                 }
-                fail(f.quote `Type ${name} does not exist`);
+                fail(f.quote `Type ${name} does not exist`, range);
             }
             getVariable(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {

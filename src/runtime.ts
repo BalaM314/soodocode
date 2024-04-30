@@ -586,7 +586,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	}
 	resolveVariableType(type:UnresolvedVariableType):VariableType {
 		if(type instanceof PrimitiveVariableType || type instanceof ArrayVariableType) return type;
-		else return this.getType(type[1]) ?? this.handleNonexistentType(type[1]);
+		else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
 	}
 	handleNonexistentType(name:string, range:TextRangeLike):never {
 		const allTypes:(readonly [string, VariableType])[] = [

@@ -1,3 +1,4 @@
+import { TextRange, Token } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
@@ -32,7 +33,7 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static valid(input: string): input is PrimitiveVariableTypeName;
     static get(type: PrimitiveVariableTypeName): PrimitiveVariableType;
     static get(type: string): PrimitiveVariableType | undefined;
-    static resolve(type: string): Exclude<UnresolvedVariableType, ArrayVariableType>;
+    static resolve(token: Token): Exclude<UnresolvedVariableType, ArrayVariableType>;
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
 export declare class ArrayVariableType extends BaseVariableType {
@@ -102,7 +103,7 @@ export declare class ClassVariableType extends BaseVariableType {
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
 }
-export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string];
+export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string, range: TextRange];
 export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType | ClassVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;

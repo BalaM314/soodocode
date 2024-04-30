@@ -251,7 +251,7 @@ const expressionTests = ((data:Record<string, [
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().variables["aaa"] = {
-				type: new ArrayVariableType([[1, 5]], ["unresolved", "innerType"]),
+				type: new ArrayVariableType([[1, 5]], ["unresolved", "innerType", [-1, -1]]),
 				declaration: null!,
 				mutable: true,
 				value: [null, {
@@ -321,12 +321,12 @@ const expressionTests = ((data:Record<string, [
 	pointerRef_array_udt: (() => {
 		const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
 			[1, 10]
-		], ["unresolved", "foo"]));
+		], ["unresolved", "foo", [-1, -1]]));
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: new ArrayVariableType([
 				[1, 10]
-			], ["unresolved", "foo"]),
+			], ["unresolved", "foo", [-1, -1]]),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -347,12 +347,12 @@ const expressionTests = ((data:Record<string, [
 	pointerRef_array_udt_invalid: (() => {
 		const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
 			[1, 10]
-		], ["unresolved", "foo"]));
+		], ["unresolved", "foo", [-1, -1]]));
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: new ArrayVariableType([
 				[1, 10]
-			], ["unresolved", "foo"]),
+			], ["unresolved", "foo", [-1, -1]]),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)

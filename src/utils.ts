@@ -291,7 +291,7 @@ function formatText(input:Formattable):string {
 	if(typeof input == "string") return input;
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return input[1];
-		return input.map(formatText).join(" ");
+		return (input as IFormattable[]).map(formatText).join(" ");
 	} else return input.fmtText();
 }
 function formatQuoted(input:Formattable):string {
@@ -299,7 +299,7 @@ function formatQuoted(input:Formattable):string {
 	if(typeof input == "string") str = input;
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") str = input[1];
-		str = input.map(formatText).join(" ");
+		str = (input as IFormattable[]).map(formatText).join(" ");
 	} else return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
 	
 	if(str.length == 0) str = `[empty]`;
@@ -309,7 +309,7 @@ function formatDebug(input:Formattable):string {
 	if(typeof input == "string") return input;
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return `UnresolvedVariableType[${input[1]}]`;
-		return `[${input.map(formatDebug).join(", ")}]`;
+		return `[${(input as IFormattable[]).map(formatDebug).join(", ")}]`;
 	} else return input.fmtDebug();
 }
 export const f = {

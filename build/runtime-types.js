@@ -28,8 +28,8 @@ export class PrimitiveVariableType extends BaseVariableType {
     static get(type) {
         return this.valid(type) ? this[type] : undefined;
     }
-    static resolve(type) {
-        return this.get(type) ?? ["unresolved", type];
+    static resolve(token) {
+        return this.get(token.text) ?? ["unresolved", token.text, token.range];
     }
     getInitValue(runtime, requireInit) {
         if (requireInit)
@@ -87,7 +87,7 @@ export class ArrayVariableType extends BaseVariableType {
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
     static from(node) {
-        return new ArrayVariableType(node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text))) ?? null, PrimitiveVariableType.resolve(node.elementType.text));
+        return new ArrayVariableType(node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text))) ?? null, PrimitiveVariableType.resolve(node.elementType));
     }
 }
 export class RecordVariableType extends BaseVariableType {

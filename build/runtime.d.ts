@@ -1,4 +1,4 @@
-import { TextRange, Token } from "./lexer-types.js";
+import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
@@ -74,7 +74,7 @@ export declare class Runtime {
     };
     static evaluateToken(token: Token, type?: VariableType): [type: VariableType, value: VariableValue];
     resolveVariableType(type: UnresolvedVariableType): VariableType;
-    handleNonexistentType(name: string): never;
+    handleNonexistentType(name: string, range: TextRangeLike): never;
     getVariable(name: string): VariableData | ConstantData | null;
     getType(name: string): VariableType | null;
     getEnumFromValue(name: string): EnumeratedVariableType | null;
