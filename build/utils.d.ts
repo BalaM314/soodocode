@@ -50,4 +50,5 @@ export declare const f: {
     debug: TagFunction<Formattable, string>;
 };
 export declare function forceType<T>(input: unknown): asserts input is T;
+export declare function isKey<T extends Record<PropertyKey, unknown>>(record: T, key: PropertyKey): key is keyof T;
 export {};

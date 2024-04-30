@@ -17,8 +17,12 @@ export function getText(tokens:Token[]){
 }
 
 export function displayTokenMatcher(input:TokenMatcher):string {
-	if(tokenTypes.includes(input)){
-		return `the keyword "${tokenTextMapping[input]}"`;
+	if(isKey(tokenTextMapping, input)){
+		return `the ${
+			input.startsWith("keyword.") ? "keyword" :
+			input.startsWith("operator.") ? "operator" :
+			"character"
+		} "${tokenTextMapping[input]}"`;
 	} else return {
 		".": "one token",
 		".*": "anything",
@@ -28,7 +32,11 @@ export function displayTokenMatcher(input:TokenMatcher):string {
 		"file_mode": `"READ", "WRITE", "APPEND", or "RANDOM"`,
 		"literal": "a literal",
 		"literal|otherwise": `a literal or "OTHERWISE"`,
-		"type+": "a type"
+		"type+": "a type",
+		"char": "a character literal",
+		"string": "a string literal",
+		"number.decimal": "a number",
+		"name": "an identifier"
 	}[input];
 }
 
@@ -311,3 +319,7 @@ export const f = {
 };
 
 export function forceType<T>(input:unknown):asserts input is T {}
+
+export function isKey<T extends Record<PropertyKey, unknown>>(record:T, key:PropertyKey):key is keyof T {
+	return key in record;
+}

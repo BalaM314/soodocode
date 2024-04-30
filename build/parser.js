@@ -316,7 +316,7 @@ export const checkStatement = errorBoundary()((statement, input) => {
     return output;
 });
 function getMessage(expected, found) {
-    return f.text `Expected ${displayTokenMatcher(expected)}, got "${found}"`;
+    return f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
 }
 function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";

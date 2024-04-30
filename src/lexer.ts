@@ -136,8 +136,9 @@ export const tokenNameTypeData:Record<string, TokenType> = {
 	",": "punctuation.comma",
 	".": "punctuation.period",
 	"\n": "newline",
-};
-export const tokenTextMapping = Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
+} as const;
+export const tokenTextMapping:Record<Exclude<TokenType, "string" | "number.decimal" | "char" | "name">, string> =
+	Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse())); //TODO fix typedef
 
 /** A The name of a function on SymbolizerIO that can be used to parse a symbol. */
 type SymbolSpecifierFuncName = "isAlphanumeric" | "isNumber";

@@ -1,11 +1,12 @@
-import { tokenTypes } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
 export function displayTokenMatcher(input) {
-    if (tokenTypes.includes(input)) {
-        return `the keyword "${tokenTextMapping[input]}"`;
+    if (isKey(tokenTextMapping, input)) {
+        return `the ${input.startsWith("keyword.") ? "keyword" :
+            input.startsWith("operator.") ? "operator" :
+                "character"} "${tokenTextMapping[input]}"`;
     }
     else
         return {
@@ -17,7 +18,11 @@ export function displayTokenMatcher(input) {
             "file_mode": `"READ", "WRITE", "APPEND", or "RANDOM"`,
             "literal": "a literal",
             "literal|otherwise": `a literal or "OTHERWISE"`,
-            "type+": "a type"
+            "type+": "a type",
+            "char": "a character literal",
+            "string": "a string literal",
+            "number.decimal": "a number",
+            "name": "an identifier"
         }[input];
 }
 export function applyRangeTransformers(text, ranges) {
@@ -303,3 +308,6 @@ export const f = {
     debug: tagProcessor(formatDebug),
 };
 export function forceType(input) { }
+export function isKey(record, key) {
+    return key in record;
+}

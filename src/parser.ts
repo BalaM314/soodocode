@@ -341,7 +341,7 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 function getMessage(expected:TokenMatcher, found:Token){
 	//TODO caps check
 	//TODO biased levenshtein
-	return f.text`Expected ${displayTokenMatcher(expected)}, got "${found}"`;
+	return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
 }
 
 function cannotEndExpression(token:Token){
