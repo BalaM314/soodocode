@@ -318,6 +318,23 @@ export class ProgramASTBranchNode implements TextRanged {
 	range():TextRange {
 		return getTotalRange((this.controlStatements as (Statement | ProgramASTNode)[]).concat(this.nodeGroups.flat()));
 	}
+	typeName(){
+		return {
+			"if": "if",
+			"for": "for",
+			"for.step": "for (step)",
+			"while": "while",
+			"dowhile": "repeat",
+			"function": "function",
+			"procedure": "procedure",
+			"switch": "switch",
+			"type": "type",
+			"class": "class",
+			"class.inherits": "class",
+			"class_function": "class function",
+			"class_procedure": "class procedure",
+		}[this.type];
+	}
 }
 /** The valid types for a branch node in a program AST. */
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;

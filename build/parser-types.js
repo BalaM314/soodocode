@@ -216,6 +216,23 @@ export class ProgramASTBranchNode {
     range() {
         return getTotalRange(this.controlStatements.concat(this.nodeGroups.flat()));
     }
+    typeName() {
+        return {
+            "if": "if",
+            "for": "for",
+            "for.step": "for (step)",
+            "while": "while",
+            "dowhile": "repeat",
+            "function": "function",
+            "procedure": "procedure",
+            "switch": "switch",
+            "type": "type",
+            "class": "class",
+            "class.inherits": "class",
+            "class_function": "class function",
+            "class_procedure": "class procedure",
+        }[this.type];
+    }
 }
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export function ProgramASTBranchNodeType(input) {

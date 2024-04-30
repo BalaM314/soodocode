@@ -137,7 +137,7 @@ export function parse({ program, tokens }) {
                 blockStack.pop();
             }
             else
-                fail(f.quote `Unexpected statement: current block is of type ${lastNode.controlStatements[0].stype}`, statement, null);
+                fail(f.quote `Unexpected statement: current block is of type ${lastNode.typeName()}`, statement, null);
         }
         else if (statement.category == "block_multi_split") {
             const lastNode = blockStack.at(-1);

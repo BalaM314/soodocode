@@ -25,12 +25,16 @@ export type VariableTypeMapping<T> =
 		never
 	) :
 	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
-	T extends RecordVariableType ? Record<string, unknown> : //TODO replacing "unknown" with VariableTypeMapping<any> breaks ts
+	T extends RecordVariableType ? {
+		[index:string]: VariableTypeMapping<any> | null;
+	} :
 	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
 	T extends ClassVariableType ? {
-		properties: Record<string, unknown>;
+		properties: {
+			[index:string]: VariableTypeMapping<any> | null;
+		};
 		/** Necessary for polymorphism */
 		type: ClassVariableType;
 	} :
@@ -255,7 +259,7 @@ export class ClassVariableType extends BaseVariableType {
 		const data:VariableTypeMapping<ClassVariableType> = {
 			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
 				runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
-			])) as Record<string, unknown>,
+			])) as Record<string, VariableValue>,
 			type: this
 		};
 

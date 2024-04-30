@@ -4,8 +4,12 @@ import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? Record<string, unknown> : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
-    properties: Record<string, unknown>;
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? {
+    [index: string]: VariableTypeMapping<any> | null;
+} : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
+    properties: {
+        [index: string]: VariableTypeMapping<any> | null;
+    };
     type: ClassVariableType;
 } : never;
 export declare abstract class BaseVariableType implements IFormattable {
@@ -98,7 +102,13 @@ export declare class ClassVariableType extends BaseVariableType {
     getInitValue(runtime: Runtime): VariableValue | null;
     inherits(other: ClassVariableType): boolean;
     construct(runtime: Runtime, args: ExpressionASTNode[]): {
-        properties: Record<string, unknown>;
+        properties: {
+            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+        };
         type: ClassVariableType;
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;

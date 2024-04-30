@@ -160,7 +160,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 				lastNode.controlStatements.push(statement);
 				lastNode.controlStatements[0].type.checkBlock(lastNode);
 				blockStack.pop();
-			} else fail(f.quote`Unexpected statement: current block is of type ${lastNode.controlStatements[0].stype}`, statement, null); //TODO use display name instead of internal name
+			} else fail(f.quote`Unexpected statement: current block is of type ${lastNode.typeName()}`, statement, null);
 		} else if(statement.category == "block_multi_split"){
 			const lastNode = blockStack.at(-1);
 			if(!lastNode) fail(`Unexpected statement: ${statement.stype} statements must be inside a block`, statement, null);
