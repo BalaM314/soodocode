@@ -257,6 +257,7 @@ type StatementCheckFailResult = { message: string; priority: number; range: Text
  */
 export const checkStatement = errorBoundary()((statement:typeof Statement, input:Token[]):
 	StatementCheckFailResult | StatementCheckTokenRange[] => {
+	//TODO rewrite to use modified wagner-fischer for best detection
 
 	if(input.length == 0) crash(`checkStatement() called with empty input`);
 	if(statement.category == "block_multi_split" && !statement.blockType) crash(`block_multi_split statements must have a block type specified.`);

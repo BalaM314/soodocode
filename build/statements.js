@@ -496,7 +496,7 @@ let InputStatement = (() => {
             if (!variable)
                 fail(`Undeclared variable ${this.name}`, this.tokens[1]);
             if (!variable.mutable)
-                fail(`Cannot INPUT ${this.name} because it is a constant`);
+                fail(`Cannot INPUT ${this.name} because it is a constant`, this.tokens[1]);
             const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`);
             switch (variable.type) {
                 case PrimitiveVariableType.BOOLEAN:
