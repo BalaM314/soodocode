@@ -51,6 +51,7 @@ export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionA
 			//Expect a colon
 			if(section[offset + 1]?.type != "punctuation.colon")
 				fail(f.quote`Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
+			if(offset + 2 >= section.length) fail(`Expected a colon, got end of function arguments`, section.at(-1)!.rangeAfter());
 			type = processTypeData(parseType(section.slice(offset + 2)));
 		}
 		return [
@@ -84,7 +85,7 @@ export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):
 });
 
 export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode => {
-	
+	if(tokens.length == 0) crash(`Cannot parse empty type`);
 	//Builtin or reference to user defined type
 	if(checkTokens(tokens, ["name"])) return tokens[0];
 	//Array type
