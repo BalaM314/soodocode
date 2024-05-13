@@ -54,4 +54,5 @@ export declare function isKey<T extends Record<PropertyKey, unknown>>(record: T,
 export declare function access<TVal, TNull>(record: Record<PropertyKey, TVal>, key: PropertyKey, fallback: TNull): TVal | TNull;
 export declare function min<T>(input: T[], predicate: (arg: T) => number, threshold?: number): T | null;
 export declare function biasedLevenshtein(a: string, b: string, maxLengthProduct?: number): number | null;
+export declare function fakeObject<T>(input: Partial<T>): T;
 export {};

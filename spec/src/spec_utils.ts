@@ -2,7 +2,7 @@ import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
-import { crash } from "../../build/utils.js";
+import { crash, fakeObject } from "../../build/utils.js";
 import { tokenTextMapping } from "../../build/lexer.js";
 
 
@@ -190,10 +190,9 @@ export function process_UnresolvedVariableType(input:_UnresolvedVariableType):Un
 	return PrimitiveVariableType.get(input) ?? ["unresolved", input, [-1, -1]];
 }
 export function fakeStatement(type:typeof Statement):Statement {
-	//lol wut
-	return {
+	return fakeObject<Statement>({
 		type
-	} as Statement;
+	});
 }
 
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
@@ -399,7 +398,7 @@ export function statement<T extends keyof typeof statementCreators>(statementNam
 
 export function classType(
 	statement: ClassStatement,
-	properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
+	properties: Record<string, ClassPropertyStatement> = {},
 	ownMethods: Record<string, _ProgramASTBranchNode> = {},
 	allMethods?: Record<string, [ClassVariableType, ClassMethodData]>,
 ){

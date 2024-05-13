@@ -370,3 +370,11 @@ export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):n
 	return out;
 }
 
+const fakeObjectTrap = new Proxy({}, {
+	get(target, property){ crash(`Attempted to access property ${String(property)} on fake object`); },
+});
+export function fakeObject<T>(input:Partial<T>):T {
+	Object.setPrototypeOf(input, fakeObjectTrap);
+	return input as never;
+}
+
