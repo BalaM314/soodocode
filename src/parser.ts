@@ -237,7 +237,7 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 	if(expr){
 		//TODO: this error should not always be the highest priority
 		if(expr instanceof ExpressionASTFunctionCallNode)
-			fail(`Expected a statement, not an expression\nhelp: call this procedure, like this: "CALL ${getText(tokens)}"`);
+			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`);
 		else fail(`Expected a statement, not an expression`);
 	}
 	let maxError = errors[0];

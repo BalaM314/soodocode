@@ -539,7 +539,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                             fail(f.quote `Cannot convert value ${token} to type ${type}`);
                         break;
                     case "char":
-                        if (!type || type.is("CHAR"))
+                        if (!type || type.is("CHAR") || type.is("STRING"))
                             return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)];
                         else
                             fail(f.quote `Cannot convert value ${token} to type ${type}`);

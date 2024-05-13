@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -217,7 +217,7 @@ export const parseStatement = errorBoundary()((tokens, context) => {
     const [expr] = tryRun(() => parseExpression(tokens));
     if (expr) {
         if (expr instanceof ExpressionASTFunctionCallNode)
-            fail(`Expected a statement, not an expression\nhelp: call this procedure, like this: "CALL ${getText(tokens)}"`);
+            fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`);
         else
             fail(`Expected a statement, not an expression`);
     }

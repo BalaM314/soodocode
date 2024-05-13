@@ -566,7 +566,7 @@ help: try using DIV instead of / to produce an integer as the result`
 				else fail(f.quote`Cannot convert value ${token} to type ${type}`);
 				break;
 			case "char":
-				if(!type || type.is("CHAR")) return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
+				if(!type || type.is("CHAR") || type.is("STRING")) return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
 				else fail(f.quote`Cannot convert value ${token} to type ${type}`);
 				break;
 			default: fail(f.quote`Cannot evaluate token ${token}`);

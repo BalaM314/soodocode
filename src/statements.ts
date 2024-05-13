@@ -690,7 +690,7 @@ interface IFileStatement {
 }
 
 @statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
-export class OpenFileStatement extends Statement implements IFileStatement { //TODO filestatement?
+export class OpenFileStatement extends Statement implements IFileStatement {
 	mode:Token;
 	filename:ExpressionAST;
 	constructor(tokens:[Token, ExpressionAST, Token, Token]){
