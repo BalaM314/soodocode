@@ -1310,7 +1310,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.comma",
 			["string", `"amogus"`],
 		],
-		["Output", ["string", `"amogus"`], ["string", `"amogus"`]]
+		["Output", ["string", `"amogus"`], "punctuation.comma", ["string", `"amogus"`]]
 	],
 	output3: [
 		[
@@ -1321,7 +1321,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.comma",
 			["string", `"amogus"`],
 		],
-		["Output", ["string", `"amogus"`], 5, ["string", `"amogus"`]]
+		["Output", ["string", `"amogus"`], "punctuation.comma", 5, "punctuation.comma", ["string", `"amogus"`]]
 	],
 	outputBad1: [
 		[

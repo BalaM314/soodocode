@@ -272,7 +272,7 @@ const statementCreators = {
 	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never),
 	Output: (...variables:_Token[]) => new OutputStatement(([
 		"keyword.output",
-		...(variables.flatMap(v => [v, "punctuation.comma"]).slice(0, -1)),
+		...variables,
 	] satisfies _Token[] as _Token[]).map(process_ExpressionASTExt) as never),
 	Procedure: (name:string, args:[string, string | _Token[]][]) => new ProcedureStatement(([
 		"keyword.procedure",

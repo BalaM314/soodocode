@@ -6,13 +6,13 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableValue } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import type { Runtime } from "./runtime.js";
 import { fail, f } from "./utils.js";
 
 
 type PreprocesssedBuiltinFunctionData = {
-	args: [name:string, type:PrimitiveVariableTypeName | PrimitiveVariableTypeName[] | [PrimitiveVariableTypeName | "ANY"][]][];
+	args: [name:string, type:PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[]][];
 	returnType: PrimitiveVariableTypeName;
 	impl(this:Runtime, ...args:VariableValue[]):VariableValue;
 };
@@ -20,9 +20,9 @@ export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
 		Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
-				args: new Map(data.args.map(a => [a[0], {
+				args: new Map(data.args.map(([name, type]) => [name, {
 					passMode: "reference",
-					type: (Array.isArray(a[1]) ? a[1] : [a[1]]).map(t =>
+					type: (Array.isArray(type) ? type : [type]).map(t =>
 						Array.isArray(t)
 							? new ArrayVariableType(null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]))
 							: PrimitiveVariableType.get(t)
@@ -78,10 +78,10 @@ export const builtinFunctions = (
 	//source: spec 5.5
 	LENGTH: {
 		args: [
-			["ThisString", [["ANY"]]],
+			["ThisString", [["ANY"], "STRING"]],
 		],
 		returnType: "INTEGER",
-		impl(str:string){
+		impl(str:string | VariableTypeMapping<ArrayVariableType>){
 			return str.length;
 		},
 	},

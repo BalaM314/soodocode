@@ -1361,6 +1361,41 @@ const programTests = ((data:Record<string,
 		],
 		`mog`
 	],
+	builtin_function_length_string: [
+		[
+			["Output",
+				"LENGTH",
+				"parentheses.open",
+				["string", `"amogus sussy"`],
+				"parentheses.close",
+			]
+		],
+		`12`
+	],
+	builtin_function_length_array_1d: [
+		[
+			["Declare", "x", [[[0, 10]], "STRING"]],
+			["Output",
+				"LENGTH",
+				"parentheses.open",
+				"x",
+				"parentheses.close",
+			]
+		],
+		`11`
+	],
+	builtin_function_length_array_1d_two: [
+		[
+			["Declare", "x", [[[4, 10]], "STRING"]],
+			["Output",
+				"LENGTH",
+				"parentheses.open",
+				"x",
+				"parentheses.close",
+			]
+		],
+		`7`
+	],
 	builtin_function_to_upper_string: [
 		[
 			[DeclareStatement, [
