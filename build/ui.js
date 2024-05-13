@@ -130,12 +130,32 @@ const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
 const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
 const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
 const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
+const uploadButton = getElement("upload-button", HTMLInputElement);
 window.addEventListener("keydown", e => {
     if (e.key == "s" && e.ctrlKey) {
         e.preventDefault();
         download("program.sc", soodocodeInput.value);
     }
+    else if (e.key == "o" && e.ctrlKey) {
+        e.preventDefault();
+        uploadButton.click();
+    }
 });
+uploadButton.onchange = (event) => {
+    const file = event.target?.files?.[0];
+    if (!file)
+        return;
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = e => {
+        const content = e.target?.result?.toString();
+        if (content == null)
+            return;
+        if (confirm(`Are you sure you want to load this file? This will erase your current program.`)) {
+            soodocodeInput.value = content;
+        }
+    };
+};
 evaluateExpressionButton.addEventListener("click", () => {
     try {
         expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens)).toString();
