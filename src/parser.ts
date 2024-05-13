@@ -13,7 +13,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -107,10 +107,16 @@ export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode 
 		);
 	if(checkTokens(tokens, ["keyword.array"])) fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`);
 	if(tokens.length <= 1) fail(f.quote`Cannot parse type from ${tokens}: expected the name of a builtin or user-defined type, or an array type definition, like "ARRAY[1:10] OF STRING"`);
-	if(checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", ".+"]))
-		fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`);
+	if(checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", ".*"]))
+		fail(`Please specify the type of the array, like this: "ARRAY[1:10] OF STRING"`);
 	if(checkTokens(tokens, ["keyword.array", "parentheses.open", ".+", "parentheses.close", "keyword.of", "name"]))
 		fail(`Array range specifiers use square brackets, like this: "ARRAY[1:10] OF STRING"`);
+	if(checkTokens(tokens, ["keyword.set"]))
+		fail(`Please specify the type of the set, like this: "SET OF STRING"`);
+	if(checkTokens(tokens, ["keyword.set", "keyword.of", "name"]))
+		fail(`Set types cannot be specified inline, please create a type alias first, like this: TYPE yournamehere = SET OF ${tokens[2].text}`);
+	if(checkTokens(tokens, ["operator.pointer", "name"]))
+		fail(`Pointer types cannot be specified inline, please create a type alias first, like this: TYPE p${tokens[1].text} = ^${tokens[1].text}`);
 	fail(f.quote`Cannot parse type from ${tokens}`);
 });
 
