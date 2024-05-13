@@ -1,5 +1,5 @@
 import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
-import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode } from "./parser-types.js";
+import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
 import { UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
 export declare const parseFunctionArguments: (tokens: Token[]) => FunctionArguments;
@@ -21,6 +21,7 @@ type StatementCheckFailResult = {
     range: TextRange | null;
 };
 export declare const checkStatement: (statement: typeof Statement, input: Token[]) => StatementCheckFailResult | StatementCheckTokenRange[];
+export declare function checkTokens(tokens: Token[], input: TokenMatcher[]): boolean;
 export declare const expressionLeafNodeTypes: TokenType[];
 export declare const parseExpressionLeafNode: (token: Token) => ExpressionASTLeafNode;
 export declare const parseExpression: (input: Token[], recursive?: any) => ExpressionASTNode;

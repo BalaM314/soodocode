@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -64,32 +64,31 @@ export const processTypeData = errorBoundary()((typeNode) => {
         return ArrayVariableType.from(typeNode);
 });
 export const parseType = errorBoundary()((tokens) => {
-    if (tokens.length == 1) {
-        if (tokens[0].type == "name")
-            return tokens[0];
-        else
-            fail(f.quote `Cannot parse type from ${tokens}`);
-    }
-    if (!(tokens[0]?.type == "keyword.array" &&
-        tokens.at(-2)?.type == "keyword.of" &&
-        tokens.at(-1)?.type == "name"))
-        fail(f.quote `Cannot parse type from ${tokens}`);
-    if (tokens.length == 3)
+    if (checkTokens(tokens, ["name"]))
+        return tokens[0];
+    if (checkTokens(tokens, ["keyword.array", "keyword.of", "name"]))
         return new ExpressionASTArrayTypeNode(null, tokens.at(-1), tokens);
-    if (!(tokens[1]?.type == "bracket.open" &&
-        tokens.at(-3)?.type == "bracket.close"))
-        fail(f.quote `Cannot parse type from ${tokens}`);
-    return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({ group, splitter }) => {
-        if (group.length != 3)
-            fail(f.quote `Invalid array range specifier ${group}`, group.length ? group : splitter);
-        if (group[0].type != "number.decimal")
-            fail(f.quote `Expected a number, got ${group[0]}`, group[0]);
-        if (group[1].type != "punctuation.colon")
-            fail(f.quote `Expected a colon, got ${group[1]}`, group[1]);
-        if (group[2].type != "number.decimal")
-            fail(f.quote `Expected a number, got ${group[2]}`, group[2]);
-        return [group[0], group[2]];
-    }), tokens.at(-1), tokens);
+    if (checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", "keyword.of", "name"]))
+        return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({ group, splitter }) => {
+            if (group.length != 3)
+                fail(f.quote `Invalid array range specifier ${group}`, group.length ? group : splitter);
+            if (group[0].type != "number.decimal")
+                fail(f.quote `Expected a number, got ${group[0]}`, group[0]);
+            if (group[1].type != "punctuation.colon")
+                fail(f.quote `Expected a colon, got ${group[1]}`, group[1]);
+            if (group[2].type != "number.decimal")
+                fail(f.quote `Expected a number, got ${group[2]}`, group[2]);
+            return [group[0], group[2]];
+        }), tokens.at(-1), tokens);
+    if (checkTokens(tokens, ["keyword.array"]))
+        fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`);
+    if (tokens.length <= 1)
+        fail(f.quote `Cannot parse type from ${tokens}: expected the name of a builtin or user-defined type, or an array type definition, like "ARRAY[1:10] OF STRING"`);
+    if (checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", ".+"]))
+        fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`);
+    if (checkTokens(tokens, ["keyword.array", "parentheses.open", ".+", "parentheses.close", "keyword.of", "name"]))
+        fail(`Array range specifiers use square brackets, like this: "ARRAY[1:10] OF STRING"`);
+    fail(f.quote `Cannot parse type from ${tokens}`);
 });
 export function splitTokensToStatements(tokens) {
     const statementData = [
@@ -320,6 +319,13 @@ function getMessage(expected, found) {
     if (isKey(tokenTextMapping, expected) && tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
         return f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`;
     return f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
+}
+export function checkTokens(tokens, input) {
+    return Array.isArray(checkStatement(fakeObject({
+        tokens: input,
+        category: undefined,
+        blockType: null,
+    }), tokens));
 }
 function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
