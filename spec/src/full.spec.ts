@@ -25,6 +25,10 @@ mostlyEmpty: [
 `,
 []
 ],
+parse_invalid_expression_statement: [
+`2 + 2`,
+`Expected a statement, not an expression`
+],
 run_array_basic: [
 `DECLARE x: ARRAY[1:10] OF INTEGER
 x[10] <- 5

@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -213,6 +213,22 @@ export const parseStatement = errorBoundary()((tokens, context) => {
                 result.priority = 0;
             errors.push(result);
         }
+    }
+    let expr;
+    try {
+        expr = parseExpression(tokens);
+    }
+    catch (err) {
+        if (err instanceof SoodocodeError)
+            void err;
+        else
+            throw err;
+    }
+    if (expr) {
+        if (expr instanceof ExpressionASTFunctionCallNode)
+            fail(`Expected a statement, not an expression\nhelp: call this procedure, like this: "CALL ${getText(tokens)}"`);
+        else
+            fail(`Expected a statement, not an expression`);
     }
     let maxError = errors[0];
     for (const error of errors) {

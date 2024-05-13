@@ -233,6 +233,21 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 			errors.push(result);
 		}
 	}
+	//Statement is invalid, choose the most relevant error message
+	//Check if it's a valid expression
+	let expr;
+	try { //TODO disgusting, use helper functions
+		expr = parseExpression(tokens);
+	} catch(err){
+		if(err instanceof SoodocodeError) void err;
+		else throw err;
+	}
+	if(expr){
+		//TODO: this error should not always be the highest priority
+		if(expr instanceof ExpressionASTFunctionCallNode)
+			fail(`Expected a statement, not an expression\nhelp: call this procedure, like this: "CALL ${getText(tokens)}"`);
+		else fail(`Expected a statement, not an expression`);
+	}
 	let maxError = errors[0];
 	for(const error of errors){
 		if(error.priority >= maxError.priority) maxError = error;
