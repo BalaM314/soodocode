@@ -377,4 +377,24 @@ export function fakeObject<T>(input:Partial<T>):T {
 	Object.setPrototypeOf(input, fakeObjectTrap);
 	return input as never;
 }
+export function tryRun<T>(callback:() => T):[T, null] | [null, SoodocodeError] {
+	try {
+		return [callback(), null];
+	} catch(err){
+		if(err instanceof SoodocodeError){
+			return [null, err];
+		} else throw err;
+	}
+}
+export function tryRunOr<T>(callback:() => T, errorHandler:(err:SoodocodeError) => unknown):boolean {
+	try {
+		callback();
+		return true;
+	} catch(err){
+		if(err instanceof SoodocodeError){
+			errorHandler(err);
+			return false;
+		} else throw err;
+	}
+}
 

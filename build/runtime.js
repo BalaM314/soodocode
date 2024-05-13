@@ -37,7 +37,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, tryRunOr, zip } from "./utils.js";
 export function typesEqual(a, b) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
@@ -776,17 +776,11 @@ help: try using DIV instead of / to produce an integer as the result`);
                 nextArg: for (const { type } of fn.args.values()) {
                     const errors = [];
                     for (const possibleType of type) {
-                        try {
+                        if (tryRunOr(() => {
                             processedArgs.push(this.evaluateExpr(args[i], possibleType)[1]);
                             i++;
+                        }, err => errors.push(err)))
                             continue nextArg;
-                        }
-                        catch (err) {
-                            if (err instanceof SoodocodeError)
-                                errors.push(err);
-                            else
-                                throw err;
-                        }
                     }
                     throw errors.at(-1);
                 }

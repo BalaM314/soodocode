@@ -355,3 +355,29 @@ export function fakeObject(input) {
     Object.setPrototypeOf(input, fakeObjectTrap);
     return input;
 }
+export function tryRun(callback) {
+    try {
+        return [callback(), null];
+    }
+    catch (err) {
+        if (err instanceof SoodocodeError) {
+            return [null, err];
+        }
+        else
+            throw err;
+    }
+}
+export function tryRunOr(callback, errorHandler) {
+    try {
+        callback();
+        return true;
+    }
+    catch (err) {
+        if (err instanceof SoodocodeError) {
+            errorHandler(err);
+            return false;
+        }
+        else
+            throw err;
+    }
+}

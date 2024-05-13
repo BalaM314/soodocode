@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -191,22 +191,18 @@ export const parseStatement = errorBoundary()((tokens, context) => {
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens);
         if (Array.isArray(result)) {
-            try {
-                return new possibleStatement(result.map(x => x instanceof Token
-                    ? x
-                    : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))));
-            }
-            catch (err) {
-                if (err instanceof SoodocodeError)
-                    errors.push({
-                        message: err.message,
-                        priority: 10,
-                        range: err.rangeSpecific ?? null,
-                        err
-                    });
-                else
-                    throw err;
-            }
+            const [out, err] = tryRun(() => new possibleStatement(result.map(x => x instanceof Token
+                ? x
+                : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1)))));
+            if (out)
+                return out;
+            else
+                errors.push({
+                    message: err.message,
+                    priority: 10,
+                    range: err.rangeSpecific ?? null,
+                    err
+                });
         }
         else {
             if (possibleStatement.suppressErrors)
@@ -214,16 +210,7 @@ export const parseStatement = errorBoundary()((tokens, context) => {
             errors.push(result);
         }
     }
-    let expr;
-    try {
-        expr = parseExpression(tokens);
-    }
-    catch (err) {
-        if (err instanceof SoodocodeError)
-            void err;
-        else
-            throw err;
-    }
+    const [expr] = tryRun(() => parseExpression(tokens));
     if (expr) {
         if (expr instanceof ExpressionASTFunctionCallNode)
             fail(`Expected a statement, not an expression\nhelp: call this procedure, like this: "CALL ${getText(tokens)}"`);

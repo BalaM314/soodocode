@@ -13,7 +13,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -213,21 +213,18 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens);
 		if(Array.isArray(result)){
-			try {
-				return new possibleStatement(result.map(x =>
-					x instanceof Token
-						? x
-						: (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))
-				));
-			} catch(err){
-				if(err instanceof SoodocodeError) errors.push({
-					message: err.message,
-					priority: 10,
-					range: err.rangeSpecific ?? null,
-					err
-				});
-				else throw err;
-			}
+			const [out, err] = tryRun(() => new possibleStatement(result.map(x =>
+				x instanceof Token
+					? x
+					: (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))
+			)));
+			if(out) return out;
+			else errors.push({
+				message: err.message,
+				priority: 10,
+				range: err.rangeSpecific ?? null,
+				err
+			});
 		} else {
 			if(possibleStatement.suppressErrors) result.priority = 0;
 			errors.push(result);
@@ -235,13 +232,7 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 	}
 	//Statement is invalid, choose the most relevant error message
 	//Check if it's a valid expression
-	let expr;
-	try { //TODO disgusting, use helper functions
-		expr = parseExpression(tokens);
-	} catch(err){
-		if(err instanceof SoodocodeError) void err;
-		else throw err;
-	}
+	const [expr] = tryRun(() => parseExpression(tokens));
 	if(expr){
 		//TODO: this error should not always be the highest priority
 		if(expr instanceof ExpressionASTFunctionCallNode)

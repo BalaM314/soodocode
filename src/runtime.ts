@@ -11,7 +11,7 @@ import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -788,14 +788,11 @@ help: try using DIV instead of / to produce an integer as the result`
 		for(const {type} of fn.args.values()){
 			const errors:SoodocodeError[] = [];
 			for(const possibleType of type){
-				try {
+				if(tryRunOr(() => {
 					processedArgs.push(this.evaluateExpr(args[i], possibleType)[1]);
 					i ++;
+				}, err => errors.push(err)))
 					continue nextArg;
-				} catch(err){
-					if(err instanceof SoodocodeError) errors.push(err);
-					else throw err;
-				}
 			}
 			throw errors.at(-1);
 		}
