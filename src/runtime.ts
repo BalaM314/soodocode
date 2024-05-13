@@ -515,15 +515,14 @@ help: try using DIV instead of / to produce an integer as the result`
 	evaluateToken<T extends VariableType | undefined>(token:Token, type:T):[type:T & {}, value:VariableTypeMapping<T>];
 	evaluateToken(token:Token, type?:VariableType | "variable" | "function"):[type:VariableType, value:unknown] | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(token.type == "name"){
-			if(type == "function") return this.getFunction(token.text);
+			if(type == "function") return this.getFunction(token);
 
 			const enumType = this.getEnumFromValue(token.text);
 			if(enumType){
 				if(type == "variable") fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`);
 				return this.finishEvaluation(token.text, enumType, type);
 			} else {
-				const variable = this.getVariable(token.text);
-				if(!variable) fail(f.quote`Undeclared variable ${token}`);
+				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
 				if(type == "variable") return variable;
 				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`);
 				return this.finishEvaluation(variable.value, variable.type, type);
@@ -603,6 +602,33 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 		fail(f.quote`Type ${name} does not exist`, range);
 	}
+	handleNonexistentFunction(name:string, range:TextRangeLike):never {
+		const allFunctions:(readonly [string, FunctionData | BuiltinFunctionData])[] = [
+			...Object.entries(this.functions),
+			...Object.entries(builtinFunctions as Record<string, BuiltinFunctionData>),
+		];
+		if(builtinFunctions[name.toUpperCase()])
+			fail(f.quote`Function ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
+		let found;
+		if((found =
+			min(allFunctions, t => biasedLevenshtein(t[0], name) ?? Infinity, 3)
+		) != undefined){
+			fail(f.quote`Function ${name} does not exist\nhelp: perhaps you meant ${found[0]}`, range);
+		}
+		fail(f.quote`Function ${name} does not exist`, range);
+	}
+	handleNonexistentVariable(name:string, range:TextRangeLike):never {
+		const allVariables:string[] = [
+			...this.scopes.flatMap(s => Object.keys(s.variables)),
+		];
+		let found;
+		if((found =
+			min(allVariables, t => biasedLevenshtein(t, name) ?? Infinity, 2)
+		) != undefined){
+			fail(f.quote`Variable ${name} does not exist\nhelp: perhaps you meant ${found}`, range);
+		}
+		fail(f.quote`Variable ${name} does not exist`, range);
+	}
 	/** Returned variable may not be initialized */
 	getVariable(name:string):VariableData | ConstantData | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
@@ -646,11 +672,11 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 		return false;
 	}
-	getFunction(name:string):FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
-		if(this.classData && this.classData.clazz.allMethods[name]){
-			const [clazz, method] = this.classData.clazz.allMethods[name];
+	getFunction({text, range}:Token):FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
+		if(this.classData && this.classData.clazz.allMethods[text]){
+			const [clazz, method] = this.classData.clazz.allMethods[text];
 			return { clazz, method, instance: this.classData.instance };
-		} else return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote`Function ${name} has not been defined.`);
+		} else return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}
 	getClass(name:string):ClassVariableType {
 		for(let i = this.scopes.length - 1; i >= 0; i--){

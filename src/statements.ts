@@ -361,8 +361,7 @@ export class InputStatement extends Statement {
 		this.name = tokens[1].text;
 	}
 	run(runtime:Runtime){
-		const variable = runtime.getVariable(this.name);
-		if(!variable) fail(`Undeclared variable ${this.name}`, this.tokens[1]);
+		const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.tokens[1].range);
 		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`, this.tokens[1]);
 		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`);
 		switch(variable.type){

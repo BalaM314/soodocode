@@ -473,7 +473,7 @@ help: try using DIV instead of / to produce an integer as the result`);
             evaluateToken(token, type) {
                 if (token.type == "name") {
                     if (type == "function")
-                        return this.getFunction(token.text);
+                        return this.getFunction(token);
                     const enumType = this.getEnumFromValue(token.text);
                     if (enumType) {
                         if (type == "variable")
@@ -481,9 +481,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         return this.finishEvaluation(token.text, enumType, type);
                     }
                     else {
-                        const variable = this.getVariable(token.text);
-                        if (!variable)
-                            fail(f.quote `Undeclared variable ${token}`);
+                        const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
                         if (type == "variable")
                             return variable;
                         if (variable.value == null)
@@ -580,6 +578,31 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 fail(f.quote `Type ${name} does not exist`, range);
             }
+            handleNonexistentFunction(name, range) {
+                const allFunctions = [
+                    ...Object.entries(this.functions),
+                    ...Object.entries(builtinFunctions),
+                ];
+                if (builtinFunctions[name.toUpperCase()])
+                    fail(f.quote `Function ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
+                let found;
+                if ((found =
+                    min(allFunctions, t => biasedLevenshtein(t[0], name) ?? Infinity, 3)) != undefined) {
+                    fail(f.quote `Function ${name} does not exist\nhelp: perhaps you meant ${found[0]}`, range);
+                }
+                fail(f.quote `Function ${name} does not exist`, range);
+            }
+            handleNonexistentVariable(name, range) {
+                const allVariables = [
+                    ...this.scopes.flatMap(s => Object.keys(s.variables)),
+                ];
+                let found;
+                if ((found =
+                    min(allVariables, t => biasedLevenshtein(t, name) ?? Infinity, 2)) != undefined) {
+                    fail(f.quote `Variable ${name} does not exist\nhelp: perhaps you meant ${found}`, range);
+                }
+                fail(f.quote `Variable ${name} does not exist`, range);
+            }
             getVariable(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     if (this.scopes[i].variables[name])
@@ -624,13 +647,13 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
                 return false;
             }
-            getFunction(name) {
-                if (this.classData && this.classData.clazz.allMethods[name]) {
-                    const [clazz, method] = this.classData.clazz.allMethods[name];
+            getFunction({ text, range }) {
+                if (this.classData && this.classData.clazz.allMethods[text]) {
+                    const [clazz, method] = this.classData.clazz.allMethods[text];
                     return { clazz, method, instance: this.classData.instance };
                 }
                 else
-                    return this.functions[name] ?? builtinFunctions[name] ?? fail(f.quote `Function ${name} has not been defined.`);
+                    return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
             }
             getClass(name) {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {

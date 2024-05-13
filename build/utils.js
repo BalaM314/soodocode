@@ -343,9 +343,9 @@ export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
     }
     const out = matrix.at(-1);
     if (b.startsWith(a) || a.startsWith(b))
-        return out * 0.3;
+        return out * 0.7;
     if (b.includes(a) || a.includes(b))
-        return out * 0.6;
+        return out * 0.9;
     return out;
 }
 const fakeObjectTrap = new Proxy({}, {

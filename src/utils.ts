@@ -365,8 +365,8 @@ export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):n
 
 	const out = matrix.at(-1)!; //bottom right corner of matrix
 	//apply weighting
-	if(b.startsWith(a) || a.startsWith(b)) return out * 0.3;
-	if(b.includes(a) || a.includes(b)) return out * 0.6;
+	if(b.startsWith(a) || a.startsWith(b)) return out * 0.7;
+	if(b.includes(a) || a.includes(b)) return out * 0.9;
 	return out;
 }
 

@@ -75,13 +75,15 @@ export declare class Runtime {
     static evaluateToken(token: Token, type?: VariableType): [type: VariableType, value: VariableValue];
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentType(name: string, range: TextRangeLike): never;
+    handleNonexistentFunction(name: string, range: TextRangeLike): never;
+    handleNonexistentVariable(name: string, range: TextRangeLike): never;
     getVariable(name: string): VariableData | ConstantData | null;
     getType(name: string): VariableType | null;
     getEnumFromValue(name: string): EnumeratedVariableType | null;
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
-    getFunction(name: string): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
+    getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     getClass(name: string): ClassVariableType;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
