@@ -398,12 +398,14 @@ let TypeRecordStatement = (() => {
         }
         runBlock(runtime, node) {
             const fields = {};
-            for (const statement of node.nodeGroups[0]) {
-                if (!(statement instanceof DeclareStatement))
-                    fail(`Statements in a record type block can only be declaration statements`);
-                const type = runtime.resolveVariableType(statement.varType);
-                statement.variables.forEach(v => fields[v] = type);
-            }
+            runtime.initializeType(this.name.text, runtime => {
+                for (const statement of node.nodeGroups[0]) {
+                    if (!(statement instanceof DeclareStatement))
+                        fail(`Statements in a record type block can only be declaration statements`);
+                    const type = runtime.resolveVariableType(statement.varType);
+                    statement.variables.forEach(v => fields[v] = type);
+                }
+            });
             runtime.getCurrentScope().types[this.name.text] = new RecordVariableType(this.name.text, fields);
         }
     };
@@ -1352,8 +1354,7 @@ let ClassStatement = (() => {
         runBlock(runtime, branchNode) {
             if (runtime.getCurrentScope().types[this.name.text])
                 fail(f.quote `Type ${this.name.text} already exists in the current scope`);
-            const data = this.initializeClass(runtime, branchNode);
-            runtime.getCurrentScope().types[this.name.text] = data;
+            runtime.getCurrentScope().types[this.name.text] = runtime.initializeType(this.name.text, runtime => this.initializeClass(runtime, branchNode));
         }
     };
     __setFunctionName(_classThis, "ClassStatement");

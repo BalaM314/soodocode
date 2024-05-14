@@ -108,7 +108,9 @@ export class Runtime {
 		clazz:ClassVariableType;
 		instance:VariableTypeMapping<ClassVariableType>;
 		method:ClassMethodData;
-	 } | null = null;
+	} | null = null;
+	/** While a type is being declared, this variable is set to the name of the type. */
+	currentlyResolvingTypeName: string | null = null;
 	fs = new Files();
 	constructor(
 		public _input: (message:string) => string,
@@ -342,8 +344,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 			}
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
-			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a class instantiation expression, which can only return a class instance, not a variable.`);
-			if(type == "function") fail(`Expected this expression to evaluate to a function, but found a class instantiation expression, which can only return a class instance, not a function.`);
+			if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`);
 			const clazz = this.getClass(expr.className.text);
 			const output = clazz.construct(this, expr.args);
 			return this.finishEvaluation(output, clazz, type);
@@ -594,6 +595,8 @@ help: try using DIV instead of / to produce an integer as the result`
 		];
 		if(PrimitiveVariableType.get(name.toUpperCase()))
 			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
+		if(this.currentlyResolvingTypeName == name)
+			fail(f.quote`Type ${name} does not exist yet, it is currently being initialized`, range);
 		let found;
 		if((found =
 			min(allTypes, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)
@@ -870,7 +873,16 @@ help: try using DIV instead of / to produce an integer as the result`
 	getOpenFile<T extends FileMode>(filename:string, modes:T[], operationDescription:string):OpenedFileOfType<T>;
 	getOpenFile(filename:string, modes?:FileMode[], operationDescription?:string):OpenedFile {
 		const data = (this.openFiles[filename] ?? fail(f.quote`File ${filename} is not open or does not exist.`));
-		if(modes && operationDescription && !modes.includes(data.mode)) fail(f.quote`${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
+		if(modes && operationDescription && !modes.includes(data.mode))
+			fail(f.quote`${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
 		return data;
+	}
+	initializeType<T>(name:string, callback:(runtime:Runtime) => T):T {
+		if(this.currentlyResolvingTypeName) 
+			crash(f.quote`Attempted to resolve a type (${name}) while already resolving another type (${this.currentlyResolvingTypeName})`);
+		this.currentlyResolvingTypeName = name;
+		const out = callback(this);
+		this.currentlyResolvingTypeName = null;
+		return out;
 	}
 }

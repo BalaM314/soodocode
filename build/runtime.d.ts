@@ -34,6 +34,7 @@ export declare class Runtime {
         instance: VariableTypeMapping<ClassVariableType>;
         method: ClassMethodData;
     } | null;
+    currentlyResolvingTypeName: string | null;
     fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
     finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];
@@ -99,4 +100,5 @@ export declare class Runtime {
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;
     getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;
+    initializeType<T>(name: string, callback: (runtime: Runtime) => T): T;
 }

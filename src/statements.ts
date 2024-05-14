@@ -311,11 +311,13 @@ export class TypeRecordStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const fields:Record<string, VariableType> = {};
-		for(const statement of node.nodeGroups[0]){
-			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`);
-			const type = runtime.resolveVariableType(statement.varType);
-			statement.variables.forEach(v => fields[v] = type);
-		}
+		runtime.initializeType(this.name.text, runtime => {
+			for(const statement of node.nodeGroups[0]){
+				if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`);
+				const type = runtime.resolveVariableType(statement.varType);
+				statement.variables.forEach(v => fields[v] = type);
+			}
+		});
 		runtime.getCurrentScope().types[this.name.text] = new RecordVariableType(this.name.text, fields);
 	}
 }
@@ -859,8 +861,9 @@ export class ClassStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
 		if(runtime.getCurrentScope().types[this.name.text]) fail(f.quote`Type ${this.name.text} already exists in the current scope`);
-		const data = this.initializeClass(runtime, branchNode);
-		runtime.getCurrentScope().types[this.name.text] = data;
+		runtime.getCurrentScope().types[this.name.text] = runtime.initializeType(this.name.text, runtime =>
+			this.initializeClass(runtime, branchNode)
+		);
 	}
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
