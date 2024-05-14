@@ -228,6 +228,13 @@ record_type_blank: [
 ENDTYPE`,
 []
 ],
+record_type_duplicate: [
+`TYPE amogus
+ENDTYPE
+TYPE amogus
+ENDTYPE`,
+"defined twice"
+],
 record_type_fields: [
 `TYPE amogus
 	DECLARE sus: INTEGER

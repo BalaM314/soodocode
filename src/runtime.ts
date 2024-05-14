@@ -850,7 +850,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			} else {
 				[name, type] = node.controlStatements[0].runTypeBlock(this, node);
 			}
-			if(this.getCurrentScope().types[name]) fail(f.quote`Type ${name} was declared twice`);//TODO range here somehow
+			if(this.getCurrentScope().types[name]) fail(f.quote`Type ${name} was defined twice`, node);
 			this.getCurrentScope().types[name] = type;
 			types.push(type);
 		}

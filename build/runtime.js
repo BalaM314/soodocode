@@ -832,7 +832,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                         [name, type] = node.controlStatements[0].runTypeBlock(this, node);
                     }
                     if (this.getCurrentScope().types[name])
-                        fail(f.quote `Type ${name} was declared twice`);
+                        fail(f.quote `Type ${name} was defined twice`, node);
                     this.getCurrentScope().types[name] = type;
                     types.push(type);
                 }
