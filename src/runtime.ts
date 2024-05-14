@@ -8,10 +8,10 @@ This file contains the runtime, which executes the program AST.
 
 import { builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTNode, operators } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, tryRunOr, zip } from "./utils.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeSetStatement, TypeStatement } from "./statements.js";
+import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -171,7 +171,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			if(type == "variable"){
 				//i see nothing wrong with this bodged variable data
 				return {
-					type: this.resolveVariableType(varTypeData.type),
+					type: varTypeData.type,
 					declaration: variable.declaration,
 					mutable: true,
 					get value(){ return variable.value[index]; },
@@ -180,9 +180,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			}
 			const output = variable.value[index];
 			if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-			return this.finishEvaluation(output, this.resolveVariableType(varTypeData.type), type);
+			return this.finishEvaluation(output, varTypeData.type, type);
 		} else {
-			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, this.resolveVariableType(varTypeData.type))[1];
+			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, varTypeData.type)[1];
 		}
 	}
 	/* get a property, optionally specifying type */
@@ -585,8 +585,11 @@ help: try using DIV instead of / to produce an integer as the result`
 		}
 	}
 	resolveVariableType(type:UnresolvedVariableType):VariableType {
-		if(type instanceof PrimitiveVariableType || type instanceof ArrayVariableType) return type;
-		else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
+		if(type instanceof PrimitiveVariableType) return type;
+		else if(type instanceof ArrayVariableType) {
+			type.init(this);
+			return type as never as ArrayVariableType<true>;
+		} else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
 	}
 	handleNonexistentType(name:string, range:TextRangeLike):never {
 		const allTypes:(readonly [string, VariableType])[] = [
@@ -722,7 +725,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(typeof value == "boolean") return value;
 		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
 		if(Array.isArray(value)) return value.slice().map(v =>
-			this.cloneValue(this.resolveVariableType((type as ArrayVariableType).type ?? crash(`Cannot clone value in an array of unknown type`)), v)
+			this.cloneValue((type as ArrayVariableType).type ?? crash(`Cannot clone value in an array of unknown type`), v)
 		) as VariableTypeMapping<T>;
 		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)
@@ -834,7 +837,29 @@ help: try using DIV instead of / to produce an integer as the result`
 	}{
 		this.scopes.push(...scopes);
 		let returned:null | VariableValue = null;
-		for(const node of code){
+		const [typeNodes, others] = separateArray(code, (c):c is TypeStatement | (ProgramASTBranchNode & {controlStatements: [TypeStatement]}) =>
+			c instanceof TypeStatement ||
+			c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement
+		);
+		//First pass: initialize types
+		const types: VariableType[] = [];
+		for(const node of typeNodes){
+			let type, name;
+			if(node instanceof Statement){
+				[name, type] = node.createType(this);
+			} else {
+				[name, type] = node.controlStatements[0].runTypeBlock(this, node);
+			}
+			if(this.getCurrentScope().types[name]) fail(f.quote`Type ${name} was declared twice`);//TODO range here somehow
+			this.getCurrentScope().types[name] = type;
+			types.push(type);
+		}
+		//Second pass: resolve types
+		for(const type of types){
+			type.init(this);
+		}
+		//TODO check type size
+		for(const node of others){
 			let result;
 			if(node instanceof Statement){
 				result = node.run(this);
@@ -876,13 +901,5 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(modes && operationDescription && !modes.includes(data.mode))
 			fail(f.quote`${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
 		return data;
-	}
-	initializeType<T>(name:string, callback:(runtime:Runtime) => T):T {
-		if(this.currentlyResolvingTypeName) 
-			crash(f.quote`Attempted to resolve a type (${name}) while already resolving another type (${this.currentlyResolvingTypeName})`);
-		this.currentlyResolvingTypeName = name;
-		const out = callback(this);
-		this.currentlyResolvingTypeName = null;
-		return out;
 	}
 }

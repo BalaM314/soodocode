@@ -234,6 +234,12 @@ record_type_fields: [
 ENDTYPE`,
 []
 ],
+record_type_fields_nonexistent: [
+`TYPE amogus
+	DECLARE sus: SUSSY
+ENDTYPE`,
+"SUSSY"
+],
 record_type_recursive_illegal_1: [
 `TYPE amogus
 	DECLARE sus: amogus

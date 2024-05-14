@@ -1,4 +1,4 @@
-import { crash, f, fail } from "./utils.js";
+import { crash, f, fail, impossible } from "./utils.js";
 export class BaseVariableType {
     is(...type) {
         return false;
@@ -13,6 +13,7 @@ export class PrimitiveVariableType extends BaseVariableType {
         this.name = name;
         PrimitiveVariableType.all.push(this);
     }
+    init(runtime) { impossible(); }
     fmtDebug() {
         return `PrimitiveVariableType ${this.name}`;
     }
@@ -68,6 +69,10 @@ export class ArrayVariableType extends BaseVariableType {
             this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
         }
     }
+    init(runtime) {
+        if (Array.isArray(this.type))
+            this.type = runtime.resolveVariableType(this.type);
+    }
     fmtText() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
         return f.text `ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
@@ -81,7 +86,7 @@ export class ArrayVariableType extends BaseVariableType {
             fail(f.quote `${this} is not a valid variable type: length must be specified here`);
         if (!this.type)
             fail(f.quote `${this} is not a valid variable type: element type must be specified here`);
-        const type = runtime.resolveVariableType(this.type);
+        const type = this.type;
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
@@ -91,10 +96,18 @@ export class ArrayVariableType extends BaseVariableType {
     }
 }
 export class RecordVariableType extends BaseVariableType {
-    constructor(name, fields) {
+    constructor(initialized, name, fields) {
         super();
+        this.initialized = initialized;
         this.name = name;
         this.fields = fields;
+    }
+    init(runtime) {
+        for (const [name, field] of Object.entries(this.fields)) {
+            if (Array.isArray(field))
+                this.fields[name] = runtime.resolveVariableType(field);
+        }
+        this.initialized = true;
     }
     fmtText() {
         return `${this.name} (user-defined record type)`;
@@ -106,15 +119,23 @@ export class RecordVariableType extends BaseVariableType {
         return `RecordVariableType [${this.name}] (fields: ${Object.keys(this.fields).join(", ")})`;
     }
     getInitValue(runtime, requireInit) {
+        if (!this.initialized)
+            crash(`Type not initialized`);
         return Object.fromEntries(Object.entries(this.fields)
             .map(([k, v]) => [k, v.getInitValue(runtime, false)]));
     }
 }
 export class PointerVariableType extends BaseVariableType {
-    constructor(name, target) {
+    constructor(initialized, name, target) {
         super();
+        this.initialized = initialized;
         this.name = name;
         this.target = target;
+    }
+    init(runtime) {
+        if (Array.isArray(this.target))
+            this.target = runtime.resolveVariableType(this.target);
+        this.initialized = true;
     }
     fmtText() {
         return f.text `${this.name} (user-defined pointer type ^${this.target})`;
@@ -135,6 +156,7 @@ export class EnumeratedVariableType extends BaseVariableType {
         this.name = name;
         this.values = values;
     }
+    init() { }
     fmtText() {
         return `${this.name} (user-defined enumerated type)`;
     }
@@ -149,10 +171,16 @@ export class EnumeratedVariableType extends BaseVariableType {
     }
 }
 export class SetVariableType extends BaseVariableType {
-    constructor(name, baseType) {
+    constructor(initialized, name, baseType) {
         super();
+        this.initialized = initialized;
         this.name = name;
         this.baseType = baseType;
+    }
+    init(runtime) {
+        if (Array.isArray(this.baseType))
+            this.baseType = runtime.resolveVariableType(this.baseType);
+        this.initialized = true;
     }
     fmtText() {
         return f.text `${this.name} (user-defined set type containing "${this.baseType}")`;
@@ -177,6 +205,7 @@ export class ClassVariableType extends BaseVariableType {
         this.name = this.statement.name.text;
         this.baseClass = null;
     }
+    init() { }
     fmtText() {
         return f.text `${this.name} (user-defined class type)`;
     }

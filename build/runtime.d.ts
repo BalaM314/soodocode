@@ -100,5 +100,4 @@ export declare class Runtime {
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;
     getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;
-    initializeType<T>(name: string, callback: (runtime: Runtime) => T): T;
 }

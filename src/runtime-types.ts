@@ -11,7 +11,7 @@ import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-import { crash, f, fail } from "./utils.js";
+import { crash, f, fail, impossible } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> =
@@ -44,6 +44,7 @@ export type VariableTypeMapping<T> =
 
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
+	abstract init(runtime:Runtime):void;
 	is(...type:PrimitiveVariableTypeName[]) {
 		return false;
 	}
@@ -80,6 +81,7 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 		super();
 		PrimitiveVariableType.all.push(this);
 	}
+	init(runtime:Runtime){impossible();}
 	fmtDebug(){
 		return `PrimitiveVariableType ${this.name}`;
 	}
@@ -113,12 +115,12 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	}
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
-export class ArrayVariableType extends BaseVariableType {
+export class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
 	constructor(
 		public lengthInformation: [low:number, high:number][] | null,
-		public type: Exclude<UnresolvedVariableType, ArrayVariableType> | null,
+		public type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
 	){
 		super();
 		if(this.lengthInformation){
@@ -128,33 +130,45 @@ export class ArrayVariableType extends BaseVariableType {
 			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
 		}
 	}
-	fmtText(){
+	init(runtime:Runtime){
+		if(Array.isArray(this.type))
+			this.type = runtime.resolveVariableType(this.type);
+	}
+	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
 		return f.text`ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
 	}
-	fmtDebug(){
+	fmtDebug():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
 		return f.debug`ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
 		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`);
 		if(!this.type) fail(f.quote`${this} is not a valid variable type: element type must be specified here`);
-		const type = runtime.resolveVariableType(this.type);
+		const type = (this as ArrayVariableType<true>).type!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
 		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 	static from(node:ExpressionASTArrayTypeNode){
-		return new ArrayVariableType(
+		return new ArrayVariableType<false>(
 			node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text)) as [number, number]) ?? null,
 			PrimitiveVariableType.resolve(node.elementType)
 		);
 	}
 }
-export class RecordVariableType extends BaseVariableType {
+export class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
 	constructor(
+		public initialized: Init,
 		public name: string,
-		public fields: Record<string, VariableType>,
+		public fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>,
 	){super();}
+	init(runtime:Runtime){
+		for(const [name, field] of Object.entries(this.fields)){
+			if(Array.isArray(field))
+				this.fields[name] = runtime.resolveVariableType(field);
+		}
+		(this as RecordVariableType<true>).initialized = true;
+	}
 	fmtText(){
 		return `${this.name} (user-defined record type)`;
 	}
@@ -165,23 +179,29 @@ export class RecordVariableType extends BaseVariableType {
 		return `RecordVariableType [${this.name}] (fields: ${Object.keys(this.fields).join(", ")})`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableValue | null {
-		return Object.fromEntries(Object.entries(this.fields)
+		if(!this.initialized) crash(`Type not initialized`);
+		return Object.fromEntries(Object.entries((this as RecordVariableType<true>).fields)
 			.map(([k, v]) => [k, v.getInitValue(runtime, false)])
 		) as VariableValue | null;
 	}
 }
-export class PointerVariableType extends BaseVariableType {
+export class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
 	constructor(
+		public initialized: Init,
 		public name: string,
-		public target: VariableType
+		public target: (Init extends true ? never : UnresolvedVariableType) | VariableType
 	){super();}
-	fmtText(){
+	init(runtime:Runtime){
+		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
+		(this as PointerVariableType<true>).initialized = true;
+	}
+	fmtText():string {
 		return f.text`${this.name} (user-defined pointer type ^${this.target})`;
 	}
-	fmtQuoted(){
+	fmtQuoted():string {
 		return f.text`"${this.name}" (user-defined pointer type ^${this.target})`;
 	}
-	fmtDebug(){
+	fmtDebug():string {
 		return f.debug`PointerVariableType [${this.name}] to "${this.target}"`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
@@ -193,6 +213,7 @@ export class EnumeratedVariableType extends BaseVariableType {
 		public name: string,
 		public values: string[]
 	){super();}
+	init(){}
 	fmtText(){
 		return `${this.name} (user-defined enumerated type)`;
 	}
@@ -206,18 +227,23 @@ export class EnumeratedVariableType extends BaseVariableType {
 		return null;
 	}
 }
-export class SetVariableType extends BaseVariableType {
+export class SetVariableType<Init extends boolean = true> extends BaseVariableType {
 	constructor(
+		public initialized: Init,
 		public name: string,
-		public baseType: PrimitiveVariableType,
+		public baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType,
 	){super();}
-	fmtText(){
+	init(runtime:Runtime){
+		if(Array.isArray(this.baseType)) this.baseType = runtime.resolveVariableType(this.baseType);
+		(this as SetVariableType<true>).initialized = true;
+	}
+	fmtText():string {
 		return f.text`${this.name} (user-defined set type containing "${this.baseType}")`;
 	}
-	toQuotedString(){
+	toQuotedString():string {
 		return f.text`"${this.name}" (user-defined set type containing "${this.baseType}")`;
 	}
-	fmtDebug(){
+	fmtDebug():string {
 		return f.debug`SetVariableType [${this.name}] (contains: ${this.baseType})`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
@@ -235,6 +261,7 @@ export class ClassVariableType extends BaseVariableType {
 		public ownMethods: Record<string, ClassMethodData> = {},
 		public allMethods: Record<string, [ClassVariableType, ClassMethodData]> = {},
 	){super();}
+	init(){}
 	fmtText(){
 		return f.text`${this.name} (user-defined class type)`;
 	}
@@ -285,7 +312,7 @@ export class ClassVariableType extends BaseVariableType {
 
 export type UnresolvedVariableType =
 	| PrimitiveVariableType
-	| ArrayVariableType
+	| ArrayVariableType<false>
 	| ["unresolved", name:string, range:TextRange]
 ;
 export type VariableType =

@@ -191,7 +191,7 @@ const expressionTests = ((data:Record<string, [
 		"INTEGER",
 		["INTEGER", 18],
 		r => {
-			const amogusType = new RecordVariableType("amogusType", {
+			const amogusType = new RecordVariableType(true, "amogusType", {
 				sus: PrimitiveVariableType.INTEGER
 			});
 			r.getCurrentScope().types["amogusType"] = amogusType;
@@ -216,10 +216,10 @@ const expressionTests = ((data:Record<string, [
 		"INTEGER",
 		["INTEGER", 123],
 		r => {
-			const innerType = new RecordVariableType("innerType", {
+			const innerType = new RecordVariableType(true, "innerType", {
 				ccc: PrimitiveVariableType.INTEGER
 			});
-			const outerType = new RecordVariableType("outerType", {
+			const outerType = new RecordVariableType(true, "outerType", {
 				bbb: innerType
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
@@ -246,12 +246,12 @@ const expressionTests = ((data:Record<string, [
 		"INTEGER",
 		["INTEGER", 124],
 		r => {
-			const innerType = new RecordVariableType("innerType", {
+			const innerType = new RecordVariableType(true, "innerType", {
 				ccc: PrimitiveVariableType.INTEGER
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().variables["aaa"] = {
-				type: new ArrayVariableType([[1, 5]], ["unresolved", "innerType", [-1, -1]]),
+				type: new ArrayVariableType([[1, 5]], innerType),
 				declaration: null!,
 				mutable: true,
 				value: [null, {
@@ -284,7 +284,7 @@ const expressionTests = ((data:Record<string, [
 		"INTEGER",
 		["error"],
 		r => {
-			const amogusType = new RecordVariableType("amogusType", {
+			const amogusType = new RecordVariableType(true, "amogusType", {
 				sus: PrimitiveVariableType.INTEGER
 			});
 			r.getCurrentScope().types["amogusType"] = amogusType;
@@ -299,7 +299,7 @@ const expressionTests = ((data:Record<string, [
 		}
 	],
 	pointerRef1: (() => {
-		const intPointer = new PointerVariableType("intPtr", PrimitiveVariableType.INTEGER);
+		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER);
 		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 			type: PrimitiveVariableType.INTEGER,
 			declaration: null!,
@@ -319,14 +319,14 @@ const expressionTests = ((data:Record<string, [
 		];
 	})(),
 	pointerRef_array_udt: (() => {
-		const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
-			[1, 10]
-		], ["unresolved", "foo", [-1, -1]]));
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
+		const arrayPointer = new PointerVariableType(true, "intPtr", new ArrayVariableType([
+			[1, 10]
+		], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: new ArrayVariableType([
 				[1, 10]
-			], ["unresolved", "foo", [-1, -1]]),
+			], foo),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -345,14 +345,14 @@ const expressionTests = ((data:Record<string, [
 		];
 	})(),
 	pointerRef_array_udt_invalid: (() => {
-		const arrayPointer = new PointerVariableType("intPtr", new ArrayVariableType([
-			[1, 10]
-		], ["unresolved", "foo", [-1, -1]]));
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
+		const arrayPointer = new PointerVariableType(true, "intPtr", new ArrayVariableType([
+			[1, 10]
+		], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: new ArrayVariableType([
 				[1, 10]
-			], ["unresolved", "foo", [-1, -1]]),
+			], foo),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -391,7 +391,7 @@ const expressionTests = ((data:Record<string, [
 	// 	]
 	// })(),
 	pointerRef_invalid_undeclared_variable: (() => {
-		const intPointer = new PointerVariableType("intPtr", PrimitiveVariableType.INTEGER);
+		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER);
 		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 			type: PrimitiveVariableType.INTEGER,
 			declaration: null!,
@@ -418,7 +418,7 @@ const expressionTests = ((data:Record<string, [
 			"INTEGER",
 			["INTEGER", 20],
 			r => {
-				const intPointer = new PointerVariableType("intPtr", PrimitiveVariableType.INTEGER);
+				const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER);
 				const amogusVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 					type: PrimitiveVariableType.INTEGER,
 					declaration: null!,
@@ -991,7 +991,10 @@ const statementTests = ((data:Record<string, [
 			value: null
 		})
 	],
-	typePointer1: [
+	// TODO fix these tests
+	//running a type statement is no longer valid
+	//a new test block needs to be added that checks the return value of createType()
+	/*typePointer1: [
 		[TypePointerStatement, [
 			"keyword.type",
 			"amogus",
@@ -1001,7 +1004,7 @@ const statementTests = ((data:Record<string, [
 		]],
 		r => {},
 		r => {
-			expect(r.getType("amogus")).toEqual(new PointerVariableType("amogus", PrimitiveVariableType.INTEGER));
+			expect(r.getType("amogus")).toEqual(new PointerVariableType(true, "amogus", PrimitiveVariableType.INTEGER));
 		}
 	],
 	typePointer_invalid_nonexistent: [
@@ -1044,9 +1047,9 @@ const statementTests = ((data:Record<string, [
 		r => {},
 		r => {
 			expect(r.getType("amog"))
-				.toEqual(new SetVariableType("amog", PrimitiveVariableType.INTEGER));
+				.toEqual(new SetVariableType(true, "amog", PrimitiveVariableType.INTEGER));
 		}
-	],
+	],*/
 });
 
 const programTests = ((data:Record<string,

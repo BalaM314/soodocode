@@ -192,6 +192,14 @@ function statement(type, example, ...args) {
         return input;
     };
 }
+export class TypeStatement extends Statement {
+    createType(runtime) {
+        crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
+    }
+    runTypeBlock(runtime, block) {
+        crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
+    }
+}
 let DeclareStatement = (() => {
     let _classDecorators = [statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")];
     let _classDescriptor;
@@ -308,7 +316,7 @@ let TypePointerStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = Statement;
+    let _classSuper = TypeStatement;
     var TypePointerStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
@@ -316,8 +324,8 @@ let TypePointerStatement = (() => {
             [, { text: this.name }, , , targetType] = tokens;
             this.targetType = processTypeData(targetType);
         }
-        run(runtime) {
-            runtime.getCurrentScope().types[this.name] = new PointerVariableType(this.name, runtime.resolveVariableType(this.targetType));
+        createType(runtime) {
+            return [this.name, new PointerVariableType(false, this.name, this.targetType)];
         }
     };
     __setFunctionName(_classThis, "TypePointerStatement");
@@ -336,15 +344,15 @@ let TypeEnumStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = Statement;
+    let _classSuper = TypeStatement;
     var TypeEnumStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1];
             this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
         }
-        run(runtime) {
-            runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(this.name.text, this.values.map(t => t.text));
+        createType(runtime) {
+            return [this.name.text, new EnumeratedVariableType(this.name.text, this.values.map(t => t.text))];
         }
     };
     __setFunctionName(_classThis, "TypeEnumStatement");
@@ -363,15 +371,15 @@ let TypeSetStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = Statement;
+    let _classSuper = TypeStatement;
     var TypeSetStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1];
             this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`);
         }
-        run(runtime) {
-            runtime.getCurrentScope().types[this.name.text] = new SetVariableType(this.name.text, this.setType);
+        createType(runtime) {
+            return [this.name.text, new SetVariableType(false, this.name.text, this.setType)];
         }
     };
     __setFunctionName(_classThis, "TypeSetStatement");
@@ -390,23 +398,20 @@ let TypeRecordStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = Statement;
+    let _classSuper = TypeStatement;
     var TypeRecordStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1];
         }
-        runBlock(runtime, node) {
+        runTypeBlock(runtime, node) {
             const fields = {};
-            runtime.initializeType(this.name.text, runtime => {
-                for (const statement of node.nodeGroups[0]) {
-                    if (!(statement instanceof DeclareStatement))
-                        fail(`Statements in a record type block can only be declaration statements`);
-                    const type = runtime.resolveVariableType(statement.varType);
-                    statement.variables.forEach(v => fields[v] = type);
-                }
-            });
-            runtime.getCurrentScope().types[this.name.text] = new RecordVariableType(this.name.text, fields);
+            for (const statement of node.nodeGroups[0]) {
+                if (!(statement instanceof DeclareStatement))
+                    fail(`Statements in a record type block can only be declaration statements`);
+                statement.variables.forEach(v => fields[v] = statement.varType);
+            }
+            return [this.name.text, new RecordVariableType(false, this.name.text, fields)];
         }
     };
     __setFunctionName(_classThis, "TypeRecordStatement");
@@ -1354,7 +1359,7 @@ let ClassStatement = (() => {
         runBlock(runtime, branchNode) {
             if (runtime.getCurrentScope().types[this.name.text])
                 fail(f.quote `Type ${this.name.text} already exists in the current scope`);
-            runtime.getCurrentScope().types[this.name.text] = runtime.initializeType(this.name.text, runtime => this.initializeClass(runtime, branchNode));
+            runtime.getCurrentScope().types[this.name.text] = this.initializeClass(runtime, branchNode);
         }
     };
     __setFunctionName(_classThis, "ClassStatement");

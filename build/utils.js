@@ -35,6 +35,14 @@ export function applyRangeTransformers(text, ranges) {
     }
     return text;
 }
+export function separateArray(arr, predicate) {
+    const a = [];
+    const b = [];
+    for (const el of arr) {
+        (predicate(el) ? a : b).push(el);
+    }
+    return [a, b];
+}
 export function splitArray(arr, split) {
     const output = [[]];
     if (typeof split == "function") {

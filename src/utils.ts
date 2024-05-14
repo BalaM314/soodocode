@@ -52,6 +52,17 @@ export function applyRangeTransformers(text:string, ranges:[range:TextRange, sta
 	return text;
 }
 
+export function separateArray<T, S extends T>(arr:T[], predicate:(item:T) => item is S):[true: S[], false: T[]];
+export function separateArray<T>(arr:T[], predicate:(item:T) => boolean):[true: T[], false: T[]];
+export function separateArray<T>(arr:T[], predicate:(item:T) => boolean):[true: T[], false: T[]] {
+	const a:T[] = [];
+	const b:T[] = [];
+	for(const el of arr){
+		(predicate(el) ? a : b).push(el);
+	}
+	return [a, b];
+}
+
 export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array:T[]) => boolean)):T[][] {
 	const output:T[][] = [[]];
 	if(typeof split == "function"){

@@ -56,6 +56,10 @@ export declare class Statement implements TextRanged, IFormattable {
     run(runtime: Runtime): void | StatementExecutionResult;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | StatementExecutionResult;
 }
+export declare class TypeStatement extends Statement {
+    createType(runtime: Runtime): [name: string, type: VariableType];
+    runTypeBlock(runtime: Runtime, block: ProgramASTBranchNode): [name: string, type: VariableType];
+}
 export declare class DeclareStatement extends Statement {
     variables: string[];
     varType: UnresolvedVariableType;
@@ -75,28 +79,28 @@ export declare class DefineStatement extends Statement {
     constructor(tokens: [Token, Token, Token, ...Token[], Token, Token, Token]);
     run(runtime: Runtime): void;
 }
-export declare class TypePointerStatement extends Statement {
+export declare class TypePointerStatement extends TypeStatement {
     name: string;
     targetType: UnresolvedVariableType;
     constructor(tokens: [Token, Token, Token, Token, ExpressionASTTypeNode]);
-    run(runtime: Runtime): void;
+    createType(runtime: Runtime): [name: string, type: VariableType];
 }
-export declare class TypeEnumStatement extends Statement {
+export declare class TypeEnumStatement extends TypeStatement {
     name: Token;
     values: Token[];
     constructor(tokens: [Token, Token, Token, Token, ...Token[], Token]);
-    run(runtime: Runtime): void;
+    createType(runtime: Runtime): [name: string, type: VariableType];
 }
-export declare class TypeSetStatement extends Statement {
+export declare class TypeSetStatement extends TypeStatement {
     name: Token;
     setType: PrimitiveVariableType;
     constructor(tokens: [Token, Token, Token, Token, Token, Token]);
-    run(runtime: Runtime): void;
+    createType(runtime: Runtime): [name: string, type: VariableType];
 }
-export declare class TypeRecordStatement extends Statement {
+export declare class TypeRecordStatement extends TypeStatement {
     name: Token;
     constructor(tokens: [Token, Token]);
-    runBlock(runtime: Runtime, node: ProgramASTBranchNode): void;
+    runTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): [name: string, type: VariableType];
 }
 export declare class AssignmentStatement extends Statement {
     target: ExpressionAST;

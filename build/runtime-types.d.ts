@@ -14,6 +14,7 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
 } : never;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
+    abstract init(runtime: Runtime): void;
     is(...type: PrimitiveVariableTypeName[]): boolean;
     abstract fmtDebug(): string;
     fmtQuoted(): string;
@@ -31,6 +32,7 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static BOOLEAN: PrimitiveVariableType<"BOOLEAN">;
     static DATE: PrimitiveVariableType<"DATE">;
     private constructor();
+    init(runtime: Runtime): void;
     fmtDebug(): string;
     fmtText(): T;
     is<T extends PrimitiveVariableTypeName>(...type: T[]): this is PrimitiveVariableType<T>;
@@ -40,30 +42,35 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static resolve(token: Token): Exclude<UnresolvedVariableType, ArrayVariableType>;
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
-export declare class ArrayVariableType extends BaseVariableType {
+export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
     lengthInformation: [low: number, high: number][] | null;
-    type: Exclude<UnresolvedVariableType, ArrayVariableType> | null;
+    type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null;
     totalLength: number | null;
     arraySizes: number[] | null;
-    constructor(lengthInformation: [low: number, high: number][] | null, type: Exclude<UnresolvedVariableType, ArrayVariableType> | null);
+    constructor(lengthInformation: [low: number, high: number][] | null, type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
+    init(runtime: Runtime): void;
     fmtText(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;
-    static from(node: ExpressionASTArrayTypeNode): ArrayVariableType;
+    static from(node: ExpressionASTArrayTypeNode): ArrayVariableType<false>;
 }
-export declare class RecordVariableType extends BaseVariableType {
+export declare class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
+    initialized: Init;
     name: string;
-    fields: Record<string, VariableType>;
-    constructor(name: string, fields: Record<string, VariableType>);
+    fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>;
+    constructor(initialized: Init, name: string, fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>);
+    init(runtime: Runtime): void;
     fmtText(): string;
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableValue | null;
 }
-export declare class PointerVariableType extends BaseVariableType {
+export declare class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
+    initialized: Init;
     name: string;
-    target: VariableType;
-    constructor(name: string, target: VariableType);
+    target: (Init extends true ? never : UnresolvedVariableType) | VariableType;
+    constructor(initialized: Init, name: string, target: (Init extends true ? never : UnresolvedVariableType) | VariableType);
+    init(runtime: Runtime): void;
     fmtText(): string;
     fmtQuoted(): string;
     fmtDebug(): string;
@@ -73,15 +80,18 @@ export declare class EnumeratedVariableType extends BaseVariableType {
     name: string;
     values: string[];
     constructor(name: string, values: string[]);
+    init(): void;
     fmtText(): string;
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
 }
-export declare class SetVariableType extends BaseVariableType {
+export declare class SetVariableType<Init extends boolean = true> extends BaseVariableType {
+    initialized: Init;
     name: string;
-    baseType: PrimitiveVariableType;
-    constructor(name: string, baseType: PrimitiveVariableType);
+    baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType;
+    constructor(initialized: Init, name: string, baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType);
+    init(runtime: Runtime): void;
     fmtText(): string;
     toQuotedString(): string;
     fmtDebug(): string;
@@ -95,6 +105,7 @@ export declare class ClassVariableType extends BaseVariableType {
     name: string;
     baseClass: ClassVariableType | null;
     constructor(statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [ClassVariableType, ClassMethodData]>);
+    init(): void;
     fmtText(): string;
     fmtPlain(): string;
     toQuotedString(): string;
@@ -113,7 +124,7 @@ export declare class ClassVariableType extends BaseVariableType {
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
 }
-export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType | ["unresolved", name: string, range: TextRange];
+export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType<false> | ["unresolved", name: string, range: TextRange];
 export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType | ClassVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
 export type VariableValue = VariableTypeMapping<any>;

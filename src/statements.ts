@@ -114,7 +114,7 @@ export class Statement implements TextRanged, IFormattable {
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult {
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult { //TODO merge this with run()
 		if(this.category == "block")
 			crash(`Missing runtime implementation for block statement ${this.stype}`);
 		else
@@ -187,6 +187,15 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 	};
 }
 
+export class TypeStatement extends Statement {
+	createType(runtime:Runtime):[name:string, type:VariableType] {
+		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
+	}
+	runTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):[name:string, type:VariableType] {
+		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
+	}
+}
+
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
 	variables:string[] = [];
@@ -257,7 +266,7 @@ export class DefineStatement extends Statement {
 }
 
 @statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")
-export class TypePointerStatement extends Statement {
+export class TypePointerStatement extends TypeStatement {
 	name: string;
 	targetType: UnresolvedVariableType;
 	constructor(tokens:[Token, Token, Token, Token, ExpressionASTTypeNode]){
@@ -266,14 +275,14 @@ export class TypePointerStatement extends Statement {
 		[, {text: this.name},,, targetType] = tokens;
 		this.targetType = processTypeData(targetType);
 	}
-	run(runtime:Runtime){
-		runtime.getCurrentScope().types[this.name] = new PointerVariableType(
-			this.name, runtime.resolveVariableType(this.targetType)
-		);
+	createType(runtime:Runtime){
+		return [this.name, new PointerVariableType(
+			false, this.name, this.targetType
+		)] as [name: string, type: VariableType];
 	}
 }
 @statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".+", "parentheses.close")
-export class TypeEnumStatement extends Statement {
+export class TypeEnumStatement extends TypeStatement {
 	name: Token;
 	values: Token[];
 	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
@@ -281,14 +290,14 @@ export class TypeEnumStatement extends Statement {
 		this.name = tokens[1];
 		this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
 	}
-	run(runtime:Runtime){
-		runtime.getCurrentScope().types[this.name.text] = new EnumeratedVariableType(
+	createType(runtime:Runtime){
+		return [this.name.text, new EnumeratedVariableType(
 			this.name.text, this.values.map(t => t.text)
-		);
+		)] as [name: string, type: VariableType];
 	}
 }
 @statement("type.set", "TYPE myIntegerSet = SET OF INTEGER", "keyword.type", "name", "operator.equal_to", "keyword.set", "keyword.of", "name")
-export class TypeSetStatement extends Statement {
+export class TypeSetStatement extends TypeStatement {
 	name: Token;
 	setType: PrimitiveVariableType;
 	constructor(tokens:[Token, Token, Token, Token, Token, Token]){
@@ -296,29 +305,26 @@ export class TypeSetStatement extends Statement {
 		this.name = tokens[1];
 		this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`);
 	}
-	run(runtime:Runtime){
-		runtime.getCurrentScope().types[this.name.text] = new SetVariableType(
-			this.name.text, this.setType
-		);
+	createType(runtime:Runtime){
+		return [this.name.text, new SetVariableType(
+			false, this.name.text, this.setType
+		)] as [name: string, type: VariableType]; //TODO allow sets of UDTs
 	}
 }
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
-export class TypeRecordStatement extends Statement {
+export class TypeRecordStatement extends TypeStatement {
 	name: Token;
 	constructor(tokens:[Token, Token]){
 		super(tokens);
 		this.name = tokens[1];
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		const fields:Record<string, VariableType> = {};
-		runtime.initializeType(this.name.text, runtime => {
-			for(const statement of node.nodeGroups[0]){
-				if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`);
-				const type = runtime.resolveVariableType(statement.varType);
-				statement.variables.forEach(v => fields[v] = type);
-			}
-		});
-		runtime.getCurrentScope().types[this.name.text] = new RecordVariableType(this.name.text, fields);
+	runTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
+		const fields:Record<string, UnresolvedVariableType> = {};
+		for(const statement of node.nodeGroups[0]){
+			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`);
+			statement.variables.forEach(v => fields[v] = statement.varType);
+		}
+		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as [name: string, type: VariableType];
 	}
 }
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
@@ -861,9 +867,7 @@ export class ClassStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
 		if(runtime.getCurrentScope().types[this.name.text]) fail(f.quote`Type ${this.name.text} already exists in the current scope`);
-		runtime.getCurrentScope().types[this.name.text] = runtime.initializeType(this.name.text, runtime =>
-			this.initializeClass(runtime, branchNode)
-		);
+		runtime.getCurrentScope().types[this.name.text] = this.initializeClass(runtime, branchNode);
 	}
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")

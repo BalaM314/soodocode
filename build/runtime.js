@@ -34,10 +34,10 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, tryRunOr, zip } from "./utils.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
+import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
 export function typesEqual(a, b) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
@@ -151,7 +151,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const type = arg2;
                     if (type == "variable") {
                         return {
-                            type: this.resolveVariableType(varTypeData.type),
+                            type: varTypeData.type,
                             declaration: variable.declaration,
                             mutable: true,
                             get value() { return variable.value[index]; },
@@ -161,10 +161,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const output = variable.value[index];
                     if (output == null)
                         fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-                    return this.finishEvaluation(output, this.resolveVariableType(varTypeData.type), type);
+                    return this.finishEvaluation(output, varTypeData.type, type);
                 }
                 else {
-                    variable.value[index] = this.evaluateExpr(arg2, this.resolveVariableType(varTypeData.type))[1];
+                    variable.value[index] = this.evaluateExpr(arg2, varTypeData.type)[1];
                 }
             }
             processRecordAccess(expr, operation, arg2) {
@@ -558,8 +558,12 @@ help: try using DIV instead of / to produce an integer as the result`);
                 }
             }
             resolveVariableType(type) {
-                if (type instanceof PrimitiveVariableType || type instanceof ArrayVariableType)
+                if (type instanceof PrimitiveVariableType)
                     return type;
+                else if (type instanceof ArrayVariableType) {
+                    type.init(this);
+                    return type;
+                }
                 else
                     return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
             }
@@ -706,7 +710,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (value instanceof Date)
                     return new Date(value);
                 if (Array.isArray(value))
-                    return value.slice().map(v => this.cloneValue(this.resolveVariableType(type.type ?? crash(`Cannot clone value in an array of unknown type`)), v));
+                    return value.slice().map(v => this.cloneValue(type.type ?? crash(`Cannot clone value in an array of unknown type`), v));
                 if (type instanceof PointerVariableType)
                     return value;
                 if (type instanceof RecordVariableType)
@@ -816,7 +820,26 @@ help: try using DIV instead of / to produce an integer as the result`);
             runBlock(code, ...scopes) {
                 this.scopes.push(...scopes);
                 let returned = null;
-                for (const node of code) {
+                const [typeNodes, others] = separateArray(code, (c) => c instanceof TypeStatement ||
+                    c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement);
+                const types = [];
+                for (const node of typeNodes) {
+                    let type, name;
+                    if (node instanceof Statement) {
+                        [name, type] = node.createType(this);
+                    }
+                    else {
+                        [name, type] = node.controlStatements[0].runTypeBlock(this, node);
+                    }
+                    if (this.getCurrentScope().types[name])
+                        fail(f.quote `Type ${name} was declared twice`);
+                    this.getCurrentScope().types[name] = type;
+                    types.push(type);
+                }
+                for (const type of types) {
+                    type.init(this);
+                }
+                for (const node of others) {
                     let result;
                     if (node instanceof Statement) {
                         result = node.run(this);
@@ -858,14 +881,6 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (modes && operationDescription && !modes.includes(data.mode))
                     fail(f.quote `${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
                 return data;
-            }
-            initializeType(name, callback) {
-                if (this.currentlyResolvingTypeName)
-                    crash(f.quote `Attempted to resolve a type (${name}) while already resolving another type (${this.currentlyResolvingTypeName})`);
-                this.currentlyResolvingTypeName = name;
-                const out = callback(this);
-                this.currentlyResolvingTypeName = null;
-                return out;
             }
         },
         (() => {
