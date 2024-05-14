@@ -430,7 +430,7 @@ function executeSoodocode(){
 		if(lastOutputText == outputText){
 			//flash
 			outputDiv.style.animationName = "";
-			outputDiv.offsetHeight; //reflow
+			void outputDiv.offsetHeight; //reflow
 			outputDiv.style.animationName = "highlight-output-div";
 		}
 		lastOutputText = outputText;
@@ -439,11 +439,12 @@ function executeSoodocode(){
 		if(err instanceof SoodocodeError){
 			outputDiv.innerHTML = `<span style="color: red;">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
 				+ showRange(soodocodeInput.value, err);
-			console.error(err);
+		} else if(["too much recursion", "Maximum call stack size exceeded"].includes((err as Record<string, unknown>)?.message)){
+			outputDiv.innerHTML = `<span style="color: red;">Maximum call stack size exceeded\nhelp: make sure your recursive functions can reach their base case</span>`;
 		} else {
 			outputDiv.innerHTML = `<span style="color: red;">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
-			console.error(err);
 		}
+		console.error(err);
 	}
 }
 
