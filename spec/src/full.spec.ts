@@ -223,6 +223,73 @@ parse_function_complex_args_pass_mode: [
 ENDFUNCTION`,
 []
 ],
+record_type_blank: [
+`TYPE amogus
+ENDTYPE`,
+[]
+],
+record_type_fields: [
+`TYPE amogus
+	DECLARE sus: INTEGER
+ENDTYPE`,
+[]
+],
+record_type_recursive_illegal_1: [
+`TYPE amogus
+	DECLARE sus: amogus
+ENDTYPE`,
+"infinite size"
+],
+record_type_recursive_illegal_2: [
+`TYPE amogus
+	DECLARE sus: ARRAY[1:10] OF amogus
+ENDTYPE`,
+"infinite size"
+],
+record_type_recursive_illegal_3: [
+`TYPE amogus
+	DECLARE sus: ARRAY[1:10] OF amogus
+ENDTYPE`,
+"infinite size"
+],
+record_type_recursive_legal_1: [
+`TYPE pAmogus = ^Amogus
+TYPE Amogus
+	DECLARE sus: pAmogus
+ENDTYPE`,
+[]
+],
+record_type_recursive_hoisting_illegal_1: [
+`TYPE Amogus
+	DECLARE bmogus: Bmogus
+ENDTYPE
+TYPE Bmogus
+	DECLARE amogus: Amogus
+ENDTYPE`,
+"infinite size"
+],
+record_type_recursive_hoisting_legal_1: [
+`TYPE Amogus
+	DECLARE value: INTEGER
+	DECLARE bmogus: pBmogus
+ENDTYPE
+TYPE Bmogus
+	DECLARE amogus: pAmogus
+ENDTYPE
+TYPE pAmogus = ^Amogus
+TYPE pBmogus = ^Bmogus
+DECLARE x: Amogus
+DECLARE y: Bmogus
+DECLARE px: pAmogus
+DECLARE py: pBmogus
+px <- ^x
+py <- ^y
+x.bmogus <- py
+y.amogus <- px
+x.value <- 123
+OUTPUT (((y.amogus^).bmogus^).amogus^).value`,
+["123"]
+],
 parse_class_blank: [
 `CLASS amogus
 ENDCLASS`,
