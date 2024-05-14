@@ -858,7 +858,10 @@ help: try using DIV instead of / to produce an integer as the result`
 		for(const type of types){
 			type.init(this);
 		}
-		//TODO check type size
+		//Third pass: check type size
+		for(const type of types){
+			type.checkSize();
+		}
 		for(const node of others){
 			let result;
 			if(node instanceof Statement){

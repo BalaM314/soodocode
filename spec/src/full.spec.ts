@@ -281,6 +281,15 @@ TYPE Bmogus
 ENDTYPE`,
 "infinite size"
 ],
+record_type_recursive_hoisting_illegal_2: [
+`TYPE Amogus
+DECLARE bmogus: Bmogus
+ENDTYPE
+TYPE Bmogus
+DECLARE amogus: ARRAY[1:10] OF Amogus
+ENDTYPE`,
+"infinite size"
+],
 record_type_recursive_hoisting_legal_1: [
 `TYPE Amogus
 	DECLARE value: INTEGER

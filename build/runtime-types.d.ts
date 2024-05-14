@@ -15,6 +15,7 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
     abstract init(runtime: Runtime): void;
+    checkSize(): void;
     is(...type: PrimitiveVariableTypeName[]): boolean;
     abstract fmtDebug(): string;
     fmtQuoted(): string;
@@ -58,8 +59,11 @@ export declare class RecordVariableType<Init extends boolean = true> extends Bas
     initialized: Init;
     name: string;
     fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>;
+    directDependencies: Set<VariableType>;
     constructor(initialized: Init, name: string, fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>);
     init(runtime: Runtime): void;
+    addDependencies(type: VariableType): void;
+    checkSize(): void;
     fmtText(): string;
     fmtQuoted(): string;
     fmtDebug(): string;

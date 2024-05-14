@@ -1,5 +1,6 @@
 import { crash, f, fail, impossible } from "./utils.js";
 export class BaseVariableType {
+    checkSize() { }
     is(...type) {
         return false;
     }
@@ -101,13 +102,36 @@ export class RecordVariableType extends BaseVariableType {
         this.initialized = initialized;
         this.name = name;
         this.fields = fields;
+        this.directDependencies = new Set();
     }
     init(runtime) {
         for (const [name, field] of Object.entries(this.fields)) {
             if (Array.isArray(field))
                 this.fields[name] = runtime.resolveVariableType(field);
+            else if (field instanceof ArrayVariableType)
+                field.init(runtime);
+            this.addDependencies(this.fields[name]);
         }
         this.initialized = true;
+    }
+    addDependencies(type) {
+        if (type instanceof RecordVariableType) {
+            this.directDependencies.add(type);
+            type.directDependencies.forEach(d => this.directDependencies.add(d));
+        }
+        else if (type instanceof ArrayVariableType && type.type != null) {
+            this.addDependencies(type.type);
+        }
+    }
+    checkSize() {
+        for (const [name, type] of Object.entries(this.fields)) {
+            if (type == this)
+                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`);
+            if (type instanceof ArrayVariableType && type.type == this)
+                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
+            if (type instanceof RecordVariableType && type.directDependencies.has(this))
+                fail(f.quote `Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`);
+        }
     }
     fmtText() {
         return `${this.name} (user-defined record type)`;

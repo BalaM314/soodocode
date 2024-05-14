@@ -45,6 +45,7 @@ export type VariableTypeMapping<T> =
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
 	abstract init(runtime:Runtime):void;
+	checkSize(){}
 	is(...type:PrimitiveVariableTypeName[]) {
 		return false;
 	}
@@ -120,7 +121,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	arraySizes:number[] | null = null;
 	constructor(
 		public lengthInformation: [low:number, high:number][] | null,
-		public type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
+		public type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null, //TODO renam to elementType
 	){
 		super();
 		if(this.lengthInformation){
@@ -157,6 +158,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	}
 }
 export class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
+	directDependencies = new Set<VariableType>();
 	constructor(
 		public initialized: Init,
 		public name: string,
@@ -166,8 +168,28 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		for(const [name, field] of Object.entries(this.fields)){
 			if(Array.isArray(field))
 				this.fields[name] = runtime.resolveVariableType(field);
+			else if(field instanceof ArrayVariableType)
+				field.init(runtime);
+			this.addDependencies(this.fields[name] as VariableType);
 		}
 		(this as RecordVariableType<true>).initialized = true;
+	}
+	addDependencies(type:VariableType){
+		if(type instanceof RecordVariableType){
+			this.directDependencies.add(type);
+			type.directDependencies.forEach(
+				d => this.directDependencies.add(d)
+			);
+		} else if(type instanceof ArrayVariableType && type.type != null){
+			this.addDependencies(type.type);
+		}
+	}
+	checkSize(){
+		for(const [name, type] of Object.entries((this as RecordVariableType<true>).fields)){
+			if(type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`);
+			if(type instanceof ArrayVariableType && type.type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
+			if(type instanceof RecordVariableType && type.directDependencies.has(this as never)) fail(f.quote`Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`);
+		}
 	}
 	fmtText(){
 		return `${this.name} (user-defined record type)`;
