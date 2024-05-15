@@ -111,6 +111,57 @@ export class Statement implements TextRanged, IFormattable {
 	static checkBlock(block:ProgramASTBranchNode){
 		//crash if the block is invalid or incomplete
 	}
+	static typeName(type:StatementType = this.type):string {
+		if(!type) crash(`Argument must be specified when calling typeName() on base Statement`);
+		return ({
+			"declare": "DECLARE",
+			"define": "DEFINE",
+			"constant": "CONSTANT",
+			"assignment": "Assignment",
+			"output": "OUTPUT",
+			"input": "INPUT",
+			"return": "RETURN",
+			"call": "CALL",
+			"type": "Record type",
+			"type.pointer": "Type",
+			"type.enum": "Type",
+			"type.set": "Type",
+			"type.end": "ENDTYPE",
+			"if": "IF",
+			"if.end": "ENDIF",
+			"else": "ELSE",
+			"switch": "CASE OF",
+			"switch.end": "ENDCASE",
+			"case": "Case branch",
+			"case.range": "Case branch (range)",
+			"for": "FOR",
+			"for.step": "FOR (step)",
+			"for.end": "NEXT",
+			"while": "WHILE",
+			"while.end": "ENDWHILE",
+			"dowhile": "REPEAT",
+			"dowhile.end": "UNTIL",
+			"function": "FUNCTION",
+			"function.end": "ENDFUNCTION",
+			"procedure": "PROCEDURE",
+			"procedure.end": "ENDPROCEDURE",
+			"openfile": "OPENFILE",
+			"readfile": "READFILE",
+			"writefile": "WRITEFILE",
+			"closefile": "CLOSEFILE",
+			"seek": "SEEK",
+			"getrecord": "GETRECORD",
+			"putrecord": "PUTRECORD",
+			"class": "CLASS",
+			"class.inherits": "CLASS (inherits)",
+			"class.end": "ENDCLASS",
+			"class_property": "Class property",
+			"class_procedure": "Class procedure",
+			"class_procedure.end": "ENDPROCEDURE (class)",
+			"class_function": "Class function",
+			"class_function.end": "ENDFUNCTION (class)",
+		} satisfies Record<StatementType, string>)[type];
+	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}

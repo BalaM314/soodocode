@@ -2,7 +2,7 @@ import { Token } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
-import { CaseBranchRangeStatement, CaseBranchStatement, statements } from "./statements.js";
+import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
 import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
@@ -178,19 +178,19 @@ export function getPossibleStatements(tokens, context) {
         if (allowedValidStatements.length == 0) {
             return [
                 validStatements,
-                statement => fail(`Statement ${statement.type} is not valid here: the only statements allowed in block ${context.type} are ${[...ctx.allowOnly].map(s => `"${s}"`).join(" or ")}`)
+                statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context.type} blocks are ${[...ctx.allowOnly].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
             ];
         }
         else
             validStatements = allowedValidStatements;
     }
     if (validStatements.length == 0)
-        fail(`No valid statement definitions`);
+        fail(`No valid statement definitions`, tokens);
     const allowedValidStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
     if (allowedValidStatements.length == 0)
         return [
             validStatements,
-            statement => fail(`Statement ${statement.type} is only valid in ${statement.blockType} statements`)
+            statement => fail(`${statement.typeName()} statement is only valid in ${ProgramASTBranchNode.typeName(statement.blockType)} blocks`, tokens)
         ];
     validStatements = allowedValidStatements;
     return [validStatements, null];

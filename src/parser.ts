@@ -198,15 +198,15 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
 		if(allowedValidStatements.length == 0){
 			return [
 				validStatements,
-				statement => fail(`Statement ${statement.type} is not valid here: the only statements allowed in block ${context!.type} are ${[...ctx.allowOnly!].map(s => `"${s}"`).join(" or ")}`) //TODO display name
+				statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens) //TODO display name
 			];
 		} else validStatements = allowedValidStatements;
 	}
-	if(validStatements.length == 0) fail(`No valid statement definitions`);
+	if(validStatements.length == 0) fail(`No valid statement definitions`, tokens);
 	const allowedValidStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
 	if(allowedValidStatements.length == 0) return [
 		validStatements,
-		statement => fail(`Statement ${statement.type} is only valid in ${statement.blockType!} statements`) //TODO display name
+		statement => fail(`${statement.typeName()} statement is only valid in ${ProgramASTBranchNode.typeName(statement.blockType!)} blocks`, tokens)
 	];
 	validStatements = allowedValidStatements;
 	return [validStatements, null];

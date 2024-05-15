@@ -318,7 +318,7 @@ export class ProgramASTBranchNode implements TextRanged {
 	range():TextRange {
 		return getTotalRange((this.controlStatements as (Statement | ProgramASTNode)[]).concat(this.nodeGroups.flat()));
 	}
-	typeName(){
+	static typeName(type:ProgramASTBranchNodeType){
 		return {
 			"if": "if",
 			"for": "for",
@@ -333,7 +333,10 @@ export class ProgramASTBranchNode implements TextRanged {
 			"class.inherits": "class",
 			"class_function": "class function",
 			"class_procedure": "class procedure",
-		}[this.type];
+		}[type];
+	}
+	typeName(){
+		return ProgramASTBranchNode.typeName(this.type);
 	}
 }
 /** The valid types for a branch node in a program AST. */

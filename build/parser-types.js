@@ -216,7 +216,7 @@ export class ProgramASTBranchNode {
     range() {
         return getTotalRange(this.controlStatements.concat(this.nodeGroups.flat()));
     }
-    typeName() {
+    static typeName(type) {
         return {
             "if": "if",
             "for": "for",
@@ -231,7 +231,10 @@ export class ProgramASTBranchNode {
             "class.inherits": "class",
             "class_function": "class function",
             "class_procedure": "class procedure",
-        }[this.type];
+        }[type];
+    }
+    typeName() {
+        return ProgramASTBranchNode.typeName(this.type);
     }
 }
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
