@@ -24,7 +24,7 @@ export const builtinFunctions = (
 					passMode: "reference",
 					type: (Array.isArray(type) ? type : [type]).map(t =>
 						Array.isArray(t)
-							? new ArrayVariableType(null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]))
+							? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]))
 							: PrimitiveVariableType.get(t)
 					)
 				}])),

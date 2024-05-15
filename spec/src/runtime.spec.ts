@@ -5,7 +5,7 @@ import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parse
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
-import { SoodocodeError, fail } from "../../build/utils.js";
+import { SoodocodeError, fail, crash } from "../../build/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
@@ -176,7 +176,7 @@ const expressionTests = ((data:Record<string, [
 			r.getCurrentScope().variables["amogus"] = {
 				type: new ArrayVariableType([
 					[1, 10]
-				], PrimitiveVariableType.INTEGER),
+				], [-1, -1], PrimitiveVariableType.INTEGER),
 				declaration: null!,
 				mutable: true,
 				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0]
@@ -192,7 +192,7 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 18],
 		r => {
 			const amogusType = new RecordVariableType(true, "amogusType", {
-				sus: PrimitiveVariableType.INTEGER
+				sus: [PrimitiveVariableType.INTEGER, [-1, -1]]
 			});
 			r.getCurrentScope().types["amogusType"] = amogusType;
 			r.getCurrentScope().variables["amogus"] = {
@@ -217,10 +217,10 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 123],
 		r => {
 			const innerType = new RecordVariableType(true, "innerType", {
-				ccc: PrimitiveVariableType.INTEGER
+				ccc: [PrimitiveVariableType.INTEGER, [-1, -1]]
 			});
 			const outerType = new RecordVariableType(true, "outerType", {
-				bbb: innerType
+				bbb: [innerType, [-1, -1]]
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().types["outerType"] = outerType;
@@ -247,11 +247,11 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 124],
 		r => {
 			const innerType = new RecordVariableType(true, "innerType", {
-				ccc: PrimitiveVariableType.INTEGER
+				ccc: [PrimitiveVariableType.INTEGER, [-1, -1]]
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().variables["aaa"] = {
-				type: new ArrayVariableType([[1, 5]], innerType),
+				type: new ArrayVariableType([[1, 5]], [-1, -1], innerType),
 				declaration: null!,
 				mutable: true,
 				value: [null, {
@@ -285,7 +285,7 @@ const expressionTests = ((data:Record<string, [
 		["error"],
 		r => {
 			const amogusType = new RecordVariableType(true, "amogusType", {
-				sus: PrimitiveVariableType.INTEGER
+				sus: [PrimitiveVariableType.INTEGER, [-1, -1]]
 			});
 			r.getCurrentScope().types["amogusType"] = amogusType;
 			r.getCurrentScope().variables["amogus"] = {
@@ -322,11 +322,11 @@ const expressionTests = ((data:Record<string, [
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
 		const arrayPointer = new PointerVariableType(true, "intPtr", new ArrayVariableType([
 			[1, 10]
-		], foo));
+		], [-1, -1], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: new ArrayVariableType([
 				[1, 10]
-			], foo),
+			], [-1, -1], foo),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -348,11 +348,11 @@ const expressionTests = ((data:Record<string, [
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
 		const arrayPointer = new PointerVariableType(true, "intPtr", new ArrayVariableType([
 			[1, 10]
-		], foo));
+		], [-1, -1], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: new ArrayVariableType([
 				[1, 10]
-			], foo),
+			], [-1, -1], foo),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -1849,7 +1849,7 @@ const programTests = ((data:Record<string,
 describe("runtime's token evaluator", () => {
 	for(const [name, token, type, output, setup] of tokenTests){
 		it(`should produce the expected output for ${name}`, () => {
-			const runtime = new Runtime(() => fail(`Cannot input`), () => fail(`Cannot output`));
+			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
 				statement: "global",
 				variables: {},
@@ -1868,7 +1868,7 @@ type expect_ = <T>(actual: T) => jasmine.Matchers<T>;
 describe("runtime's expression evaluator", () => {
 	for(const [name, expression, type, output, setup] of expressionTests){
 		it(`should produce the expected output for ${name}`, () => {
-			const runtime = new Runtime(() => fail(`Cannot input`), () => fail(`Cannot output`));
+			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
 				statement: "global",
 				variables: {},
@@ -1888,7 +1888,7 @@ describe("runtime's statement executor", () => {
 		it(`should produce the expected output for ${name}`, () => {
 			let output:string | null = null;
 			const runtime = new Runtime(
-				() => inputs.shift() ?? fail(`Program required input, but none was available`),
+				() => inputs.shift() ?? crash(`Program required input, but none was available`),
 				message => output = message
 			);
 			runtime.scopes.push({
@@ -1912,7 +1912,7 @@ describe("runtime's program execution", () => {
 		it(`should produce the expected output for ${name}`, () => {
 			const outputs:string[] = [];
 			const runtime = new Runtime(
-				() => inputs.shift() ?? fail(`Program required input, but none was available`),
+				() => inputs.shift() ?? crash(`Program required input, but none was available`),
 				str => outputs.push(str)
 			);
 			if(Array.isArray(output)){

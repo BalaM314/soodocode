@@ -213,7 +213,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			//overloads 2 and 5
 			const variable = this.evaluateExpr(expr.nodes[0], "variable"); //TODO is this necessary? why can't we assign to some property on the result of a function call?
 			if(variable.type instanceof RecordVariableType){
-				const outputType = variable.type.fields[property] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+				const outputType = variable.type.fields[property][0] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 				if(arg2 == "variable"){ //overload 2
 					//i see nothing wrong with this bodged variable data
 					return {
@@ -264,7 +264,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
 			if(objType instanceof RecordVariableType){
 				if(type == "function") fail(f.quote`Expected this expression to evaluate to a function, but found a property access on a variable of type ${type}, which cannot have functions as properties`, expr);
-				const outputType = objType.fields[property] ?? fail(f.quote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
+				const outputType = objType.fields[property]?.[0] ?? fail(f.quote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
 				const value = (obj as Record<string, VariableValue>)[property];
 				if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
 				return this.finishEvaluation(value, outputType, type);
@@ -734,7 +734,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		) as VariableTypeMapping<T>;
 		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)
-			.map(([k, v]) => [k, this.cloneValue(type.fields[k], v as VariableValue)])
+			.map(([k, v]) => [k, this.cloneValue(type.fields[k][0], v as VariableValue)])
 		) as VariableTypeMapping<RecordVariableType> as VariableTypeMapping<T>;
 		if(type instanceof ClassVariableType) return {
 			properties: Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).properties)

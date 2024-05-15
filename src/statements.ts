@@ -373,10 +373,10 @@ export class TypeRecordStatement extends TypeStatement {
 		this.name = tokens[1];
 	}
 	runTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		const fields:Record<string, UnresolvedVariableType> = {};
+		const fields:Record<string, [UnresolvedVariableType, TextRange]> = {};
 		for(const statement of node.nodeGroups[0]){
 			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`, statement);
-			statement.variables.forEach(([v]) => fields[v] = statement.varType);
+			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
 		}
 		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as [name: string, type: VariableType];
 	}

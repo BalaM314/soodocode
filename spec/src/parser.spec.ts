@@ -3390,31 +3390,31 @@ describe("parseFunctionArguments", () => {
 
 describe("ArrayTypeData", () => {
 	it(`should generate correct data`, () => {
-		const data1 = new ArrayVariableType([[0, 9]], PrimitiveVariableType.BOOLEAN);
+		const data1 = new ArrayVariableType([[0, 9]], [-1, -1], PrimitiveVariableType.BOOLEAN);
 		expect(data1.arraySizes).toEqual([10]);
 		expect(data1.totalLength).toEqual(10);
-		const data2 = new ArrayVariableType([[1, 15]], PrimitiveVariableType.STRING);
+		const data2 = new ArrayVariableType([[1, 15]], [-1, -1], PrimitiveVariableType.STRING);
 		expect(data2.arraySizes).toEqual([15]);
 		expect(data2.totalLength).toEqual(15);
-		const data3 = new ArrayVariableType([[0, 9], [0, 19]], PrimitiveVariableType.BOOLEAN);
+		const data3 = new ArrayVariableType([[0, 9], [0, 19]], [-1, -1], PrimitiveVariableType.BOOLEAN);
 		expect(data3.arraySizes).toEqual([10, 20]);
 		expect(data3.totalLength).toEqual(200);
-		const data4 = new ArrayVariableType([[1, 10], [1, 15]], PrimitiveVariableType.DATE);
+		const data4 = new ArrayVariableType([[1, 10], [1, 15]], [-1, -1], PrimitiveVariableType.DATE);
 		expect(data4.arraySizes).toEqual([10, 15]);
 		expect(data4.totalLength).toEqual(150);
-		const data5 = new ArrayVariableType([[0, 9], [1, 15], [0, 20]], PrimitiveVariableType.INTEGER);
+		const data5 = new ArrayVariableType([[0, 9], [1, 15], [0, 20]], [-1, -1], PrimitiveVariableType.INTEGER);
 		expect(data5.arraySizes).toEqual([10, 15, 21]);
 		expect(data5.totalLength).toEqual(3150);
 	});
 	it(`should handle correct inputs`, () => {
-		expect(() => new ArrayVariableType([[0, 0]], PrimitiveVariableType.CHAR)).not.toThrow();
-		expect(() => new ArrayVariableType([[5, 5]], PrimitiveVariableType.CHAR)).not.toThrow();
+		expect(() => new ArrayVariableType([[0, 0]], [-1, -1], PrimitiveVariableType.CHAR)).not.toThrow();
+		expect(() => new ArrayVariableType([[5, 5]], [-1, -1], PrimitiveVariableType.CHAR)).not.toThrow();
 	});
 	it(`should handle incorrect inputs`, () => {
-		expect(() => new ArrayVariableType([[0, -1]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[2, 1]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[0, 10.5]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[0, 1], [0, 10.5]], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, -1]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[2, 1]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, 10.5]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => new ArrayVariableType([[0, 1], [0, 10.5]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
 	});
 });
 

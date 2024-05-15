@@ -914,7 +914,7 @@ describe("soodocode", () => {
 	for(const [name, [code, expectedOutput, inputs]] of Object.entries(fullTests)){
 		it(`should produce the expected output for ${name}`, () => {
 			const outputs:string[] = [];
-			const runtime = new Runtime(() => inputs?.shift() ?? fail(`Program required input, but none was available`), t => outputs.push(t));
+			const runtime = new Runtime(() => inputs?.shift() ?? crash(`Program required input, but none was available`), t => outputs.push(t));
 			if(Array.isArray(expectedOutput)){
 				runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
 				expect(outputs).toEqual(expectedOutput);

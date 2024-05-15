@@ -11,7 +11,7 @@ import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import { IFormattable } from "./types.js";
-import { crash, f, fail, impossible } from "./utils.js";
+import { crash, f, fail, getTotalRange, impossible } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> =
@@ -120,13 +120,16 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
 	constructor(
-		public lengthInformation: [low:number, high:number][] | null,
+		public lengthInformation: [low:number, high:number][] | null, //TODO support runtime determined
+		public lengthInformationRange: TextRange | null,
 		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
 	){
 		super();
 		if(this.lengthInformation){
-			if(this.lengthInformation.some(b => b[1] < b[0])) fail(`Invalid length information: upper bound cannot be less than lower bound`);
-			if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n)))) fail(`Invalid length information: bound was not an integer`);
+			if(this.lengthInformation.some(b => b[1] < b[0]))
+				fail(`Invalid length information: upper bound cannot be less than lower bound`, lengthInformationRange);
+			if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
+				fail(`Invalid length information: bound was not an integer`, lengthInformationRange);
 			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
 			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
 		}
@@ -153,6 +156,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType<false>(
 			node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text)) as [number, number]) ?? null,
+			node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null,
 			PrimitiveVariableType.resolve(node.elementType)
 		);
 	}
@@ -162,15 +166,15 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 	constructor(
 		public initialized: Init,
 		public name: string,
-		public fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>,
+		public fields: Record<string, [type:(Init extends true ? never : UnresolvedVariableType) | VariableType, range:TextRange]>,
 	){super();}
 	init(runtime:Runtime){
-		for(const [name, field] of Object.entries(this.fields)){
+		for(const [name, [field, range]] of Object.entries(this.fields)){
 			if(Array.isArray(field))
-				this.fields[name] = runtime.resolveVariableType(field);
+				this.fields[name][0] = runtime.resolveVariableType(field);
 			else if(field instanceof ArrayVariableType)
 				field.init(runtime);
-			this.addDependencies(this.fields[name] as VariableType);
+			this.addDependencies(this.fields[name][0] as VariableType);
 		}
 		(this as RecordVariableType<true>).initialized = true;
 	}
@@ -185,10 +189,10 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		}
 	}
 	checkSize(){
-		for(const [name, type] of Object.entries((this as RecordVariableType<true>).fields)){
-			if(type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`);
-			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
-			if(type instanceof RecordVariableType && type.directDependencies.has(this as never)) fail(f.quote`Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`);
+		for(const [name, [type, range]] of Object.entries((this as RecordVariableType<true>).fields)){
+			if(type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`, range);
+			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`, range);
+			if(type instanceof RecordVariableType && type.directDependencies.has(this as never)) fail(f.quote`Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`, range);
 		}
 	}
 	fmtText(){
@@ -203,7 +207,7 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableValue | null {
 		if(!this.initialized) crash(`Type not initialized`);
 		return Object.fromEntries(Object.entries((this as RecordVariableType<true>).fields)
-			.map(([k, v]) => [k, v.getInitValue(runtime, false)])
+			.map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)])
 		) as VariableValue | null;
 	}
 }
@@ -313,7 +317,7 @@ export class ClassVariableType extends BaseVariableType {
 		};
 
 		//Call constructor
-		const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote`No constructor was defined for class ${this.name}`);
+		const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote`No constructor was defined for class ${this.name}`, this.statement);
 		runtime.callClassMethod(method, clazz, data, args);
 		return data;
 	}
