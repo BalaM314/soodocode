@@ -291,7 +291,8 @@ function formatQuoted(input) {
     else if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             str = input[1];
-        str = input.map(formatText).join(" ");
+        else
+            str = input.map(formatText).join(" ");
     }
     else
         return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;

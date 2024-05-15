@@ -48,7 +48,8 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	;
 }
 
-export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:ClassMethodStatement & {argsRange:TextRange; accessModifierToken:Token; methodKeywordToken:Token;}){ //eslint broke
+export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:ClassMethodStatement){
+	//TODO improve error messages by adding error boundary decorator on this function
 
 	if(base.accessModifier != derived.accessModifier)
 		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);

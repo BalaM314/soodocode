@@ -310,7 +310,7 @@ function formatQuoted(input:Formattable):string {
 	if(typeof input == "string") str = input;
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") str = input[1];
-		str = (input as IFormattable[]).map(formatText).join(" ");
+		else str = (input as IFormattable[]).map(formatText).join(" ");
 	} else return input.fmtQuoted?.() ?? `"${input.fmtText()}"`;
 	
 	if(str.length == 0) str = `[empty]`;
