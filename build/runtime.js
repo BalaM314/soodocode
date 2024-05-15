@@ -57,14 +57,16 @@ export function typesAssignable(base, ext) {
         (base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
         (base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base));
 }
-export function checkClassMethodsCompatible(base, derived) {
+export const checkClassMethodsCompatible = errorBoundary({
+    message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
+})((base, derived) => {
     if (base.accessModifier != derived.accessModifier)
         fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
     if (base.stype != derived.stype)
         fail(f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
     if (!(base.name == "NEW" && derived.name == "NEW")) {
         if (base.args.size != derived.args.size)
-            fail(`Functions have different numbers of arguments.`, derived.argsRange);
+            fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
         for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
             if (!typesAssignable(bType.type, aType.type))
                 fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
@@ -76,7 +78,7 @@ export function checkClassMethodsCompatible(base, derived) {
         if (!typesAssignable(base.returnType, derived.returnType))
             fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
     }
-}
+});
 export class Files {
     constructor() {
         this.files = {};

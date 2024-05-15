@@ -48,8 +48,9 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	;
 }
 
-export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:ClassMethodStatement){
-	//TODO improve error messages by adding error boundary decorator on this function
+export const checkClassMethodsCompatible = errorBoundary({
+	message: (base:ClassMethodStatement, derived:ClassMethodStatement) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
+})((base:ClassMethodStatement, derived:ClassMethodStatement) => {
 
 	if(base.accessModifier != derived.accessModifier)
 		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
@@ -60,7 +61,7 @@ export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:C
 	if(!(base.name == "NEW" && derived.name == "NEW")){
 		//Skip assignability check for the constructor
 		if(base.args.size != derived.args.size)
-			fail(`Functions have different numbers of arguments.`, derived.argsRange);
+			fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
 		for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
 			//Changing the name is fine
 			if(!typesAssignable(bType.type, aType.type)) //parameter types are contravariant
@@ -74,7 +75,7 @@ export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:C
 		if(!typesAssignable(base.returnType, derived.returnType)) //return type is covariant
 			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
 	}
-}
+});
 
 export class Files {
 	files: Record<string, File> = {};

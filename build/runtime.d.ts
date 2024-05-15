@@ -4,7 +4,7 @@ import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariab
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType): boolean;
 export declare function typesAssignable(base: VariableType | UnresolvedVariableType, ext: VariableType | UnresolvedVariableType): boolean;
-export declare function checkClassMethodsCompatible(base: ClassMethodStatement, derived: ClassMethodStatement): void;
+export declare const checkClassMethodsCompatible: (base: ClassMethodStatement, derived: ClassMethodStatement) => void;
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
