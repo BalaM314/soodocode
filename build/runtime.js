@@ -41,8 +41,8 @@ import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impos
 export function typesEqual(a, b) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
-        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.type == b.type ||
-            Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1])) ||
+        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.elementType == b.elementType ||
+            Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1])) ||
         (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
 }
@@ -50,9 +50,9 @@ export function typesAssignable(base, ext) {
     return base == ext ||
         (Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
         (base instanceof ArrayVariableType && ext instanceof ArrayVariableType && (base.arraySizes == null ||
-            base.arraySizes.toString() == ext.arraySizes?.toString()) && ((base.type == null ||
-            base.type == ext.type ||
-            Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]))) ||
+            base.arraySizes.toString() == ext.arraySizes?.toString()) && ((base.elementType == null ||
+            base.elementType == ext.elementType ||
+            Array.isArray(base.elementType) && Array.isArray(ext.elementType) && base.elementType[1] == ext.elementType[1]))) ||
         (base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
         (base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
         (base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base));
@@ -62,16 +62,18 @@ export function checkClassMethodsCompatible(base, derived) {
         fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
     if (base.stype != derived.stype)
         fail(f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
-    if (base.args.size != derived.args.size)
-        fail(`Functions have different numbers of arguments.`, derived.argsRange);
-    for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
-        if (!typesEqual(aType.type, bType.type))
-            fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
-        if (aType.passMode != bType.passMode)
-            fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+    if (!(base.name == "NEW" && derived.name == "NEW")) {
+        if (base.args.size != derived.args.size)
+            fail(`Functions have different numbers of arguments.`, derived.argsRange);
+        for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
+            if (!typesAssignable(bType.type, aType.type))
+                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
+            if (aType.passMode != bType.passMode)
+                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+        }
     }
     if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
-        if (!typesEqual(derived.returnType, base.returnType))
+        if (!typesAssignable(base.returnType, derived.returnType))
             fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
     }
 }
@@ -114,7 +116,7 @@ let Runtime = (() => {
                 this.fs = new Files();
             }
             finishEvaluation(value, from, to) {
-                if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.type))
+                if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
                     return [from, this.coerceValue(value, from, to)];
                 else if (to)
                     return [to, this.coerceValue(value, from, to)];
@@ -129,10 +131,10 @@ let Runtime = (() => {
                 const varTypeData = variable.type;
                 if (!varTypeData.lengthInformation)
                     crash(`Cannot access elements in an array of unknown length`);
-                if (!varTypeData.type)
+                if (!varTypeData.elementType)
                     crash(`Cannot access elements in an array of unknown type`);
                 if (arg2 instanceof ArrayVariableType)
-                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
+                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.elementType}`, expr.target);
                 if (expr.indices.length != varTypeData.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
 ${varTypeData.lengthInformation.length}-dimensional array requires ${varTypeData.lengthInformation.length} indices, \
@@ -151,7 +153,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const type = arg2;
                     if (type == "variable") {
                         return {
-                            type: varTypeData.type,
+                            type: varTypeData.elementType,
                             declaration: variable.declaration,
                             mutable: true,
                             get value() { return variable.value[index]; },
@@ -161,10 +163,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     const output = variable.value[index];
                     if (output == null)
                         fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-                    return this.finishEvaluation(output, varTypeData.type, type);
+                    return this.finishEvaluation(output, varTypeData.elementType, type);
                 }
                 else {
-                    variable.value[index] = this.evaluateExpr(arg2, varTypeData.type)[1];
+                    variable.value[index] = this.evaluateExpr(arg2, varTypeData.elementType)[1];
                 }
             }
             processRecordAccess(expr, operation, arg2) {
@@ -710,7 +712,7 @@ help: try using DIV instead of / to produce an integer as the result`);
                 if (value instanceof Date)
                     return new Date(value);
                 if (Array.isArray(value))
-                    return value.slice().map(v => this.cloneValue(type.type ?? crash(`Cannot clone value in an array of unknown type`), v));
+                    return value.slice().map(v => this.cloneValue(type.elementType ?? crash(`Cannot clone value in an array of unknown type`), v));
                 if (type instanceof PointerVariableType)
                     return value;
                 if (type instanceof RecordVariableType)

@@ -45,10 +45,10 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
     lengthInformation: [low: number, high: number][] | null;
-    type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null;
+    elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null;
     totalLength: number | null;
     arraySizes: number[] | null;
-    constructor(lengthInformation: [low: number, high: number][] | null, type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
+    constructor(lengthInformation: [low: number, high: number][] | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
     init(runtime: Runtime): void;
     fmtText(): string;
     fmtDebug(): string;

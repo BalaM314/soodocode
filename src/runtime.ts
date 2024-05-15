@@ -20,8 +20,8 @@ export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableTy
 	return a == b ||
 		(Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
 		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (
-			a.type == b.type ||
-			Array.isArray(a.type) && Array.isArray(b.type) && a.type[1] == b.type[1]
+			a.elementType == b.elementType ||
+			Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1]
 		)) ||
 		(a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
 		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
@@ -37,9 +37,9 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 			base.arraySizes.toString() == ext.arraySizes?.toString()
 		) && (
 			(
-				base.type == null ||
-				base.type == ext.type ||
-				Array.isArray(base.type) && Array.isArray(ext.type) && base.type[1] == ext.type[1]
+				base.elementType == null ||
+				base.elementType == ext.elementType ||
+				Array.isArray(base.elementType) && Array.isArray(ext.elementType) && base.elementType[1] == ext.elementType[1]
 			)
 		)) ||
 		(base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
@@ -56,18 +56,21 @@ export function checkClassMethodsCompatible(base:ClassMethodStatement, derived:C
 	if(base.stype != derived.stype)
 		fail(f.text`Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
 
-	if(base.args.size != derived.args.size)
-		fail(`Functions have different numbers of arguments.`, derived.argsRange);
-	for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
-		//Changing the name is fine
-		if(!typesEqual(aType.type, bType.type))
-			fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
-		if(aType.passMode != bType.passMode)
-			fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+	if(!(base.name == "NEW" && derived.name == "NEW")){
+		//Skip assignability check for the constructor
+		if(base.args.size != derived.args.size)
+			fail(`Functions have different numbers of arguments.`, derived.argsRange);
+		for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
+			//Changing the name is fine
+			if(!typesAssignable(bType.type, aType.type)) //parameter types are contravariant
+				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
+			if(aType.passMode != bType.passMode)
+				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+		}
 	}
 
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
-		if(!typesEqual(derived.returnType, base.returnType)) //TODO allow making the type more specific, eg Dog instead of Animal, also in checkArgTypesCompatible
+		if(!typesAssignable(base.returnType, derived.returnType)) //return type is covariant
 			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
 	}
 }
@@ -117,7 +120,7 @@ export class Runtime {
 		public _output: (message:string) => void,
 	){}
 	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):[type:VariableType, value:VariableValue] {
-		if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.type))
+		if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
 			return [from, this.coerceValue(value, from, to)]; //don't have a varlength array as the output type
 		else if(to) return [to, this.coerceValue(value, from, to)];
 		else return [from, value];
@@ -135,12 +138,12 @@ export class Runtime {
 		const variable = _variable as VariableData<ArrayVariableType, never>;
 		const varTypeData = variable.type;
 		if(!varTypeData.lengthInformation) crash(`Cannot access elements in an array of unknown length`);
-		if(!varTypeData.type) crash(`Cannot access elements in an array of unknown type`);
+		if(!varTypeData.elementType) crash(`Cannot access elements in an array of unknown type`);
 
 		//TODO is there any way of getting a 1D array out of a 2D array?
 		//Forbids getting any arrays from arrays
 		if(arg2 instanceof ArrayVariableType)
-			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.type}`, expr.target);
+			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.elementType}`, expr.target);
 
 
 		if(expr.indices.length != varTypeData.lengthInformation.length)
@@ -171,7 +174,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			if(type == "variable"){
 				//i see nothing wrong with this bodged variable data
 				return {
-					type: varTypeData.type,
+					type: varTypeData.elementType,
 					declaration: variable.declaration,
 					mutable: true,
 					get value(){ return variable.value[index]; },
@@ -180,9 +183,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			}
 			const output = variable.value[index];
 			if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-			return this.finishEvaluation(output, varTypeData.type, type);
+			return this.finishEvaluation(output, varTypeData.elementType, type);
 		} else {
-			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, varTypeData.type)[1];
+			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, varTypeData.elementType)[1];
 		}
 	}
 	/* get a property, optionally specifying type */
@@ -725,7 +728,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		if(typeof value == "boolean") return value;
 		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
 		if(Array.isArray(value)) return value.slice().map(v =>
-			this.cloneValue((type as ArrayVariableType).type ?? crash(`Cannot clone value in an array of unknown type`), v)
+			this.cloneValue((type as ArrayVariableType).elementType ?? crash(`Cannot clone value in an array of unknown type`), v)
 		) as VariableTypeMapping<T>;
 		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)

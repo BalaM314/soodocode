@@ -106,7 +106,7 @@ export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
-		public lengthInformation: [low:Token, high:Token][] | null,
+		public lengthInformation: [low:Token, high:Token][] | null, //TODO support expressions here
 		public elementType: Token,
 		public allTokens: Token[],
 	){

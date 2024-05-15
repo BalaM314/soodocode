@@ -121,7 +121,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	arraySizes:number[] | null = null;
 	constructor(
 		public lengthInformation: [low:number, high:number][] | null,
-		public type: (Init extends true ? never : UnresolvedVariableType) | VariableType | null, //TODO renam to elementType
+		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
 	){
 		super();
 		if(this.lengthInformation){
@@ -132,21 +132,21 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		}
 	}
 	init(runtime:Runtime){
-		if(Array.isArray(this.type))
-			this.type = runtime.resolveVariableType(this.type);
+		if(Array.isArray(this.elementType))
+			this.elementType = runtime.resolveVariableType(this.elementType);
 	}
 	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
-		return f.text`ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
+		return f.text`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
 	fmtDebug():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
-		return f.debug`ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
+		return f.debug`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
 		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`);
-		if(!this.type) fail(f.quote`${this} is not a valid variable type: element type must be specified here`);
-		const type = (this as ArrayVariableType<true>).type!;
+		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`);
+		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
 		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
@@ -180,14 +180,14 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 			type.directDependencies.forEach(
 				d => this.directDependencies.add(d)
 			);
-		} else if(type instanceof ArrayVariableType && type.type != null){
-			this.addDependencies(type.type);
+		} else if(type instanceof ArrayVariableType && type.elementType != null){
+			this.addDependencies(type.elementType);
 		}
 	}
 	checkSize(){
 		for(const [name, type] of Object.entries((this as RecordVariableType<true>).fields)){
 			if(type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`);
-			if(type instanceof ArrayVariableType && type.type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
+			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
 			if(type instanceof RecordVariableType && type.directDependencies.has(this as never)) fail(f.quote`Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`);
 		}
 	}

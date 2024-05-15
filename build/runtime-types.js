@@ -55,10 +55,10 @@ PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
 export class ArrayVariableType extends BaseVariableType {
-    constructor(lengthInformation, type) {
+    constructor(lengthInformation, elementType) {
         super();
         this.lengthInformation = lengthInformation;
-        this.type = type;
+        this.elementType = elementType;
         this.totalLength = null;
         this.arraySizes = null;
         if (this.lengthInformation) {
@@ -71,23 +71,23 @@ export class ArrayVariableType extends BaseVariableType {
         }
     }
     init(runtime) {
-        if (Array.isArray(this.type))
-            this.type = runtime.resolveVariableType(this.type);
+        if (Array.isArray(this.elementType))
+            this.elementType = runtime.resolveVariableType(this.elementType);
     }
     fmtText() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
-        return f.text `ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
+        return f.text `ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
     }
     fmtDebug() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
-        return f.debug `ARRAY${rangeText} OF ${this.type ?? "ANY"}`;
+        return f.debug `ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
     }
     getInitValue(runtime, requireInit) {
         if (!this.lengthInformation)
             fail(f.quote `${this} is not a valid variable type: length must be specified here`);
-        if (!this.type)
+        if (!this.elementType)
             fail(f.quote `${this} is not a valid variable type: element type must be specified here`);
-        const type = this.type;
+        const type = this.elementType;
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
@@ -119,15 +119,15 @@ export class RecordVariableType extends BaseVariableType {
             this.directDependencies.add(type);
             type.directDependencies.forEach(d => this.directDependencies.add(d));
         }
-        else if (type instanceof ArrayVariableType && type.type != null) {
-            this.addDependencies(type.type);
+        else if (type instanceof ArrayVariableType && type.elementType != null) {
+            this.addDependencies(type.elementType);
         }
     }
     checkSize() {
         for (const [name, type] of Object.entries(this.fields)) {
             if (type == this)
                 fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`);
-            if (type instanceof ArrayVariableType && type.type == this)
+            if (type instanceof ArrayVariableType && type.elementType == this)
                 fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
             if (type instanceof RecordVariableType && type.directDependencies.has(this))
                 fail(f.quote `Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`);

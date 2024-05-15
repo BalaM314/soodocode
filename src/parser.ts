@@ -234,7 +234,7 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 	//Statement is invalid, choose the most relevant error message
 	//Check if it's a valid expression
 	const [expr] = tryRun(() => parseExpression(tokens));
-	if(expr){
+	if(expr){ //TODO only allow this if the expression is more complex than a single number or variable
 		//TODO: this error should not always be the highest priority
 		if(expr instanceof ExpressionASTFunctionCallNode)
 			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`);
