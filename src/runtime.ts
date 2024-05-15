@@ -263,7 +263,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			}
 			const [objType, obj] = this.evaluateExpr(expr.nodes[0]);
 			if(objType instanceof RecordVariableType){
-				if(type == "function") fail(f.quote`Expected this expression to evaluate to a function, but found a property access on a variable of type ${type}, which cannot have functions as properties`);
+				if(type == "function") fail(f.quote`Expected this expression to evaluate to a function, but found a property access on a variable of type ${type}, which cannot have functions as properties`, expr);
 				const outputType = objType.fields[property] ?? fail(f.quote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
 				const value = (obj as Record<string, VariableValue>)[property];
 				if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
@@ -326,15 +326,15 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 
 		//Special cases where the operator isn't a normal operator
 		if(expr instanceof ExpressionASTArrayAccessNode){
-			if(type == "function") fail(`Expected this expression to evaluate to a function, but found an array access, which cannot return a function.`);
+			if(type == "function") fail(`Expected this expression to evaluate to a function, but found an array access, which cannot return a function.`, expr);
 			return this.processArrayAccess(expr, "get", type);
 		}
 		if(expr instanceof ExpressionASTFunctionCallNode){
-			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`);
-			if(type == "function") fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`);
+			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`, expr);
+			if(type == "function") fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`, expr);
 			const func = this.evaluateExpr(expr.functionName, "function");
 			if("clazz" in func){
-				if(func.method.type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`);
+				if(func.method.type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`, expr.functionName);
 				//Class method
 				const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
 				return this.finishEvaluation(output, outputType, type);
@@ -342,15 +342,15 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 				const output = this.callBuiltinFunction(func, expr.args);
 				return this.finishEvaluation(output[1], output[0], type);
 			} else {
-				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`);
+				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`, expr.functionName);
 				const statement = func.controlStatements[0];
 				const output = this.callFunction(func, expr.args, true);
 				return this.finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
 			}
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
-			if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`);
-			const clazz = this.getClass(expr.className.text);
+			if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`, expr);
+			const clazz = this.getClass(expr.className.text, expr.className.range);
 			const output = clazz.construct(this, expr.args);
 			return this.finishEvaluation(output, clazz, type);
 		}
@@ -361,9 +361,9 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 				case operators.access:
 					return this.processRecordAccess(expr, "get", type);
 				case operators.pointer_reference: {
-					if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`);
-					if(type && !(type instanceof PointerVariableType)) fail(f.quote`Expected result to be of type ${type}, but the reference operator will return a pointer`);
-					let variable;
+					if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`, expr);
+					if(type && !(type instanceof PointerVariableType)) fail(f.quote`Expected result to be of type ${type}, but the reference operator will return a pointer`, expr);
+					let variable; //TODO Replace this with tryRun
 					try {
 						variable = this.evaluateExpr(expr.nodes[0], "variable", true);
 						//Guess the type
@@ -374,7 +374,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 						if(err instanceof SoodocodeError){
 							const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
 							//Guess the type
-							const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`);
+							const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
 							return this.finishEvaluation({
 								type: targetType,
 								declaration: "dynamic",
@@ -383,11 +383,11 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 							}, pointerType, type);
 						} else throw err;
 					}
-					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`);
+					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
 					return this.finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
-					if(type == "function") fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`);
+					if(type == "function") fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`, expr);
 					const [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
 					if(variableValue == null) fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
 					if(!(pointerVariableType instanceof PointerVariableType)) fail(f.quote`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
@@ -404,12 +404,12 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 			}
 		}
 
-		if(type == "variable" || type == "function") fail(`Cannot evaluate this expression as a ${type}`);
+		if(type == "variable" || type == "function") fail(`Cannot evaluate this expression as a ${type}`, expr);
 
 		//arithmetic
 		if(type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic"){
 			if(type && !type.is("REAL", "INTEGER"))
-				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`);
+				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`, expr);
 
 			const guessedType = (type as PrimitiveVariableType<"REAL" | "INTEGER">) ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
 			let value:number;
@@ -435,24 +435,24 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 					value = left * right;
 					break;
 				case operators.divide:
-					if(right == 0) fail(`Division by zero`);
+					if(right == 0) fail(`Division by zero`, expr.nodes[1], expr);
 					value = left / right;
 					if(type?.is("INTEGER"))
 						fail(
-`Arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
-help: try using DIV instead of / to produce an integer as the result`
+`This arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
+help: try using DIV instead of / to produce an integer as the result`, expr.operatorToken, expr
 						); //CONFIG
 					break;
 				case operators.integer_divide:
-					if(right == 0) fail(`Division by zero`);
+					if(right == 0) fail(`Division by zero`, expr.nodes[1], expr);
 					value = Math.trunc(left / right);
 					break;
 				case operators.mod:
-					if(right == 0) fail(`Division by zero`);
+					if(right == 0) fail(`Division by zero`, expr.nodes[1], expr);
 					value = left % right;
 					break;
 				default:
-					fail(f.quote`Expected the expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`);
+					fail(f.quote`Expected this expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`, expr);
 			}
 			return [guessedType, value];
 		}
@@ -460,7 +460,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		//logical
 		if(type?.is("BOOLEAN") || expr.operator.category == "logical"){
 			if(type && !type.is("BOOLEAN"))
-				fail(f.quote`Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`);
+				fail(f.quote`Expected this expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`, expr);
 
 			if(expr.operator.type == "unary_prefix"){
 				switch(expr.operator){
@@ -496,19 +496,19 @@ help: try using DIV instead of / to produce an integer as the result`
 				case operators.less_than_equal:
 					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] <= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
 				default:
-					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`);
+					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`, expr);
 			}
 		}
 
 		//string
 		if(type?.is("STRING") || expr.operator.category == "string"){
 			if(type && !type.is("STRING"))
-				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`);
+				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`, expr);
 			switch(expr.operator){
 				case operators.string_concatenate:
 					return [PrimitiveVariableType.STRING, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)[1] + this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)[1]];
 				default:
-					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`);
+					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`, expr);
 			}
 		}
 
@@ -525,56 +525,56 @@ help: try using DIV instead of / to produce an integer as the result`
 
 			const enumType = this.getEnumFromValue(token.text);
 			if(enumType){
-				if(type == "variable") fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`);
+				if(type == "variable") fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`, token);
 				return this.finishEvaluation(token.text, enumType, type);
 			} else {
 				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
 				if(type == "variable") return variable;
-				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`);
+				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`, token);
 				return this.finishEvaluation(variable.value, variable.type, type);
 			}
 		}
-		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${token.text} as a ${type}`);
+		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${token.text} as a ${type}`, token);
 		//TODO move the string conversions to VariableType
 		switch(token.type){
 			case "boolean.false":
 				//TODO bad coercion
 				if(!type || type.is("BOOLEAN")) return [PrimitiveVariableType.BOOLEAN, false];
 				else if(type.is("STRING")) return [PrimitiveVariableType.STRING, "FALSE"];
-				else fail(f.text`Cannot convert value FALSE to type ${type}`);
+				else fail(f.text`Cannot convert value FALSE to type ${type}`, token);
 				break;
 			case "boolean.true":
 				if(!type || type.is("BOOLEAN")) return [PrimitiveVariableType.BOOLEAN, true];
 				else if(type.is("STRING")) return [PrimitiveVariableType.STRING, "TRUE"];
-				else fail(f.text`Cannot convert value TRUE to type ${type}`);
+				else fail(f.text`Cannot convert value TRUE to type ${type}`, token);
 				break;
 			case "number.decimal":
 				if(!type || type.is("INTEGER", "REAL", "STRING")){
 					const val = Number(token.text);
 					if(!Number.isFinite(val))
-						fail(f.quote`Value ${token} cannot be converted to a number: too large`);
+						fail(f.quote`Value ${token} cannot be converted to a number: too large`, token);
 					if(type?.is("INTEGER")){
 						if(!Number.isInteger(val))
-							fail(f.quote`Value ${token} cannot be converted to an integer`);
+							fail(f.quote`Value ${token} cannot be converted to an integer`, token);
 						if(!Number.isSafeInteger(val))
-							fail(f.quote`Value ${token} cannot be converted to an integer: too large`);
+							fail(f.quote`Value ${token} cannot be converted to an integer: too large`, token);
 						return [PrimitiveVariableType.INTEGER, val];
 					} else if(type?.is("STRING")){
 						return [PrimitiveVariableType.STRING, token.text];
 					} else {
 						return [PrimitiveVariableType.REAL, val];
 					}
-				} else fail(f.quote`Cannot convert number to type ${type}`);
+				} else fail(f.quote`Cannot convert number to type ${type}`, token);
 				break;
 			case "string":
 				if(!type || type.is("STRING")) return [PrimitiveVariableType.STRING, token.text.slice(1, -1)]; //remove the quotes
-				else fail(f.quote`Cannot convert value ${token} to type ${type}`);
+				else fail(f.quote`Cannot convert value ${token} to type ${type}`, token);
 				break;
 			case "char":
 				if(!type || type.is("CHAR") || type.is("STRING")) return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
-				else fail(f.quote`Cannot convert value ${token} to type ${type}`);
+				else fail(f.quote`Cannot convert value ${token} to type ${type}`, token);
 				break;
-			default: fail(f.quote`Cannot evaluate token ${token}`);
+			default: fail(f.quote`Cannot evaluate token ${token}`, token);
 		}
 	}
 	static NotStaticError = class extends Error {};
@@ -689,15 +689,15 @@ help: try using DIV instead of / to produce an integer as the result`
 			return { clazz, method, instance: this.classData.instance };
 		} else return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}
-	getClass(name:string):ClassVariableType {
+	getClass(name:string, range:TextRange):ClassVariableType {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			if(this.scopes[i].types[name]){
 				if(!(this.scopes[i].types[name] instanceof ClassVariableType))
-					fail(f.quote`Type ${name} is not a class, it is ${this.scopes[i].types[name]}`);
+					fail(f.quote`Type ${name} is not a class, it is ${this.scopes[i].types[name]}`, range);
 				return this.scopes[i].types[name] as ClassVariableType;
 			}
 		}
-		fail(f.quote`Class ${name} has not been defined.`);
+		fail(f.quote`Class ${name} has not been defined.`, range);
 	}
 	getCurrentFunction():FunctionData | ClassMethodStatement | null {
 		const scope = this.scopes.findLast(
@@ -721,7 +721,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE")) return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
 			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 		}
-		fail(f.quote`Cannot coerce value of type ${from} to ${to}`);
+		fail(f.quote`Cannot coerce value of type ${from} to ${to}`, undefined);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
 		if(value == null) return value;
@@ -745,7 +745,7 @@ help: try using DIV instead of / to produce an integer as the result`
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:ExpressionASTNode[]){
-		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`);
+		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
 		const scope:VariableScope = {
 			statement: func,
 			variables: {},
@@ -760,7 +760,7 @@ help: try using DIV instead of / to produce an integer as the result`
 					declaration: func,
 					mutable: true,
 					type: rType,
-					get value(){ return varData.value ?? fail(`Variable (passed by reference) has not been initialized`); },
+					get value(){ return varData.value ?? fail(`Variable (passed by reference) has not been initialized`, args[i]); },
 					set value(value){ varData.value = value; }
 				};
 			} else {
@@ -779,7 +779,7 @@ help: try using DIV instead of / to produce an integer as the result`
 	callFunction<T extends boolean>(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue?:T):VariableValue | (T extends false ? null : never) {
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ProcedureStatement && requireReturnValue)
-			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
 
 		const scope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], scope);
@@ -787,7 +787,7 @@ help: try using DIV instead of / to produce an integer as the result`
 			//requireReturnValue satisfies false;
 			return null!;
 		} else { //must be functionstatement
-			if(!output) fail(f.quote`Function ${func.name} did not return a value`);
+			if(!output) fail(f.quote`Function ${func.name} did not return a value`, undefined); //TODO create rangeExternal and set it to funcNode.nodeGroups[0] here
 			return output.value;
 		}
 	}
@@ -799,9 +799,9 @@ help: try using DIV instead of / to produce an integer as the result`
 	) {
 		const func = method.controlStatements[0];
 		if(func instanceof ClassProcedureStatement && requireReturnValue === true)
-			fail(`Cannot use return value of ${func.name}() as it is a procedure`);
+			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
 		if(func instanceof ClassFunctionStatement && requireReturnValue === false)
-			fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
+			fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, undefined); //CONFIG
 
 		const classScope = instance.type.getScope(this, instance);
 		const methodScope = this.assembleScope(func, args);
@@ -813,12 +813,12 @@ help: try using DIV instead of / to produce an integer as the result`
 			//requireReturnValue satisfies false;
 			return null!;
 		} else { //must be functionstatement
-			return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`)) as never;
+			return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`, undefined)) as never;
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {
-		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`);
-		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`);
+		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`, undefined);
+		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const processedArgs:VariableValue[] = [];
 		let i = 0;
 		nextArg:
@@ -905,9 +905,9 @@ help: try using DIV instead of / to produce an integer as the result`
 	getOpenFile(filename:string):OpenedFile;
 	getOpenFile<T extends FileMode>(filename:string, modes:T[], operationDescription:string):OpenedFileOfType<T>;
 	getOpenFile(filename:string, modes?:FileMode[], operationDescription?:string):OpenedFile {
-		const data = (this.openFiles[filename] ?? fail(f.quote`File ${filename} is not open or does not exist.`));
+		const data = (this.openFiles[filename] ?? fail(f.quote`File ${filename} is not open or does not exist.`, undefined));
 		if(modes && operationDescription && !modes.includes(data.mode))
-			fail(f.quote`${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`);
+			fail(f.quote`${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`, undefined);
 		return data;
 	}
 }

@@ -198,7 +198,7 @@ export class SoodocodeError extends Error {
 	}
 }
 
-export function fail(message:string, rangeSpecific?:TextRangeLike | null, rangeGeneral?:TextRangeLike | null):never {
+export function fail(message:string, rangeSpecific:TextRangeLike | null | undefined, rangeGeneral?:TextRangeLike | null):never {
 	throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral));
 }
 export function crash(message:string):never {

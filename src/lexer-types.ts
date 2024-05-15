@@ -126,7 +126,7 @@ export class Token implements TextRanged, IFormattable {
 		this.range = [-1, -1];
 		return this;
 	}
-	rangeBefore():TextRange {
+	rangeBefore():TextRange { //TODO fix these to handle the thing after being a newline
 		return [this.range[0] - 1, this.range[0]];
 	}
 	rangeAfter():TextRange {

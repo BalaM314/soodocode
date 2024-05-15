@@ -105,12 +105,12 @@ ${statement.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span cla
 export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	if(node instanceof Token){
 		if(node.type == "number.decimal") return Number(node.text);
-		else if(node.type == "name") fail(`Cannot evaluate expression: variable content unknown`);
-		else fail(f.quote`Cannot evaluate expression: cannot evaluate token ${node}: not a number`);
+		else if(node.type == "name") fail(`Cannot evaluate expression: variable content unknown`, node);
+		else fail(f.quote`Cannot evaluate expression: cannot evaluate token ${node}: not a number`, node);
 	} else if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTClassInstantiationNode){
-		fail(f.quote`Cannot evaluate expression ${node}: function call result unknown`);
+		fail(f.quote`Cannot evaluate expression ${node}: function call result unknown`, node);
 	} else if(node instanceof ExpressionASTArrayAccessNode){
-		fail(f.quote`Cannot evaluate expression ${node}: array contents unknown`);
+		fail(f.quote`Cannot evaluate expression ${node}: array contents unknown`, node);
 	} else switch(node.operator.name){
 		case "operator.negate": return - evaluateExpressionDemo(node.nodes[0]);
 		case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
@@ -119,7 +119,7 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 		case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
 		case "operator.integer_divide": return Math.trunc(evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]));
 		case "operator.mod": return evaluateExpressionDemo(node.nodes[0]) % evaluateExpressionDemo(node.nodes[1]);
-		default: fail(f.quote`Cannot evaluate expression: cannot evaluate node ${node}: unknown operator type ${node.operator.name}`);
+		default: fail(f.quote`Cannot evaluate expression: cannot evaluate node ${node}: unknown operator type ${node.operator.name}`, node);
 	}
 }
 
@@ -404,7 +404,7 @@ let lastOutputText:string = "";
 function executeSoodocode(){
 	const output:string[] = [];
 	const runtime = new Runtime(
-		(msg) => prompt(msg) ?? fail("input was empty"),
+		(msg) => prompt(msg) ?? fail("User did not input a value", undefined),
 		m => {
 			output.push(m);
 			console.log(`[Runtime] ${m}`);
@@ -472,7 +472,7 @@ setInterval(() => {
 
 function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
-	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("input was empty"), m => console.log(`[Runtime] ${m}`));
+	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => console.log(`[Runtime] ${m}`));
 	Object.assign(window,
 		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime
 	);

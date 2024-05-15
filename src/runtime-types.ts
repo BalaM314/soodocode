@@ -144,8 +144,8 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		return f.debug`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
-		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`);
-		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`);
+		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`, undefined);
+		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, undefined);
 		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
 		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
@@ -269,7 +269,7 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 		return f.debug`SetVariableType [${this.name}] (contains: ${this.baseType})`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
-		fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
+		crash(`Cannot initialize a variable of type SET`);
 	}
 }
 export class ClassVariableType extends BaseVariableType {

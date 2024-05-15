@@ -106,19 +106,19 @@ export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode 
 			tokens.at(-1)!,
 			tokens
 		);
-	if(checkTokens(tokens, ["keyword.array"])) fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`);
-	if(tokens.length <= 1) fail(f.quote`Cannot parse type from ${tokens}: expected the name of a builtin or user-defined type, or an array type definition, like "ARRAY[1:10] OF STRING"`);
+	if(checkTokens(tokens, ["keyword.array"])) fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`, tokens);
+	if(tokens.length <= 1) fail(f.quote`Cannot parse type from ${tokens}: expected the name of a builtin or user-defined type, or an array type definition, like "ARRAY[1:10] OF STRING"`, tokens);
 	if(checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", ".*"]))
-		fail(`Please specify the type of the array, like this: "ARRAY[1:10] OF STRING"`);
+		fail(`Please specify the type of the array, like this: "ARRAY[1:10] OF STRING"`, tokens);
 	if(checkTokens(tokens, ["keyword.array", "parentheses.open", ".+", "parentheses.close", "keyword.of", "name"]))
-		fail(`Array range specifiers use square brackets, like this: "ARRAY[1:10] OF STRING"`);
+		fail(`Array range specifiers use square brackets, like this: "ARRAY[1:10] OF STRING"`, tokens);
 	if(checkTokens(tokens, ["keyword.set"]))
-		fail(`Please specify the type of the set, like this: "SET OF STRING"`);
+		fail(`Please specify the type of the set, like this: "SET OF STRING"`, tokens);
 	if(checkTokens(tokens, ["keyword.set", "keyword.of", "name"]))
-		fail(`Set types cannot be specified inline, please create a type alias first, like this: TYPE yournamehere = SET OF ${tokens[2].text}`);
+		fail(`Set types cannot be specified inline, please create a type alias first, like this: TYPE yournamehere = SET OF ${tokens[2].text}`, tokens);
 	if(checkTokens(tokens, ["operator.pointer", "name"]))
-		fail(`Pointer types cannot be specified inline, please create a type alias first, like this: TYPE p${tokens[1].text} = ^${tokens[1].text}`);
-	fail(f.quote`Cannot parse type from ${tokens}`);
+		fail(`Pointer types cannot be specified inline, please create a type alias first, like this: TYPE p${tokens[1].text} = ^${tokens[1].text}`, tokens);
+	fail(f.quote`Cannot parse type from ${tokens}`, tokens);
 });
 
 export function splitTokensToStatements(tokens:Token[]):Token[][] {
@@ -249,8 +249,8 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 	const [expr] = tryRun(() => parseExpression(tokens));
 	if(expr && !(expr instanceof Token)){
 		if(expr instanceof ExpressionASTFunctionCallNode)
-			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`);
-		else fail(`Expected a statement, not an expression`);
+			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`, tokens);
+		else fail(`Expected a statement, not an expression`, tokens);
 	}
 	let maxError = errors[0];
 	for(const error of errors){
@@ -391,7 +391,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 	if(expressionLeafNodeTypes.includes(token.type))
 		return token;
 	else
-		fail(`Invalid expression leaf node`);
+		fail(`Invalid expression leaf node`, token);
 });
 
 export const parseExpression = errorBoundary({
@@ -564,7 +564,7 @@ export const parseExpression = errorBoundary({
 					: splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
 				input
 			);
-		else fail(f.quote`${parsedTarget} is not a valid function name, function names must be a single word, or the result of a property access`);
+		else fail(f.quote`${parsedTarget} is not a valid function name, function names must be a single token, or the result of a property access`, parsedTarget);
 	}
 
 	//If the whole expression is surrounded by parentheses, parse the inner expression
@@ -578,8 +578,8 @@ export const parseExpression = errorBoundary({
 	if(bracketIndex != null && input.at(-1)?.type == "bracket.close"){
 		const target = input.slice(0, bracketIndex);
 		const indicesTokens = input.slice(bracketIndex + 1, -1);
-		if(target.length == 0) fail(`Missing target in array index expression`);
-		if(indicesTokens.length == 0) fail(`Missing indices in array index expression`);
+		if(target.length == 0) fail(`Missing target in array index expression`, input[0].rangeBefore());
+		if(indicesTokens.length == 0) fail(`Missing indices in array index expression`, input[0].rangeAfter());
 		const parsedTarget = parseExpression(target, true);
 		return new ExpressionASTArrayAccessNode(
 			parsedTarget,
@@ -590,5 +590,5 @@ export const parseExpression = errorBoundary({
 
 	//No operators found at all, something went wrong
 	if(error) error();
-	fail(`No operators found`);
+	fail(`No operators found`, input);
 });
