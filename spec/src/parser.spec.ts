@@ -3349,11 +3349,11 @@ describe("parseStatement", () => {
 		const fakeNode = context ? new ProgramASTBranchNode(context[0], [context[1]], []) : null;
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
-				expect(() => parseStatement(program, fakeNode)).toThrowMatching(e => e instanceof SoodocodeError);
+				expect(() => parseStatement(program, fakeNode, true)).toThrowMatching(e => e instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} into a statement`, () => {
-				expect(parseStatement(program, fakeNode)).toEqual(output);
+				expect(parseStatement(program, fakeNode, true)).toEqual(output);
 			});
 		}
 	}

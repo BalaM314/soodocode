@@ -110,7 +110,7 @@ export function splitTokensToStatements(tokens) {
     ];
     return splitTokens(tokens, "newline").map(ts => {
         for (const [statement, length] of statementData) {
-            if (ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length))))
+            if (ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length), false)))
                 return [ts.slice(0, length), ts.slice(length)];
         }
         return [ts];
@@ -127,7 +127,7 @@ export function parse({ program, tokens }) {
     }
     const blockStack = [];
     for (const line of lines) {
-        const statement = parseStatement(line, blockStack.at(-1) ?? null);
+        const statement = parseStatement(line, blockStack.at(-1) ?? null, true);
         if (statement.category == "normal") {
             getActiveBuffer().push(statement);
         }
@@ -187,13 +187,13 @@ export function getPossibleStatements(tokens, context) {
     }
     return validStatements;
 }
-export const parseStatement = errorBoundary()((tokens, context) => {
+export const parseStatement = errorBoundary()((tokens, context, allowRecursiveCall) => {
     if (tokens.length < 1)
         crash("Empty statement");
     const possibleStatements = getPossibleStatements(tokens, context);
     const errors = [];
     for (const possibleStatement of possibleStatements) {
-        const result = checkStatement(possibleStatement, tokens);
+        const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
         if (Array.isArray(result)) {
             const [out, err] = tryRun(() => new possibleStatement(result.map(x => x instanceof Token
                 ? x
@@ -242,7 +242,7 @@ export function isLiteral(type) {
         default: return false;
     }
 }
-export const checkStatement = errorBoundary()((statement, input) => {
+export const checkStatement = errorBoundary()((statement, input, allowRecursiveCall) => {
     if (input.length == 0)
         crash(`checkStatement() called with empty input`);
     if (statement.category == "block_multi_split" && !statement.blockType)
@@ -317,7 +317,7 @@ export const checkStatement = errorBoundary()((statement, input) => {
     if (j != input.length) {
         if (j > 0) {
             try {
-                parseStatement(input.slice(j), null);
+                void parseStatement(input.slice(j), null, false);
                 return { message: f.quote `Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
             }
             catch (err) {
@@ -338,7 +338,7 @@ export function checkTokens(tokens, input) {
         tokens: input,
         category: undefined,
         blockType: null,
-    }), tokens));
+    }), tokens, false));
 }
 function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";

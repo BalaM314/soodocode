@@ -131,7 +131,7 @@ export function splitTokensToStatements(tokens:Token[]):Token[][] {
 	];
 	return splitTokens(tokens, "newline").map(ts => {
 		for(const [statement, length] of statementData){
-			if(ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length))))
+			if(ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length), false)))
 				return [ts.slice(0, length), ts.slice(length)];
 		}
 		return [ts];
@@ -147,7 +147,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	}
 	const blockStack:ProgramASTBranchNode[] = [];
 	for(const line of lines){
-		const statement = parseStatement(line, blockStack.at(-1) ?? null);
+		const statement = parseStatement(line, blockStack.at(-1) ?? null, true);
 		if(statement.category == "normal"){
 			getActiveBuffer().push(statement);
 		} else if(statement.category == "block"){
@@ -207,12 +207,12 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null):Statement => {
+export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	const possibleStatements = getPossibleStatements(tokens, context);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
-		const result = checkStatement(possibleStatement, tokens);
+		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
 		if(Array.isArray(result)){
 			const [out, err] = tryRun(() => new possibleStatement(result.map(x =>
 				x instanceof Token
@@ -266,7 +266,7 @@ type StatementCheckFailResult = { message: string; priority: number; range: Text
  * This is to avoid duplicating the expression parsing logic.
  * `input` must not be empty.
  */
-export const checkStatement = errorBoundary()((statement:typeof Statement, input:Token[]):
+export const checkStatement = errorBoundary()((statement:typeof Statement, input:Token[], allowRecursiveCall:boolean):
 	StatementCheckFailResult | StatementCheckTokenRange[] => {
 	//TODO rewrite to use modified wagner-fischer for best detection
 
@@ -342,7 +342,7 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 		if(j > 0){
 			try {
 				//Check if the rest of the line is valid
-				parseStatement(input.slice(j), null);
+				void parseStatement(input.slice(j), null, false);
 				return { message: f.quote`Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
 			} catch(err){void err;}
 		}
@@ -361,7 +361,7 @@ export function checkTokens(tokens:Token[], input:TokenMatcher[]):boolean {
 		tokens: input,
 		category: undefined,
 		blockType: null,
-	}), tokens));
+	}), tokens, false));
 }
 
 function cannotEndExpression(token:Token){

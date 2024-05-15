@@ -8,7 +8,7 @@ export declare const parseType: (tokens: Token[]) => ExpressionASTTypeNode;
 export declare function splitTokensToStatements(tokens: Token[]): Token[][];
 export declare function parse({ program, tokens }: TokenizedProgram): ProgramAST;
 export declare function getPossibleStatements(tokens: Token[], context: ProgramASTBranchNode | null): (typeof Statement)[];
-export declare const parseStatement: (tokens: Token[], context: ProgramASTBranchNode | null) => Statement;
+export declare const parseStatement: (tokens: Token[], context: ProgramASTBranchNode | null, allowRecursiveCall: boolean) => Statement;
 export declare function isLiteral(type: TokenType): boolean;
 type StatementCheckTokenRange = (Token | {
     type: "expression" | "type";
@@ -20,7 +20,7 @@ type StatementCheckFailResult = {
     priority: number;
     range: TextRange | null;
 };
-export declare const checkStatement: (statement: typeof Statement, input: Token[]) => StatementCheckFailResult | StatementCheckTokenRange[];
+export declare const checkStatement: (statement: typeof Statement, input: Token[], allowRecursiveCall: boolean) => StatementCheckFailResult | StatementCheckTokenRange[];
 export declare function checkTokens(tokens: Token[], input: TokenMatcher[]): boolean;
 export declare const expressionLeafNodeTypes: TokenType[];
 export declare const parseExpressionLeafNode: (token: Token) => ExpressionASTLeafNode;
