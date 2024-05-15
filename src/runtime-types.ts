@@ -372,6 +372,7 @@ export type File = {
 export type OpenedFile = {
 	file: File;
 	mode: FileMode;
+	openRange: TextRange;
 } & ({
 	mode: "READ";
 	lines: string[];

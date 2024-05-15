@@ -771,15 +771,17 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 				file,
 				mode,
 				lines: file.text.split("\n").slice(0, -1), //the last element will be blank, because all lines end with a newline
-				lineNumber: 0
+				lineNumber: 0,
+				openRange: this.range,
 			};
 		} else if(mode == "RANDOM"){
 			fail(`Not yet implemented`, this.mode);
-		} else {
+		} else {//mode == "APPEND" | "WRITE"
 			if(mode == "WRITE") file.text = ""; //Clear the file so it can be overwritten
 			runtime.openFiles[name] = {
 				file,
 				mode,
+				openRange: this.range,
 			};
 		}
 	}

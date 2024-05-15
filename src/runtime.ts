@@ -897,9 +897,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			types: {}
 		});
 
-		for(const filename in this.openFiles){
-			if(this.openFiles[filename] == undefined) delete this.openFiles[filename];
-			else fail(f.quote`File ${filename} was not closed`);
+		for(const [name, file] of Object.entries(this.openFiles)){
+			if(file == undefined) delete this.openFiles[name];
+			else fail(f.quote`File ${name} was not closed`, file.openRange);
 		}
 	}
 	getOpenFile(filename:string):OpenedFile;
