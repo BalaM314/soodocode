@@ -184,8 +184,11 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	};
 }
 
-export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNode | null):(typeof Statement)[] {
-	//TODO improve error messages here, its quite bad
+export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNode | null):[
+	definitions: (typeof Statement)[],
+	error: ((valid:typeof Statement) => never) | null,
+]{
+	//TODO somehow consider the ones like ENDCLASs
 	const ctx = context?.controlStatements[0].type;
 	let validStatements = (tokens[0].type in statements.byStartKeyword
 		? statements.byStartKeyword[tokens[0].type]!
@@ -193,14 +196,20 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
 	if(ctx?.allowOnly){
 		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
 		if(allowedValidStatements.length == 0){
-			fail(`No valid statement definitions\nInput could have been ${validStatements.map(s => `"${s.type}"`).join(" or ")}, but the only statements allowed in block ${context!.type} are ${[...ctx.allowOnly].map(s => `"${s}"`).join(" or ")}`);
+			return [
+				validStatements,
+				statement => fail(`Statement ${statement.type} is not valid here: the only statements allowed in block ${context!.type} are ${[...ctx.allowOnly!].map(s => `"${s}"`).join(" or ")}`) //TODO display name
+			];
 		} else validStatements = allowedValidStatements;
 	}
-	validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
-	if(validStatements.length == 0){
-		fail(`No valid statement definitions`);
-	}
-	return validStatements;
+	if(validStatements.length == 0) fail(`No valid statement definitions`);
+	const allowedValidStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
+	if(allowedValidStatements.length == 0) return [
+		validStatements,
+		statement => fail(`Statement ${statement.type} is only valid in ${statement.blockType!} statements`) //TODO display name
+	];
+	validStatements = allowedValidStatements;
+	return [validStatements, null];
 }
 
 /**
@@ -209,7 +218,8 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
  **/
 export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
-	const possibleStatements = getPossibleStatements(tokens, context);
+	const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
+	console.log(possibleStatements);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
@@ -219,8 +229,11 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 					? x
 					: (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))
 			)));
-			if(out) return out;
-			else errors.push({
+			if(out){
+				if(statementError)
+					statementError(possibleStatement);
+				else return out;
+			} else errors.push({
 				message: err.message,
 				priority: 10,
 				range: err.rangeSpecific ?? null,
@@ -234,8 +247,7 @@ export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramAS
 	//Statement is invalid, choose the most relevant error message
 	//Check if it's a valid expression
 	const [expr] = tryRun(() => parseExpression(tokens));
-	if(expr){ //TODO only allow this if the expression is more complex than a single number or variable
-		//TODO: this error should not always be the highest priority
+	if(expr && !(expr instanceof Token)){
 		if(expr instanceof ExpressionASTFunctionCallNode)
 			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`);
 		else fail(`Expected a statement, not an expression`);

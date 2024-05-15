@@ -7,7 +7,10 @@ export declare const processTypeData: (typeNode: ExpressionASTTypeNode) => Unres
 export declare const parseType: (tokens: Token[]) => ExpressionASTTypeNode;
 export declare function splitTokensToStatements(tokens: Token[]): Token[][];
 export declare function parse({ program, tokens }: TokenizedProgram): ProgramAST;
-export declare function getPossibleStatements(tokens: Token[], context: ProgramASTBranchNode | null): (typeof Statement)[];
+export declare function getPossibleStatements(tokens: Token[], context: ProgramASTBranchNode | null): [
+    definitions: (typeof Statement)[],
+    error: ((valid: typeof Statement) => never) | null
+];
 export declare const parseStatement: (tokens: Token[], context: ProgramASTBranchNode | null, allowRecursiveCall: boolean) => Statement;
 export declare function isLiteral(type: TokenType): boolean;
 type StatementCheckTokenRange = (Token | {

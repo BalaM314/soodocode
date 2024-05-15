@@ -176,21 +176,30 @@ export function getPossibleStatements(tokens, context) {
     if (ctx?.allowOnly) {
         const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
         if (allowedValidStatements.length == 0) {
-            fail(`No valid statement definitions\nInput could have been ${validStatements.map(s => `"${s.type}"`).join(" or ")}, but the only statements allowed in block ${context.type} are ${[...ctx.allowOnly].map(s => `"${s}"`).join(" or ")}`);
+            return [
+                validStatements,
+                statement => fail(`Statement ${statement.type} is not valid here: the only statements allowed in block ${context.type} are ${[...ctx.allowOnly].map(s => `"${s}"`).join(" or ")}`)
+            ];
         }
         else
             validStatements = allowedValidStatements;
     }
-    validStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
-    if (validStatements.length == 0) {
+    if (validStatements.length == 0)
         fail(`No valid statement definitions`);
-    }
-    return validStatements;
+    const allowedValidStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
+    if (allowedValidStatements.length == 0)
+        return [
+            validStatements,
+            statement => fail(`Statement ${statement.type} is only valid in ${statement.blockType} statements`)
+        ];
+    validStatements = allowedValidStatements;
+    return [validStatements, null];
 }
 export const parseStatement = errorBoundary()((tokens, context, allowRecursiveCall) => {
     if (tokens.length < 1)
         crash("Empty statement");
-    const possibleStatements = getPossibleStatements(tokens, context);
+    const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
+    console.log(possibleStatements);
     const errors = [];
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
@@ -198,8 +207,12 @@ export const parseStatement = errorBoundary()((tokens, context, allowRecursiveCa
             const [out, err] = tryRun(() => new possibleStatement(result.map(x => x instanceof Token
                 ? x
                 : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1)))));
-            if (out)
-                return out;
+            if (out) {
+                if (statementError)
+                    statementError(possibleStatement);
+                else
+                    return out;
+            }
             else
                 errors.push({
                     message: err.message,
@@ -215,7 +228,7 @@ export const parseStatement = errorBoundary()((tokens, context, allowRecursiveCa
         }
     }
     const [expr] = tryRun(() => parseExpression(tokens));
-    if (expr) {
+    if (expr && !(expr instanceof Token)) {
         if (expr instanceof ExpressionASTFunctionCallNode)
             fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`);
         else
