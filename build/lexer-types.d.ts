@@ -39,6 +39,7 @@ export declare class Token implements TextRanged, IFormattable {
 }
 export declare class TokenList extends Array<Token> implements TextRanged {
     range: TextRange;
-    constructor(tokens?: Token[], range?: TextRange);
+    constructor(tokens: Token[], range?: TextRange);
     slice(start?: number, end?: number): TokenList;
+    map<U>(fn: (v: Token, i: number, a: Token[]) => U): U[];
 }

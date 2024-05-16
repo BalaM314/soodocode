@@ -16,7 +16,6 @@ import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPart
 import { TextRange } from "./types.js";
 import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 
-//TODO add a way to specify the range for an empty list of tokens
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary()((tokens:TokenList):FunctionArguments => {

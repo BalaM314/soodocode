@@ -71,45 +71,60 @@ export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array
 			else output.at(-1)!.push(arr[i]);
 		}
 	} else {
-		for(const el of arr){
-			if(el == split[0]) output.push([]);
-			else output.at(-1)!.push(el);
+		let lastBoundary = 0;
+		for(let i = 0; i <= arr.length; i ++){
+			if(i == arr.length || arr[i] == split[0]){
+				output.push(arr.slice(lastBoundary, i));
+				lastBoundary = i + 1;
+			}
 		}
 	}
 	return output;
 }
 
-export function splitTokens(arr:TokenList, split:TokenType){
-	const output:TokenList[] = [new TokenList()];
-	for(const el of arr){
-		if(el.type == split) output.push(new TokenList());
-		else output.at(-1)!.push(el);
+export function splitTokens(arr:TokenList, split:TokenType):TokenList[] {
+	const output:TokenList[] = [];
+	let lastBoundary = 0;
+	for(let i = 0; i <= arr.length; i ++){
+		if(i == arr.length || arr[i].type == split){
+			output.push(arr.slice(lastBoundary, i));
+			lastBoundary = i + 1;
+		}
 	}
 	return output;
 }
 
-export function splitTokensWithSplitter(arr:TokenList, split:TokenType){
-	const output:{ group:TokenList; splitter?:Token; }[] = [{ group: new TokenList() }];
-	for(const el of arr){
-		if(el.type == split){
-			output.at(-1)!.splitter = el;
-			output.push({ group: new TokenList() });
-		} else output.at(-1)!.group.push(el);
+export function splitTokensWithSplitter(arr:TokenList, split:TokenType):{ group:TokenList; splitter?:Token; }[]{
+	const output:{ group:TokenList; splitter?:Token; }[] = [];
+	let lastBoundary = 0;
+	for(let i = 0; i <= arr.length; i ++){
+		if(i == arr.length || arr[i].type == split){
+			output.push({
+				group: arr.slice(lastBoundary, i),
+				splitter: arr[i]
+			});
+			lastBoundary = i + 1;
+		}
 	}
 	return output;
 }
 
 export function splitTokensOnComma(arr:TokenList):TokenList[] {
-	const output:TokenList[] = [new TokenList()];
+	const output:TokenList[] = [];
+	let lastBoundary = 0;
 	let parenNestLevel = 0, bracketNestLevel = 0;
-	for(const token of arr){
+	for(const [i, token] of arr.entries()){
 		if(token.type == "parentheses.open") parenNestLevel ++;
 		else if(token.type == "parentheses.close") parenNestLevel --;
 		else if(token.type == "bracket.open") bracketNestLevel ++;
 		else if(token.type == "bracket.close") bracketNestLevel --;
-		if(parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma") output.push(new TokenList());
-		else output.at(-1)!.push(token);
+		
+		if(parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma"){
+			output.push(arr.slice(lastBoundary, i));
+			lastBoundary = i + 1;
+		}
 	}
+	output.push(arr.slice(lastBoundary));
 	return output;
 }
 
@@ -127,7 +142,7 @@ export function findLastNotInGroup(arr:TokenList, target:TokenType):number | nul
 }
 
 export function getUniqueNamesFromCommaSeparatedTokenList(tokens:TokenList, nextToken?:Token, validNames:TokenType[] = ["name"]):TokenList {
-	const names = new TokenList();
+	const names:Token[] = [];
 
 	let expected:"name" | "comma" = "name";
 	for(const token of tokens){
@@ -148,7 +163,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens:TokenList, next
 		const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
 		fail(f.quote`Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
 	}
-	return names;
+	return new TokenList(names);
 }
 
 export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {

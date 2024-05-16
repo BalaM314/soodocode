@@ -243,7 +243,7 @@ export function symbolize(input:string):SymbolizedProgram {
 
 /** Converts a list of symbols into a list of tokens. */
 export function tokenize(input:SymbolizedProgram):TokenizedProgram {
-	const tokens = new TokenList();
+	const tokens:Token[] = [];
 	const state = {
 		sComment: null as null | Symbol,
 		mComment: null as null | Symbol,
@@ -324,7 +324,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 	if(state.decimalNumber == "requireNumber") fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1)!.rangeAfter());
 	return {
 		program: input.program,
-		tokens
+		tokens: tokens.length > 0 ? new TokenList(tokens) : new TokenList(tokens, [0, Infinity])
 	};
 
 	function write(type:TokenType){

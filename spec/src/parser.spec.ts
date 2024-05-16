@@ -7,7 +7,7 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token, TokenizedProgram } from "../../build/lexer-types.js";
+import { Token, TokenList, TokenizedProgram } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
@@ -21,13 +21,18 @@ import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _
 
 const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_ExpressionAST | "error"]>) =>
 	Object.entries(d).map<
-		[name:string, expression:Token[], output:jasmine.Expected<ExpressionAST> | "error"]
+		[name:string, expression:TokenList, output:jasmine.Expected<ExpressionAST> | "error"]
 	>(([name, [program, output]]) => [
 		name,
-		program.map(process_Token),
+		new TokenList(program.map(process_Token), [-1, -1]),
 		output == "error" ? "error" : applyAnyRange(process_ExpressionAST(output))
 	])
 )({
+	blank: [
+		[
+		],
+		"error",
+	],
 	number: [
 		[
 			5,
@@ -1288,10 +1293,10 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 
 const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Statement | "error", context?:[ProgramASTBranchNodeType, typeof Statement]]>) =>
 	Object.entries(data).map<
-		[name:string, program:Token[], output:jasmine.Expected<Statement> | "error", context:[ProgramASTBranchNodeType, Statement] | null]
+		[name:string, program:TokenList, output:jasmine.Expected<Statement> | "error", context:[ProgramASTBranchNodeType, Statement] | null]
 	>(([name, [program, output, context]]) => [
 		name,
-		program.map(process_Token),
+		new TokenList(program.map(process_Token), [-1, -1]),
 		output == "error" ? "error" : applyAnyRange(process_Statement(output)),
 		context ? [context[0], fakeStatement(context[1])] : null
 	])
@@ -2240,7 +2245,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		name,
 		{
 			program: "", //SPECNULL
-			tokens: program.map(process_Token)
+			tokens: new TokenList(program.map(process_Token), [-1, -1])
 		},
 		output == "error" ? "error" : applyAnyRange(process_ProgramAST(output))
 	])
@@ -2833,12 +2838,12 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 const functionArgumentTests = ((data:Record<string,
 	[input:_Token[], output:[string, type:_UnresolvedVariableType, passMode?:PassMode][]
 | "error"]>) => Object.entries(data).map<
-	{name:string; input:Token[]; output:[string,
+	{name:string; input:TokenList; output:[string,
 		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}
 	][] | "error"}
 >(([name, [input, output]]) => ({
 	name,
-	input: input.map(process_Token),
+	input: new TokenList(input.map(process_Token), [-1, -1]),
 	output: output == "error" ? "error" :
 	output.map(
 		([name, type, passMode]) => [name, {type: process_UnresolvedVariableType(type), passMode: passMode ?? jasmine.any(String)}]
@@ -3302,9 +3307,9 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 		"keyword.of",
 		"INTEGER",
 	], "error"],
-}).map<{name:string; input:Token[]; output:jasmine.Expected<Token | ExpressionASTArrayTypeNode> | "error";}>(([name, [input, output]]) => ({
+}).map<{name:string; input:TokenList; output:jasmine.Expected<Token | ExpressionASTArrayTypeNode> | "error";}>(([name, [input, output]]) => ({
 	name,
-	input: input.map(process_Token),
+	input: new TokenList(input.map(process_Token)),
 	output: output == "error" ? output : applyAnyRange(process_ExpressionASTExt(output))
 }));
 
@@ -3334,7 +3339,7 @@ describe("parseExpression", () => {
 		];
 		const length = 5;
 		for(let i = 0; i < tokens.length ** length; i ++){
-			const expr = Array.from({length}, (_, j) => tokens[Math.floor(i / (tokens.length ** j)) % tokens.length]);
+			const expr = new TokenList(Array.from({length}, (_, j) => tokens[Math.floor(i / (tokens.length ** j)) % tokens.length]));
 			try {
 				parseExpression(expr);
 			} catch(err){

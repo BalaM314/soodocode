@@ -224,7 +224,7 @@ export function symbolize(input) {
     };
 }
 export function tokenize(input) {
-    const tokens = new TokenList();
+    const tokens = [];
     const state = {
         sComment: null,
         mComment: null,
@@ -325,7 +325,7 @@ export function tokenize(input) {
         fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1).rangeAfter());
     return {
         program: input.program,
-        tokens
+        tokens: tokens.length > 0 ? new TokenList(tokens) : new TokenList(tokens, [0, Infinity])
     };
     function write(type) {
         tokens.push(new Token(type, symbol.text, symbol.range.slice()));

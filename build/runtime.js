@@ -730,7 +730,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             assembleScope(func, args) {
                 if (func.args.size != args.length)
-                    fail(f.quote `Incorrect number of arguments for function ${func.name}`, args.length > 0 ? args : undefined);
+                    fail(f.quote `Incorrect number of arguments for function ${func.name}`, args);
                 const scope = {
                     statement: func,
                     variables: {},

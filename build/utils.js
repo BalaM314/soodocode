@@ -1,3 +1,4 @@
+import { TokenList } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
@@ -54,41 +55,46 @@ export function splitArray(arr, split) {
         }
     }
     else {
-        for (const el of arr) {
-            if (el == split[0])
-                output.push([]);
-            else
-                output.at(-1).push(el);
+        let lastBoundary = 0;
+        for (let i = 0; i <= arr.length; i++) {
+            if (i == arr.length || arr[i] == split[0]) {
+                output.push(arr.slice(lastBoundary, i));
+                lastBoundary = i + 1;
+            }
         }
     }
     return output;
 }
 export function splitTokens(arr, split) {
-    const output = [[]];
-    for (const el of arr) {
-        if (el.type == split)
-            output.push([]);
-        else
-            output.at(-1).push(el);
+    const output = [];
+    let lastBoundary = 0;
+    for (let i = 0; i <= arr.length; i++) {
+        if (i == arr.length || arr[i].type == split) {
+            output.push(arr.slice(lastBoundary, i));
+            lastBoundary = i + 1;
+        }
     }
     return output;
 }
 export function splitTokensWithSplitter(arr, split) {
-    const output = [{ group: [] }];
-    for (const el of arr) {
-        if (el.type == split) {
-            output.at(-1).splitter = el;
-            output.push({ group: [] });
+    const output = [];
+    let lastBoundary = 0;
+    for (let i = 0; i <= arr.length; i++) {
+        if (i == arr.length || arr[i].type == split) {
+            output.push({
+                group: arr.slice(lastBoundary, i),
+                splitter: arr[i]
+            });
+            lastBoundary = i + 1;
         }
-        else
-            output.at(-1).group.push(el);
     }
     return output;
 }
 export function splitTokensOnComma(arr) {
-    const output = [[]];
+    const output = [];
+    let lastBoundary = 0;
     let parenNestLevel = 0, bracketNestLevel = 0;
-    for (const token of arr) {
+    for (const [i, token] of arr.entries()) {
         if (token.type == "parentheses.open")
             parenNestLevel++;
         else if (token.type == "parentheses.close")
@@ -97,11 +103,12 @@ export function splitTokensOnComma(arr) {
             bracketNestLevel++;
         else if (token.type == "bracket.close")
             bracketNestLevel--;
-        if (parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma")
-            output.push([]);
-        else
-            output.at(-1).push(token);
+        if (parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma") {
+            output.push(arr.slice(lastBoundary, i));
+            lastBoundary = i + 1;
+        }
     }
+    output.push(arr.slice(lastBoundary));
     return output;
 }
 export function findLastNotInGroup(arr, target) {
@@ -146,7 +153,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
         const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
         fail(f.quote `Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
     }
-    return names;
+    return new TokenList(names);
 }
 export function getTotalRange(tokens) {
     if (tokens.length == 0)

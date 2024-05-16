@@ -1,4 +1,4 @@
-import type { Token, TokenType } from "./lexer-types.js";
+import type { Token, TokenList, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 export type ExpressionAST = ExpressionASTNode;
@@ -8,9 +8,9 @@ export declare class ExpressionASTBranchNode implements TextRanged, IFormattable
     operatorToken: Token;
     operator: Operator;
     nodes: ExpressionASTNode[];
-    allTokens: Token[];
+    allTokens: TokenList;
     range: TextRange;
-    constructor(operatorToken: Token, operator: Operator, nodes: ExpressionASTNode[], allTokens: Token[]);
+    constructor(operatorToken: Token, operator: Operator, nodes: ExpressionASTNode[], allTokens: TokenList);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
@@ -18,9 +18,9 @@ export declare class ExpressionASTBranchNode implements TextRanged, IFormattable
 export declare class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
     functionName: ExpressionASTLeafNode | ExpressionASTBranchNode;
     args: ExpressionASTNode[];
-    allTokens: Token[];
+    allTokens: TokenList;
     range: TextRange;
-    constructor(functionName: ExpressionASTLeafNode | ExpressionASTBranchNode, args: ExpressionASTNode[], allTokens: Token[]);
+    constructor(functionName: ExpressionASTLeafNode | ExpressionASTBranchNode, args: ExpressionASTNode[], allTokens: TokenList);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
@@ -28,9 +28,9 @@ export declare class ExpressionASTFunctionCallNode implements TextRanged, IForma
 export declare class ExpressionASTClassInstantiationNode implements TextRanged {
     className: Token;
     args: ExpressionASTNode[];
-    allTokens: Token[];
+    allTokens: TokenList;
     range: TextRange;
-    constructor(className: Token, args: ExpressionASTNode[], allTokens: Token[]);
+    constructor(className: Token, args: ExpressionASTNode[], allTokens: TokenList);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
@@ -38,9 +38,9 @@ export declare class ExpressionASTClassInstantiationNode implements TextRanged {
 export declare class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
     target: ExpressionASTNode;
     indices: ExpressionASTNode[];
-    allTokens: Token[];
+    allTokens: TokenList;
     range: TextRange;
-    constructor(target: ExpressionASTNode, indices: ExpressionASTNode[], allTokens: Token[]);
+    constructor(target: ExpressionASTNode, indices: ExpressionASTNode[], allTokens: TokenList);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
@@ -48,9 +48,9 @@ export declare class ExpressionASTArrayAccessNode implements TextRanged, IFormat
 export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
     lengthInformation: [low: Token, high: Token][] | null;
     elementType: Token;
-    allTokens: Token[];
+    allTokens: TokenList;
     range: TextRange;
-    constructor(lengthInformation: [low: Token, high: Token][] | null, elementType: Token, allTokens: Token[]);
+    constructor(lengthInformation: [low: Token, high: Token][] | null, elementType: Token, allTokens: TokenList);
     fmtText(): string;
     fmtDebug(): string;
 }
@@ -69,7 +69,7 @@ export declare class Operator implements IFormattable {
     fmtDebug(): string;
 }
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Omit<Record<"negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "add" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "assignment" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
+export declare const operators: Omit<Record<"assignment" | "add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;
