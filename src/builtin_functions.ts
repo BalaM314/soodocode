@@ -13,33 +13,63 @@ import type { BoxPrimitive } from "./types.js";
 import { fail, f } from "./utils.js";
 
 //Warning: this file contains extremely sane code
-//* Function implementations have the parameter arg types determined by the following generics
-//TODO add comments
+//Function implementations have the parameter arg types determined by the following generics
+//The functions sometimes need to fail() and set the range to the range of an argument
+//Passing {value: T, range: TextRange} as the arguments is the most reasonable solution, but this is slightly annoying to use
+//Instead, Number & {range: TextRange} is used
+//so that the arguments can be passed directly to fail() which will read the range,
+//and they can also be used in operations and computations without issue
+//Typescript refuses to allow operations on boxed number types
+//this is probably because new Number(5) == 5 but new Number(5) != new Number(5)
+//for this reason, use .valueOf() before comparing two arguments with ==
+//To get around this, the preprocessed function data has its type definitions set to accept range tagged primitives
+//(which are impossible but typescript accepts them)
+//and the impl is type casted to the version that accepts range tagged boxed primitives
+
+/**
+ * Represents the object used for specifying the type of a builtin function argument.
+ * "STRING" -> string
+ * ["STRING"] -> string
+ * ["STRING", "NUMBER"] -> string
+ * ["STRING, ["NUMBER"]] -> string | number[]
+ * [["ANY"]] -> unknown[]
+ **/
 type BuiltinFunctionArgType = PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[];
 type BuiltinFunctionArg = [name:string, type:BuiltinFunctionArgType];
+type PrimitiveVariableTypeMapping<T> =
+	T extends "INTEGER" ? number :
+	T extends "REAL" ? number :
+	T extends "STRING" ? string :
+	T extends "CHAR" ? string :
+	T extends "BOOLEAN" ? boolean :
+	T extends "DATE" ? Date :
+	never;
+/** Maps BuiltinFunctionArgTypes to the JS type */
 type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 	T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ?
 		U extends PrimitiveVariableTypeName ?
-			RangeAttached<VariableTypeMapping<PrimitiveVariableType<U>>> : //this is actually a RangeSymbol<BoxPrimitive<...>> but that causes Typescript to complain
+			RangeAttached<PrimitiveVariableTypeMapping<U>> : //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
 		U extends [infer S] ?
 			S extends PrimitiveVariableTypeName ?
-				RangeAttached<VariableTypeMapping<PrimitiveVariableType<S>>[]> :
+				RangeAttached<PrimitiveVariableTypeMapping<U>> :
 				RangeAttached<unknown[]>
 		: never :
 	T extends PrimitiveVariableTypeName
-		? RangeAttached<VariableTypeMapping<PrimitiveVariableType<T>>> //this is actually a RangeSymbol<BoxPrimitive<...>> but that causes Typescript to complain
+		? RangeAttached<PrimitiveVariableTypeMapping<T>> //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
 		: never;
+/** Returns the type of the arguments of a builtin function impl given the (const) type of the specified args. */
 type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> = 
 	[TSuppliedArgs & 0] extends [1] //If any
 		? RangeAttached<VariableValue>[] //output this
 		: {
-			[K in keyof TSuppliedArgs]: FunctionArgVariableTypeMapping<TSuppliedArgs[K][1]>;
+			[K in keyof TSuppliedArgs]: FunctionArgVariableTypeMapping<TSuppliedArgs[K][1]>; //discard the name, use the other generic to get the corresponding type
 		};
 type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TReturn extends PrimitiveVariableTypeName> = {
 	args: TArgs;
 	returnType: TReturn;
-	impl(this:Runtime, ...args:FunctionArgs<TArgs>):VariableTypeMapping<PrimitiveVariableType<TReturn>>;
+	impl(this:Runtime, ...args:FunctionArgs<TArgs>):PrimitiveVariableTypeMapping<TReturn>;
 };
+/** Wrapper function used to get the correct type definitions */
 function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName>(data:PreprocesssedBuiltinFunctionData<T, S>){
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
