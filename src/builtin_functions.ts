@@ -6,10 +6,9 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import type { TextRange } from "./lexer-types.js";
 import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import type { Runtime } from "./runtime.js";
-import type { BoxPrimitive } from "./types.js";
+import type { BoxPrimitive, RangeAttached } from "./types.js";
 import { fail, f } from "./utils.js";
 
 //Warning: this file contains extremely sane code
@@ -73,11 +72,6 @@ type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TRetur
 function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName>(data:PreprocesssedBuiltinFunctionData<T, S>){
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
-
-
-export type RangeAttached<T> = T & {
-	range: TextRange;
-};
 
 export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>

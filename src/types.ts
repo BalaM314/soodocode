@@ -17,6 +17,15 @@ export interface TagFunction<Tin = string, Tout = string> {
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BoxPrimitive<T> = T extends number ? Number : T extends string ? String : T extends boolean ? Boolean : T;
 
+export type TextRange = [start:number, end:number];
+export type TextRanged = {
+	range: TextRange | (() => TextRange);
+}
+export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
+export type RangeAttached<T> = T & {
+	range: TextRange;
+};
+
 export interface IFormattable {
 	fmtDebug():string;
 	/** If not implemented, defaults to `"${fmtText()}"` */

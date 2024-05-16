@@ -7,12 +7,12 @@ This file contains the definitions for every statement type supported by Soodoco
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
-import type { IFormattable } from "./types.js";
+import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
 
@@ -491,7 +491,7 @@ export class CallStatement extends Statement {
 		const func = runtime.evaluateExpr(this.func.functionName, "function");
 		if("clazz" in func){
 			//Class method
-			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false); //TODO change "require return value" to also allow "forbid return value" on callFunction and callClassMethod
+			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
 			if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, this.func); //CONFIG

@@ -1,7 +1,8 @@
-import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
+import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
 import { UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
+import { TextRange } from "./types.js";
 export declare const parseFunctionArguments: (tokens: Token[]) => FunctionArguments;
 export declare const processTypeData: (typeNode: ExpressionASTTypeNode) => UnresolvedVariableType;
 export declare const parseType: (tokens: Token[]) => ExpressionASTTypeNode;

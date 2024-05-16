@@ -8,7 +8,8 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
-import { Symbol, SymbolType, SymbolizedProgram, TextRange, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
+import { Symbol, SymbolType, SymbolizedProgram, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
+import { TextRange } from "./types.js";
 import { access, crash, f, fail, impossible } from "./utils.js";
 
 

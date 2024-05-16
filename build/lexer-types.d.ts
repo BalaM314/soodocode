@@ -1,9 +1,4 @@
-import type { IFormattable } from "./types.js";
-export type TextRange = [start: number, end: number];
-export type TextRanged = {
-    range: TextRange | (() => TextRange);
-};
-export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
+import type { IFormattable, TextRange, TextRangeLike, TextRanged } from "./types.js";
 export declare const symbolTypes: readonly ["numeric_fragment", "quote.single", "quote.double", "brace.open", "brace.close", "bracket.open", "bracket.close", "parentheses.open", "parentheses.close", "punctuation.colon", "punctuation.semicolon", "punctuation.comma", "punctuation.period", "comment.singleline", "comment.multiline.open", "comment.multiline.close", "word", "unknown", "space", "newline", "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"];
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
 export type SymbolizedProgram = {

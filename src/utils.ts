@@ -5,11 +5,11 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { tokenTypes, type TextRange, type TextRangeLike, type TextRanged, type Token, type TokenType } from "./lexer-types.js";
+import type { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { TokenMatcher } from "./parser-types.js";
+import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { BoxPrimitive, IFormattable, TagFunction } from "./types.js";
+import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
 
 
 export function getText(tokens:Token[]){

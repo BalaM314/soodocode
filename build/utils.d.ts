@@ -1,7 +1,7 @@
-import { type TextRange, type TextRangeLike, type TextRanged, type Token, type TokenType } from "./lexer-types.js";
-import { TokenMatcher } from "./parser-types.js";
+import type { Token, TokenType } from "./lexer-types.js";
+import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { BoxPrimitive, IFormattable, TagFunction } from "./types.js";
+import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
 export declare function getText(tokens: Token[]): string;
 export declare function displayTokenMatcher(input: TokenMatcher): string;
 export declare function applyRangeTransformers(text: string, ranges: [range: TextRange, start: string, end: string, transformer?: (rangeText: string) => string][]): string;

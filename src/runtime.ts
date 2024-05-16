@@ -6,12 +6,12 @@ This file contains the runtime, which executes the program AST.
 */
 
 
-import { RangeAttached, builtinFunctions } from "./builtin_functions.js";
-import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
+import { builtinFunctions } from "./builtin_functions.js";
+import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeSetStatement, TypeStatement } from "./statements.js";
-import type { BoxPrimitive } from "./types.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
+import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion

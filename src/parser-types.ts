@@ -5,10 +5,9 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the parser.
 */
 
-import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
-import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
+import type { Token, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
-import type { ClassProperties, IFormattable, PartialKey } from "./types.js";
+import type { ClassProperties, IFormattable, PartialKey, TextRange, TextRanged } from "./types.js";
 import { crash, f, getTotalRange } from "./utils.js";
 
 

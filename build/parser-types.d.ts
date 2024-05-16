@@ -1,6 +1,6 @@
-import type { TextRange, TextRanged, Token, TokenType } from "./lexer-types.js";
+import type { Token, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
-import type { ClassProperties, IFormattable } from "./types.js";
+import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode | ExpressionASTClassInstantiationNode;
 export type ExpressionASTLeafNode = Token;
@@ -69,7 +69,7 @@ export declare class Operator implements IFormattable {
     fmtDebug(): string;
 }
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Omit<Record<"assignment" | "add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
+export declare const operators: Omit<Record<"negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "add" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "assignment" | "pointer" | "string_concatenate", Operator>, "assignment" | "pointer">;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;

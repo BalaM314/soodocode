@@ -5,13 +5,12 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
-import type { RangeAttached } from "./builtin_functions.js";
-import { TextRange, Token } from "./lexer-types.js";
+import { Token } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
-import type { BoxPrimitive, IFormattable } from "./types.js";
+import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
 import { crash, f, fail, getTotalRange, impossible } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */

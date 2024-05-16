@@ -3,6 +3,14 @@ export interface TagFunction<Tin = string, Tout = string> {
     (stringChunks: readonly string[], ...varChunks: readonly Tin[]): Tout;
 }
 export type BoxPrimitive<T> = T extends number ? Number : T extends string ? String : T extends boolean ? Boolean : T;
+export type TextRange = [start: number, end: number];
+export type TextRanged = {
+    range: TextRange | (() => TextRange);
+};
+export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
+export type RangeAttached<T> = T & {
+    range: TextRange;
+};
 export interface IFormattable {
     fmtDebug(): string;
     fmtQuoted?: () => string;

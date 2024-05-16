@@ -8,12 +8,13 @@ which is the preferred representation of the program.
 */
 
 
-import { TextRange, Token, TokenizedProgram, TokenType } from "./lexer-types.js";
+import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, getText, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
+import { TextRange } from "./types.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 
 //TODO add a way to specify the range for an empty list of tokens
 
@@ -198,7 +199,7 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
 		if(allowedValidStatements.length == 0){
 			return [
 				validStatements,
-				statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens) //TODO display name
+				statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
 			];
 		} else validStatements = allowedValidStatements;
 	}
