@@ -276,6 +276,8 @@ export function tagProcessor(transformer) {
 function formatText(input) {
     if (typeof input == "string")
         return input;
+    if (input instanceof String || input instanceof Number || input instanceof Boolean)
+        return input.toString();
     else if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             return input[1];
@@ -288,6 +290,8 @@ function formatQuoted(input) {
     let str;
     if (typeof input == "string")
         str = input;
+    else if (input instanceof String || input instanceof Number || input instanceof Boolean)
+        str = input.toString();
     else if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             str = input[1];
@@ -303,6 +307,8 @@ function formatQuoted(input) {
 function formatDebug(input) {
     if (typeof input == "string")
         return input;
+    else if (input instanceof String || input instanceof Number || input instanceof Boolean)
+        return input.toString();
     else if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             return `UnresolvedVariableType[${input[1]}]`;

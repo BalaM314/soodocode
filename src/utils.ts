@@ -297,9 +297,12 @@ export function tagProcessor<T>(
 	};
 }
 
-export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType;
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean;
 function formatText(input:Formattable):string {
 	if(typeof input == "string") return input;
+	// eslint-disable-next-line @typescript-eslint/no-base-to-string
+	if(input instanceof String || input instanceof Number || input instanceof Boolean) return input.toString();
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return input[1];
 		return (input as IFormattable[]).map(formatText).join(" ");
@@ -308,6 +311,8 @@ function formatText(input:Formattable):string {
 function formatQuoted(input:Formattable):string {
 	let str:string;
 	if(typeof input == "string") str = input;
+	// eslint-disable-next-line @typescript-eslint/no-base-to-string
+	else if(input instanceof String || input instanceof Number || input instanceof Boolean) str = input.toString();
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") str = input[1];
 		else str = (input as IFormattable[]).map(formatText).join(" ");
@@ -318,6 +323,8 @@ function formatQuoted(input:Formattable):string {
 }
 function formatDebug(input:Formattable):string {
 	if(typeof input == "string") return input;
+	// eslint-disable-next-line @typescript-eslint/no-base-to-string
+	else if(input instanceof String || input instanceof Number || input instanceof Boolean) return input.toString();
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return `UnresolvedVariableType[${input[1]}]`;
 		return `[${(input as IFormattable[]).map(formatDebug).join(", ")}]`;

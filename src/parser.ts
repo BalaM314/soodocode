@@ -350,7 +350,7 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 	if(j != input.length){
 		//Extra tokens found
 		//Note: j is pointing to the first unused token
-		if(j > 0){
+		if(j > 0 && allowRecursiveCall){
 			try {
 				//Check if the rest of the line is valid
 				void parseStatement(input.slice(j), null, false);
@@ -589,5 +589,5 @@ export const parseExpression = errorBoundary({
 
 	//No operators found at all, something went wrong
 	if(error) error();
-	fail(`No operators found`, input);
+	fail(`No operators found`, input.length > 0 ? input : undefined);
 });

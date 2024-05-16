@@ -967,6 +967,7 @@ export class ClassInheritsStatement extends ClassStatement {
 }
 
 
+//TODO deprioritize checking statements with more varargs
 @statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")
 export class ClassPropertyStatement extends DeclareStatement implements IClassMemberStatement {
 	accessModifierToken: Token;

@@ -1567,6 +1567,28 @@ const programTests = ((data:Record<string,
 		],
 		`1.2345`
 	],
+	builtin_function_str_to_num_string_invalid: [
+		[
+			[DeclareStatement, [
+				"keyword.declare",
+				"x",
+				"punctuation.colon",
+				"REAL",
+			]],
+			[AssignmentStatement, [
+				"x",
+				"operator.assignment",
+				["tree", ["function call","STR_TO_NUM"], [
+					["string", `"amogus"`],
+				]],
+			]],
+			[OutputStatement, [
+				"keyword.output",
+				"x",
+			]]
+		],
+		["error"]
+	],
 	files_eof: [
 		[
 			[OpenFileStatement, [

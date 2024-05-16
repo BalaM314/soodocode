@@ -327,7 +327,7 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
         }
     }
     if (j != input.length) {
-        if (j > 0) {
+        if (j > 0 && allowRecursiveCall) {
             try {
                 void parseStatement(input.slice(j), null, false);
                 return { message: f.quote `Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
@@ -506,5 +506,5 @@ export const parseExpression = errorBoundary({
     }
     if (error)
         error();
-    fail(`No operators found`, input);
+    fail(`No operators found`, input.length > 0 ? input : undefined);
 });

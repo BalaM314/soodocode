@@ -746,7 +746,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:ExpressionASTNode[]){
-		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
+		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args.length > 0 ? args : undefined); //TODO add a way to specify the range of an empty list of tokens
 		const scope:VariableScope = {
 			statement: func,
 			variables: {},
