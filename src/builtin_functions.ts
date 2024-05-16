@@ -106,8 +106,8 @@ export const builtinFunctions = (
 		],
 		returnType: "STRING",
 		impl(str, num){
-			if(num < 0) fail(`Number ${num} is negative`);
-			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
+			if(num < 0) fail(`Number ${num} is negative`, num);
+			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`, num);
 			return str.slice(0, num);
 		},
 	}),
@@ -119,8 +119,8 @@ export const builtinFunctions = (
 		],
 		returnType: "STRING",
 		impl(str, num){
-			if(num < 0) fail(`Number ${num} is negative`);
-			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
+			if(num < 0) fail(`Number ${num} is negative`, num);
+			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`, num);
 			return str.slice(-num);
 		},
 	}),
@@ -133,9 +133,9 @@ export const builtinFunctions = (
 		],
 		returnType: "STRING",
 		impl(str, start, length){
-			if(start < 1) fail(`Start index ${start} is less than 1`);
-			if(length < 1) fail(`Slice length ${length} is less than 1`);
-			if(length + start - 1 > str.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${str.length})`);
+			if(start < 1) fail(`Start index ${start} is less than 1`, start);
+			if(length < 1) fail(`Slice length ${length} is less than 1`, length);
+			if(length + start - 1 > str.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${str.length})`, str);
 			return str.slice(start - 1, start + length - 1);
 		},
 	}),
@@ -206,8 +206,8 @@ export const builtinFunctions = (
 		],
 		returnType: "REAL", //real or integer, but ints coerce to reals
 		impl(str){
-			const out = Number(str);
-			if(isNaN(out) || !Number.isFinite(out)) fail(f.quote`Cannot convert ${str} to a number`);
+			const out = Number(str.valueOf());
+			if(isNaN(out) || !Number.isFinite(out)) fail(f.quote`Cannot convert ${str} to a number`, str);
 			return out;
 		},
 	}),
@@ -218,7 +218,7 @@ export const builtinFunctions = (
 		],
 		returnType: "BOOLEAN",
 		impl(str){
-			const out = Number(str);
+			const out = Number(str.valueOf());
 			return !isNaN(out) && Number.isFinite(out);
 		},
 	}),
