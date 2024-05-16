@@ -7,7 +7,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token, TokenType } from "./lexer-types.js";
+import { Token, TokenList, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
@@ -251,12 +251,12 @@ export class TypeStatement extends Statement {
 export class DeclareStatement extends Statement {
 	variables:[string, Token][] = [];
 	varType:UnresolvedVariableType;
-	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
+	constructor(tokens:TokenList){
 		super(tokens);
 
 		//parse the variable list
 		this.variables = getUniqueNamesFromCommaSeparatedTokenList(
-			tokens.slice(1, -2) as Token[], tokens.at(-2) as Token
+			tokens.slice(1, -2), tokens.at(-2) as Token
 		).map(t => [t.text, t] as [string, Token]);
 		this.varType = processTypeData(tokens.at(-1)!);
 	}
@@ -278,7 +278,7 @@ export class DeclareStatement extends Statement {
 export class ConstantStatement extends Statement {
 	name: string;
 	expr: Token;
-	constructor(tokens:[Token, Token, Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		const [_constant, name, _equals, expr] = tokens;
 		this.name = name.text;
@@ -300,12 +300,14 @@ export class ConstantStatement extends Statement {
 export class DefineStatement extends Statement {
 	name: Token;
 	variableType: Token;
-	values: Token[];
-	constructor(tokens:[Token, Token, Token, ...Token[], Token, Token, Token]){
+	values: TokenList;
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1];
 		this.variableType = tokens.at(-1)!;
-		this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(3, -3), tokens.at(-3), expressionLeafNodeTypes);
+		this.values = getUniqueNamesFromCommaSeparatedTokenList(
+			tokens.slice(3, -3), tokens.at(-3), expressionLeafNodeTypes
+		);
 	}
 	run(runtime:Runtime){
 		const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
@@ -323,7 +325,7 @@ export class DefineStatement extends Statement {
 export class TypePointerStatement extends TypeStatement {
 	name: string;
 	targetType: UnresolvedVariableType;
-	constructor(tokens:[Token, Token, Token, Token, ExpressionASTTypeNode]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		let targetType;
 		[, {text: this.name},,, targetType] = tokens;
@@ -338,8 +340,8 @@ export class TypePointerStatement extends TypeStatement {
 @statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".+", "parentheses.close")
 export class TypeEnumStatement extends TypeStatement {
 	name: Token;
-	values: Token[];
-	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
+	values: TokenList;
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1];
 		this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
@@ -354,7 +356,7 @@ export class TypeEnumStatement extends TypeStatement {
 export class TypeSetStatement extends TypeStatement {
 	name: Token;
 	setType: PrimitiveVariableType;
-	constructor(tokens:[Token, Token, Token, Token, Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1];
 		this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`, tokens[5]);
@@ -368,7 +370,7 @@ export class TypeSetStatement extends TypeStatement {
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
 export class TypeRecordStatement extends TypeStatement {
 	name: Token;
-	constructor(tokens:[Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1];
 	}
@@ -386,7 +388,7 @@ export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
 	target: ExpressionAST;
 	expr: ExpressionAST;
-	constructor(tokens:[ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[this.target, , this.expr] = tokens;
 		if(this.target instanceof Token && isLiteral(this.target.type))
@@ -402,7 +404,7 @@ export class AssignmentStatement extends Statement {
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
 	outMessage: (Token | ExpressionAST)[];
-	constructor(tokens:[Token, ...Token[]]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
 	}
@@ -418,7 +420,7 @@ export class OutputStatement extends Statement {
 @statement("input", "INPUT y", "keyword.input", "name")
 export class InputStatement extends Statement {
 	name:string;
-	constructor(tokens:[Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1].text;
 	}
@@ -456,7 +458,7 @@ export class InputStatement extends Statement {
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
 	expr:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.expr = tokens[1];
 	}
@@ -481,7 +483,7 @@ export class ReturnStatement extends Statement {
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
 export class CallStatement extends Statement {
 	func:ExpressionASTFunctionCallNode;
-	constructor(tokens:[Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		if(tokens[1] instanceof ExpressionASTFunctionCallNode){
 			this.func = tokens[1];
@@ -504,7 +506,7 @@ export class CallStatement extends Statement {
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
 	condition:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.condition = tokens[1];
 	}
@@ -524,7 +526,7 @@ export class ElseStatement extends Statement {
 export class SwitchStatement extends Statement {
 	//First node group is blank, because a blank node group is created and then the block is split by the first case branch
 	expression:ExpressionAST;
-	constructor(tokens:[Token, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[,, this.expression] = tokens;
 	}
@@ -566,7 +568,7 @@ export class SwitchStatement extends Statement {
 export class CaseBranchStatement extends Statement {
 	value:Token;
 	static blockType:ProgramASTBranchNodeType = "switch";
-	constructor(tokens:[Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[this.value] = tokens;
 	}
@@ -582,8 +584,8 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	upperBound:Token;
 	static blockType:ProgramASTBranchNodeType = "switch";
 	static allowedTypes = ["number.decimal", "char"] satisfies TokenType[];
-	constructor(tokens:[Token, Token, Token, Token]){
-		super(tokens as never);
+	constructor(tokens:TokenList){
+		super(tokens);
 		if(!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
 			fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number or character`, tokens[0]);
 		if(tokens[2].type != tokens[0].type)
@@ -603,7 +605,7 @@ export class ForStatement extends Statement {
 	name:string;
 	lowerBound:ExpressionAST;
 	upperBound:ExpressionAST;
-	constructor(tokens:[Token, Token, Token, ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1].text;
 		this.lowerBound = tokens[3];
@@ -641,8 +643,8 @@ export class ForStatement extends Statement {
 @statement("for.step", "FOR x <- 1 TO 20 STEP 2", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+", "keyword.step", "expr+")
 export class ForStepStatement extends ForStatement {
 	stepToken: ExpressionAST;
-	constructor(tokens:[Token, Token, Token, ExpressionAST, Token, ExpressionAST, Token, ExpressionAST]){
-		super(tokens as never);
+	constructor(tokens:TokenList){
+		super(tokens);
 		this.stepToken = tokens[7];
 	}
 	step(runtime:Runtime):number {
@@ -654,7 +656,7 @@ export class ForEndStatement extends Statement {
 	name:string;
 	varToken:Token;
 	static blockType: ProgramASTBranchNodeType = "for";
-	constructor(tokens:[Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.varToken = tokens[1];
 		this.name = tokens[1].text;
@@ -663,7 +665,7 @@ export class ForEndStatement extends Statement {
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
 	condition:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.condition = tokens[1];
 	}
@@ -700,7 +702,7 @@ export class DoWhileStatement extends Statement {
 export class DoWhileEndStatement extends Statement {
 	condition:ExpressionAST;
 	static blockType: ProgramASTBranchNodeType = "dowhile";
-	constructor(tokens:[Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.condition = tokens[1];
 	}
@@ -715,9 +717,9 @@ export class FunctionStatement extends Statement {
 	returnTypeToken:ExpressionASTTypeNode;
 	name:string;
 	nameToken:Token;
-	constructor(tokens:[Token, Token, Token, ...Token[], Token, Token, ExpressionASTTypeNode]){
+	constructor(tokens:TokenList){
 		super(tokens);
-		this.args = parseFunctionArguments(tokens.slice(3, -3) as Token[]);
+		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
 		this.returnType = processTypeData(tokens.at(-1)!);
 		this.returnTypeToken = tokens.at(-1)!;
@@ -738,7 +740,7 @@ export class ProcedureStatement extends Statement {
 	args:FunctionArguments;
 	argsRange:TextRange;
 	name:string;
-	constructor(tokens:Token[]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.args = parseFunctionArguments(tokens.slice(3, -1));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
@@ -758,7 +760,7 @@ interface IFileStatement {
 export class OpenFileStatement extends Statement implements IFileStatement {
 	mode:Token;
 	filename:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename, , this.mode] = tokens;
 	}
@@ -789,7 +791,7 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 @statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
 export class CloseFileStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename] = tokens;
 	}
@@ -804,7 +806,7 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 export class ReadFileStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	output:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename, , this.output] = tokens;
 	}
@@ -820,7 +822,7 @@ export class ReadFileStatement extends Statement implements IFileStatement {
 export class WriteFileStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	data:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename, , this.data] = tokens;
 	}
@@ -835,7 +837,7 @@ export class WriteFileStatement extends Statement implements IFileStatement {
 export class SeekStatement extends Statement implements IFileStatement {
 	filename:ExpressionAST;
 	index:ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename, , this.index] = tokens;
 	}
@@ -851,7 +853,7 @@ export class SeekStatement extends Statement implements IFileStatement {
 export class GetRecordStatement extends Statement implements IFileStatement {
 	filename: ExpressionAST;
 	variable: ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename, , this.variable] = tokens;
 	}
@@ -866,7 +868,7 @@ export class GetRecordStatement extends Statement implements IFileStatement {
 export class PutRecordStatement extends Statement implements IFileStatement {
 	filename: ExpressionAST;
 	variable: ExpressionAST;
-	constructor(tokens:[Token, ExpressionAST, Token, ExpressionAST]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		[, this.filename, , this.variable] = tokens;
 	}
@@ -887,7 +889,7 @@ interface IClassMemberStatement {
 export class ClassStatement extends Statement {
 	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
 	name: Token;
-	constructor(tokens:[Token, Token] | [Token, Token, Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.name = tokens[1];
 	}
@@ -934,7 +936,7 @@ export class ClassStatement extends Statement {
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
 export class ClassInheritsStatement extends ClassStatement {
 	superClassName:Token;
-	constructor(tokens:[Token, Token, Token, Token]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.superClassName = tokens[3];
 	}
@@ -973,7 +975,7 @@ export class ClassPropertyStatement extends DeclareStatement implements IClassMe
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
 	static blockType: ProgramASTBranchNodeType = "class";
-	constructor(tokens:[Token, ...names:Token[], Token, ExpressionASTTypeNode]){
+	constructor(tokens:TokenList){
 		super(tokens);
 		this.accessModifierToken = tokens[0];
 		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
@@ -988,7 +990,7 @@ export class ClassProcedureStatement extends ProcedureStatement implements IClas
 	accessModifier: "public" | "private";
 	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
-	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token]){
+	constructor(tokens:TokenList){
 		super(tokens.slice(1));
 		this.tokens.unshift(tokens[0]);
 		this.accessModifierToken = tokens[0];
@@ -1010,8 +1012,8 @@ export class ClassFunctionStatement extends FunctionStatement implements IClassM
 	accessModifier: "public" | "private";
 	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
-	constructor(tokens:[Token, Token, Token, Token, ...Token[], Token, Token, ExpressionASTTypeNode]){
-		super(tokens.slice(1) as never);
+	constructor(tokens:TokenList){
+		super(tokens.slice(1));
 		this.tokens.unshift(tokens[0]);
 		this.accessModifierToken = tokens[0];
 		this.methodKeywordToken = tokens[1];
