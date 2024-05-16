@@ -1,9 +1,10 @@
+import type { RangeAttached } from "./builtin_functions.js";
 import { TextRange, Token } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
-import { IFormattable } from "./types.js";
+import type { BoxPrimitive, IFormattable } from "./types.js";
 export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? {
     [index: string]: VariableTypeMapping<any> | null;
 } : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
@@ -45,10 +46,11 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
     lengthInformation: [low: number, high: number][] | null;
+    lengthInformationRange: TextRange | null;
     elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null;
     totalLength: number | null;
     arraySizes: number[] | null;
-    constructor(lengthInformation: [low: number, high: number][] | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
+    constructor(lengthInformation: [low: number, high: number][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
     init(runtime: Runtime): void;
     fmtText(): string;
     fmtDebug(): string;
@@ -58,9 +60,9 @@ export declare class ArrayVariableType<Init extends boolean = true> extends Base
 export declare class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
     name: string;
-    fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>;
+    fields: Record<string, [type: (Init extends true ? never : UnresolvedVariableType) | VariableType, range: TextRange]>;
     directDependencies: Set<VariableType>;
-    constructor(initialized: Init, name: string, fields: Record<string, (Init extends true ? never : UnresolvedVariableType) | VariableType>);
+    constructor(initialized: Init, name: string, fields: Record<string, [type: (Init extends true ? never : UnresolvedVariableType) | VariableType, range: TextRange]>);
     init(runtime: Runtime): void;
     addDependencies(type: VariableType): void;
     checkSize(): void;
@@ -142,6 +144,7 @@ export type File = {
 export type OpenedFile = {
     file: File;
     mode: FileMode;
+    openRange: TextRange;
 } & ({
     mode: "READ";
     lines: string[];
@@ -181,7 +184,7 @@ export type BuiltinFunctionData = {
     args: BuiltinFunctionArguments;
     returnType: VariableType | null;
     name: string;
-    impl: (this: Runtime, ...args: VariableValue[]) => VariableValue;
+    impl: (this: Runtime, ...args: (RangeAttached<BoxPrimitive<VariableValue>>)[]) => VariableValue;
 };
 export type ClassMethodStatement = ClassFunctionStatement | ClassProcedureStatement;
 export type ClassMethodData = ProgramASTBranchNode & {

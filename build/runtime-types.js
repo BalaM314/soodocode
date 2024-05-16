@@ -1,4 +1,4 @@
-import { crash, f, fail, impossible } from "./utils.js";
+import { crash, f, fail, getTotalRange, impossible } from "./utils.js";
 export class BaseVariableType {
     checkSize() { }
     is(...type) {
@@ -55,17 +55,18 @@ PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
 export class ArrayVariableType extends BaseVariableType {
-    constructor(lengthInformation, elementType) {
+    constructor(lengthInformation, lengthInformationRange, elementType) {
         super();
         this.lengthInformation = lengthInformation;
+        this.lengthInformationRange = lengthInformationRange;
         this.elementType = elementType;
         this.totalLength = null;
         this.arraySizes = null;
         if (this.lengthInformation) {
             if (this.lengthInformation.some(b => b[1] < b[0]))
-                fail(`Invalid length information: upper bound cannot be less than lower bound`);
+                fail(`Invalid length information: upper bound cannot be less than lower bound`, lengthInformationRange);
             if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
-                fail(`Invalid length information: bound was not an integer`);
+                fail(`Invalid length information: bound was not an integer`, lengthInformationRange);
             this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
             this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
         }
@@ -84,16 +85,16 @@ export class ArrayVariableType extends BaseVariableType {
     }
     getInitValue(runtime, requireInit) {
         if (!this.lengthInformation)
-            fail(f.quote `${this} is not a valid variable type: length must be specified here`);
+            fail(f.quote `${this} is not a valid variable type: length must be specified here`, undefined);
         if (!this.elementType)
-            fail(f.quote `${this} is not a valid variable type: element type must be specified here`);
+            fail(f.quote `${this} is not a valid variable type: element type must be specified here`, undefined);
         const type = this.elementType;
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
     static from(node) {
-        return new ArrayVariableType(node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text))) ?? null, PrimitiveVariableType.resolve(node.elementType));
+        return new ArrayVariableType(node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text))) ?? null, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType));
     }
 }
 export class RecordVariableType extends BaseVariableType {
@@ -105,12 +106,12 @@ export class RecordVariableType extends BaseVariableType {
         this.directDependencies = new Set();
     }
     init(runtime) {
-        for (const [name, field] of Object.entries(this.fields)) {
+        for (const [name, [field, range]] of Object.entries(this.fields)) {
             if (Array.isArray(field))
-                this.fields[name] = runtime.resolveVariableType(field);
+                this.fields[name][0] = runtime.resolveVariableType(field);
             else if (field instanceof ArrayVariableType)
                 field.init(runtime);
-            this.addDependencies(this.fields[name]);
+            this.addDependencies(this.fields[name][0]);
         }
         this.initialized = true;
     }
@@ -124,13 +125,13 @@ export class RecordVariableType extends BaseVariableType {
         }
     }
     checkSize() {
-        for (const [name, type] of Object.entries(this.fields)) {
+        for (const [name, [type, range]] of Object.entries(this.fields)) {
             if (type == this)
-                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`);
+                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`, range);
             if (type instanceof ArrayVariableType && type.elementType == this)
-                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`);
+                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`, range);
             if (type instanceof RecordVariableType && type.directDependencies.has(this))
-                fail(f.quote `Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`);
+                fail(f.quote `Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`, range);
         }
     }
     fmtText() {
@@ -146,7 +147,7 @@ export class RecordVariableType extends BaseVariableType {
         if (!this.initialized)
             crash(`Type not initialized`);
         return Object.fromEntries(Object.entries(this.fields)
-            .map(([k, v]) => [k, v.getInitValue(runtime, false)]));
+            .map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)]));
     }
 }
 export class PointerVariableType extends BaseVariableType {
@@ -216,7 +217,7 @@ export class SetVariableType extends BaseVariableType {
         return f.debug `SetVariableType [${this.name}] (contains: ${this.baseType})`;
     }
     getInitValue(runtime) {
-        fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`);
+        crash(`Cannot initialize a variable of type SET`);
     }
 }
 export class ClassVariableType extends BaseVariableType {
@@ -255,7 +256,7 @@ export class ClassVariableType extends BaseVariableType {
             ])),
             type: this
         };
-        const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote `No constructor was defined for class ${this.name}`);
+        const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote `No constructor was defined for class ${this.name}`, this.statement);
         runtime.callClassMethod(method, clazz, data, args);
         return data;
     }

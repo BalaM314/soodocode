@@ -1,7 +1,7 @@
 import { type TextRange, type TextRangeLike, type TextRanged, type Token, type TokenType } from "./lexer-types.js";
 import { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { IFormattable, TagFunction } from "./types.js";
+import type { BoxPrimitive, IFormattable, TagFunction } from "./types.js";
 export declare function getText(tokens: Token[]): string;
 export declare function displayTokenMatcher(input: TokenMatcher): string;
 export declare function applyRangeTransformers(text: string, ranges: [range: TextRange, start: string, end: string, transformer?: (rangeText: string) => string][]): string;
@@ -30,7 +30,7 @@ export declare class SoodocodeError extends Error {
     constructor(message: string, rangeSpecific?: TextRange | null | undefined, rangeGeneral?: TextRange | null | undefined, rangeOther?: TextRange | undefined);
     formatMessage(text: string): string;
 }
-export declare function fail(message: string, rangeSpecific?: TextRangeLike | null, rangeGeneral?: TextRangeLike | null): never;
+export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null): never;
 export declare function crash(message: string): never;
 export declare function impossible(): never;
 export declare function Abstract<TClass extends new (...args: any[]) => any>(input: TClass, context: ClassDecoratorContext<TClass>): TClass;
@@ -59,4 +59,5 @@ export declare function biasedLevenshtein(a: string, b: string, maxLengthProduct
 export declare function fakeObject<T>(input: Partial<T>): T;
 export declare function tryRun<T>(callback: () => T): [T, null] | [null, SoodocodeError];
 export declare function tryRunOr<T>(callback: () => T, errorHandler: (err: SoodocodeError) => unknown): boolean;
+export declare function boxPrimitive<T>(input: T): BoxPrimitive<T>;
 export {};

@@ -1,4 +1,4 @@
-import { TextRangeLike, Token } from "./lexer-types.js";
+import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
@@ -81,7 +81,7 @@ export declare class Runtime {
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
-    getClass(name: string): ClassVariableType;
+    getClass(name: string, range: TextRange): ClassVariableType;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;

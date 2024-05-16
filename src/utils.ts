@@ -269,8 +269,8 @@ export function parseError(thing:unknown):string {
 		// eslint-disable-next-line @typescript-eslint/no-base-to-string
 		return thing.toString();
 	} else {
-		console.log("[[FINDTAG]] Unable to parse the following error object");
-		console.log(thing as never);
+		console.log("Unable to parse the following error object");
+		console.log(thing);
 		return "Unable to parse error object";
 	}
 }

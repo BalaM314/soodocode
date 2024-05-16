@@ -255,7 +255,7 @@ export function parseError(thing) {
         return thing.toString();
     }
     else {
-        console.log("[[FINDTAG]] Unable to parse the following error object");
+        console.log("Unable to parse the following error object");
         console.log(thing);
         return "Unable to parse error object";
     }
@@ -389,4 +389,13 @@ export function tryRunOr(callback, errorHandler) {
         else
             throw err;
     }
+}
+export function boxPrimitive(input) {
+    if (typeof input == "boolean")
+        return new Boolean(input);
+    if (typeof input == "number")
+        return new Number(input);
+    if (typeof input == "string")
+        return new String(input);
+    return input;
 }

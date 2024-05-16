@@ -262,14 +262,16 @@ let DeclareStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.variables = [];
-            this.variables = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(1, -2), tokens.at(-2)).map(t => t.text);
+            this.variables = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(1, -2), tokens.at(-2)).map(t => [t.text, t]);
             this.varType = processTypeData(tokens.at(-1));
         }
         run(runtime) {
             const varType = runtime.resolveVariableType(this.varType);
-            for (const variable of this.variables) {
+            if (varType instanceof SetVariableType)
+                fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.tokens.at(-1));
+            for (const [variable, token] of this.variables) {
                 if (runtime.getVariable(variable))
-                    fail(`Variable ${variable} was already declared`);
+                    fail(`Variable ${variable} was already declared`, token);
                 runtime.getCurrentScope().variables[variable] = {
                     type: varType,
                     value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),
@@ -305,7 +307,7 @@ let ConstantStatement = (() => {
         }
         run(runtime) {
             if (runtime.getVariable(this.name))
-                fail(`Constant ${this.name} was already declared`);
+                fail(`Constant ${this.name} was already declared`, this);
             const [type, value] = Runtime.evaluateToken(this.expr);
             runtime.getCurrentScope().variables[this.name] = {
                 type,
@@ -428,7 +430,7 @@ let TypeSetStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1];
-            this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`);
+            this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`, tokens[5]);
         }
         createType(runtime) {
             return [this.name.text, new SetVariableType(false, this.name.text, this.setType)];
@@ -460,8 +462,8 @@ let TypeRecordStatement = (() => {
             const fields = {};
             for (const statement of node.nodeGroups[0]) {
                 if (!(statement instanceof DeclareStatement))
-                    fail(`Statements in a record type block can only be declaration statements`);
-                statement.variables.forEach(v => fields[v] = statement.varType);
+                    fail(`Statements in a record type block can only be declaration statements`, statement);
+                statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
             }
             return [this.name.text, new RecordVariableType(false, this.name.text, fields)];
         }
@@ -493,7 +495,7 @@ let AssignmentStatement = (() => {
         run(runtime) {
             const variable = runtime.evaluateExpr(this.target, "variable");
             if (!variable.mutable)
-                fail(f.quote `Cannot assign to constant ${this.target}`);
+                fail(f.quote `Cannot assign to constant ${this.target}`, this.target);
             variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
         }
     };
@@ -562,18 +564,18 @@ let InputStatement = (() => {
                 case PrimitiveVariableType.INTEGER: {
                     const value = Number(input);
                     if (isNaN(value))
-                        fail(`input was an invalid number`);
+                        fail(`input was an invalid number`, this);
                     if (!Number.isSafeInteger(value))
-                        fail(`input was an invalid integer`);
+                        fail(`input was an invalid integer`, this);
                     variable.value = value;
                     break;
                 }
                 case PrimitiveVariableType.REAL: {
                     const value = Number(input);
                     if (isNaN(value))
-                        fail(`input was an invalid number`);
+                        fail(`input was an invalid number`, this);
                     if (!Number.isSafeInteger(value))
-                        fail(`input was an invalid integer`);
+                        fail(`input was an invalid integer`, this);
                     variable.value = value;
                     break;
                 }
@@ -584,7 +586,7 @@ let InputStatement = (() => {
                     if (input.length == 1)
                         variable.value = input;
                     else
-                        fail(`input was not a valid character: contained more than one character`);
+                        fail(`input was not a valid character: contained more than one character`, this);
                     break;
                 default:
                     fail(f.quote `Cannot INPUT variable of type ${variable.type}`, this);
@@ -616,7 +618,7 @@ let ReturnStatement = (() => {
         run(runtime) {
             const fn = runtime.getCurrentFunction();
             if (!fn)
-                fail(`RETURN is only valid within a function.`);
+                fail(`RETURN is only valid within a function.`, this);
             let type;
             if (fn instanceof ProgramASTBranchNode) {
                 const statement = fn.controlStatements[0];
@@ -659,7 +661,7 @@ let CallStatement = (() => {
                 this.func = tokens[1];
             }
             else
-                fail(`CALL can only be used to call functions or procedures`);
+                fail(`CALL can only be used to call functions or procedures`, tokens[1]);
         }
         run(runtime) {
             const func = runtime.evaluateExpr(this.func.functionName, "function");
@@ -668,9 +670,9 @@ let CallStatement = (() => {
             }
             else {
                 if ("name" in func)
-                    fail(`CALL cannot be used on builtin functions, because they have no side effects`);
+                    fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
                 if (func.controlStatements[0] instanceof FunctionStatement)
-                    fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`);
+                    fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, this.func);
                 runtime.callFunction(func, this.func.args);
             }
         }
@@ -889,7 +891,7 @@ let ForStatement = (() => {
                 return;
             const end = node.controlStatements[1];
             if (end.name !== this.name)
-                fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`);
+                fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
             const step = this.step(runtime);
             for (let i = lower; i <= upper; i += step) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
@@ -956,6 +958,7 @@ let ForEndStatement = (() => {
     var ForEndStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
+            this.varToken = tokens[1];
             this.name = tokens[1].text;
         }
     };
@@ -1082,13 +1085,14 @@ let FunctionStatement = (() => {
             this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
             this.returnType = processTypeData(tokens.at(-1));
             this.returnTypeToken = tokens.at(-1);
+            this.nameToken = tokens[1];
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
             if (this.name in runtime.functions)
-                fail(`Duplicate function definition for ${this.name}`);
+                fail(`Duplicate function definition for ${this.name}`, this.nameToken);
             else if (this.name in builtinFunctions)
-                fail(`Function ${this.name} is already defined as a builtin function`);
+                fail(`Function ${this.name} is already defined as a builtin function`, this.nameToken);
             runtime.functions[this.name] = node;
         }
     };
@@ -1145,17 +1149,18 @@ let OpenFileStatement = (() => {
         run(runtime) {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-            const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(`File ${name} does not exist.`);
+            const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this);
             if (mode == "READ") {
                 runtime.openFiles[name] = {
                     file,
                     mode,
                     lines: file.text.split("\n").slice(0, -1),
-                    lineNumber: 0
+                    lineNumber: 0,
+                    openRange: this.range,
                 };
             }
             else if (mode == "RANDOM") {
-                fail(`Not yet implemented`);
+                fail(`Not yet implemented`, this.mode);
             }
             else {
                 if (mode == "WRITE")
@@ -1163,6 +1168,7 @@ let OpenFileStatement = (() => {
                 runtime.openFiles[name] = {
                     file,
                     mode,
+                    openRange: this.range,
                 };
             }
         }
@@ -1194,9 +1200,9 @@ let CloseFileStatement = (() => {
             if (runtime.openFiles[name])
                 runtime.openFiles[name] = undefined;
             else if (name in runtime.openFiles)
-                fail(f.quote `Cannot close file ${name}, because it has already been closed.`);
+                fail(f.quote `Cannot close file ${name}, because it has already been closed.`, this);
             else
-                fail(f.quote `Cannot close file ${name}, because it was never opened.`);
+                fail(f.quote `Cannot close file ${name}, because it was never opened.`, this);
         }
     };
     __setFunctionName(_classThis, "CloseFileStatement");
@@ -1225,7 +1231,7 @@ let ReadFileStatement = (() => {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
             const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
             if (data.lineNumber >= data.lines.length)
-                fail(`End of file reached`);
+                fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
             const output = runtime.evaluateExpr(this.output, "variable");
             output.value = data.lines[data.lineNumber++];
         }
@@ -1283,10 +1289,10 @@ let SeekStatement = (() => {
         run(runtime) {
             const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER)[1];
             if (index < 0)
-                fail(`SEEK index must be positive`);
+                fail(`SEEK index must be positive`, this.index);
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
             const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
-            fail(`Not yet implemented`);
+            fail(`Not yet implemented`, this);
         }
     };
     __setFunctionName(_classThis, "SeekStatement");
@@ -1315,7 +1321,7 @@ let GetRecordStatement = (() => {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
             const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
             const variable = runtime.evaluateExpr(this.variable, "variable");
-            fail(`Not yet implemented`);
+            fail(`Not yet implemented`, this);
         }
     };
     __setFunctionName(_classThis, "GetRecordStatement");
@@ -1344,7 +1350,7 @@ let PutRecordStatement = (() => {
             const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
             const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
             const [type, value] = runtime.evaluateExpr(this.variable);
-            fail(`Not yet implemented`);
+            fail(`Not yet implemented`, this);
         }
     };
     __setFunctionName(_classThis, "PutRecordStatement");
@@ -1392,9 +1398,9 @@ let ClassStatement = (() => {
                     }
                 }
                 else if (node instanceof ClassPropertyStatement) {
-                    for (const variable of node.variables) {
+                    for (const [variable, token] of node.variables) {
                         if (classData.properties[variable]) {
-                            fail(f.quote `Duplicate declaration of class property ${variable}`, this, classData.properties[variable]);
+                            fail(f.quote `Duplicate declaration of class property ${variable}`, token, classData.properties[variable]);
                         }
                         else {
                             classData.properties[variable] = node;
@@ -1410,7 +1416,7 @@ let ClassStatement = (() => {
         }
         runBlock(runtime, branchNode) {
             if (runtime.getCurrentScope().types[this.name.text])
-                fail(f.quote `Type ${this.name.text} already exists in the current scope`);
+                fail(f.quote `Type ${this.name.text} already exists in the current scope`, this.name);
             runtime.getCurrentScope().types[this.name.text] = this.initializeClass(runtime, branchNode);
         }
     };
@@ -1440,7 +1446,7 @@ let ClassInheritsStatement = (() => {
             this.superClassName = tokens[3];
         }
         initializeClass(runtime, branchNode) {
-            const baseClass = runtime.getClass(this.superClassName.text);
+            const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range);
             const extensions = super.initializeClass(runtime, branchNode);
             extensions.baseClass = baseClass;
             for (const [key, value] of Object.entries(baseClass.properties)) {

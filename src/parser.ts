@@ -219,7 +219,6 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
 export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
-	console.log(possibleStatements);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
