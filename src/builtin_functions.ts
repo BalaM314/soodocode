@@ -10,17 +10,42 @@ import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, Primitiv
 import type { Runtime } from "./runtime.js";
 import { fail, f } from "./utils.js";
 
-
-type PreprocesssedBuiltinFunctionData = {
-	args: [name:string, type:PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[]][];
-	returnType: PrimitiveVariableTypeName;
-	impl(this:Runtime, ...args:VariableValue[]):VariableValue;
+//TODO add comments
+type BuiltinFunctionArgType = PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[];
+type BuiltinFunctionArg = [name:string, type:BuiltinFunctionArgType];
+type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
+	T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ?
+		U extends PrimitiveVariableTypeName ?
+			VariableTypeMapping<PrimitiveVariableType<U>> :
+		U extends [infer S] ?
+			S extends PrimitiveVariableTypeName ?
+				VariableTypeMapping<PrimitiveVariableType<S>>[] :
+				unknown[]
+		: never :
+	T extends PrimitiveVariableTypeName
+		? VariableTypeMapping<PrimitiveVariableType<T>>
+		: never;
+type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> = 
+	[TSuppliedArgs & 0] extends [1] //If any
+		? VariableValue[] //output this (to prevent issues with the type definition of "builtinFunctions")
+		: {
+			[K in keyof TSuppliedArgs]: FunctionArgVariableTypeMapping<TSuppliedArgs[K][1]>;
+		};
+type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TReturn extends PrimitiveVariableTypeName> = {
+	args: TArgs;
+	returnType: TReturn;
+	impl(this:Runtime, ...args:FunctionArgs<TArgs>):VariableTypeMapping<PrimitiveVariableType<TReturn>>;
 };
+function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName>(data:PreprocesssedBuiltinFunctionData<T, S>){
+	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
+}
+
+
 export const builtinFunctions = (
-	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
+	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
 		Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
-				args: new Map(data.args.map(([name, type]) => [name, {
+				args: new Map((data.args as BuiltinFunctionArg[]).map(([name, type]) => [name, {
 					passMode: "reference",
 					type: (Array.isArray(type) ? type : [type]).map(t =>
 						Array.isArray(t)
@@ -30,242 +55,242 @@ export const builtinFunctions = (
 				}])),
 				name,
 				impl: data.impl,
-				returnType: PrimitiveVariableType.get(data.returnType)
+				returnType: PrimitiveVariableType.get(data.returnType as PrimitiveVariableTypeName)
 			}]
 		))
 )({
 	//Source: s23 P22 insert
-	LEFT: {
+	LEFT: fn({
 		args: [
 			["ThisString", "STRING"],
 			["x", "INTEGER"],
 		],
 		returnType: "STRING",
-		impl(str:string, num:number){
+		impl(str, num){
 			if(num < 0) fail(`Number ${num} is negative`);
 			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
 			return str.slice(0, num);
 		},
-	},
+	}),
 	//source: spec 5.5
-	RIGHT: {
+	RIGHT: fn({
 		args: [
 			["ThisString", "STRING"],
 			["x", "INTEGER"],
 		],
 		returnType: "STRING",
-		impl(str:string, num:number){
+		impl(str, num){
 			if(num < 0) fail(`Number ${num} is negative`);
 			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`);
 			return str.slice(-num);
 		},
-	},
+	}),
 	//source: spec 5.5
-	MID: {
+	MID: fn({
 		args: [
 			["ThisString", "STRING"],
 			["x", "INTEGER"],
 			["y", "INTEGER"],
 		],
 		returnType: "STRING",
-		impl(str:string, start:number, length:number){
+		impl(str, start, length){
 			if(start < 1) fail(`Start index ${start} is less than 1`);
 			if(length < 1) fail(`Slice length ${length} is less than 1`);
 			if(length + start - 1 > str.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${str.length})`);
 			return str.slice(start - 1, start + length - 1);
 		},
-	},
+	}),
 	//source: spec 5.5
-	LENGTH: {
+	LENGTH: fn({
 		args: [
 			["ThisString", [["ANY"], "STRING"]],
 		],
 		returnType: "INTEGER",
-		impl(str:string | VariableTypeMapping<ArrayVariableType>){
+		impl(str){
 			return str.length;
 		},
-	},
+	}),
 	//Source: s23 P22 insert
-	TO_UPPER: {
+	TO_UPPER: fn({
 		args: [
 			["x", ["STRING", "CHAR"]],
 		],
 		returnType: "STRING", //string or char
-		impl(str:string){
+		impl(str){
 			return str.toUpperCase();
 		},
-	},
+	}),
 	//Source: s23 P22 insert
-	TO_LOWER: {
+	TO_LOWER: fn({
 		args: [
 			["x", ["STRING", "CHAR"]],
 		],
 		returnType: "STRING", //string or char
-		impl(str:string){
+		impl(str){
 			return str.toLowerCase();
 		},
-	},
+	}),
 	//source: spec 5.5
-	UCASE: {
+	UCASE: fn({
 		args: [
 			["x", "CHAR"],
 		],
 		returnType: "CHAR",
-		impl(str:string){
+		impl(str){
 			return str.toUpperCase();
 		},
-	},
+	}),
 	//source: spec 5.5
-	LCASE: {
+	LCASE: fn({
 		args: [
 			["x", "CHAR"],
 		],
 		returnType: "CHAR",
-		impl(str:string){
+		impl(str){
 			return str.toLowerCase();
 		},
-	},
+	}),
 	//Source: s23 P22 insert
-	NUM_TO_STR: {
+	NUM_TO_STR: fn({
 		args: [
 			["x", "REAL"], //real or integer, but ints coerce to reals
 		],
 		returnType: "STRING", //string or char, overflow handled automatically by coercion
-		impl(num:number){
+		impl(num){
 			return num.toString();
 		},
-	},
+	}),
 	//Source: s23 P22 insert
-	STR_TO_NUM: {
+	STR_TO_NUM: fn({
 		args: [
 			["x", ["STRING", "CHAR"]],
 		],
 		returnType: "REAL", //real or integer, but ints coerce to reals
-		impl(str:string){
+		impl(str){
 			const out = Number(str);
 			if(isNaN(out) || !Number.isFinite(out)) fail(f.quote`Cannot convert ${str} to a number`);
 			return out;
 		},
-	},
+	}),
 	//Source: s23 P22 insert
-	IS_NUM: {
+	IS_NUM: fn({
 		args: [
 			["ThisString", ["STRING", "CHAR"]],
 		],
 		returnType: "BOOLEAN",
-		impl(str:string){
+		impl(str){
 			const out = Number(str);
 			return !isNaN(out) && Number.isFinite(out);
 		},
-	},
+	}),
 	//Source: s23 P22 insert
-	ASC: {
+	ASC: fn({
 		args: [
 			["ThisChar", "CHAR"],
 		],
 		returnType: "INTEGER",
-		impl(str:string){
+		impl(str){
 			return str.charCodeAt(0);
 		},
-	},
-	CHR: {
+	}),
+	CHR: fn({
 		args: [
 			["x", "INTEGER"],
 		],
 		returnType: "CHAR",
-		impl(x:number){
+		impl(x){
 			return String.fromCharCode(x);
 		},
-	},
+	}),
 	//source: spec 5.6
-	INT: {
+	INT: fn({
 		args: [
 			["x", "REAL"],
 		],
 		returnType: "INTEGER",
-		impl(x:number){
+		impl(x){
 			return Math.trunc(x);
 		},
-	},
+	}),
 	//source: spec 5.6
-	RAND: {
+	RAND: fn({
 		args: [
 			["x", "INTEGER"],
 		],
 		returnType: "REAL",
-		impl(x:number){
+		impl(x){
 			return Math.random() * x;
 		},
-	},
+	}),
 
 	//Source: s23 P22 insert
-	DAY: {
+	DAY: fn({
 		args: [
 			["ThisDate", "DATE"],
 		],
 		returnType: "INTEGER",
-		impl(x:Date){
+		impl(x){
 			return x.getDate();
 		}
-	},
+	}),
 	//Source: s23 P22 insert
-	MONTH: {
+	MONTH: fn({
 		args: [
 			["ThisDate", "DATE"],
 		],
 		returnType: "INTEGER",
-		impl(x:Date){
+		impl(x){
 			return x.getMonth();
 		}
-	},
+	}),
 	//Source: s23 P22 insert
-	YEAR: {
+	YEAR: fn({
 		args: [
 			["ThisDate", "DATE"],
 		],
 		returnType: "INTEGER",
-		impl(x:Date){
+		impl(x){
 			return x.getFullYear();
 		}
-	},
+	}),
 	//Source: s23 P22 insert
-	DAYINDEX: {
+	DAYINDEX: fn({
 		args: [
 			["ThisDate", "DATE"],
 		],
 		returnType: "INTEGER",
-		impl(x:Date){
+		impl(x){
 			return x.getDay() + 1;
 		}
-	},
+	}),
 	//Source: s23 P22 insert
-	SETDATE: {
+	SETDATE: fn({
 		args: [
 			["Day", "INTEGER"],
 			["Month", "INTEGER"],
 			["Year", "INTEGER"],
 		],
 		returnType: "DATE",
-		impl(d:number, m:number, y:number){
+		impl(d, m, y){
 			return new Date(y, m, d);
 		}
-	},
+	}),
 	//Source: s23 P22 insert
-	TODAY: {
+	TODAY: fn({
 		args: [],
 		returnType: "DATE",
 		impl(){
 			return new Date();
 		}
-	},
-	EOF: {
+	}),
+	EOF: fn({
 		args: [
 			["Filename", "STRING"]
 		],
 		returnType: "BOOLEAN",
-		impl(filename:string){
+		impl(filename){
 			const file = this.getOpenFile(filename, ["READ"], `EOF function`);
 			return file.lineNumber >= file.lines.length;
 		}
-	}
+	})
 });
