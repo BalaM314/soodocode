@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the parser.
 */
 
-import type { Token, TokenType } from "./lexer-types.js";
+import type { Token, TokenList, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, PartialKey, TextRange, TextRanged } from "./types.js";
 import { crash, f, getTotalRange } from "./utils.js";
@@ -24,7 +24,7 @@ export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 		public operatorToken: Token,
 		public operator: Operator,
 		public nodes: ExpressionASTNode[],
-		public allTokens: Token[],
+		public allTokens: TokenList,
 	){
 		this.range = getTotalRange(allTokens);
 	}
@@ -49,7 +49,7 @@ export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 	constructor(
 		public functionName: ExpressionASTLeafNode | ExpressionASTBranchNode,
 		public args: ExpressionASTNode[],
-		public allTokens: Token[],
+		public allTokens: TokenList,
 	){
 		this.range = getTotalRange(allTokens);
 	}
@@ -68,7 +68,7 @@ export class ExpressionASTClassInstantiationNode implements TextRanged {
 	constructor(
 		public className: Token,
 		public args: ExpressionASTNode[],
-		public allTokens: Token[],
+		public allTokens: TokenList,
 	){
 		this.range = getTotalRange(allTokens);
 	}
@@ -87,7 +87,7 @@ export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 	constructor(
 		public target: ExpressionASTNode,
 		public indices: ExpressionASTNode[],
-		public allTokens: Token[],
+		public allTokens: TokenList,
 	){
 		this.range = getTotalRange(allTokens);
 	}
@@ -107,7 +107,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	constructor(
 		public lengthInformation: [low:Token, high:Token][] | null, //TODO support expressions here
 		public elementType: Token,
-		public allTokens: Token[],
+		public allTokens: TokenList,
 	){
 		this.range = getTotalRange(allTokens);
 	}
@@ -124,7 +124,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 // 	range: TextRange;
 // 	constructor(
 // 		public targetType: Token,
-// 		public allTokens: Token[],
+// 		public allTokens: TokenList,
 // 	){
 // 		this.range = getTotalRange(allTokens);
 // 	}
@@ -138,8 +138,8 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 // export class ExpressionASTEnumTypeNode implements TextRanged {
 // 	range: TextRange;
 // 	constructor(
-// 		public values: Token[],
-// 		public allTokens: Token[],
+// 		public values: TokenList,
+// 		public allTokens: TokenList,
 // 	){
 // 		this.range = getTotalRange(allTokens);
 // 	}

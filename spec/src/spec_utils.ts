@@ -1,4 +1,4 @@
-import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
+import { Symbol, SymbolType, Token, TokenList, TokenType } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
@@ -114,7 +114,7 @@ export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayType
 	return new ExpressionASTArrayTypeNode(
 		input[0]?.map(bounds => bounds.map(b => token("number.decimal", b.toString()))) ?? null,
 		process_Token(input[1]),
-		[process_Token(input[1])] //SPECNULL
+		new TokenList([process_Token(input[1])]) //SPECNULL
 	);
 }
 
@@ -135,7 +135,7 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 			return new ExpressionASTArrayAccessNode(
 				process_ExpressionAST(input[1][1]),
 				input[2].map(process_ExpressionAST),
-				[token("name", "_")] //SPECNULL
+				new TokenList([token("name", "_")]) //SPECNULL
 			);
 		} else if(Array.isArray(input[1]) && input[1][0] == "function call"){
 			const functionName = process_ExpressionAST(input[1][1]);
@@ -143,21 +143,21 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 				return new ExpressionASTFunctionCallNode(
 					functionName,
 					input[2].map(process_ExpressionAST),
-					[token("name", "_")] //SPECNULL
+					new TokenList([token("name", "_")]) //SPECNULL
 				);
 			else crash(`Invalid _ExpressionAST; function name must be an operator branch node or a leaf node`);
 		} else if(Array.isArray(input[1]) && input[1][0] == "class instantiation"){
 			return new ExpressionASTClassInstantiationNode(
 				token("name", input[1][1]),
 				input[2].map(process_ExpressionAST),
-				[token("name", "_")] //SPECNULL
+				new TokenList([token("name", "_")]) //SPECNULL
 			);
 		} else {
 			return new ExpressionASTBranchNode(
 				operatorTokens[input[1]],
 				operators[input[1]],
 				input[2].map(process_ExpressionAST),
-				[operatorTokens[input[1]]] //SPECNULL
+				new TokenList([operatorTokens[input[1]]]) //SPECNULL
 			);
 		}
 	}

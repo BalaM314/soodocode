@@ -7,7 +7,7 @@ export type SymbolizedProgram = {
 };
 export type TokenizedProgram = {
     program: string;
-    tokens: Token[];
+    tokens: TokenList;
 };
 export declare class Symbol implements TextRanged {
     type: SymbolType;
@@ -36,4 +36,9 @@ export declare class Token implements TextRanged, IFormattable {
     clearRange(): Token;
     rangeBefore(): TextRange;
     rangeAfter(): TextRange;
+}
+export declare class TokenList extends Array<Token> implements TextRanged {
+    range: TextRange;
+    constructor(tokens?: Token[], range?: TextRange);
+    slice(start?: number, end?: number): TokenList;
 }

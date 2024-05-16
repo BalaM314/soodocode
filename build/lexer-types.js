@@ -1,4 +1,4 @@
-import { crash, getRange, getTotalRange } from "./utils.js";
+import { crash, getRange, getTotalRange, impossible } from "./utils.js";
 export const symbolTypes = [
     "numeric_fragment",
     "quote.single", "quote.double",
@@ -98,5 +98,34 @@ export class Token {
     }
     rangeAfter() {
         return [this.range[1], this.range[1] + 1];
+    }
+}
+export class TokenList extends Array {
+    constructor(tokens = [], range = getTotalRange(tokens)) {
+        super(...tokens);
+        this.range = range;
+    }
+    slice(start = 0, end = this.length) {
+        const arr = super.slice(start, end);
+        if (arr.length == 0) {
+            let range;
+            if (this.length == 0)
+                range = this.range;
+            else if (start == end) {
+                const rangeStart = start - 1 > 0
+                    ? this[start - 1].range[1]
+                    : this.range[0];
+                const rangeEnd = end < this.length
+                    ? this[end].range[0]
+                    : this.range[1];
+                range = [rangeStart, rangeEnd];
+            }
+            else
+                impossible();
+            return new TokenList(arr, range);
+        }
+        else {
+            return new TokenList(arr);
+        }
     }
 }

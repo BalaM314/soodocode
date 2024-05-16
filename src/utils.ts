@@ -5,14 +5,14 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import type { Token, TokenType } from "./lexer-types.js";
+import { Token, TokenList, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
 import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
 
 
-export function getText(tokens:Token[]){
+export function getText(tokens:TokenList){
 	return tokens.map(t => t.text).join(" ");
 }
 
@@ -79,41 +79,41 @@ export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array
 	return output;
 }
 
-export function splitTokens(arr:Token[], split:TokenType){
-	const output:Token[][] = [[]];
+export function splitTokens(arr:TokenList, split:TokenType){
+	const output:TokenList[] = [new TokenList()];
 	for(const el of arr){
-		if(el.type == split) output.push([]);
+		if(el.type == split) output.push(new TokenList());
 		else output.at(-1)!.push(el);
 	}
 	return output;
 }
 
-export function splitTokensWithSplitter(arr:Token[], split:TokenType){
-	const output:{ group:Token[]; splitter?:Token; }[] = [{ group: [] }];
+export function splitTokensWithSplitter(arr:TokenList, split:TokenType){
+	const output:{ group:TokenList; splitter?:Token; }[] = [{ group: new TokenList() }];
 	for(const el of arr){
 		if(el.type == split){
 			output.at(-1)!.splitter = el;
-			output.push({ group: [] });
+			output.push({ group: new TokenList() });
 		} else output.at(-1)!.group.push(el);
 	}
 	return output;
 }
 
-export function splitTokensOnComma(arr:Token[]):Token[][] {
-	const output:Token[][] = [[]];
+export function splitTokensOnComma(arr:TokenList):TokenList[] {
+	const output:TokenList[] = [new TokenList()];
 	let parenNestLevel = 0, bracketNestLevel = 0;
 	for(const token of arr){
 		if(token.type == "parentheses.open") parenNestLevel ++;
 		else if(token.type == "parentheses.close") parenNestLevel --;
 		else if(token.type == "bracket.open") bracketNestLevel ++;
 		else if(token.type == "bracket.close") bracketNestLevel --;
-		if(parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma") output.push([]);
+		if(parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma") output.push(new TokenList());
 		else output.at(-1)!.push(token);
 	}
 	return output;
 }
 
-export function findLastNotInGroup(arr:Token[], target:TokenType):number | null {
+export function findLastNotInGroup(arr:TokenList, target:TokenType):number | null {
 	let parenNestLevel = 0, bracketNestLevel = 0;
 	for(const [i, token] of [...arr.entries()].reverse()){
 		if(token.type == "parentheses.open") parenNestLevel ++;
@@ -126,8 +126,8 @@ export function findLastNotInGroup(arr:Token[], target:TokenType):number | null 
 	return null;
 }
 
-export function getUniqueNamesFromCommaSeparatedTokenList(tokens:Token[], nextToken?:Token, validNames:TokenType[] = ["name"]):Token[] {
-	const names:Token[] = [];
+export function getUniqueNamesFromCommaSeparatedTokenList(tokens:TokenList, nextToken?:Token, validNames:TokenType[] = ["name"]):TokenList {
+	const names = new TokenList();
 
 	let expected:"name" | "comma" = "name";
 	for(const token of tokens){

@@ -1,4 +1,4 @@
-import { Symbol, Token } from "./lexer-types.js";
+import { Symbol, Token, TokenList } from "./lexer-types.js";
 import { access, crash, f, fail, impossible } from "./utils.js";
 export const symbolTypeData = [
     [/<-{1,2}/, "operator.assignment"],
@@ -224,7 +224,7 @@ export function symbolize(input) {
     };
 }
 export function tokenize(input) {
-    const tokens = [];
+    const tokens = new TokenList();
     const state = {
         sComment: null,
         mComment: null,

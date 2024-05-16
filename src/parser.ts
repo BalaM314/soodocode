@@ -8,7 +8,7 @@ which is the preferred representation of the program.
 */
 
 
-import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
+import { Token, TokenizedProgram, TokenList, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
@@ -19,7 +19,7 @@ import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLas
 //TODO add a way to specify the range for an empty list of tokens
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
-export const parseFunctionArguments = errorBoundary()((tokens:Token[]):FunctionArguments => {
+export const parseFunctionArguments = errorBoundary()((tokens:TokenList):FunctionArguments => {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
@@ -85,7 +85,7 @@ export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):
 	} else return ArrayVariableType.from(typeNode);
 });
 
-export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode => {
+export const parseType = errorBoundary()((tokens:TokenList):ExpressionASTTypeNode => {
 	if(tokens.length == 0) crash(`Cannot parse empty type`);
 	//Builtin or reference to user defined type
 	if(checkTokens(tokens, ["name"])) return tokens[0];
@@ -122,7 +122,7 @@ export const parseType = errorBoundary()((tokens:Token[]):ExpressionASTTypeNode 
 	fail(f.quote`Cannot parse type from ${tokens}`, tokens);
 });
 
-export function splitTokensToStatements(tokens:Token[]):Token[][] {
+export function splitTokensToStatements(tokens:TokenList):TokenList[] {
 	const statementData:[statement:typeof Statement, length:number][] = [
 		[CaseBranchStatement, 2],
 		[CaseBranchStatement, 3],
@@ -140,7 +140,7 @@ export function splitTokensToStatements(tokens:Token[]):Token[][] {
 }
 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
-	const lines:Token[][] = splitTokensToStatements(tokens);
+	const lines:TokenList[] = splitTokensToStatements(tokens);
 	const programNodes:ProgramASTNode[] = [];
 	function getActiveBuffer(){
 		if(blockStack.length == 0) return programNodes;
@@ -185,7 +185,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	};
 }
 
-export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNode | null):[
+export function getPossibleStatements(tokens:TokenList, context:ProgramASTBranchNode | null):[
 	definitions: (typeof Statement)[],
 	error: ((valid:typeof Statement) => never) | null,
 ]{
@@ -217,7 +217,7 @@ export function getPossibleStatements(tokens:Token[], context:ProgramASTBranchNo
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary()((tokens:Token[], context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
+export const parseStatement = errorBoundary()((tokens:TokenList, context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
@@ -274,11 +274,11 @@ export function isLiteral(type:TokenType){
 type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
 type StatementCheckFailResult = { message: string; priority: number; range: TextRange | null; };
 /**
- * Checks if a Token[] is valid for a statement type. If it is, it returns the information needed to construct the statement.
+ * Checks if a TokenList is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
  * `input` must not be empty.
  */
-export const checkStatement = errorBoundary()((statement:typeof Statement, input:Token[], allowRecursiveCall:boolean):
+export const checkStatement = errorBoundary()((statement:typeof Statement, input:TokenList, allowRecursiveCall:boolean):
 	StatementCheckFailResult | StatementCheckTokenRange[] => {
 	//TODO rewrite to use modified wagner-fischer for best detection
 
@@ -368,7 +368,7 @@ function getMessage(expected:TokenMatcher, found:Token){
 
 	return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
 }
-export function checkTokens(tokens:Token[], input:TokenMatcher[]):boolean {
+export function checkTokens(tokens:TokenList, input:TokenMatcher[]):boolean {
 	return Array.isArray(checkStatement(fakeObject<typeof Statement>({
 		tokens: input,
 		category: undefined,
@@ -397,7 +397,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `
-})((input:Token[], recursive = false):ExpressionASTNode => {
+})((input:TokenList, recursive = false):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);

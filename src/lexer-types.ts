@@ -6,7 +6,7 @@ This file contains types for the lexer, such as Symbol and Token.
 */
 
 import type { IFormattable, TextRange, TextRangeLike, TextRanged } from "./types.js";
-import { crash, getRange, getTotalRange } from "./utils.js";
+import { crash, getRange, getTotalRange, impossible } from "./utils.js";
 
 export const symbolTypes = [
 	"numeric_fragment",
@@ -31,7 +31,7 @@ export type SymbolizedProgram = {
 
 export type TokenizedProgram = {
 	program: string;
-	tokens: Token[];
+	tokens: TokenList;
 }
 
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
@@ -125,6 +125,34 @@ export class Token implements TextRanged, IFormattable {
 	}
 	rangeAfter():TextRange {
 		return [this.range[1], this.range[1] + 1];
+	}
+}
+export class TokenList extends Array<Token> implements TextRanged {
+	/** range must be specified if the array is empty */
+	constructor(tokens:Token[] = [], public range:TextRange = getTotalRange(tokens)){
+		super(...tokens);
+	}
+	override slice(start:number = 0, end:number = this.length):TokenList {
+		const arr = super.slice(start, end);
+		if(arr.length == 0){
+			//Determine the range
+			let range:TextRange;
+			if(this.length == 0) range = this.range; //slicing an empty array, no other information is available so just use the same range
+			else if(start == end){
+				const rangeStart =
+					start - 1 > 0 //If the element before the start of the slice exists
+						? this[start - 1].range[1] //Pick the end of that element's range
+						: this.range[0]; //Otherwise, pick the start of the array's range
+				const rangeEnd =
+					end < this.length //If the element after the end of the slice exists
+						? this[end].range[0] //Pick the beginning of that element's range
+						: this.range[1]; //Otherwise, pick the end of the array's range
+				range = [rangeStart, rangeEnd];
+			} else impossible();
+			return new TokenList(arr, range);
+		} else {
+			return new TokenList(arr);
+		}
 	}
 }
 
