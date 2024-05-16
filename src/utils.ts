@@ -9,7 +9,7 @@ import { tokenTypes, type TextRange, type TextRangeLike, type TextRanged, type T
 import { tokenTextMapping } from "./lexer.js";
 import { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { IFormattable, TagFunction } from "./types.js";
+import type { BoxPrimitive, IFormattable, TagFunction } from "./types.js";
 
 
 export function getText(tokens:Token[]){
@@ -409,3 +409,9 @@ export function tryRunOr<T>(callback:() => T, errorHandler:(err:SoodocodeError) 
 	}
 }
 
+export function boxPrimitive<T>(input:T):BoxPrimitive<T> {
+	if(typeof input == "boolean") return new Boolean(input) as never;
+	if(typeof input == "number") return new Number(input) as never;
+	if(typeof input == "string") return new String(input) as never;
+	return input as never;
+}

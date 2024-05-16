@@ -6,12 +6,13 @@ This file contains the runtime, which executes the program AST.
 */
 
 
-import { builtinFunctions } from "./builtin_functions.js";
+import { RangeAttached, builtinFunctions } from "./builtin_functions.js";
 import { TextRange, TextRangeLike, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeSetStatement, TypeStatement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
+import type { BoxPrimitive } from "./types.js";
+import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -819,20 +820,25 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {
 		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`, undefined);
 		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
-		const processedArgs:VariableValue[] = [];
+		const evaluatedArgs:[VariableValue, TextRange][] = [];
 		let i = 0;
 		nextArg:
 		for(const {type} of fn.args.values()){
 			const errors:SoodocodeError[] = [];
 			for(const possibleType of type){
 				if(tryRunOr(() => {
-					processedArgs.push(this.evaluateExpr(args[i], possibleType)[1]);
+					evaluatedArgs.push([this.evaluateExpr(args[i], possibleType)[1], args[i].range]);
 					i ++;
 				}, err => errors.push(err)))
 					continue nextArg;
 			}
 			throw errors.at(-1);
 		}
+		const processedArgs:RangeAttached<BoxPrimitive<VariableValue>>[] =
+			evaluatedArgs.map(([value, range]) =>
+				//Attach the range to the values
+				Object.assign(boxPrimitive(value), {range})
+			);
 		if(returnType) return [returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType)];
 		else return [fn.returnType, fn.impl.apply(this, processedArgs)];
 	}

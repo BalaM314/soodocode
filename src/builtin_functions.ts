@@ -6,28 +6,32 @@ This file contains all builtin functions defined in the insert.
 */
 
 
+import type { TextRange } from "./lexer-types.js";
 import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import type { Runtime } from "./runtime.js";
+import type { BoxPrimitive } from "./types.js";
 import { fail, f } from "./utils.js";
 
+//Warning: this file contains extremely sane code
+//* Function implementations have the parameter arg types determined by the following generics
 //TODO add comments
 type BuiltinFunctionArgType = PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[];
 type BuiltinFunctionArg = [name:string, type:BuiltinFunctionArgType];
 type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 	T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ?
 		U extends PrimitiveVariableTypeName ?
-			VariableTypeMapping<PrimitiveVariableType<U>> :
+			RangeAttached<VariableTypeMapping<PrimitiveVariableType<U>>> : //this is actually a RangeSymbol<BoxPrimitive<...>> but that causes Typescript to complain
 		U extends [infer S] ?
 			S extends PrimitiveVariableTypeName ?
-				VariableTypeMapping<PrimitiveVariableType<S>>[] :
-				unknown[]
+				RangeAttached<VariableTypeMapping<PrimitiveVariableType<S>>[]> :
+				RangeAttached<unknown[]>
 		: never :
 	T extends PrimitiveVariableTypeName
-		? VariableTypeMapping<PrimitiveVariableType<T>>
+		? RangeAttached<VariableTypeMapping<PrimitiveVariableType<T>>> //this is actually a RangeSymbol<BoxPrimitive<...>> but that causes Typescript to complain
 		: never;
 type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> = 
 	[TSuppliedArgs & 0] extends [1] //If any
-		? VariableValue[] //output this (to prevent issues with the type definition of "builtinFunctions")
+		? RangeAttached<VariableValue>[] //output this
 		: {
 			[K in keyof TSuppliedArgs]: FunctionArgVariableTypeMapping<TSuppliedArgs[K][1]>;
 		};
@@ -40,6 +44,10 @@ function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVaria
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
 
+
+export type RangeAttached<T> = T & {
+	range: TextRange;
+};
 
 export const builtinFunctions = (
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
@@ -54,7 +62,8 @@ export const builtinFunctions = (
 					)
 				}])),
 				name,
-				impl: data.impl,
+				//Unsafe cast
+				impl: data.impl as ((this:Runtime, ...args:RangeAttached<BoxPrimitive<VariableValue>>[]) => VariableTypeMapping<PrimitiveVariableType>),
 				returnType: PrimitiveVariableType.get(data.returnType as PrimitiveVariableTypeName)
 			}]
 		))
