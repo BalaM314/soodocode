@@ -36,6 +36,7 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     init(runtime: Runtime): void;
     fmtDebug(): string;
     fmtText(): T;
+    fmtShort(): T;
     is<T extends PrimitiveVariableTypeName>(...type: T[]): this is PrimitiveVariableType<T>;
     static valid(input: string): input is PrimitiveVariableTypeName;
     static get(type: PrimitiveVariableTypeName): PrimitiveVariableType;
@@ -52,6 +53,7 @@ export declare class ArrayVariableType<Init extends boolean = true> extends Base
     constructor(lengthInformation: [low: number, high: number][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
     init(runtime: Runtime): void;
     fmtText(): string;
+    fmtShort(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;
     static from(node: ExpressionASTArrayTypeNode): ArrayVariableType<false>;
@@ -66,6 +68,7 @@ export declare class RecordVariableType<Init extends boolean = true> extends Bas
     addDependencies(type: VariableType): void;
     checkSize(): void;
     fmtText(): string;
+    fmtShort(): string;
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableValue | null;
@@ -77,6 +80,7 @@ export declare class PointerVariableType<Init extends boolean = true> extends Ba
     constructor(initialized: Init, name: string, target: (Init extends true ? never : UnresolvedVariableType) | VariableType);
     init(runtime: Runtime): void;
     fmtText(): string;
+    fmtShort(): string;
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
@@ -87,6 +91,7 @@ export declare class EnumeratedVariableType extends BaseVariableType {
     constructor(name: string, values: string[]);
     init(): void;
     fmtText(): string;
+    fmtShort(): string;
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
@@ -98,20 +103,23 @@ export declare class SetVariableType<Init extends boolean = true> extends BaseVa
     constructor(initialized: Init, name: string, baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType);
     init(runtime: Runtime): void;
     fmtText(): string;
+    fmtShort(): string;
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
 }
-export declare class ClassVariableType extends BaseVariableType {
+export declare class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
+    initialized: Init;
     statement: ClassStatement;
     properties: Record<string, ClassPropertyStatement>;
     ownMethods: Record<string, ClassMethodData>;
-    allMethods: Record<string, [ClassVariableType, ClassMethodData]>;
+    allMethods: Record<string, [source: ClassVariableType<Init>, data: ClassMethodData]>;
     name: string;
-    baseClass: ClassVariableType | null;
-    constructor(statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [ClassVariableType, ClassMethodData]>);
+    baseClass: ClassVariableType<Init> | null;
+    constructor(initialized: Init, statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [source: ClassVariableType<Init>, data: ClassMethodData]>);
     init(): void;
     fmtText(): string;
+    fmtShort(): string;
     fmtPlain(): string;
     toQuotedString(): string;
     fmtDebug(): string;
@@ -125,7 +133,7 @@ export declare class ClassVariableType extends BaseVariableType {
                 [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
         };
-        type: ClassVariableType;
+        type: ClassVariableType<true>;
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
 }

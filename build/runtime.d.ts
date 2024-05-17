@@ -3,7 +3,7 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, P
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
-export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType): boolean;
+export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType, types?: Set<VariableType>): boolean;
 export declare function typesAssignable(base: VariableType | UnresolvedVariableType, ext: VariableType | UnresolvedVariableType): boolean;
 export declare const checkClassMethodsCompatible: (base: ClassMethodStatement, derived: ClassMethodStatement) => void;
 export declare class Files {
@@ -82,7 +82,7 @@ export declare class Runtime {
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
-    getClass(name: string, range: TextRange): ClassVariableType;
+    getClass<T extends boolean = boolean>(name: string, range: TextRange): ClassVariableType<T>;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;

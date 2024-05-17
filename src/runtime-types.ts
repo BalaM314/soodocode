@@ -238,7 +238,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		return this.name;
 	}
 	fmtQuoted():string {
-		return f.text`"${this.name}" (user-defined pointer type ^${this.target})`;
+		return f.short`"${this.name}" (user-defined pointer type ^${this.target})`;
 	}
 	fmtDebug():string {
 		return f.short`PointerVariableType [${this.name}] to "${this.target}"`;
@@ -295,18 +295,22 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 		crash(`Cannot initialize a variable of type SET`);
 	}
 }
-export class ClassVariableType extends BaseVariableType {
+export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
 	name:string = this.statement.name.text;
-	baseClass:ClassVariableType | null = null;
+	baseClass:ClassVariableType<Init> | null = null;
 	constructor(
+		public initialized: Init,
 		public statement: ClassStatement,
 		/** Stores regular and inherited properties. */
 		public properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
 		/** Does not store inherited methods. */
 		public ownMethods: Record<string, ClassMethodData> = {},
-		public allMethods: Record<string, [ClassVariableType, ClassMethodData]> = {},
+		public allMethods: Record<string, [source:ClassVariableType<Init>, data:ClassMethodData]> = {},
 	){super();}
-	init(){}
+	init(){
+
+		(this as ClassVariableType<true>).initialized = true;
+	}
 	fmtText(){
 		return f.text`${this.name} (user-defined class type)`;
 	}
@@ -335,11 +339,12 @@ export class ClassVariableType extends BaseVariableType {
 			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
 				runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
 			])) as Record<string, VariableValue>,
-			type: this
+			type: this as ClassVariableType<true>
 		};
 
 		//Call constructor
-		const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote`No constructor was defined for class ${this.name}`, this.statement);
+		const [clazz, method] = (this as ClassVariableType<true>).allMethods["NEW"]
+			?? fail(f.quote`No constructor was defined for class ${this.name}`, this.statement);
 		runtime.callClassMethod(method, clazz, data, args);
 		return data;
 	}

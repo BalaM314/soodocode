@@ -18,6 +18,7 @@ export interface IFormattable {
     fmtDebug(): string;
     fmtQuoted?: () => string;
     fmtText(): string;
+    fmtShort?: () => string;
 }
 export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
 declare global {

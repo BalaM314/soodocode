@@ -354,7 +354,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
 			if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`, expr);
-			const clazz = this.getClass(expr.className.text, expr.className.range);
+			const clazz = this.getClass<true>(expr.className.text, expr.className.range);
 			const output = clazz.construct(this, expr.args);
 			return this.finishEvaluation(output, clazz, type);
 		}
@@ -600,6 +600,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return type as never as ArrayVariableType<true>;
 		} else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
 	}
+	/**
+	 * Called when a type doesn't exist, used to check for capitalization and typos.
+	 */
 	handleNonexistentType(name:string, range:TextRangeLike):never {
 		const allTypes:(readonly [string, VariableType])[] = [
 			...this.scopes.flatMap(s => Object.entries(s.types)),
@@ -693,12 +696,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return { clazz, method, instance: this.classData.instance };
 		} else return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}
-	getClass(name:string, range:TextRange):ClassVariableType {
+	getClass<T extends boolean = boolean>(name:string, range:TextRange):ClassVariableType<T> {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			if(this.scopes[i].types[name]){
 				if(!(this.scopes[i].types[name] instanceof ClassVariableType))
 					fail(f.quote`Type ${name} is not a class, it is ${this.scopes[i].types[name]}`, range);
-				return this.scopes[i].types[name] as ClassVariableType;
+				return this.scopes[i].types[name] as ClassVariableType<T>;
 			}
 		}
 		fail(f.quote`Class ${name} has not been defined.`, range);
@@ -856,24 +859,26 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement
 		);
 		//First pass: initialize types
-		const types: VariableType[] = [];
+		const types: [name:string, type:VariableType][] = [];
 		for(const node of typeNodes){
-			let type, name;
+			let name, type;
 			if(node instanceof Statement){
 				[name, type] = node.createType(this);
 			} else {
-				[name, type] = node.controlStatements[0].runTypeBlock(this, node);
+				[name, type] = node.controlStatements[0].createTypeBlock(this, node);
 			}
 			if(this.getCurrentScope().types[name]) fail(f.quote`Type ${name} was defined twice`, node);
 			this.getCurrentScope().types[name] = type;
-			types.push(type);
+			types.push([name, type]);
 		}
 		//Second pass: resolve types
-		for(const type of types){
+		for(const [name, type] of types){
+			this.currentlyResolvingTypeName = name;
 			type.init(this);
 		}
+		this.currentlyResolvingTypeName = null;
 		//Third pass: check type size
-		for(const type of types){
+		for(const [name, type] of types){
 			type.checkSize();
 		}
 		for(const node of others){

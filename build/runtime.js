@@ -38,12 +38,13 @@ import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, Expr
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
-export function typesEqual(a, b) {
+export function typesEqual(a, b, types = new Set()) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
         (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.elementType == b.elementType ||
             Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1])) ||
-        (a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
+        (a instanceof PointerVariableType && b instanceof PointerVariableType && (types.has(a) ||
+            typesEqual(a.target, b.target, types.add(a)))) ||
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
 }
 export function typesAssignable(base, ext) {
@@ -829,22 +830,24 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement);
                 const types = [];
                 for (const node of typeNodes) {
-                    let type, name;
+                    let name, type;
                     if (node instanceof Statement) {
                         [name, type] = node.createType(this);
                     }
                     else {
-                        [name, type] = node.controlStatements[0].runTypeBlock(this, node);
+                        [name, type] = node.controlStatements[0].createTypeBlock(this, node);
                     }
                     if (this.getCurrentScope().types[name])
                         fail(f.quote `Type ${name} was defined twice`, node);
                     this.getCurrentScope().types[name] = type;
-                    types.push(type);
+                    types.push([name, type]);
                 }
-                for (const type of types) {
+                for (const [name, type] of types) {
+                    this.currentlyResolvingTypeName = name;
                     type.init(this);
                 }
-                for (const type of types) {
+                this.currentlyResolvingTypeName = null;
+                for (const [name, type] of types) {
                     type.checkSize();
                 }
                 for (const node of others) {

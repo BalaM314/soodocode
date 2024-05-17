@@ -242,7 +242,7 @@ export class TypeStatement extends Statement {
 	createType(runtime:Runtime):[name:string, type:VariableType] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
-	runTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):[name:string, type:VariableType] {
+	createTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):[name:string, type:VariableType] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
 }
@@ -374,7 +374,7 @@ export class TypeRecordStatement extends TypeStatement {
 		super(tokens);
 		this.name = tokens[1];
 	}
-	runTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
+	createTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const fields:Record<string, [UnresolvedVariableType, TextRange]> = {};
 		for(const statement of node.nodeGroups[0]){
 			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`, statement);
@@ -886,15 +886,15 @@ interface IClassMemberStatement {
 }
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
-export class ClassStatement extends Statement {
+export class ClassStatement extends TypeStatement {
 	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
 	name: Token;
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
 		this.name = tokens[1];
 	}
-	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType {
-		const classData = new ClassVariableType(this);
+	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
+		const classData = new ClassVariableType(false, this);
 		for(const node of branchNode.nodeGroups[0]){
 			if(node instanceof ProgramASTBranchNode){
 				if(node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement){
@@ -927,10 +927,8 @@ export class ClassStatement extends Statement {
 		}
 		return classData;
 	}
-	runBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){ //TODO count classes as types
-		if(runtime.getCurrentScope().types[this.name.text])
-			fail(f.quote`Type ${this.name.text} already exists in the current scope`, this.name);
-		runtime.getCurrentScope().types[this.name.text] = this.initializeClass(runtime, branchNode);
+	createTypeBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
+		return [this.name.text, this.initializeClass(runtime, branchNode)] as [name: string, type: VariableType];
 	}
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
@@ -940,8 +938,8 @@ export class ClassInheritsStatement extends ClassStatement {
 		super(tokens);
 		this.superClassName = tokens[3];
 	}
-	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType {
-		const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range);
+	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
+		const baseClass = runtime.getClass<false>(this.superClassName.text, this.superClassName.range);
 		const extensions = super.initializeClass(runtime, branchNode);
 
 		//Apply the base class's properties and functions

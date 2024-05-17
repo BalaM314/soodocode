@@ -48,6 +48,7 @@ export declare function tagProcessor<T>(transformer: (chunk: T, index: number, a
 export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean;
 export declare const f: {
     text: TagFunction<Formattable, string>;
+    short: TagFunction<Formattable, string>;
     quote: TagFunction<Formattable, string>;
     debug: TagFunction<Formattable, string>;
 };

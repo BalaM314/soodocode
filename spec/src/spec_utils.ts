@@ -407,6 +407,7 @@ export function classType(
 	allMethods?: Record<string, [ClassVariableType, ClassMethodData]>,
 ){
 	const clazz = new ClassVariableType(
+		true,
 		statement,
 		properties,
 		Object.fromEntries(Object.entries(ownMethods).map(([k, v]) => [k, process_ProgramASTNode(v) as ClassMethodData])),

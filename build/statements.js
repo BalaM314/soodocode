@@ -248,7 +248,7 @@ export class TypeStatement extends Statement {
     createType(runtime) {
         crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
     }
-    runTypeBlock(runtime, block) {
+    createTypeBlock(runtime, block) {
         crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
     }
 }
@@ -458,7 +458,7 @@ let TypeRecordStatement = (() => {
             super(tokens);
             this.name = tokens[1];
         }
-        runTypeBlock(runtime, node) {
+        createTypeBlock(runtime, node) {
             const fields = {};
             for (const statement of node.nodeGroups[0]) {
                 if (!(statement instanceof DeclareStatement))
@@ -1369,14 +1369,14 @@ let ClassStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = Statement;
+    let _classSuper = TypeStatement;
     var ClassStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1];
         }
         initializeClass(runtime, branchNode) {
-            const classData = new ClassVariableType(this);
+            const classData = new ClassVariableType(false, this);
             for (const node of branchNode.nodeGroups[0]) {
                 if (node instanceof ProgramASTBranchNode) {
                     if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
@@ -1414,10 +1414,8 @@ let ClassStatement = (() => {
             }
             return classData;
         }
-        runBlock(runtime, branchNode) {
-            if (runtime.getCurrentScope().types[this.name.text])
-                fail(f.quote `Type ${this.name.text} already exists in the current scope`, this.name);
-            runtime.getCurrentScope().types[this.name.text] = this.initializeClass(runtime, branchNode);
+        createTypeBlock(runtime, branchNode) {
+            return [this.name.text, this.initializeClass(runtime, branchNode)];
         }
     };
     __setFunctionName(_classThis, "ClassStatement");

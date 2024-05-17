@@ -295,6 +295,19 @@ function formatText(input) {
     else
         return input.fmtText();
 }
+function formatShort(input) {
+    if (typeof input == "string")
+        return input;
+    if (input instanceof String || input instanceof Number || input instanceof Boolean)
+        return input.toString();
+    else if (Array.isArray(input)) {
+        if (input[0] == "unresolved" && typeof input[1] == "string")
+            return input[1];
+        return input.map(formatShort).join(" ");
+    }
+    else
+        return input.fmtShort?.() ?? input.fmtText();
+}
 function formatQuoted(input) {
     let str;
     if (typeof input == "string")
@@ -328,6 +341,7 @@ function formatDebug(input) {
 }
 export const f = {
     text: tagProcessor(formatText),
+    short: tagProcessor(formatShort),
     quote: tagProcessor(formatQuoted),
     debug: tagProcessor(formatDebug),
 };

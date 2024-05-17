@@ -21,6 +21,9 @@ export class PrimitiveVariableType extends BaseVariableType {
     fmtText() {
         return this.name;
     }
+    fmtShort() {
+        return this.name;
+    }
     is(...type) {
         return type.includes(this.name);
     }
@@ -76,6 +79,10 @@ export class ArrayVariableType extends BaseVariableType {
             this.elementType = runtime.resolveVariableType(this.elementType);
     }
     fmtText() {
+        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
+        return f.text `ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
+    }
+    fmtShort() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
         return f.text `ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
     }
@@ -137,6 +144,9 @@ export class RecordVariableType extends BaseVariableType {
     fmtText() {
         return `${this.name} (user-defined record type)`;
     }
+    fmtShort() {
+        return this.name;
+    }
     fmtQuoted() {
         return `"${this.name}" (user-defined record type)`;
     }
@@ -163,13 +173,16 @@ export class PointerVariableType extends BaseVariableType {
         this.initialized = true;
     }
     fmtText() {
-        return f.text `${this.name} (user-defined pointer type ^${this.target})`;
+        return f.short `${this.name} (user-defined pointer type ^${this.target})`;
+    }
+    fmtShort() {
+        return this.name;
     }
     fmtQuoted() {
-        return f.text `"${this.name}" (user-defined pointer type ^${this.target})`;
+        return f.short `"${this.name}" (user-defined pointer type ^${this.target})`;
     }
     fmtDebug() {
-        return f.debug `PointerVariableType [${this.name}] to "${this.target}"`;
+        return f.short `PointerVariableType [${this.name}] to "${this.target}"`;
     }
     getInitValue(runtime) {
         return null;
@@ -184,6 +197,9 @@ export class EnumeratedVariableType extends BaseVariableType {
     init() { }
     fmtText() {
         return `${this.name} (user-defined enumerated type)`;
+    }
+    fmtShort() {
+        return this.name;
     }
     fmtQuoted() {
         return `"${this.name}" (user-defined enumerated type)`;
@@ -210,6 +226,9 @@ export class SetVariableType extends BaseVariableType {
     fmtText() {
         return f.text `${this.name} (user-defined set type containing "${this.baseType}")`;
     }
+    fmtShort() {
+        return this.name;
+    }
     toQuotedString() {
         return f.text `"${this.name}" (user-defined set type containing "${this.baseType}")`;
     }
@@ -221,8 +240,9 @@ export class SetVariableType extends BaseVariableType {
     }
 }
 export class ClassVariableType extends BaseVariableType {
-    constructor(statement, properties = {}, ownMethods = {}, allMethods = {}) {
+    constructor(initialized, statement, properties = {}, ownMethods = {}, allMethods = {}) {
         super();
+        this.initialized = initialized;
         this.statement = statement;
         this.properties = properties;
         this.ownMethods = ownMethods;
@@ -230,9 +250,14 @@ export class ClassVariableType extends BaseVariableType {
         this.name = this.statement.name.text;
         this.baseClass = null;
     }
-    init() { }
+    init() {
+        this.initialized = true;
+    }
     fmtText() {
         return f.text `${this.name} (user-defined class type)`;
+    }
+    fmtShort() {
+        return this.name;
     }
     fmtPlain() {
         return this.name;
@@ -256,7 +281,8 @@ export class ClassVariableType extends BaseVariableType {
             ])),
             type: this
         };
-        const [clazz, method] = this.allMethods["NEW"] ?? fail(f.quote `No constructor was defined for class ${this.name}`, this.statement);
+        const [clazz, method] = this.allMethods["NEW"]
+            ?? fail(f.quote `No constructor was defined for class ${this.name}`, this.statement);
         runtime.callClassMethod(method, clazz, data, args);
         return data;
     }
