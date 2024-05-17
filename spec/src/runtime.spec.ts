@@ -542,9 +542,9 @@ const expressionTests = ((data:Record<string, [
 				text: "Amogus"
 			}
 		} as ClassStatement, {
-			prop: {
+			prop: [PrimitiveVariableType.REAL, {
 				varType: PrimitiveVariableType.REAL
-			} as ClassPropertyStatement
+			} as ClassPropertyStatement]
 		}, {
 			NEW: {
 				type: "class_procedure",
@@ -585,9 +585,9 @@ const expressionTests = ((data:Record<string, [
 				text: "Amogus"
 			}
 		} as ClassStatement, {
-			prop: {
+			prop: [PrimitiveVariableType.REAL, {
 				varType: PrimitiveVariableType.REAL
-			} as ClassPropertyStatement
+			} as ClassPropertyStatement]
 		}, {
 			NEW: {
 				type: "class_procedure",
@@ -645,9 +645,9 @@ const expressionTests = ((data:Record<string, [
 					text: "Amogus"
 				}
 			} as ClassStatement, {
-				prop: {
+				prop: [PrimitiveVariableType.REAL, {
 					varType: PrimitiveVariableType.REAL
-				} as ClassPropertyStatement
+				} as ClassPropertyStatement]
 			});
 		}
 	],
@@ -657,10 +657,10 @@ const expressionTests = ((data:Record<string, [
 				text: "Amogus"
 			}
 		} as ClassStatement, {
-			prop: {
+			prop: [PrimitiveVariableType.REAL, {
 				varType: PrimitiveVariableType.REAL,
 				accessModifier: "public"
-			} as ClassPropertyStatement
+			} as ClassPropertyStatement]
 		});
 		return [
 			["tree", "access", [
@@ -691,10 +691,10 @@ const expressionTests = ((data:Record<string, [
 				text: "Amogus"
 			}
 		} as ClassStatement, {
-			prop: {
+			prop: [PrimitiveVariableType.REAL, {
 				varType: PrimitiveVariableType.REAL,
 				accessModifier: "private"
-			} as ClassPropertyStatement
+			} as ClassPropertyStatement]
 		});
 		return [
 			["tree", "access", [
@@ -724,10 +724,10 @@ const expressionTests = ((data:Record<string, [
 			"keyword.class",
 			"amogus"
 		]]) as ClassStatement, {
-			prop: {
+			prop: [PrimitiveVariableType.REAL, {
 				varType: PrimitiveVariableType.REAL,
 				accessModifier: "private"
-			} as ClassPropertyStatement
+			} as ClassPropertyStatement]
 		}, {
 			access: {
 				type: "class_function",
@@ -805,9 +805,9 @@ const expressionTests = ((data:Record<string, [
 					text: "Amogus"
 				}
 			} as ClassStatement, {
-				prop: {
+				prop: [PrimitiveVariableType.REAL, {
 					varType: PrimitiveVariableType.REAL
-				} as ClassPropertyStatement
+				} as ClassPropertyStatement]
 			}, {
 				eject: {
 					type: "class_function",
@@ -861,9 +861,9 @@ const expressionTests = ((data:Record<string, [
 					text: "Amogus"
 				}
 			} as ClassStatement, {
-				prop: {
+				prop: [PrimitiveVariableType.REAL, {
 					varType: PrimitiveVariableType.REAL
-				} as ClassPropertyStatement
+				} as ClassPropertyStatement]
 			}, {
 				eject: {
 					type: "class_function",
@@ -920,9 +920,9 @@ const expressionTests = ((data:Record<string, [
 					text: "Amogus"
 				}
 			} as ClassStatement, {
-				prop: {
+				prop: [PrimitiveVariableType.REAL, {
 					varType: PrimitiveVariableType.REAL
-				} as ClassPropertyStatement
+				} as ClassPropertyStatement]
 			}, {
 				eject: {
 					type: "class_procedure",

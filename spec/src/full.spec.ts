@@ -312,6 +312,30 @@ x.value <- 123
 OUTPUT (((y.amogus^).bmogus^).amogus^).value`,
 ["123"]
 ],
+class_type_recursive_hoisting_1: [
+`CLASS Amogus
+PUBLIC amogus: Amogus
+ENDCLASS`,
+[]
+],
+class_type_recursive_hoisting_2: [
+`CLASS Amogus
+PUBLIC bmogus: Bmogus
+ENDCLASS
+CLASS Bmogus
+PUBLIC amogus: Amogus
+ENDCLASS`,
+[]
+],
+class_type_recursive_hoisting_3: [
+`CLASS Amogus
+PUBLIC bmogus: Bmogus
+ENDCLASS
+CLASS Bmogus
+PUBLIC amogus: ARRAY[1:10] OF Amogus
+ENDCLASS`,
+[]
+],
 parse_class_blank: [
 `CLASS amogus
 ENDCLASS`,
