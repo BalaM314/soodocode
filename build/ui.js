@@ -125,11 +125,6 @@ const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
-const expressionInput = getElement("expression-input", HTMLInputElement);
-const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
-const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
-const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
-const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 const uploadButton = getElement("upload-button", HTMLInputElement);
 window.addEventListener("keydown", e => {
     if (e.key == "s" && e.ctrlKey) {
@@ -156,75 +151,6 @@ uploadButton.onchange = (event) => {
         }
     };
 };
-evaluateExpressionButton.addEventListener("click", () => {
-    try {
-        expressionOutputDiv.innerText = evaluateExpressionDemo(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens)).toString();
-        expressionOutputDiv.style.color = "white";
-    }
-    catch (err) {
-        expressionOutputDiv.style.color = "red";
-        if (err instanceof SoodocodeError) {
-            expressionOutputDiv.innerText = "Error: " + err.message;
-            if (err.rangeSpecific)
-                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeSpecific)}"`;
-            if (err.rangeGeneral)
-                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeGeneral)}"`;
-        }
-        else {
-            console.error(err);
-            expressionOutputDiv.innerText = "Soodocode crashed! " + parseError(err);
-        }
-    }
-});
-dumpExpressionTreeButton.addEventListener("click", () => {
-    try {
-        const text = displayExpressionHTML(parser.parseExpression(lexer.tokenize(lexer.symbolize(expressionInput.value)).tokens), dumpExpressionTreeVerbose.checked, false);
-        console.log(text);
-        let outputText = "";
-        let linePos = 0;
-        let lineParenColor = null;
-        for (const char of text) {
-            if (char == "\t") {
-                outputText += "  ";
-                linePos++;
-            }
-            else if (['+', '-', '*', '/'].includes(char))
-                outputText += `<span style="color:white;font-weight:bold;">${char}</span>`;
-            else if (/\d/.test(char))
-                outputText += `<span style="color:#B5CEA8;">${char}</span>`;
-            else if (dumpExpressionTreeVerbose.checked && ['(', ')'].includes(char)) {
-                lineParenColor ?? (lineParenColor = `hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%)`);
-                outputText += `<span style="color:${lineParenColor}">${char}</span>`;
-            }
-            else if (dumpExpressionTreeVerbose.checked && ['↱', '↳'].includes(char)) {
-                outputText += `<span style="color:hsl(${(linePos / 2) * (360 / 6)}, 100%, 70%);">${char}</span>`;
-            }
-            else
-                outputText += char;
-            linePos++;
-            if (char == "\n") {
-                linePos = 0;
-                lineParenColor = null;
-            }
-        }
-        expressionOutputDiv.innerHTML = outputText;
-        expressionOutputDiv.style.color = "white";
-    }
-    catch (err) {
-        expressionOutputDiv.style.color = "red";
-        if (err instanceof SoodocodeError) {
-            expressionOutputDiv.innerText = "Error: " + err.message;
-            if (err.rangeSpecific)
-                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeSpecific)}"`;
-            if (err.rangeGeneral)
-                expressionOutputDiv.innerText += `\nat "${expressionInput.value.slice(...err.rangeGeneral)}"`;
-        }
-        else {
-            console.error(err);
-            expressionOutputDiv.innerText = "Soodocode crashed!" + parseError(err);
-        }
-    }
-});
 soodocodeInput.onkeydown = e => {
     if ((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)) {
         e.preventDefault();

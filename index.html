@@ -29,37 +29,29 @@
 	<script src="build/ui.js" type="module" defer></script>
 </head>
 <body>
-	<div id="container">
-		<div id="header">
-			<a href="https://github.com/BalaM314/soodocode" target="_blank" id="github-icon"></a>
-			<span id="header-text" title="hey there, something cool happens when you click this, also try holding shift, control, or alt">Soodocode Runtime</span>
-			<button id="theme-button">
-				<span class="material-icons"></span>
-			</button>
+	<div id="outer">
+		<div id="left">
+			<textarea name="soodocode-input" id="soodocode-input" spellcheck="false"></textarea>
 		</div>
-		<br>
-		Run and check pseudocode that uses Cambridge AS/A level CS (9618) syntax. (defined <a href="https://www.cambridgeinternational.org/Images/697401-2026-syllabus-legacy-notice.pdf">here</a>)
-		<h2>Expression parser</h2>
-		<input name="expression-input" id="expression-input" type="text" value="25 * 2777 - 5"/><br>
-		<div class="horizontal">
-			<button id="evaluate-expression-button">Evaluate</button>
-			<button id="dump-expression-tree-button">Show parsed tree</button>
-			<label for="dump-expression-tree-verbose" style="vertical-align: middle;">Verbose</label>
-			<input type="checkbox" name="dump-expression-tree-verbose" id="dump-expression-tree-verbose" checked="true">
+		<div id="right">
+			<div id="header">
+				<a href="https://github.com/BalaM314/soodocode" target="_blank" id="github-icon"></a>
+				<span id="header-text" title="hey there, something cool happens when you click this, also try holding shift, control, or alt">Soodocode Runtime</span>
+				<button id="theme-button">
+					<span class="material-icons"></span>
+				</button>
+			</div>
+			Run and check pseudocode that uses Cambridge AS/A level CS (9618) syntax. (defined <a href="https://www.cambridgeinternational.org/Images/697401-2026-syllabus-legacy-notice.pdf">here</a>)
+			<div class="horizontal" style="margin-top: 20px;">
+				<button id="execute-soodocode-button">Execute</button><br>
+				<button id="dump-tokens-button">Show parser output</button>
+			</div>
+			<h2>Program output</h2>
+			<div id="output-div" class="output-div"></div>
+			<footer>
+				Copyright © <a href="https://github.com/BalaM314">BalaM314</a>, 2024. All Rights Reserved. <a href="https://github.com/BalaM314/soodocode">Open source.</a>
+			</footer>
 		</div>
-		<div id="expression-output-div" class="output-div"></div>
-		<h2>Soodocode input</h2>
-		<div id="input-wrapper">
-			<textarea name="soodocode-input" id="soodocode-input" cols="60" rows="15" spellcheck="false"></textarea>
-		</div>
-		<div class="horizontal">
-			<button id="execute-soodocode-button">Execute</button><br>
-			<button id="dump-tokens-button">Show parser output</button>
-		</div>
-		<div id="output-div" class="output-div"></div>
-		<footer>
-			Copyright © <a href="https://github.com/BalaM314">BalaM314</a>. All Rights Reserved. <a href="https://github.com/BalaM314/soodocode">Open source.</a>
-		</footer>
 	</div>
 	<div class="hidden">
 		<input type="file" name="upload-button" id="upload-button">

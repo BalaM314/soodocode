@@ -139,11 +139,11 @@ const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
-const expressionInput = getElement("expression-input", HTMLInputElement);
-const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
-const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
-const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
-const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
+// const expressionInput = getElement("expression-input", HTMLInputElement);
+// const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
+// const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
+// const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
+// const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 const uploadButton = getElement("upload-button", HTMLInputElement);
 
 window.addEventListener("keydown", e => {
@@ -171,7 +171,7 @@ uploadButton.onchange = (event:Event) => {
 	};
 };
 
-evaluateExpressionButton.addEventListener("click", () => {
+/*evaluateExpressionButton.addEventListener("click", () => {
 	try {
 		expressionOutputDiv.innerText = evaluateExpressionDemo(
 			parser.parseExpression(
@@ -246,7 +246,7 @@ dumpExpressionTreeButton.addEventListener("click", () => {
 			expressionOutputDiv.innerText = "Soodocode crashed!" + parseError(err);
 		}
 	}
-});
+});*/
 
 soodocodeInput.onkeydown = e => {
 	if((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)){
