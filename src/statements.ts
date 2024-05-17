@@ -914,12 +914,13 @@ export class ClassStatement extends TypeStatement {
 				}
 			} else if(node instanceof ClassPropertyStatement){
 				for(const [variable, token] of node.variables){
-					if(classData.properties_[variable]){
-						fail(f.quote`Duplicate declaration of class property ${variable}`, token, classData.properties_[variable][1]);
+					if(classData.properties[variable]){
+						fail(f.quote`Duplicate declaration of class property ${variable}`, token, classData.properties[variable][1]);
 					} else {
-						classData.properties_[variable] = [node.varType, node];
+						classData.properties[variable] = [node.varType, node];
 					}
 				}
+				classData.propertyStatements.push(node);
 			} else {
 				console.error({branchNode, node});
 				crash(`Invalid node in class block`);
@@ -944,11 +945,11 @@ export class ClassInheritsStatement extends ClassStatement {
 
 		//Apply the base class's properties and functions
 		extensions.baseClass = baseClass;
-		for(const [key, value] of Object.entries(baseClass.properties_)){
-			if(extensions.properties_[key]){
-				fail(f.quote`Property ${key} has already been defined in base class ${this.superClassName.text}`, extensions.properties_[key][1]);
+		for(const [key, value] of Object.entries(baseClass.properties)){
+			if(extensions.properties[key]){
+				fail(f.quote`Property ${key} has already been defined in base class ${this.superClassName.text}`, extensions.properties[key][1]);
 			} else {
-				extensions.properties_[key] = value;
+				extensions.properties[key] = value;
 			}
 		}
 		for(const [name, value] of Object.entries(baseClass.allMethods)){

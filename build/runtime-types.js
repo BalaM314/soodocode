@@ -240,11 +240,11 @@ export class SetVariableType extends BaseVariableType {
     }
 }
 export class ClassVariableType extends BaseVariableType {
-    constructor(initialized, statement, properties_ = {}, ownMethods = {}, allMethods = {}, propertyStatements = []) {
+    constructor(initialized, statement, properties = {}, ownMethods = {}, allMethods = {}, propertyStatements = []) {
         super();
         this.initialized = initialized;
         this.statement = statement;
-        this.properties_ = properties_;
+        this.properties = properties;
         this.ownMethods = ownMethods;
         this.allMethods = allMethods;
         this.propertyStatements = propertyStatements;
@@ -255,7 +255,7 @@ export class ClassVariableType extends BaseVariableType {
         for (const statement of this.propertyStatements) {
             const type = runtime.resolveVariableType(statement.varType);
             for (const [name] of statement.variables) {
-                this.properties_[name][0] = type;
+                this.properties[name][0] = type;
             }
         }
         this.initialized = true;
@@ -284,7 +284,7 @@ export class ClassVariableType extends BaseVariableType {
     construct(runtime, args) {
         const This = this;
         const data = {
-            properties: Object.fromEntries(Object.entries(This.properties_).map(([k, v]) => [k,
+            properties: Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k,
                 v[0].getInitValue(runtime, false)
             ])),
             type: This
@@ -298,7 +298,7 @@ export class ClassVariableType extends BaseVariableType {
         return {
             statement: this.statement,
             types: {},
-            variables: Object.fromEntries(Object.entries(this.properties_).map(([k, v]) => [k, {
+            variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
                     type: v[0],
                     get value() { return instance.properties[k]; },
                     set value(value) { instance.properties[k] = value; },

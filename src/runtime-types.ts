@@ -302,7 +302,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public initialized: Init,
 		public statement: ClassStatement,
 		/** Stores regular and inherited properties. */
-		public properties_: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = {},
+		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = {},
 		/** Does not store inherited methods. */
 		public ownMethods: Record<string, ClassMethodData> = {},
 		public allMethods: Record<string, [source:ClassVariableType<Init>, data:ClassMethodData]> = {},
@@ -312,7 +312,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		for(const statement of this.propertyStatements){
 			const type = runtime.resolveVariableType(statement.varType);
 			for(const [name] of statement.variables){
-				this.properties_[name][0] = type;
+				this.properties[name][0] = type;
 			}
 		}
 		(this as ClassVariableType<true>).initialized = true;
@@ -343,7 +343,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		//Initialize properties
 		const This = this as ClassVariableType<true>;
 		const data:VariableTypeMapping<ClassVariableType> = {
-			properties: Object.fromEntries(Object.entries(This.properties_).map(([k, v]) => [k,
+			properties: Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k,
 				v[0].getInitValue(runtime, false)
 			])) as Record<string, VariableValue>,
 			type: This
@@ -359,7 +359,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		return {
 			statement: this.statement,
 			types: {},
-			variables: Object.fromEntries(Object.entries(this.properties_).map(([k, v]) => [k, {
+			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
 				type: v[0],
 				get value(){return instance.properties[k];},
 				set value(value){instance.properties[k] = value;},

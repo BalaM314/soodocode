@@ -197,10 +197,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         }
                     }
                     else if (variable.type instanceof ClassVariableType) {
-                        const propertyStatement = variable.type.properties_[property][1] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+                        const propertyStatement = variable.type.properties[property][1] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                         if (propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type))
                             fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                        const outputType = variable.type.properties_[property][0];
+                        const outputType = variable.type.properties[property][0];
                         if (arg2 == "variable") {
                             return {
                                 type: outputType,
@@ -258,7 +258,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                             return { method, instance: classInstance, clazz };
                         }
                         else {
-                            const propertyStatement = objType.properties_[property][1] ?? (classType.properties_[property]
+                            const propertyStatement = objType.properties[property][1] ?? (classType.properties[property]
                                 ? fail(f.quote `Property ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
 but the type of the variable is ${objType.fmtPlain()}.
@@ -266,7 +266,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                                 : fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
                             if (propertyStatement.accessModifier == "private" && !this.canAccessClass(objType))
                                 fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                            const outputType = objType.properties_[property][0];
+                            const outputType = objType.properties[property][0];
                             const value = obj.properties[property];
                             if (value === null)
                                 fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
@@ -724,7 +724,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 if (type instanceof ClassVariableType)
                     return {
                         properties: Object.fromEntries(Object.entries(value.properties)
-                            .map(([k, v]) => [k, this.cloneValue(type.properties_[k][0], v)])),
+                            .map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v)])),
                         type: value.type
                     };
                 crash(f.quote `Cannot clone value of type ${type}`);
