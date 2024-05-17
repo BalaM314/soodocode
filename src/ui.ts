@@ -354,11 +354,17 @@ ${displayProgram(program)}`
 export function showRange(text:string, error:SoodocodeError):string {
 	if(!error.rangeGeneral && !error.rangeSpecific) return ``; //can't show anything
 	
-	//Move back the range if it only contains a newline, or nothing
-	if(error.rangeSpecific && error.rangeSpecific[1] - error.rangeSpecific[0] == 1){
-		const specificText = text.slice(...error.rangeSpecific);
-		if(specificText == "" || specificText == "\n")
-		 error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
+	if(error.rangeSpecific){
+		if(error.rangeSpecific[0] == error.rangeSpecific[1]){
+			//Expand the range forward by one if it has a size of zero
+			error.rangeSpecific[1] ++;
+		}
+		if(error.rangeSpecific[1] - error.rangeSpecific[0] == 1){
+			//Move back the range if it only contains a newline, or nothing
+			const specificText = text.slice(...error.rangeSpecific);
+			if(specificText == "" || specificText == "\n")
+			 error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
+		}
 	}
 
 	if( //There is only one range, or the specific range is entirely inside the general range

@@ -317,10 +317,15 @@ ${displayProgram(program)}`;
 export function showRange(text, error) {
     if (!error.rangeGeneral && !error.rangeSpecific)
         return ``;
-    if (error.rangeSpecific && error.rangeSpecific[1] - error.rangeSpecific[0] == 1) {
-        const specificText = text.slice(...error.rangeSpecific);
-        if (specificText == "" || specificText == "\n")
-            error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
+    if (error.rangeSpecific) {
+        if (error.rangeSpecific[0] == error.rangeSpecific[1]) {
+            error.rangeSpecific[1]++;
+        }
+        if (error.rangeSpecific[1] - error.rangeSpecific[0] == 1) {
+            const specificText = text.slice(...error.rangeSpecific);
+            if (specificText == "" || specificText == "\n")
+                error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
+        }
     }
     if ((!error.rangeGeneral || !error.rangeSpecific || (error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]))) {
         const range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
