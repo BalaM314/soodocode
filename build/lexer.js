@@ -1,4 +1,4 @@
-import { Symbol, Token, TokenList } from "./lexer-types.js";
+import { Symbol, Token, RangeArray } from "./lexer-types.js";
 import { access, crash, f, fail, impossible } from "./utils.js";
 export const symbolTypeData = [
     [/<-{1,2}/, "operator.assignment"],
@@ -325,7 +325,7 @@ export function tokenize(input) {
         fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1).rangeAfter());
     return {
         program: input.program,
-        tokens: tokens.length > 0 ? new TokenList(tokens) : new TokenList(tokens, [0, Infinity])
+        tokens: tokens.length > 0 ? new RangeArray(tokens) : new RangeArray(tokens, [0, Infinity])
     };
     function write(type) {
         tokens.push(new Token(type, symbol.text, symbol.range.slice()));

@@ -7,7 +7,7 @@ This file contains the runtime, which executes the program AST.
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token } from "./lexer-types.js";
+import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
@@ -745,7 +745,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		} as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
-	assembleScope(func:ProcedureStatement | FunctionStatement, args:ExpressionASTNode[]){
+	assembleScope(func:ProcedureStatement | FunctionStatement, args:RangeArray<ExpressionAST>){
 		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
 		const scope:VariableScope = {
 			statement: func,
@@ -777,7 +777,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		return scope;
 	}
-	callFunction<T extends boolean>(funcNode:FunctionData, args:ExpressionAST[], requireReturnValue?:T):VariableValue | (T extends false ? null : never) {
+	callFunction<T extends boolean>(funcNode:FunctionData, args:RangeArray<ExpressionAST>, requireReturnValue?:T):VariableValue | (T extends false ? null : never) {
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
@@ -792,7 +792,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return output.value;
 		}
 	}
-	callClassMethod<T extends boolean>(method:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:ExpressionAST[], requireReturnValue?:T):(
+	callClassMethod<T extends boolean>(method:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:RangeArray<ExpressionAST>, requireReturnValue?:T):(
 		T extends false ? null :
 		T extends undefined ? [type:VariableType, value:VariableValue] | null :
 		T extends true ? [type:VariableType, value:VariableValue] :
@@ -817,7 +817,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`, undefined)) as never;
 		}
 	}
-	callBuiltinFunction(fn:BuiltinFunctionData, args:ExpressionAST[], returnType?:VariableType):[type:VariableType, value:VariableValue] {
+	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):[type:VariableType, value:VariableValue] {
 		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`, undefined);
 		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const evaluatedArgs:[VariableValue, TextRange][] = [];

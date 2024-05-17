@@ -1,21 +1,21 @@
-import { Token, TokenList, TokenType } from "./lexer-types.js";
+import { Token, RangeArray, TokenType } from "./lexer-types.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
 import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
-export declare function getText(tokens: TokenList): string;
+export declare function getText(tokens: RangeArray<Token>): string;
 export declare function displayTokenMatcher(input: TokenMatcher): string;
 export declare function applyRangeTransformers(text: string, ranges: [range: TextRange, start: string, end: string, transformer?: (rangeText: string) => string][]): string;
 export declare function separateArray<T, S extends T>(arr: T[], predicate: (item: T) => item is S): [true: S[], false: T[]];
 export declare function separateArray<T>(arr: T[], predicate: (item: T) => boolean): [true: T[], false: T[]];
 export declare function splitArray<T>(arr: T[], split: [T] | ((item: T, index: number, array: T[]) => boolean)): T[][];
-export declare function splitTokens(arr: TokenList, split: TokenType): TokenList[];
-export declare function splitTokensWithSplitter(arr: TokenList, split: TokenType): {
-    group: TokenList;
+export declare function splitTokens(arr: RangeArray<Token>, split: TokenType): RangeArray<Token>[];
+export declare function splitTokensWithSplitter(arr: RangeArray<Token>, split: TokenType): {
+    group: RangeArray<Token>;
     splitter?: Token;
 }[];
-export declare function splitTokensOnComma(arr: TokenList): TokenList[];
-export declare function findLastNotInGroup(arr: TokenList, target: TokenType): number | null;
-export declare function getUniqueNamesFromCommaSeparatedTokenList(tokens: TokenList, nextToken?: Token, validNames?: TokenType[]): TokenList;
+export declare function splitTokensOnComma(arr: RangeArray<Token>): RangeArray<Token>[];
+export declare function findLastNotInGroup(arr: RangeArray<Token>, target: TokenType): number | null;
+export declare function getUniqueNamesFromCommaSeparatedTokenList(tokens: RangeArray<Token>, nextToken?: Token, validNames?: TokenType[]): RangeArray<Token>;
 export declare function getTotalRange(tokens: (TextRanged | TextRange)[]): TextRange;
 export declare function isRange(input: unknown): input is TextRange;
 export declare function getRange(input: TextRangeLike): TextRange;

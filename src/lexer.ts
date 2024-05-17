@@ -8,7 +8,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
-import { Symbol, SymbolType, SymbolizedProgram, Token, TokenList, TokenType, TokenizedProgram } from "./lexer-types.js";
+import { Symbol, SymbolType, SymbolizedProgram, Token, RangeArray, TokenType, TokenizedProgram } from "./lexer-types.js";
 import { TextRange } from "./types.js";
 import { access, crash, f, fail, impossible } from "./utils.js";
 
@@ -324,7 +324,7 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 	if(state.decimalNumber == "requireNumber") fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1)!.rangeAfter());
 	return {
 		program: input.program,
-		tokens: tokens.length > 0 ? new TokenList(tokens) : new TokenList(tokens, [0, Infinity])
+		tokens: tokens.length > 0 ? new RangeArray<Token>(tokens) : new RangeArray<Token>(tokens, [0, Infinity])
 	};
 
 	function write(type:TokenType){

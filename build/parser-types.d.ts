@@ -1,4 +1,4 @@
-import type { Token, TokenList, TokenType } from "./lexer-types.js";
+import type { Token, RangeArray, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 export type ExpressionAST = ExpressionASTNode;
@@ -7,40 +7,40 @@ export type ExpressionASTLeafNode = Token;
 export declare class ExpressionASTBranchNode implements TextRanged, IFormattable {
     operatorToken: Token;
     operator: Operator;
-    nodes: ExpressionASTNode[];
-    allTokens: TokenList;
+    nodes: RangeArray<ExpressionAST>;
+    allTokens: RangeArray<Token>;
     range: TextRange;
-    constructor(operatorToken: Token, operator: Operator, nodes: ExpressionASTNode[], allTokens: TokenList);
+    constructor(operatorToken: Token, operator: Operator, nodes: RangeArray<ExpressionAST>, allTokens: RangeArray<Token>);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
 }
 export declare class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
     functionName: ExpressionASTLeafNode | ExpressionASTBranchNode;
-    args: ExpressionASTNode[];
-    allTokens: TokenList;
+    args: RangeArray<ExpressionAST>;
+    allTokens: RangeArray<Token>;
     range: TextRange;
-    constructor(functionName: ExpressionASTLeafNode | ExpressionASTBranchNode, args: ExpressionASTNode[], allTokens: TokenList);
+    constructor(functionName: ExpressionASTLeafNode | ExpressionASTBranchNode, args: RangeArray<ExpressionAST>, allTokens: RangeArray<Token>);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
 }
 export declare class ExpressionASTClassInstantiationNode implements TextRanged {
     className: Token;
-    args: ExpressionASTNode[];
-    allTokens: TokenList;
+    args: RangeArray<ExpressionAST>;
+    allTokens: RangeArray<Token>;
     range: TextRange;
-    constructor(className: Token, args: ExpressionASTNode[], allTokens: TokenList);
+    constructor(className: Token, args: RangeArray<ExpressionAST>, allTokens: RangeArray<Token>);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
 }
 export declare class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
     target: ExpressionASTNode;
-    indices: ExpressionASTNode[];
-    allTokens: TokenList;
+    indices: RangeArray<ExpressionAST>;
+    allTokens: RangeArray<Token>;
     range: TextRange;
-    constructor(target: ExpressionASTNode, indices: ExpressionASTNode[], allTokens: TokenList);
+    constructor(target: ExpressionASTNode, indices: RangeArray<ExpressionAST>, allTokens: RangeArray<Token>);
     toString(): string;
     fmtText(): string;
     fmtDebug(): string;
@@ -48,9 +48,9 @@ export declare class ExpressionASTArrayAccessNode implements TextRanged, IFormat
 export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
     lengthInformation: [low: Token, high: Token][] | null;
     elementType: Token;
-    allTokens: TokenList;
+    allTokens: RangeArray<Token>;
     range: TextRange;
-    constructor(lengthInformation: [low: Token, high: Token][] | null, elementType: Token, allTokens: TokenList);
+    constructor(lengthInformation: [low: Token, high: Token][] | null, elementType: Token, allTokens: RangeArray<Token>);
     fmtText(): string;
     fmtDebug(): string;
 }

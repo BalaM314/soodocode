@@ -1,4 +1,4 @@
-import { TokenList } from "./lexer-types.js";
+import { RangeArray } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
@@ -153,7 +153,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
         const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
         fail(f.quote `Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
     }
-    return new TokenList(names);
+    return new RangeArray(names);
 }
 export function getTotalRange(tokens) {
     if (tokens.length == 0)
@@ -168,6 +168,8 @@ export function getRange(input) {
         return input;
     if (isRange(input))
         return input;
+    if (input instanceof RangeArray)
+        return input.range;
     if (Array.isArray(input))
         return getTotalRange(input);
     if (typeof input.range == "function")

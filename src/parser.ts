@@ -8,7 +8,7 @@ which is the preferred representation of the program.
 */
 
 
-import { Token, TokenizedProgram, TokenList, TokenType } from "./lexer-types.js";
+import { Token, TokenizedProgram, RangeArray, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
@@ -18,7 +18,7 @@ import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLas
 
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
-export const parseFunctionArguments = errorBoundary()((tokens:TokenList):FunctionArguments => {
+export const parseFunctionArguments = errorBoundary()((tokens:RangeArray<Token>):FunctionArguments => {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
@@ -84,7 +84,7 @@ export const processTypeData = errorBoundary()((typeNode:ExpressionASTTypeNode):
 	} else return ArrayVariableType.from(typeNode);
 });
 
-export const parseType = errorBoundary()((tokens:TokenList):ExpressionASTTypeNode => {
+export const parseType = errorBoundary()((tokens:RangeArray<Token>):ExpressionASTTypeNode => {
 	if(tokens.length == 0) crash(`Cannot parse empty type`);
 	//Builtin or reference to user defined type
 	if(checkTokens(tokens, ["name"])) return tokens[0];
@@ -121,7 +121,7 @@ export const parseType = errorBoundary()((tokens:TokenList):ExpressionASTTypeNod
 	fail(f.quote`Cannot parse type from ${tokens}`, tokens);
 });
 
-export function splitTokensToStatements(tokens:TokenList):TokenList[] {
+export function splitTokensToStatements(tokens:RangeArray<Token>):RangeArray<Token>[] {
 	const statementData:[statement:typeof Statement, length:number][] = [
 		[CaseBranchStatement, 2],
 		[CaseBranchStatement, 3],
@@ -139,7 +139,7 @@ export function splitTokensToStatements(tokens:TokenList):TokenList[] {
 }
 
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
-	const lines:TokenList[] = splitTokensToStatements(tokens);
+	const lines:RangeArray<Token>[] = splitTokensToStatements(tokens);
 	const programNodes:ProgramASTNode[] = [];
 	function getActiveBuffer(){
 		if(blockStack.length == 0) return programNodes;
@@ -184,7 +184,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	};
 }
 
-export function getPossibleStatements(tokens:TokenList, context:ProgramASTBranchNode | null):[
+export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null):[
 	definitions: (typeof Statement)[],
 	error: ((valid:typeof Statement) => never) | null,
 ]{
@@ -216,18 +216,18 @@ export function getPossibleStatements(tokens:TokenList, context:ProgramASTBranch
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary()((tokens:TokenList, context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
+export const parseStatement = errorBoundary()((tokens:RangeArray<Token>, context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement => {
 	if(tokens.length < 1) crash("Empty statement");
 	const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
 		if(Array.isArray(result)){
-			const [out, err] = tryRun(() => new possibleStatement(result.map(x =>
+			const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(x =>
 				x instanceof Token
 					? x
 					: (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))
-			)));
+			))));
 			if(out){
 				if(statementError)
 					statementError(possibleStatement);
@@ -273,11 +273,11 @@ export function isLiteral(type:TokenType){
 type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
 type StatementCheckFailResult = { message: string; priority: number; range: TextRange | null; };
 /**
- * Checks if a TokenList is valid for a statement type. If it is, it returns the information needed to construct the statement.
+ * Checks if a RangeArray<Token> is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
  * `input` must not be empty.
  */
-export const checkStatement = errorBoundary()((statement:typeof Statement, input:TokenList, allowRecursiveCall:boolean):
+export const checkStatement = errorBoundary()((statement:typeof Statement, input:RangeArray<Token>, allowRecursiveCall:boolean):
 	StatementCheckFailResult | StatementCheckTokenRange[] => {
 	//TODO rewrite to use modified wagner-fischer for best detection
 
@@ -367,7 +367,7 @@ function getMessage(expected:TokenMatcher, found:Token){
 
 	return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
 }
-export function checkTokens(tokens:TokenList, input:TokenMatcher[]):boolean {
+export function checkTokens(tokens:RangeArray<Token>, input:TokenMatcher[]):boolean {
 	return Array.isArray(checkStatement(fakeObject<typeof Statement>({
 		tokens: input,
 		category: undefined,
@@ -396,7 +396,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `
-})((input:TokenList, recursive = false):ExpressionASTNode => {
+})((input:RangeArray<Token>, recursive = false):ExpressionASTNode => {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
@@ -465,7 +465,7 @@ export const parseExpression = errorBoundary({
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						[parseExpression(right, true)],
+						new RangeArray([parseExpression(right, true)]),
 						input
 					);
 				} else if(operator.type.startsWith("unary_postfix")){
@@ -480,7 +480,7 @@ export const parseExpression = errorBoundary({
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						[parseExpression(left, true)],
+						new RangeArray([parseExpression(left, true)]),
 						input
 					);
 				} else {
@@ -504,7 +504,7 @@ export const parseExpression = errorBoundary({
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						[parseExpression(left, true), parseExpression(right, true)],
+						new RangeArray([parseExpression(left, true), parseExpression(right, true)]),
 						input
 					);
 				}
@@ -541,9 +541,12 @@ export const parseExpression = errorBoundary({
 	if(input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close"){
 		return new ExpressionASTClassInstantiationNode(
 			input[1],
-			input.length == 4
-				? [] //If there are no arguments, don't generate a blank argument group
-				: splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)),
+			new RangeArray(
+				input.length == 4
+					? [] //If there are no arguments, don't generate a blank argument group
+					: splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)),
+				input.length == 4 ? input.slice(3, -1).range : undefined
+			),
 			input
 		);
 	}
@@ -558,9 +561,12 @@ export const parseExpression = errorBoundary({
 		if(parsedTarget instanceof Token || parsedTarget instanceof ExpressionASTBranchNode)
 			return new ExpressionASTFunctionCallNode(
 				parsedTarget,
-				indicesTokens.length == 0
-					? [] //If there are no arguments, don't generate a blank argument group
-					: splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
+				new RangeArray(
+					indicesTokens.length == 0
+						? [] //If there are no arguments, don't generate a blank argument group
+						: splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
+					indicesTokens.length == 0 ? indicesTokens.range : undefined
+				),
 				input
 			);
 		else fail(f.quote`${parsedTarget} is not a valid function name, function names must be a single token, or the result of a property access`, parsedTarget);
@@ -582,7 +588,7 @@ export const parseExpression = errorBoundary({
 		const parsedTarget = parseExpression(target, true);
 		return new ExpressionASTArrayAccessNode(
 			parsedTarget,
-			splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)),
+			new RangeArray(splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true))),
 			input
 		);
 	}

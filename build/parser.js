@@ -1,4 +1,4 @@
-import { Token } from "./lexer-types.js";
+import { Token, RangeArray } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
@@ -203,9 +203,9 @@ export const parseStatement = errorBoundary()((tokens, context, allowRecursiveCa
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
         if (Array.isArray(result)) {
-            const [out, err] = tryRun(() => new possibleStatement(result.map(x => x instanceof Token
+            const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(x => x instanceof Token
                 ? x
-                : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1)))));
+                : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))))));
             if (out) {
                 if (statementError)
                     statementError(possibleStatement);
@@ -409,7 +409,7 @@ export const parseExpression = errorBoundary({
                         negativeNumber.text = input[i].text + negativeNumber.text;
                         return negativeNumber;
                     }
-                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(right, true)], input);
+                    return new ExpressionASTBranchNode(input[i], operator, new RangeArray([parseExpression(right, true)]), input);
                 }
                 else if (operator.type.startsWith("unary_postfix")) {
                     const left = input.slice(0, i);
@@ -420,7 +420,7 @@ export const parseExpression = errorBoundary({
                     }
                     if (left.length == 0)
                         fail(f.text `Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
-                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left, true)], input);
+                    return new ExpressionASTBranchNode(input[i], operator, new RangeArray([parseExpression(left, true)]), input);
                 }
                 else {
                     const left = input.slice(0, i);
@@ -443,7 +443,7 @@ export const parseExpression = errorBoundary({
                             continue;
                         }
                     }
-                    return new ExpressionASTBranchNode(input[i], operator, [parseExpression(left, true), parseExpression(right, true)], input);
+                    return new ExpressionASTBranchNode(input[i], operator, new RangeArray([parseExpression(left, true), parseExpression(right, true)]), input);
                 }
             }
         }
@@ -473,9 +473,9 @@ export const parseExpression = errorBoundary({
         }
     }
     if (input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
-        return new ExpressionASTClassInstantiationNode(input[1], input.length == 4
+        return new ExpressionASTClassInstantiationNode(input[1], new RangeArray(input.length == 4
             ? []
-            : splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)), input);
+            : splitTokensOnComma(input.slice(3, -1)).map(e => parseExpression(e, true)), input.length == 4 ? input.slice(3, -1).range : undefined), input);
     }
     const parenIndex = findLastNotInGroup(input, "parentheses.open");
     if (parenIndex != null && parenIndex > 0 && input.at(-1)?.type == "parentheses.close") {
@@ -485,9 +485,9 @@ export const parseExpression = errorBoundary({
             crash(`Missing function in function call expression`);
         const parsedTarget = parseExpression(target, true);
         if (parsedTarget instanceof Token || parsedTarget instanceof ExpressionASTBranchNode)
-            return new ExpressionASTFunctionCallNode(parsedTarget, indicesTokens.length == 0
+            return new ExpressionASTFunctionCallNode(parsedTarget, new RangeArray(indicesTokens.length == 0
                 ? []
-                : splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
+                : splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), indicesTokens.length == 0 ? indicesTokens.range : undefined), input);
         else
             fail(f.quote `${parsedTarget} is not a valid function name, function names must be a single token, or the result of a property access`, parsedTarget);
     }
@@ -502,7 +502,7 @@ export const parseExpression = errorBoundary({
         if (indicesTokens.length == 0)
             fail(`Missing indices in array index expression`, input[0].rangeAfter());
         const parsedTarget = parseExpression(target, true);
-        return new ExpressionASTArrayAccessNode(parsedTarget, splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true)), input);
+        return new ExpressionASTArrayAccessNode(parsedTarget, new RangeArray(splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true))), input);
     }
     if (error)
         error();

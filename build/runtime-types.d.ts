@@ -1,4 +1,4 @@
-import { Token } from "./lexer-types.js";
+import { RangeArray, Token } from "./lexer-types.js";
 import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
@@ -117,7 +117,7 @@ export declare class ClassVariableType extends BaseVariableType {
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
     inherits(other: ClassVariableType): boolean;
-    construct(runtime: Runtime, args: ExpressionASTNode[]): {
+    construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
         properties: {
             [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
                 [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;

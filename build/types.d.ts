@@ -7,6 +7,9 @@ export type TextRange = [start: number, end: number];
 export type TextRanged = {
     range: TextRange | (() => TextRange);
 };
+export type TextRanged2 = {
+    range: TextRange;
+};
 export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
 export type RangeAttached<T> = T & {
     range: TextRange;

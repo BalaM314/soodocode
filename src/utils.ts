@@ -5,14 +5,14 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { Token, TokenList, TokenType } from "./lexer-types.js";
+import { Token, RangeArray, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
 import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
 
 
-export function getText(tokens:TokenList){
+export function getText(tokens:RangeArray<Token>){
 	return tokens.map(t => t.text).join(" ");
 }
 
@@ -82,8 +82,8 @@ export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array
 	return output;
 }
 
-export function splitTokens(arr:TokenList, split:TokenType):TokenList[] {
-	const output:TokenList[] = [];
+export function splitTokens(arr:RangeArray<Token>, split:TokenType):RangeArray<Token>[] {
+	const output:RangeArray<Token>[] = [];
 	let lastBoundary = 0;
 	for(let i = 0; i <= arr.length; i ++){
 		if(i == arr.length || arr[i].type == split){
@@ -94,8 +94,8 @@ export function splitTokens(arr:TokenList, split:TokenType):TokenList[] {
 	return output;
 }
 
-export function splitTokensWithSplitter(arr:TokenList, split:TokenType):{ group:TokenList; splitter?:Token; }[]{
-	const output:{ group:TokenList; splitter?:Token; }[] = [];
+export function splitTokensWithSplitter(arr:RangeArray<Token>, split:TokenType):{ group:RangeArray<Token>; splitter?:Token; }[]{
+	const output:{ group:RangeArray<Token>; splitter?:Token; }[] = [];
 	let lastBoundary = 0;
 	for(let i = 0; i <= arr.length; i ++){
 		if(i == arr.length || arr[i].type == split){
@@ -109,8 +109,8 @@ export function splitTokensWithSplitter(arr:TokenList, split:TokenType):{ group:
 	return output;
 }
 
-export function splitTokensOnComma(arr:TokenList):TokenList[] {
-	const output:TokenList[] = [];
+export function splitTokensOnComma(arr:RangeArray<Token>):RangeArray<Token>[] {
+	const output:RangeArray<Token>[] = [];
 	let lastBoundary = 0;
 	let parenNestLevel = 0, bracketNestLevel = 0;
 	for(const [i, token] of arr.entries()){
@@ -128,7 +128,7 @@ export function splitTokensOnComma(arr:TokenList):TokenList[] {
 	return output;
 }
 
-export function findLastNotInGroup(arr:TokenList, target:TokenType):number | null {
+export function findLastNotInGroup(arr:RangeArray<Token>, target:TokenType):number | null {
 	let parenNestLevel = 0, bracketNestLevel = 0;
 	for(const [i, token] of [...arr.entries()].reverse()){
 		if(token.type == "parentheses.open") parenNestLevel ++;
@@ -141,7 +141,7 @@ export function findLastNotInGroup(arr:TokenList, target:TokenType):number | nul
 	return null;
 }
 
-export function getUniqueNamesFromCommaSeparatedTokenList(tokens:TokenList, nextToken?:Token, validNames:TokenType[] = ["name"]):TokenList {
+export function getUniqueNamesFromCommaSeparatedTokenList(tokens:RangeArray<Token>, nextToken?:Token, validNames:TokenType[] = ["name"]):RangeArray<Token> {
 	const names:Token[] = [];
 
 	let expected:"name" | "comma" = "name";
@@ -163,7 +163,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens:TokenList, next
 		const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
 		fail(f.quote`Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
 	}
-	return new TokenList(names);
+	return new RangeArray<Token>(names);
 }
 
 export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {

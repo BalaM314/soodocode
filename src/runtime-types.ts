@@ -5,8 +5,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
-import { Token } from "./lexer-types.js";
-import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import { RangeArray, Token } from "./lexer-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -307,7 +307,7 @@ export class ClassVariableType extends BaseVariableType {
 	inherits(other:ClassVariableType):boolean {
 		return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
 	}
-	construct(runtime:Runtime, args:ExpressionASTNode[]){
+	construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
 		//Initialize properties
 		const data:VariableTypeMapping<ClassVariableType> = {
 			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
