@@ -324,6 +324,15 @@ function formatText(input:Formattable):string {
 		return (input as IFormattable[]).map(formatText).join(" ");
 	} else return input.fmtText();
 }
+function formatShort(input:Formattable):string {
+	if(typeof input == "string") return input;
+	// eslint-disable-next-line @typescript-eslint/no-base-to-string
+	if(input instanceof String || input instanceof Number || input instanceof Boolean) return input.toString();
+	else if(Array.isArray(input)){
+		if(input[0] == "unresolved" && typeof input[1] == "string") return input[1];
+		return (input as IFormattable[]).map(formatShort).join(" ");
+	} else return input.fmtShort?.() ?? input.fmtText();
+}
 function formatQuoted(input:Formattable):string {
 	let str:string;
 	if(typeof input == "string") str = input;
@@ -348,6 +357,7 @@ function formatDebug(input:Formattable):string {
 }
 export const f = {
 	text: tagProcessor(formatText),
+	short: tagProcessor(formatShort),
 	quote: tagProcessor(formatQuoted),
 	debug: tagProcessor(formatDebug),
 };

@@ -34,6 +34,8 @@ export interface IFormattable {
 	/** If not implemented, defaults to `"${fmtText()}"` */
 	fmtQuoted?: () => string;
 	fmtText():string;
+	/** If not implemented, defaults to fmtText() */
+	fmtShort?: () => string;
 }
 
 /** Makes the property K of T optional. */

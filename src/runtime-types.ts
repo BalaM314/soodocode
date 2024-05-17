@@ -89,6 +89,9 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	fmtText(){
 		return this.name;
 	}
+	fmtShort(){
+		return this.name;
+	}
 	is<T extends PrimitiveVariableTypeName>(...type:T[]):this is PrimitiveVariableType<T> {
 		return (type as PrimitiveVariableTypeName[]).includes(this.name);
 	}
@@ -139,6 +142,10 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			this.elementType = runtime.resolveVariableType(this.elementType);
 	}
 	fmtText():string {
+		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
+		return f.text`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
+	}
+	fmtShort():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
 		return f.text`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
@@ -198,6 +205,9 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 	fmtText(){
 		return `${this.name} (user-defined record type)`;
 	}
+	fmtShort():string {
+		return this.name;
+	}
 	fmtQuoted(){
 		return `"${this.name}" (user-defined record type)`;
 	}
@@ -222,13 +232,16 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		(this as PointerVariableType<true>).initialized = true;
 	}
 	fmtText():string {
-		return f.text`${this.name} (user-defined pointer type ^${this.target})`;
+		return f.short`${this.name} (user-defined pointer type ^${this.target})`;
+	}
+	fmtShort():string {
+		return this.name;
 	}
 	fmtQuoted():string {
 		return f.text`"${this.name}" (user-defined pointer type ^${this.target})`;
 	}
 	fmtDebug():string {
-		return f.debug`PointerVariableType [${this.name}] to "${this.target}"`;
+		return f.short`PointerVariableType [${this.name}] to "${this.target}"`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
@@ -242,6 +255,9 @@ export class EnumeratedVariableType extends BaseVariableType {
 	init(){}
 	fmtText(){
 		return `${this.name} (user-defined enumerated type)`;
+	}
+	fmtShort():string {
+		return this.name;
 	}
 	fmtQuoted(){
 		return `"${this.name}" (user-defined enumerated type)`;
@@ -265,6 +281,9 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	}
 	fmtText():string {
 		return f.text`${this.name} (user-defined set type containing "${this.baseType}")`;
+	}
+	fmtShort():string {
+		return this.name;
 	}
 	toQuotedString():string {
 		return f.text`"${this.name}" (user-defined set type containing "${this.baseType}")`;
@@ -290,6 +309,9 @@ export class ClassVariableType extends BaseVariableType {
 	init(){}
 	fmtText(){
 		return f.text`${this.name} (user-defined class type)`;
+	}
+	fmtShort():string {
+		return this.name;
 	}
 	fmtPlain(){
 		return this.name;
