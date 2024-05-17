@@ -17,14 +17,17 @@ import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, 
 //TODO: fix coercion
 //CONFIG: array initialization
 
-export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType):boolean {
+export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType, types = new Set<VariableType>()):boolean {
 	return a == b ||
 		(Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
 		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (
 			a.elementType == b.elementType ||
 			Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1]
 		)) ||
-		(a instanceof PointerVariableType && b instanceof PointerVariableType && typesEqual(a.target, b.target)) ||
+		(a instanceof PointerVariableType && b instanceof PointerVariableType && (
+			types.has(a) || //Prevent infinite recursion on infinite pointer types
+			typesEqual(a.target, b.target, types.add(a))
+		)) ||
 		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
 	;
 }
