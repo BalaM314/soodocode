@@ -235,9 +235,9 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					(variable.value as Record<string, unknown>)[property] = this.evaluateExpr(value, outputType)[1];
 				}
 			} else if(variable.type instanceof ClassVariableType){
-				const propertyStatement = variable.type.properties[property] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+				const propertyStatement = variable.type.properties_[property][1] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-				const outputType = this.resolveVariableType(propertyStatement.varType);
+				const outputType = variable.type.properties_[property][0];
 				if(arg2 == "variable"){ //overload 2
 					return {
 						type: outputType,
@@ -291,9 +291,9 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 						fail(f.quote`Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					return { method, instance: classInstance, clazz };
 				} else { //overload 1
-					const propertyStatement = objType.properties[property] ?? (
+					const propertyStatement = objType.properties_[property][1] ?? (
 						//No need to use the real type, properties cannot be overriden
-						classType.properties[property]
+						classType.properties_[property]
 							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
 `Property ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
@@ -302,7 +302,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 							expr.nodes[1])
 							: fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
 					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-					const outputType = this.resolveVariableType(propertyStatement.varType);
+					const outputType = objType.properties_[property][0];
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
 					if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
 					return this.finishEvaluation(value, outputType, type);
@@ -745,7 +745,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		) as VariableTypeMapping<RecordVariableType> as VariableTypeMapping<T>;
 		if(type instanceof ClassVariableType) return {
 			properties: Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).properties)
-				.map(([k, v]) => [k, this.cloneValue(this.resolveVariableType(type.properties[k].varType), v as VariableValue)])
+				.map(([k, v]) => [k, this.cloneValue(type.properties_[k][0], v as VariableValue)])
 			),
 			type: value.type
 		} as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;

@@ -302,13 +302,19 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public initialized: Init,
 		public statement: ClassStatement,
 		/** Stores regular and inherited properties. */
-		public properties: Record<string, ClassPropertyStatement> = {}, //TODO resolve variable types properly
+		public properties_: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = {},
 		/** Does not store inherited methods. */
 		public ownMethods: Record<string, ClassMethodData> = {},
 		public allMethods: Record<string, [source:ClassVariableType<Init>, data:ClassMethodData]> = {},
+		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
-	init(){
-
+	init(runtime:Runtime){
+		for(const statement of this.propertyStatements){
+			const type = runtime.resolveVariableType(statement.varType);
+			for(const [name] of statement.variables){
+				this.properties_[name][0] = type;
+			}
+		}
 		(this as ClassVariableType<true>).initialized = true;
 	}
 	fmtText(){
@@ -335,15 +341,16 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
 		//Initialize properties
+		const This = this as ClassVariableType<true>;
 		const data:VariableTypeMapping<ClassVariableType> = {
-			properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
-				runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+			properties: Object.fromEntries(Object.entries(This.properties_).map(([k, v]) => [k,
+				v[0].getInitValue(runtime, false)
 			])) as Record<string, VariableValue>,
-			type: this as ClassVariableType<true>
+			type: This
 		};
 
 		//Call constructor
-		const [clazz, method] = (this as ClassVariableType<true>).allMethods["NEW"]
+		const [clazz, method] = This.allMethods["NEW"]
 			?? fail(f.quote`No constructor was defined for class ${this.name}`, this.statement);
 		runtime.callClassMethod(method, clazz, data, args);
 		return data;
@@ -352,11 +359,11 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		return {
 			statement: this.statement,
 			types: {},
-			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
-				type: runtime.resolveVariableType(v.varType),
+			variables: Object.fromEntries(Object.entries(this.properties_).map(([k, v]) => [k, {
+				type: v[0],
 				get value(){return instance.properties[k];},
 				set value(value){instance.properties[k] = value;},
-				declaration: v,
+				declaration: v[1],
 				mutable: true,
 			} as VariableData]))
 		};

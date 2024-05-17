@@ -240,17 +240,24 @@ export class SetVariableType extends BaseVariableType {
     }
 }
 export class ClassVariableType extends BaseVariableType {
-    constructor(initialized, statement, properties = {}, ownMethods = {}, allMethods = {}) {
+    constructor(initialized, statement, properties_ = {}, ownMethods = {}, allMethods = {}, propertyStatements = []) {
         super();
         this.initialized = initialized;
         this.statement = statement;
-        this.properties = properties;
+        this.properties_ = properties_;
         this.ownMethods = ownMethods;
         this.allMethods = allMethods;
+        this.propertyStatements = propertyStatements;
         this.name = this.statement.name.text;
         this.baseClass = null;
     }
-    init() {
+    init(runtime) {
+        for (const statement of this.propertyStatements) {
+            const type = runtime.resolveVariableType(statement.varType);
+            for (const [name] of statement.variables) {
+                this.properties_[name][0] = type;
+            }
+        }
         this.initialized = true;
     }
     fmtText() {
@@ -275,13 +282,14 @@ export class ClassVariableType extends BaseVariableType {
         return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
     }
     construct(runtime, args) {
+        const This = this;
         const data = {
-            properties: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k,
-                runtime.resolveVariableType(v.varType).getInitValue(runtime, false)
+            properties: Object.fromEntries(Object.entries(This.properties_).map(([k, v]) => [k,
+                v[0].getInitValue(runtime, false)
             ])),
-            type: this
+            type: This
         };
-        const [clazz, method] = this.allMethods["NEW"]
+        const [clazz, method] = This.allMethods["NEW"]
             ?? fail(f.quote `No constructor was defined for class ${this.name}`, this.statement);
         runtime.callClassMethod(method, clazz, data, args);
         return data;
@@ -290,11 +298,11 @@ export class ClassVariableType extends BaseVariableType {
         return {
             statement: this.statement,
             types: {},
-            variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
-                    type: runtime.resolveVariableType(v.varType),
+            variables: Object.fromEntries(Object.entries(this.properties_).map(([k, v]) => [k, {
+                    type: v[0],
                     get value() { return instance.properties[k]; },
                     set value(value) { instance.properties[k] = value; },
-                    declaration: v,
+                    declaration: v[1],
                     mutable: true,
                 }]))
         };

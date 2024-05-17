@@ -402,7 +402,7 @@ export function statement<T extends keyof typeof statementCreators>(statementNam
 
 export function classType(
 	statement: ClassStatement,
-	properties: Record<string, ClassPropertyStatement> = {},
+	properties: Record<string, [VariableType, ClassPropertyStatement]> = {},
 	ownMethods: Record<string, _ProgramASTBranchNode> = {},
 	allMethods?: Record<string, [ClassVariableType, ClassMethodData]>,
 ){

@@ -111,13 +111,14 @@ export declare class SetVariableType<Init extends boolean = true> extends BaseVa
 export declare class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
     statement: ClassStatement;
-    properties: Record<string, ClassPropertyStatement>;
+    properties_: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]>;
     ownMethods: Record<string, ClassMethodData>;
     allMethods: Record<string, [source: ClassVariableType<Init>, data: ClassMethodData]>;
+    propertyStatements: ClassPropertyStatement[];
     name: string;
     baseClass: ClassVariableType<Init> | null;
-    constructor(initialized: Init, statement: ClassStatement, properties?: Record<string, ClassPropertyStatement>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [source: ClassVariableType<Init>, data: ClassMethodData]>);
-    init(): void;
+    constructor(initialized: Init, statement: ClassStatement, properties_?: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [source: ClassVariableType<Init>, data: ClassMethodData]>, propertyStatements?: ClassPropertyStatement[]);
+    init(runtime: Runtime): void;
     fmtText(): string;
     fmtShort(): string;
     fmtPlain(): string;
