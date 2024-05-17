@@ -264,7 +264,7 @@ export class DeclareStatement extends Statement {
 		const varType = runtime.resolveVariableType(this.varType);
 		if(varType instanceof SetVariableType) fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.tokens.at(-1));
 		for(const [variable, token] of this.variables){
-			if(runtime.getVariable(variable)) fail(`Variable ${variable} was already declared`, token);
+			if(runtime.getCurrentScope().variables[variable]) fail(`Variable ${variable} was already declared`, token);
 			runtime.getCurrentScope().variables[variable] = {
 				type: varType,
 				value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),

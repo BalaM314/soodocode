@@ -270,7 +270,7 @@ let DeclareStatement = (() => {
             if (varType instanceof SetVariableType)
                 fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.tokens.at(-1));
             for (const [variable, token] of this.variables) {
-                if (runtime.getVariable(variable))
+                if (runtime.getCurrentScope().variables[variable])
                     fail(`Variable ${variable} was already declared`, token);
                 runtime.getCurrentScope().variables[variable] = {
                     type: varType,

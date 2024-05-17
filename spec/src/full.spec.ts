@@ -25,6 +25,26 @@ mostlyEmpty: [
 `,
 []
 ],
+output_basic: [
+`OUTPUT "Hello world!"`,
+["Hello world!"]
+],
+parse_declare: [
+`DECLARE x: INTEGER`,
+[]
+],
+declare_duplicate_illegal: [
+`DECLARE x: INTEGER
+DECLARE x: INTEGER`,
+"already declared"
+],
+declare_duplicate_legal: [
+`DECLARE x: INTEGER
+FOR i <- 1 TO 5
+	DECLARE x: INTEGER
+NEXT i`,
+[]
+], //TODO tests for functions leaking variables
 parse_invalid_expression_statement: [
 `2 + 2`,
 `Expected a statement, not an expression`
@@ -222,6 +242,20 @@ parse_function_complex_args_pass_mode: [
 	RETURN x + 1
 ENDFUNCTION`,
 []
+],
+run_function_recursive_declare: [
+`FUNCTION Factorial(x: INTEGER) RETURNS INTEGER
+DECLARE Random: INTEGER
+Random <- 10
+IF x <= 1 THEN
+	RETURN 1
+ENDIF
+RETURN x * Factorial(x - 1)
+ENDFUNCTION
+
+OUTPUT Factorial(5)
+`,
+["120"]
 ],
 record_type_blank: [
 `TYPE amogus
