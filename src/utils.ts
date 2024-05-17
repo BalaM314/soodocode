@@ -181,6 +181,7 @@ export function getRange(input?:TextRangeLike | null):TextRange | undefined | nu
 export function getRange(input?:TextRangeLike | null):TextRange | undefined | null {
 	if(!input) return input;
 	if(isRange(input)) return input;
+	if(input instanceof RangeArray) return input.range;
 	if(Array.isArray(input)) return getTotalRange(input);
 	if(typeof input.range == "function") return input.range();
 	else return input.range;
