@@ -100,7 +100,7 @@ export class Token {
         return [this.range[1], this.range[1] + 1];
     }
 }
-export class TokenList extends Array {
+export class RangeArray extends Array {
     constructor(arg0, range) {
         if (typeof arg0 == "number") {
             super(arg0);
@@ -122,10 +122,10 @@ export class TokenList extends Array {
                 const rangeEnd = this.at(end)?.range[0] ?? this.range[1];
                 range = [rangeStart, rangeEnd];
             }
-            return new TokenList(arr, range);
+            return new RangeArray(arr, range);
         }
         else {
-            return new TokenList(arr);
+            return new RangeArray(arr);
         }
     }
     map(fn) {

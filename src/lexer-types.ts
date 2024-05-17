@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains types for the lexer, such as Symbol and Token.
 */
 
-import type { IFormattable, TextRange, TextRangeLike, TextRanged } from "./types.js";
+import type { IFormattable, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
 import { crash, getRange, getTotalRange, impossible } from "./utils.js";
 
 export const symbolTypes = [
@@ -31,7 +31,7 @@ export type SymbolizedProgram = {
 
 export type TokenizedProgram = {
 	program: string;
-	tokens: TokenList;
+	tokens: RangeArray<Token>;
 }
 
 /** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
@@ -127,12 +127,12 @@ export class Token implements TextRanged, IFormattable {
 		return [this.range[1], this.range[1] + 1];
 	}
 }
-export class TokenList extends Array<Token> implements TextRanged {
+export class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
 	range:TextRange;
 	// constructor(length:number);
-	constructor(tokens:Token[], range?:TextRange);
+	constructor(tokens:T[], range?:TextRange);
 	/** range must be specified if the array is empty */
-	constructor(arg0:number | Token[], range?:TextRange){
+	constructor(arg0:number | T[], range?:TextRange){
 		if(typeof arg0 == "number"){
 			super(arg0);
 			this.range = null!;
@@ -141,7 +141,7 @@ export class TokenList extends Array<Token> implements TextRanged {
 			this.range = range ?? getTotalRange(arg0);
 		}
 	}
-	slice(start:number = 0, end:number = this.length):TokenList {
+	slice(start:number = 0, end:number = this.length):RangeArray<T> {
 		const arr = super.slice(start, end);
 		if(arr.length == 0){
 			//Determine the range
@@ -158,12 +158,12 @@ export class TokenList extends Array<Token> implements TextRanged {
 				const rangeEnd = this.at(end)?.range[0] ?? this.range[1];
 				range = [rangeStart, rangeEnd];
 			}
-			return new TokenList(arr, range);
+			return new RangeArray<T>(arr, range);
 		} else {
-			return new TokenList(arr);
+			return new RangeArray<T>(arr);
 		}
 	}
-	map<U>(fn:(v:Token, i:number, a:Token[]) => U):U[] {
+	map<U>(fn:(v:T, i:number, a:T[]) => U):U[] {
 		return [...this].map(fn);
 	}
 }
