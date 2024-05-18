@@ -17,7 +17,7 @@ import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, 
 //TODO: fix coercion
 //CONFIG: array initialization
 
-export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType, types = new Set<VariableType>()):boolean {
+export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType, types = new Array<[VariableType, VariableType]>()):boolean {
 	return a == b ||
 		(Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
 		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (
@@ -25,8 +25,8 @@ export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableTy
 			Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1]
 		)) ||
 		(a instanceof PointerVariableType && b instanceof PointerVariableType && (
-			types.has(a) || //Prevent infinite recursion on infinite pointer types
-			typesEqual(a.target, b.target, types.add(a))
+			types.some(([_a, _b]) => a == _a && b == _b) || //Prevent infinite recursion on infinite pointer types
+			typesEqual(a.target, b.target, types.concat([[a, b]]))
 		)) ||
 		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
 	;
@@ -46,7 +46,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 				Array.isArray(base.elementType) && Array.isArray(ext.elementType) && base.elementType[1] == ext.elementType[1]
 			)
 		)) ||
-		(base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
+		(base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) || //pointers are invariant on T
 		(base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
 		(base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base))
 	;

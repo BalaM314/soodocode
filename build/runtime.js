@@ -38,13 +38,13 @@ import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, Expr
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
-export function typesEqual(a, b, types = new Set()) {
+export function typesEqual(a, b, types = new Array()) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
         (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.elementType == b.elementType ||
             Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1])) ||
-        (a instanceof PointerVariableType && b instanceof PointerVariableType && (types.has(a) ||
-            typesEqual(a.target, b.target, types.add(a)))) ||
+        (a instanceof PointerVariableType && b instanceof PointerVariableType && (types.some(([_a, _b]) => a == _a && b == _b) ||
+            typesEqual(a.target, b.target, types.concat([[a, b]])))) ||
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
 }
 export function typesAssignable(base, ext) {
@@ -102,12 +102,12 @@ export class Files {
     }
 }
 let Runtime = (() => {
-    var _a;
+    var _c;
     let _instanceExtraInitializers = [];
     let _processArrayAccess_decorators;
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
-    return _a = class Runtime {
+    return _c = class Runtime {
             constructor(_input, _output) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
@@ -552,11 +552,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             static evaluateToken(token, type) {
                 try {
                     return this.prototype.evaluateToken.call(new Proxy({}, {
-                        get() { throw new _a.NotStaticError(); },
+                        get() { throw new _c.NotStaticError(); },
                     }), token, type);
                 }
                 catch (err) {
-                    if (err instanceof _a.NotStaticError)
+                    if (err instanceof _c.NotStaticError)
                         fail(f.quote `Cannot evaluate token ${token} in a static context`, token);
                     else
                         throw err;
@@ -902,13 +902,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     predicate: (_expr, _type, recursive) => !recursive,
                     message: () => `Cannot evaluate expression $rc: `
                 })];
-            __esDecorate(_a, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(_a, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(_a, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
-            if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            __esDecorate(_c, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(_c, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(_c, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(_c, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         })(),
-        _a.NotStaticError = class extends Error {
+        _c.NotStaticError = class extends Error {
         },
-        _a;
+        _c;
 })();
 export { Runtime };
