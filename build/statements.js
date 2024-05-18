@@ -59,6 +59,7 @@ export const statementTypes = [
     "class_property",
     "class_procedure", "class_procedure.end",
     "class_function", "class_function.end",
+    "illegal.assignment",
 ];
 export function StatementType(input) {
     if (statementTypes.includes(input))
@@ -105,7 +106,7 @@ let Statement = (() => {
         static typeName(type = this.type) {
             if (!type)
                 crash(`Argument must be specified when calling typeName() on base Statement`);
-            return ({
+            return {
                 "declare": "DECLARE",
                 "define": "DEFINE",
                 "constant": "CONSTANT",
@@ -152,7 +153,7 @@ let Statement = (() => {
                 "class_procedure.end": "ENDPROCEDURE (class)",
                 "class_function": "Class function",
                 "class_function.end": "ENDFUNCTION (class)",
-            })[type];
+            }[type] ?? "unknown statement";
         }
         run(runtime) {
             crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -177,6 +178,7 @@ let Statement = (() => {
     _classThis.suppressErrors = false;
     _classThis.blockType = null;
     _classThis.allowOnly = null;
+    _classThis.invalidMessage = null;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -510,6 +512,28 @@ let AssignmentStatement = (() => {
     return AssignmentStatement = _classThis;
 })();
 export { AssignmentStatement };
+let AssignmentBadStatement = (() => {
+    let _classDecorators = [statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var AssignmentBadStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "AssignmentBadStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        AssignmentBadStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.invalidMessage = "Use the assignment operator (<-) to assign a value to a variable. The = sign is used to test for equality.";
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return AssignmentBadStatement = _classThis;
+})();
+export { AssignmentBadStatement };
 let OutputStatement = (() => {
     let _classDecorators = [statement("output", `OUTPUT "message"`, "keyword.output", ".+")];
     let _classDescriptor;

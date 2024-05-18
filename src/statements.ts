@@ -33,8 +33,10 @@ export const statementTypes = [
 	"class_property",
 	"class_procedure", "class_procedure.end",
 	"class_function", "class_function.end",
+	"illegal.assignment",
 ] as const;
 export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never
+export type LegalStatementType<T extends StatementType = StatementType> = T extends `illegal.${string}` ? never : T;
 export function StatementType(input:string):StatementType {
 	if(statementTypes.includes(input)) return input;
 	crash(`"${input}" is not a valid statement type`);
@@ -77,6 +79,10 @@ export class Statement implements TextRanged, IFormattable {
 	 * If set, only the specified statement classes will only be checked for in blocks of this statement. Make sure to add the end statement.
 	 **/
 	static allowOnly:Set<StatementType> | null = null;
+	/**
+	 * If set, this statement is invalid and will fail with the below error message if it parses successfully.
+	 */
+	static invalidMessage: string | null = null;
 	range: TextRange;
 	constructor(public tokens:RangeArray<Token | ExpressionAST | ExpressionASTArrayTypeNode>){
 		this.type = this.constructor as typeof Statement;
@@ -160,7 +166,7 @@ export class Statement implements TextRanged, IFormattable {
 			"class_procedure.end": "ENDPROCEDURE (class)",
 			"class_function": "Class function",
 			"class_function.end": "ENDFUNCTION (class)",
-		} satisfies Record<StatementType, string>)[type];
+		} satisfies Record<LegalStatementType, string> as Record<string, string | undefined>)[type] ?? "unknown statement";
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -400,6 +406,10 @@ export class AssignmentStatement extends Statement {
 		//CONFIG allow copying arrays/records by assignment?
 		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
 	}
+}
+@statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")
+export class AssignmentBadStatement extends Statement {
+	static invalidMessage = "Use the assignment operator (<-) to assign a value to a variable. The = sign is used to test for equality.";
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {

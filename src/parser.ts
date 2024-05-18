@@ -223,6 +223,7 @@ export const parseStatement = errorBoundary()((tokens:RangeArray<Token>, context
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
 		if(Array.isArray(result)){
+			if(possibleStatement.invalidMessage) fail(possibleStatement.invalidMessage, tokens);
 			const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(x =>
 				x instanceof Token
 					? x
