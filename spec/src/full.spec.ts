@@ -33,6 +33,29 @@ parse_declare: [
 `DECLARE x: INTEGER`,
 []
 ],
+run_unusual_assignment_operators: [
+`DECLARE x: INTEGER
+x <- 5
+x <-- 5
+x <‐ 5
+x <‑ 5
+x <‒ 5
+x <– 5
+x <— 5
+x <― 5
+x <‐‐ 5
+x <‑‑ 5
+x <‒‒ 5
+x <–– 5
+x <—— 5
+x <―― 5
+x \uF0AC 5
+x ← 5
+x ⇐ 5
+x ⇠ 5
+x ⇽ 5`,
+[]
+],
 declare_duplicate_illegal: [
 `DECLARE x: INTEGER
 DECLARE x: INTEGER`,

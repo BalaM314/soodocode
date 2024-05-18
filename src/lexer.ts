@@ -16,7 +16,7 @@ import { access, crash, f, fail, impossible } from "./utils.js";
 export const symbolTypeData: [
 	identifier: string | [SymbolSpecifierFuncName] | RegExp, symbol:SymbolType
 ][] = [
-	[/<-{1,2}/, "operator.assignment"],
+	[/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
 	[">=", "operator.greater_than_equal"],
 	["<=", "operator.less_than_equal"],
 	["<>", "operator.not_equal_to"],

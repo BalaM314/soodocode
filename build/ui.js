@@ -187,12 +187,6 @@ soodocodeInput.onkeydown = e => {
         e.preventDefault();
         executeSoodocode();
     }
-    const newText = soodocodeInput.value.replace(/[\uF0AC\u2190\u21D0\u21E0\u21FD]/g, "<-").replace(/[\u2010-\u2015]/g, "-");
-    if (soodocodeInput.value != newText) {
-        const start = soodocodeInput.selectionStart;
-        soodocodeInput.value = newText;
-        soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start;
-    }
 };
 dumpTokensButton.addEventListener("click", () => {
     try {
