@@ -849,6 +849,39 @@ animal <- NEW Animal("animal")
 DECLARE dog: Dog
 dog <- NEW Dog("doggy")
 DECLARE dogAnimal: Animal
+dogAnimal <- NEW Dog("doggy2")
+PROCEDURE test(arg:Animal)
+	OUTPUT arg.isSus()
+ENDPROCEDURE
+CALL test(animal)
+CALL test(dog)
+CALL test(dogAnimal)`,
+["TRUE", "FALSE", "FALSE"]
+],
+call_class_method_in_function_polymorphically_and_mutate_byref: [
+`CLASS Animal
+	PUBLIC Name: STRING
+	PUBLIC PROCEDURE NEW(name: STRING)
+		Name <- name
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		RETURN TRUE
+	ENDFUNCTION
+ENDCLASS
+CLASS Dog INHERITS Animal
+	PUBLIC PROCEDURE NEW(name: STRING)
+		CALL SUPER.NEW(name)
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		RETURN FALSE
+	ENDFUNCTION
+ENDCLASS
+
+DECLARE animal: Animal
+animal <- NEW Animal("animal")
+DECLARE dog: Dog
+dog <- NEW Dog("doggy")
+DECLARE dogAnimal: Animal
 dog <- NEW Dog("doggy2")
 PROCEDURE test(BYREF arg:Animal)
 	OUTPUT arg.isSus()
@@ -856,7 +889,7 @@ ENDPROCEDURE
 CALL test(animal)
 CALL test(dog)
 CALL test(dogAnimal)`,
-["TRUE", "FALSE", "FALSE"]
+`Cannot coerce BYREF`
 ],
 call_class_method_in_function_polymorphically_and_mutate_byval: [
 `CLASS Animal
