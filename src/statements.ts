@@ -624,6 +624,7 @@ export class ForStatement extends Statement {
 		for(let i = lower; i <= upper; i += step){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
+				opaque: false,
 				variables: {
 					//Set the loop variable in the loop scope
 					[this.name]: {
@@ -673,6 +674,7 @@ export class WhileStatement extends Statement {
 		while(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
+				opaque: false,
 				variables: {},
 				types: {},
 			});
@@ -688,6 +690,7 @@ export class DoWhileStatement extends Statement {
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
+				opaque: false,
 				variables: {},
 				types: {},
 			});

@@ -607,7 +607,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	 */
 	handleNonexistentType(name:string, range:TextRangeLike):never {
 		const allTypes:(readonly [string, VariableType])[] = [
-			...this.scopes.flatMap(s => Object.entries(s.types)),
+			...[...this.activeScopes()].flatMap(s => Object.entries(s.types)),
 			...PrimitiveVariableType.all.map(t => [t.name, t] as const)
 		];
 		if(PrimitiveVariableType.get(name.toUpperCase()))
@@ -639,7 +639,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}
 	handleNonexistentVariable(name:string, range:TextRangeLike):never {
 		const allVariables:string[] = [
-			...this.scopes.flatMap(s => Object.keys(s.variables)),
+			...[...this.activeScopes()].flatMap(s => Object.keys(s.variables)),
 		];
 		let found;
 		if((found =
@@ -649,30 +649,37 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		fail(f.quote`Variable ${name} does not exist`, range);
 	}
+	*activeScopes(){
+		for(let i = this.scopes.length - 1; i >= 0; i--){
+			yield this.scopes[i];
+			if(this.scopes[i].opaque && i > 1) i = 1; //skip to the global scope
+		}
+		return null;
+	}
 	/** Returned variable may not be initialized */
 	getVariable(name:string):VariableData | ConstantData | null {
-		for(let i = this.scopes.length - 1; i >= 0; i--){
-			if(this.scopes[i].variables[name]) return this.scopes[i].variables[name];
+		for(const scope of this.activeScopes()){
+			if(scope.variables[name]) return scope.variables[name];
 		}
 		return null;
 	}
 	getType(name:string):VariableType | null {
-		for(let i = this.scopes.length - 1; i >= 0; i--){
-			if(this.scopes[i].types[name]) return this.scopes[i].types[name];
+		for(const scope of this.activeScopes()){
+			if(scope.types[name]) return scope.types[name];
 		}
 		return null;
 	}
 	getEnumFromValue(name:string):EnumeratedVariableType | null {
-		for(let i = this.scopes.length - 1; i >= 0; i--){
-			const data = Object.values(this.scopes[i].types)
+		for(const scope of this.activeScopes()){
+			const data = Object.values(scope.types)
 				.find((data):data is EnumeratedVariableType => data instanceof EnumeratedVariableType && data.values.includes(name));
 			if(data) return data;
 		}
 		return null;
 	}
 	getPointerTypeFor(type:VariableType):PointerVariableType | null {
-		for(let i = this.scopes.length - 1; i >= 0; i--){
-			const data = Object.values(this.scopes[i].types)
+		for(const scope of this.activeScopes()){
+			const data = Object.values(scope.types)
 				.find((data):data is PointerVariableType => data instanceof PointerVariableType && typesEqual(data.target, type));
 			if(data) return data;
 		}
@@ -699,11 +706,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		} else return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}
 	getClass<T extends boolean = boolean>(name:string, range:TextRange):ClassVariableType<T> {
-		for(let i = this.scopes.length - 1; i >= 0; i--){
-			if(this.scopes[i].types[name]){
-				if(!(this.scopes[i].types[name] instanceof ClassVariableType))
-					fail(f.quote`Type ${name} is not a class, it is ${this.scopes[i].types[name]}`, range);
-				return this.scopes[i].types[name] as ClassVariableType<T>;
+		for(const scope of this.activeScopes()){
+			if(scope.types[name]){
+				if(!(scope.types[name] instanceof ClassVariableType))
+					fail(f.quote`Type ${name} is not a class, it is ${scope.types[name]}`, range);
+				return scope.types[name] as ClassVariableType<T>;
 			}
 		}
 		fail(f.quote`Class ${name} has not been defined.`, range);
@@ -757,6 +764,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
 		const scope:VariableScope = {
 			statement: func,
+			opaque: !(func instanceof ClassProcedureStatement || func instanceof ClassFunctionStatement),
 			variables: {},
 			types: {},
 		};
@@ -911,6 +919,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	runProgram(code:ProgramASTNode[]){
 		this.runBlock(code, {
 			statement: "global",
+			opaque: true,
 			variables: {},
 			types: {}
 		});

@@ -206,6 +206,7 @@ export type ClassMethodData = ProgramASTBranchNode & {
 });
 export type VariableScope = {
     statement: Statement | "global";
+    opaque: boolean;
     variables: Record<string, VariableData | ConstantData>;
     types: Record<string, VariableType>;
 };

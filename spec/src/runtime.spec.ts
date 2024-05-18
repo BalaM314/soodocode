@@ -1874,6 +1874,7 @@ describe("runtime's token evaluator", () => {
 			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
 				statement: "global",
+				opaque: true,
 				variables: {},
 				types: {}
 			});
@@ -1893,6 +1894,7 @@ describe("runtime's expression evaluator", () => {
 			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
 				statement: "global",
+				opaque: true,
 				variables: {},
 				types: {}
 			});
@@ -1915,6 +1917,7 @@ describe("runtime's statement executor", () => {
 			);
 			runtime.scopes.push({
 				statement: "global",
+				opaque: true,
 				variables: {},
 				types: {}
 			});

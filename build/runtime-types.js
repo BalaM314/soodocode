@@ -297,6 +297,7 @@ export class ClassVariableType extends BaseVariableType {
     getScope(runtime, instance) {
         return {
             statement: this.statement,
+            opaque: true,
             types: {},
             variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
                     type: v[0],

@@ -575,7 +575,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             handleNonexistentType(name, range) {
                 const allTypes = [
-                    ...this.scopes.flatMap(s => Object.entries(s.types)),
+                    ...[...this.activeScopes()].flatMap(s => Object.entries(s.types)),
                     ...PrimitiveVariableType.all.map(t => [t.name, t])
                 ];
                 if (PrimitiveVariableType.get(name.toUpperCase()))
@@ -605,7 +605,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             handleNonexistentVariable(name, range) {
                 const allVariables = [
-                    ...this.scopes.flatMap(s => Object.keys(s.variables)),
+                    ...[...this.activeScopes()].flatMap(s => Object.keys(s.variables)),
                 ];
                 let found;
                 if ((found =
@@ -614,23 +614,31 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 fail(f.quote `Variable ${name} does not exist`, range);
             }
-            getVariable(name) {
+            *activeScopes() {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
-                    if (this.scopes[i].variables[name])
-                        return this.scopes[i].variables[name];
+                    yield this.scopes[i];
+                    if (this.scopes[i].opaque && i > 1)
+                        i = 1;
+                }
+                return null;
+            }
+            getVariable(name) {
+                for (const scope of this.activeScopes()) {
+                    if (scope.variables[name])
+                        return scope.variables[name];
                 }
                 return null;
             }
             getType(name) {
-                for (let i = this.scopes.length - 1; i >= 0; i--) {
-                    if (this.scopes[i].types[name])
-                        return this.scopes[i].types[name];
+                for (const scope of this.activeScopes()) {
+                    if (scope.types[name])
+                        return scope.types[name];
                 }
                 return null;
             }
             getEnumFromValue(name) {
-                for (let i = this.scopes.length - 1; i >= 0; i--) {
-                    const data = Object.values(this.scopes[i].types)
+                for (const scope of this.activeScopes()) {
+                    const data = Object.values(scope.types)
                         .find((data) => data instanceof EnumeratedVariableType && data.values.includes(name));
                     if (data)
                         return data;
@@ -638,8 +646,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 return null;
             }
             getPointerTypeFor(type) {
-                for (let i = this.scopes.length - 1; i >= 0; i--) {
-                    const data = Object.values(this.scopes[i].types)
+                for (const scope of this.activeScopes()) {
+                    const data = Object.values(scope.types)
                         .find((data) => data instanceof PointerVariableType && typesEqual(data.target, type));
                     if (data)
                         return data;
@@ -667,11 +675,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
             }
             getClass(name, range) {
-                for (let i = this.scopes.length - 1; i >= 0; i--) {
-                    if (this.scopes[i].types[name]) {
-                        if (!(this.scopes[i].types[name] instanceof ClassVariableType))
-                            fail(f.quote `Type ${name} is not a class, it is ${this.scopes[i].types[name]}`, range);
-                        return this.scopes[i].types[name];
+                for (const scope of this.activeScopes()) {
+                    if (scope.types[name]) {
+                        if (!(scope.types[name] instanceof ClassVariableType))
+                            fail(f.quote `Type ${name} is not a class, it is ${scope.types[name]}`, range);
+                        return scope.types[name];
                     }
                 }
                 fail(f.quote `Class ${name} has not been defined.`, range);
@@ -735,6 +743,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     fail(f.quote `Incorrect number of arguments for function ${func.name}`, args);
                 const scope = {
                     statement: func,
+                    opaque: !(func instanceof ClassProcedureStatement || func instanceof ClassFunctionStatement),
                     variables: {},
                     types: {},
                 };
@@ -881,6 +890,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             runProgram(code) {
                 this.runBlock(code, {
                     statement: "global",
+                    opaque: true,
                     variables: {},
                     types: {}
                 });

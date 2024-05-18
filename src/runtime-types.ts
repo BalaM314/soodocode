@@ -358,6 +358,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	getScope(runtime:Runtime, instance:VariableTypeMapping<ClassVariableType>):VariableScope {
 		return {
 			statement: this.statement,
+			opaque: true,
 			types: {},
 			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
 				type: v[0],
@@ -464,6 +465,7 @@ export type ClassMethodData = ProgramASTBranchNode & {
 
 export type VariableScope = {
 	statement: Statement | "global";
+	opaque: boolean;
 	variables: Record<string, VariableData | ConstantData>;
 	types: Record<string, VariableType>;
 };

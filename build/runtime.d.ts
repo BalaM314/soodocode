@@ -76,6 +76,7 @@ export declare class Runtime {
     handleNonexistentType(name: string, range: TextRangeLike): never;
     handleNonexistentFunction(name: string, range: TextRangeLike): never;
     handleNonexistentVariable(name: string, range: TextRangeLike): never;
+    activeScopes(): Generator<VariableScope, null, unknown>;
     getVariable(name: string): VariableData | ConstantData | null;
     getType(name: string): VariableType | null;
     getEnumFromValue(name: string): EnumeratedVariableType | null;

@@ -896,6 +896,7 @@ let ForStatement = (() => {
             for (let i = lower; i <= upper; i += step) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
+                    opaque: false,
                     variables: {
                         [this.name]: {
                             declaration: this,
@@ -991,6 +992,7 @@ let WhileStatement = (() => {
             while (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
+                    opaque: false,
                     variables: {},
                     types: {},
                 });
@@ -1022,6 +1024,7 @@ let DoWhileStatement = (() => {
             do {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
+                    opaque: false,
                     variables: {},
                     types: {},
                 });
