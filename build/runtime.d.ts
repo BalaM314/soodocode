@@ -32,6 +32,7 @@ export declare class Runtime {
         method: ClassMethodData;
     } | null;
     currentlyResolvingTypeName: string | null;
+    currentlyResolvingPointerTypeName: string | null;
     fs: Files;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
     finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];

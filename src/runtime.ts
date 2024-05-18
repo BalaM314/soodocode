@@ -118,8 +118,10 @@ export class Runtime {
 		instance:VariableTypeMapping<ClassVariableType>;
 		method:ClassMethodData;
 	} | null = null;
-	/** While a type is being declared, this variable is set to the name of the type. */
+	/** While a type is being resolved, this variable is set to the name of the type. */
 	currentlyResolvingTypeName: string | null = null;
+	/** While a pointer type is being resolved, this variable is set to the name of the type. */
+	currentlyResolvingPointerTypeName: string | null = null;
 	fs = new Files();
 	constructor(
 		public _input: (message:string) => string,
@@ -614,7 +616,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			fail(f.quote`Type ${name} does not exist yet, it is currently being initialized`, range);
 		let found;
 		if((found =
-			min(allTypes, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)
+			min(allTypes, t => t[0] == this.currentlyResolvingPointerTypeName ? Infinity : biasedLevenshtein(t[0], name) ?? Infinity, 2.5)
 		) != undefined){
 			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
 		}
@@ -874,7 +876,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		//Second pass: resolve types
 		for(const [name, type] of types){
 			this.currentlyResolvingTypeName = name;
+			if(type instanceof PointerVariableType) this.currentlyResolvingPointerTypeName = name;
 			type.init(this);
+			this.currentlyResolvingPointerTypeName = null;
 		}
 		this.currentlyResolvingTypeName = null;
 		//Third pass: check type size

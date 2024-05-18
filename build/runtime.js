@@ -116,6 +116,7 @@ let Runtime = (() => {
                 this.openFiles = {};
                 this.classData = null;
                 this.currentlyResolvingTypeName = null;
+                this.currentlyResolvingPointerTypeName = null;
                 this.fs = new Files();
             }
             finishEvaluation(value, from, to) {
@@ -583,7 +584,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     fail(f.quote `Type ${name} does not exist yet, it is currently being initialized`, range);
                 let found;
                 if ((found =
-                    min(allTypes, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
+                    min(allTypes, t => t[0] == this.currentlyResolvingPointerTypeName ? Infinity : biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
                     fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
                 }
                 fail(f.quote `Type ${name} does not exist`, range);
@@ -844,7 +845,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 for (const [name, type] of types) {
                     this.currentlyResolvingTypeName = name;
+                    if (type instanceof PointerVariableType)
+                        this.currentlyResolvingPointerTypeName = name;
                     type.init(this);
+                    this.currentlyResolvingPointerTypeName = null;
                 }
                 this.currentlyResolvingTypeName = null;
                 for (const [name, type] of types) {
