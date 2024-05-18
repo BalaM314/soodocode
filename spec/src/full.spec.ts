@@ -44,7 +44,7 @@ FOR i <- 1 TO 5
 	DECLARE x: INTEGER
 NEXT i`,
 []
-], //TODO tests for functions leaking variables
+],
 parse_invalid_expression_statement: [
 `2 + 2`,
 `Expected a statement, not an expression`
@@ -256,6 +256,21 @@ ENDFUNCTION
 OUTPUT Factorial(5)
 `,
 ["120"]
+],
+run_procedure_without_leaking_scope: [
+`PROCEDURE x()
+	DECLARE xvar: INTEGER
+	xvar <- 5
+	CALL y()
+ENDPROCEDURE
+PROCEDURE y()
+	DECLARE yvar: INTEGER
+	yvar <- 5
+	OUTPUT yvar
+	OUTPUT xvar
+ENDPROCEDURE
+CALL x()`,
+`"xvar" does not exist`
 ],
 record_type_blank: [
 `TYPE amogus
