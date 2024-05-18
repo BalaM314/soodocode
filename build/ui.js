@@ -187,7 +187,7 @@ soodocodeInput.onkeydown = e => {
         e.preventDefault();
         executeSoodocode();
     }
-    const newText = soodocodeInput.value.replaceAll("\uF0AC", "<-").replaceAll("\u2190", "<-").replaceAll("\u2013", "-").replaceAll("\u2011", "-");
+    const newText = soodocodeInput.value.replace(/[\uF0AC\u2190\u21D0\u21E0\u21FD]/g, "<-").replace(/[\u2010-\u2015]/g, "-");
     if (soodocodeInput.value != newText) {
         const start = soodocodeInput.selectionStart;
         soodocodeInput.value = newText;
