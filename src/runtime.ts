@@ -214,30 +214,30 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		//the extra code DRYness is not worth it
 		if(!(expr.nodes[1] instanceof Token)) crash(`Second node in record access expression was not a token`);
 		const property = expr.nodes[1].text;
-		
+
 		if(operation == "set" || arg2 == "variable"){
 			//overloads 2 and 5
 			const variable = this.evaluateExpr(expr.nodes[0], "variable"); //TODO is this necessary? why can't we assign to some property on the result of a function call?
 			if(variable.type instanceof RecordVariableType){
-				const outputType = variable.type.fields[property][0] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+				const outputType = variable.type.fields[property]?.[0] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 				if(arg2 == "variable"){ //overload 2
 					//i see nothing wrong with this bodged variable data
 					return {
 						type: outputType,
 						declaration: variable.declaration,
 						mutable: true, //Even if the record is immutable, the property is mutable
-						get value(){ return (variable.value as Record<string, VariableValue>)[property]; },
+						get value(){ return (variable.value as VariableTypeMapping<RecordVariableType>)[property]; },
 						set value(val){
-							(variable.value as Record<string, VariableValue>)[property] = val;
+							(variable.value as VariableTypeMapping<RecordVariableType>)[property] = val;
 						}
 					} as (VariableData | ConstantData);
 				} else {
 					//overload 5
 					const value = arg2 as ExpressionAST;
-					(variable.value as Record<string, unknown>)[property] = this.evaluateExpr(value, outputType)[1];
+					(variable.value as VariableTypeMapping<RecordVariableType>)[property] = this.evaluateExpr(value, outputType)[1];
 				}
 			} else if(variable.type instanceof ClassVariableType){
-				const propertyStatement = variable.type.properties[property][1] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+				const propertyStatement = variable.type.properties[property]?.[1] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 				const outputType = variable.type.properties[property][0];
 				if(arg2 == "variable"){ //overload 2
@@ -293,7 +293,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 						fail(f.quote`Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					return { method, instance: classInstance, clazz };
 				} else { //overload 1
-					const propertyStatement = objType.properties[property][1] ?? (
+					const propertyStatement = objType.properties[property]?.[1] ?? (
 						//No need to use the real type, properties cannot be overriden
 						classType.properties[property]
 							? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
