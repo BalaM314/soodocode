@@ -134,6 +134,7 @@ export declare class ReturnStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | {
@@ -141,6 +142,7 @@ export declare class ReturnStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | (string | number | boolean | Date)[] | {
@@ -151,6 +153,7 @@ export declare class ReturnStatement extends Statement {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             };
+            propertyTypes: Record<string, VariableType>;
             type: ClassVariableType<true>;
         } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType>;
     };
@@ -170,6 +173,7 @@ export declare class IfStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | {
@@ -177,6 +181,7 @@ export declare class IfStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
@@ -187,6 +192,7 @@ export declare class IfStatement extends Statement {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             };
+            propertyTypes: Record<string, VariableType>;
             type: ClassVariableType<true>;
         };
     };
@@ -227,6 +233,7 @@ export declare class ForStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | {
@@ -234,6 +241,7 @@ export declare class ForStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
@@ -244,6 +252,7 @@ export declare class ForStatement extends Statement {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             };
+            propertyTypes: Record<string, VariableType>;
             type: ClassVariableType<true>;
         };
     } | undefined;
@@ -269,6 +278,7 @@ export declare class WhileStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | {
@@ -276,6 +286,7 @@ export declare class WhileStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
@@ -286,6 +297,7 @@ export declare class WhileStatement extends Statement {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             };
+            propertyTypes: Record<string, VariableType>;
             type: ClassVariableType<true>;
         };
     } | undefined;
@@ -299,6 +311,7 @@ export declare class DoWhileStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | {
@@ -306,6 +319,7 @@ export declare class DoWhileStatement extends Statement {
                 properties: {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 };
+                propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType<true>;
             } | null;
         } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | {
@@ -316,6 +330,7 @@ export declare class DoWhileStatement extends Statement {
                     [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType, null> | import("./runtime-types.js").ConstantData<VariableType> | null)[] | any | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
                 } | import("./runtime-types.js").VariableData<any, null> | import("./runtime-types.js").ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             };
+            propertyTypes: Record<string, VariableType>;
             type: ClassVariableType<true>;
         };
     } | undefined;

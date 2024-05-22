@@ -35,6 +35,8 @@ export type VariableTypeMapping<T> =
 		properties: {
 			[index:string]: VariableTypeMapping<any> | null;
 		};
+		/** Used to store the real type for varlength array properties */
+		propertyTypes: Record<string, VariableType>;
 		/** Necessary for polymorphism */
 		type: ClassVariableType;
 	} :
@@ -143,6 +145,13 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
 			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
 		}
+	}
+	clone(){
+		const type = new ArrayVariableType<false>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType);
+		type.lengthInformation = this.lengthInformation;
+		type.arraySizes = this.arraySizes;
+		type.totalLength = this.totalLength;
+		return type as never as ArrayVariableType<true>;
 	}
 	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
@@ -339,11 +348,14 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
+	getPropertyType(property:string, x:VariableTypeMapping<ClassVariableType>):VariableType {
+		if(!(this.properties[property])) crash(`Property ${property} does not exist`);
+		return x.propertyTypes[property] ?? (this as ClassVariableType<true>).properties[property][0];
+	}
 	inherits(other:ClassVariableType):boolean {
 		return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
 	}
 	construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
-		//Initialize properties
 		const This = this as ClassVariableType<true>;
 		const propertiesInitializer = {};
 		Object.defineProperties(
@@ -398,6 +410,11 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			types: {},
 			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
 				type: v[0],
+				updateType(type){
+					if(v[0] instanceof ArrayVariableType && !v[0].lengthInformation){
+						instance.propertyTypes[k] = type;
+					}
+				},
 				get value(){return instance.properties[k];},
 				set value(value){instance.properties[k] = value;},
 				declaration: v[1],
@@ -459,6 +476,7 @@ export type OpenedFileOfType<T extends FileMode> = OpenedFile & { mode: T; };
 
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
 	type: T;
+	updateType?: (type:VariableType) => unknown;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
 	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | "dynamic";

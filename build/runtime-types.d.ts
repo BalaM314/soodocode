@@ -10,6 +10,7 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
     properties: {
         [index: string]: VariableTypeMapping<any> | null;
     };
+    propertyTypes: Record<string, VariableType>;
     type: ClassVariableType;
 } : never;
 export declare abstract class BaseVariableType implements IFormattable {
@@ -53,6 +54,7 @@ export declare class ArrayVariableType<Init extends boolean = true> extends Base
     lengthInformation: [low: number, high: number][] | null;
     constructor(lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
     init(runtime: Runtime): void;
+    clone(): ArrayVariableType<true>;
     fmtText(): string;
     fmtShort(): string;
     fmtDebug(): string;
@@ -126,6 +128,7 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    getPropertyType(property: string, x: VariableTypeMapping<ClassVariableType>): VariableType;
     inherits(other: ClassVariableType): boolean;
     construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
         properties: {
@@ -135,6 +138,7 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
                 [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
         };
+        propertyTypes: Record<string, VariableType>;
         type: ClassVariableType<true>;
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
@@ -170,6 +174,7 @@ export type OpenedFileOfType<T extends FileMode> = OpenedFile & {
 };
 export type VariableData<T extends VariableType = VariableType, Uninitialized = null> = {
     type: T;
+    updateType?: (type: VariableType) => unknown;
     value: VariableTypeMapping<T> | Uninitialized;
     declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | "dynamic";
     mutable: true;

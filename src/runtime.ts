@@ -239,7 +239,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			} else if(variable.type instanceof ClassVariableType){
 				const propertyStatement = variable.type.properties[property]?.[1] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-				const outputType = variable.type.properties[property][0];
+				const outputType = variable.type.getPropertyType(property, variable.value as VariableTypeMapping<ClassVariableType>);
 				if(arg2 == "variable"){ //overload 2
 					return {
 						type: outputType,
@@ -253,7 +253,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				} else {
 					//overload 5
 					const value = arg2 as ExpressionAST;
-					(variable.value as Record<string, unknown>)[property] = this.evaluateExpr(value, outputType)[1];
+					const [exprType, exprValue] = this.evaluateExpr(value, outputType);
+					(variable.value as VariableTypeMapping<ClassVariableType>).properties[property] = exprValue;
+					if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
+						(variable.value as VariableTypeMapping<ClassVariableType>).propertyTypes[property] = exprType;
 				}
 			} else fail(f.quote`Cannot access property ${property} on variable of type ${variable.type} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
 		} else { //overloads 1 and 3
@@ -304,14 +307,25 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 							expr.nodes[1])
 							: fail(f.quote`Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
 					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-					const outputType = objType.properties[property][0];
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
+					const outputType = objType.getPropertyType(property, obj as VariableTypeMapping<ClassVariableType>);
 					if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
 					return this.finishEvaluation(value, outputType, type);
 				}
 			} else fail(f.quote`Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
 		}
-
+	}
+	assignExpr(target:ExpressionAST, src:ExpressionAST){
+		//TODO the control flow of expression evaluation is a mess: Remove "set" from process[Array/Record]Access, just use the fake variable
+		if(target instanceof ExpressionASTArrayAccessNode) this.processArrayAccess(target, "set", src);
+		else if(target instanceof ExpressionASTBranchNode && target.operator === operators.access) this.processRecordAccess(target, "set", src);
+		else {
+			const variable = this.evaluateExpr(target, "variable");
+			const [valType, val] = this.evaluateExpr(src, variable.type);
+			variable.value = val;
+			if(!variable.mutable) fail(f.quote`Cannot assign to constant ${target}`, target);
+			variable.updateType?.(valType);
+		}
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
 	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):[type:VariableType, value:VariableValue];
@@ -757,8 +771,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			properties: Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).properties)
 				.map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v as VariableValue)])
 			),
-			type: value.type
-		} as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;
+			propertyTypes: {},
+			type: value.type as ClassVariableType
+		} satisfies VariableTypeMapping<ClassVariableType> as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:RangeArray<ExpressionAST>){

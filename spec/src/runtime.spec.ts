@@ -562,6 +562,7 @@ const expressionTests = ((data:Record<string, [
 				properties: {
 					prop: null
 				},
+				propertyTypes: {},
 				type: amogusClass
 			}],
 			r => {
@@ -617,6 +618,7 @@ const expressionTests = ((data:Record<string, [
 				properties: {
 					prop: 65
 				},
+				propertyTypes: {},
 				type: amogusClass
 			}],
 			r => {
@@ -669,6 +671,7 @@ const expressionTests = ((data:Record<string, [
 						properties: {
 							prop: 65
 						},
+						propertyTypes: {},
 						type: amogusClass
 					}
 				} satisfies VariableData<ClassVariableType>;
@@ -703,6 +706,7 @@ const expressionTests = ((data:Record<string, [
 						properties: {
 							prop: 65
 						},
+						propertyTypes: {},
 						type: amogusClass
 					}
 				} satisfies VariableData<ClassVariableType>;
@@ -764,6 +768,7 @@ const expressionTests = ((data:Record<string, [
 						properties: {
 							prop: 90
 						},
+						propertyTypes: {},
 						type: amogusClass
 					}
 				} satisfies VariableData<ClassVariableType>;
@@ -775,6 +780,7 @@ const expressionTests = ((data:Record<string, [
 						properties: {
 							prop: 1
 						},
+						propertyTypes: {},
 						type: amogusClass
 					}
 				} satisfies VariableData<ClassVariableType>;
@@ -832,6 +838,7 @@ const expressionTests = ((data:Record<string, [
 					properties: {
 						prop: 65
 					},
+					propertyTypes: {},
 					type: amogusClass
 				}
 			} satisfies VariableData<ClassVariableType>;
@@ -891,6 +898,7 @@ const expressionTests = ((data:Record<string, [
 					properties: {
 						prop: 65
 					},
+					propertyTypes: {},
 					type: amogusClass
 				}
 			} satisfies VariableData<ClassVariableType>;
@@ -948,6 +956,7 @@ const expressionTests = ((data:Record<string, [
 					properties: {
 						prop: 65
 					},
+					propertyTypes: {},
 					type: amogusClass
 				}
 			} satisfies VariableData<ClassVariableType>;

@@ -495,10 +495,7 @@ let AssignmentStatement = (() => {
                 fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
         run(runtime) {
-            const variable = runtime.evaluateExpr(this.target, "variable");
-            if (!variable.mutable)
-                fail(f.quote `Cannot assign to constant ${this.target}`, this.target);
-            variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+            runtime.assignExpr(this.target, this.expr);
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");

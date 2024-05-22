@@ -45,6 +45,7 @@ export declare class Runtime {
     processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type: "function"): ClassMethodCallInformation;
     processRecordAccess(expr: ExpressionASTBranchNode, operation: "get", type?: VariableType | "variable" | "function"): [type: VariableType, value: VariableValue] | VariableData | ConstantData | ClassMethodCallInformation;
     processRecordAccess(expr: ExpressionASTBranchNode, operation: "set", value: ExpressionAST): void;
+    assignExpr(target: ExpressionAST, src: ExpressionAST): void;
     evaluateExpr(expr: ExpressionAST): [type: VariableType, value: VariableValue];
     evaluateExpr(expr: ExpressionAST, undefined: undefined, recursive: boolean): [type: VariableType, value: VariableValue];
     evaluateExpr(expr: ExpressionAST, type: "variable", recursive?: boolean): VariableData | ConstantData;

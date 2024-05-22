@@ -34,7 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, tryRunOr, zip } from "./utils.js";
@@ -180,7 +180,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (operation == "set" || arg2 == "variable") {
                     const variable = this.evaluateExpr(expr.nodes[0], "variable");
                     if (variable.type instanceof RecordVariableType) {
-                        const outputType = variable.type.fields[property][0] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+                        const outputType = variable.type.fields[property]?.[0] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                         if (arg2 == "variable") {
                             return {
                                 type: outputType,
@@ -198,10 +198,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         }
                     }
                     else if (variable.type instanceof ClassVariableType) {
-                        const propertyStatement = variable.type.properties[property][1] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
+                        const propertyStatement = variable.type.properties[property]?.[1] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                         if (propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type))
                             fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                        const outputType = variable.type.properties[property][0];
+                        const outputType = variable.type.getPropertyType(property, variable.value);
                         if (arg2 == "variable") {
                             return {
                                 type: outputType,
@@ -215,7 +215,10 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         }
                         else {
                             const value = arg2;
-                            variable.value[property] = this.evaluateExpr(value, outputType)[1];
+                            const [exprType, exprValue] = this.evaluateExpr(value, outputType);
+                            variable.value.properties[property] = exprValue;
+                            if (outputType instanceof ArrayVariableType && !outputType.lengthInformation)
+                                variable.value.propertyTypes[property] = exprType;
                         }
                     }
                     else
@@ -259,7 +262,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                             return { method, instance: classInstance, clazz };
                         }
                         else {
-                            const propertyStatement = objType.properties[property][1] ?? (classType.properties[property]
+                            const propertyStatement = objType.properties[property]?.[1] ?? (classType.properties[property]
                                 ? fail(f.quote `Property ${property} does not exist on type ${objType}.
 The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
 but the type of the variable is ${objType.fmtPlain()}.
@@ -267,8 +270,8 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                                 : fail(f.quote `Property ${property} does not exist on type ${objType}`, expr.nodes[1]));
                             if (propertyStatement.accessModifier == "private" && !this.canAccessClass(objType))
                                 fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                            const outputType = objType.properties[property][0];
                             const value = obj.properties[property];
+                            const outputType = objType.getPropertyType(property, obj);
                             if (value === null)
                                 fail(f.text `Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
                             return this.finishEvaluation(value, outputType, type);
@@ -276,6 +279,20 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                     }
                     else
                         fail(f.quote `Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
+                }
+            }
+            assignExpr(target, src) {
+                if (target instanceof ExpressionASTArrayAccessNode)
+                    this.processArrayAccess(target, "set", src);
+                else if (target instanceof ExpressionASTBranchNode && target.operator === operators.access)
+                    this.processRecordAccess(target, "set", src);
+                else {
+                    const variable = this.evaluateExpr(target, "variable");
+                    const [valType, val] = this.evaluateExpr(src, variable.type);
+                    variable.value = val;
+                    if (!variable.mutable)
+                        fail(f.quote `Cannot assign to constant ${target}`, target);
+                    variable.updateType?.(valType);
                 }
             }
             evaluateExpr(expr, type, _recursive = false) {
@@ -736,6 +753,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     return {
                         properties: Object.fromEntries(Object.entries(value.properties)
                             .map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v)])),
+                        propertyTypes: {},
                         type: value.type
                     };
                 crash(f.quote `Cannot clone value of type ${type}`);

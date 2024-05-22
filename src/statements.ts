@@ -10,7 +10,7 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token, RangeArray, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
@@ -401,10 +401,8 @@ export class AssignmentStatement extends Statement {
 			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
 	run(runtime:Runtime){
-		const variable = runtime.evaluateExpr(this.target, "variable");
-		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${this.target}`, this.target);
-		//CONFIG allow copying arrays/records by assignment?
-		variable.value = runtime.evaluateExpr(this.expr, variable.type)[1];
+		//CONFIG allow implicit declaration of class variables
+		runtime.assignExpr(this.target, this.expr);
 	}
 }
 @statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")

@@ -83,6 +83,13 @@ export class ArrayVariableType extends BaseVariableType {
             this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
         }
     }
+    clone() {
+        const type = new ArrayVariableType(this.lengthInformationExprs, this.lengthInformationRange, this.elementType);
+        type.lengthInformation = this.lengthInformation;
+        type.arraySizes = this.arraySizes;
+        type.totalLength = this.totalLength;
+        return type;
+    }
     fmtText() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
         return f.text `ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
@@ -283,20 +290,52 @@ export class ClassVariableType extends BaseVariableType {
     getInitValue(runtime) {
         return null;
     }
+    getPropertyType(property, x) {
+        if (!(this.properties[property]))
+            crash(`Property ${property} does not exist`);
+        return x.propertyTypes[property] ?? this.properties[property][0];
+    }
     inherits(other) {
         return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
     }
     construct(runtime, args) {
         const This = this;
+        const propertiesInitializer = {};
+        Object.defineProperties(propertiesInitializer, Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
+                enumerable: true,
+                configurable: true,
+                get() {
+                    const value = v[0].getInitValue(runtime, false);
+                    Object.defineProperty(propertiesObj, k, {
+                        configurable: true,
+                        enumerable: true,
+                        writable: true,
+                        value,
+                    });
+                    return value;
+                },
+                set(val) {
+                    Object.defineProperty(propertiesObj, k, {
+                        configurable: true,
+                        enumerable: true,
+                        writable: true,
+                        value: val,
+                    });
+                },
+            }])));
+        const propertiesObj = Object.create(propertiesInitializer);
         const data = {
-            properties: Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k,
-                v[0].getInitValue(runtime, false)
-            ])),
+            properties: propertiesObj,
+            propertyTypes: {},
             type: This
         };
         const [clazz, method] = This.allMethods["NEW"]
             ?? fail(f.quote `No constructor was defined for class ${this.name}`, this.statement);
         runtime.callClassMethod(method, clazz, data, args);
+        for (const key of Object.keys(This.properties)) {
+            void propertiesObj[key];
+        }
+        Object.setPrototypeOf(propertiesObj, Object.prototype);
         return data;
     }
     getScope(runtime, instance) {
@@ -306,6 +345,11 @@ export class ClassVariableType extends BaseVariableType {
             types: {},
             variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
                     type: v[0],
+                    updateType(type) {
+                        if (v[0] instanceof ArrayVariableType && !v[0].lengthInformation) {
+                            instance.propertyTypes[k] = type;
+                        }
+                    },
                     get value() { return instance.properties[k]; },
                     set value(value) { instance.properties[k] = value; },
                     declaration: v[1],
