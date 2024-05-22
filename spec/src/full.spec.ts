@@ -82,11 +82,50 @@ illegal_array_type_in_variable: [
 `DECLARE x: ARRAY OF INTEGER`,
 `length must be specified`
 ],
-legal_array_type_in_function: [
+varlength_array_type_in_function: [
 `FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
 	RETURN LENGTH(x)
 ENDFUNCTION`,
 []
+],
+varlength_array_type_in_class: [
+`CLASS amogus
+	PUBLIC x: ARRAY OF INTEGER
+	PUBLIC PROCEDURE NEW(X: ARRAY OF INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION Length() RETURNS INTEGER
+		RETURN LENGTH(x)
+	ENDFUNCTION
+ENDCLASS
+DECLARE arr: ARRAY[1:100] OF INTEGER
+DECLARE a: amogus
+a <- NEW amogus(arr)
+OUTPUT a.Length()
+OUTPUT LENGTH(a.x)`,
+["100", "100"]
+],
+varlength_array_type_in_class_and_access: [
+`CLASS amogus
+	PUBLIC x: ARRAY OF INTEGER
+	PUBLIC PROCEDURE NEW(X: ARRAY OF INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION Length() RETURNS INTEGER
+		RETURN LENGTH(x)
+	ENDFUNCTION
+ENDCLASS
+FUNCTION Length(x: ARRAY OF INTEGER) RETURNS INTEGER
+	RETURN LENGTH(x)
+ENDFUNCTION
+DECLARE arr: ARRAY[1:100] OF INTEGER
+DECLARE a: amogus
+a <- NEW amogus(arr)
+OUTPUT a.Length()
+OUTPUT LENGTH(a.x)
+OUTPUT Length(a.x)
+`,
+["100", "100", "100"]
 ],
 run_array_computed_size_static: [
 `DECLARE x: ARRAY[1:10+10] OF INTEGER
@@ -652,6 +691,19 @@ DECLARE a: amogus
 a <- NEW amogus(5)
 OUTPUT a.x`,
 ["5"]
+],
+write_class_property_nonexistent: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+ENDCLASS
+DECLARE a: amogus
+a <- NEW amogus(5)
+a.properties <- "hi"
+OUTPUT a.x`,
+`"properties"`
 ],
 illegal_read_private_class_property: [
 `CLASS amogus
