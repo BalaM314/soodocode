@@ -88,6 +88,68 @@ legal_array_type_in_function: [
 ENDFUNCTION`,
 []
 ],
+run_array_computed_size_static: [
+`DECLARE x: ARRAY[1:10+10] OF INTEGER
+x[20] <- 5
+OUTPUT x[20]
+OUTPUT LENGTH(x)`,
+["5", "20"]
+],
+run_array_computed_size_variable_available: [
+`PROCEDURE amogus(a: INTEGER)
+	DECLARE x: ARRAY[1:a+1] OF INTEGER
+	x[20] <- 5
+	OUTPUT x[20]
+	OUTPUT LENGTH(x)
+ENDPROCEDURE
+CALL amogus(50)`,
+["5", "51"]
+],
+run_array_computed_size_constant_declare: [
+`CONSTANT a = 50
+DECLARE x: ARRAY[1:a+1] OF INTEGER
+x[20] <- 5
+OUTPUT x[20]
+OUTPUT LENGTH(x)`,
+["5", "51"]
+],
+run_array_computed_size_variable_declare: [
+`DECLARE a: INTEGER
+a <- 50
+DECLARE x: ARRAY[1:a+1] OF INTEGER
+x[20] <- 5
+OUTPUT x[20]
+OUTPUT LENGTH(x)`,
+["5", "51"]
+],
+run_array_computed_size_variable_declare_uninitialized_1: [
+`DECLARE a: INTEGER
+DECLARE x: ARRAY[1:a+1] OF INTEGER
+x[20] <- 5
+OUTPUT x[20]
+OUTPUT LENGTH(x)`,
+`Variable "a"`
+],
+run_array_computed_size_variable_declare_uninitialized_2: [
+`DECLARE a: INTEGER
+DECLARE x: ARRAY[1:a+1] OF INTEGER
+a <- 50
+x[20] <- 5
+OUTPUT x[20]
+OUTPUT LENGTH(x)`,
+`Variable "a"`
+],
+run_array_computed_size_constant_record_type: [
+`CONSTANT a = 50
+TYPE amogus
+	DECLARE prop: ARRAY[1:a+1] OF INTEGER
+ENDTYPE
+DECLARE x: amogus
+x.prop[20] <- 5
+OUTPUT x.prop[20]
+OUTPUT LENGTH(x.prop)`,
+["5", "51"]
+],
 function_variable_length_array_arg: [
 `FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
 	OUTPUT x[7]
