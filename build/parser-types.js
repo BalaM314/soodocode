@@ -84,7 +84,7 @@ export class ExpressionASTArrayTypeNode {
         this.range = getTotalRange(allTokens);
     }
     fmtText() {
-        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}]` : "";
+        const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => f.text `${l}:${h}`).join(", ")}]` : "";
         return `ARRAY OF ${this.elementType.text}`;
     }
     fmtDebug() {

@@ -1,10 +1,11 @@
 import { Symbol, SymbolType, Token, RangeArray, TokenType } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
-import { ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
-import { crash, fakeObject } from "../../build/utils.js";
+import { crash, fakeObject, impossible } from "../../build/utils.js";
 import { tokenTextMapping } from "../../build/lexer.js";
 import { TextRange } from "../../src/types.js";
+import { Runtime } from "../../build/runtime.js";
 
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
@@ -21,7 +22,7 @@ export type _ExpressionASTBranchNode = [
 	nodes: _ExpressionASTNode[],
 ];
 export type _ExpressionASTOperatorBranchNode = _ExpressionASTBranchNode & [unknown, _Operator, _ExpressionASTNode[]];
-export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:number, high:number][] | null, type:_Token];
+export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:_ExpressionAST, high:_ExpressionAST][] | null, type:_Token];
 export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
 
 export type _VariableType = Exclude<VariableType, PrimitiveVariableType> | PrimitiveVariableTypeName;
@@ -113,7 +114,7 @@ export function process_Statement(input:_Statement):Statement {
 
 export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayTypeNode):ExpressionASTArrayTypeNode {
 	return new ExpressionASTArrayTypeNode(
-		input[0]?.map(bounds => bounds.map(b => token("number.decimal", b.toString()))) ?? null,
+		input[0]?.map(bounds => bounds.map(b => process_ExpressionAST(b))) ?? null,
 		process_Token(input[1]),
 		new RangeArray<Token>([process_Token(input[1])]) //SPECNULL
 	);
@@ -244,6 +245,7 @@ export function applyAnyRange<TIn extends
 		(input as Record<string, any>).range = anyRange;
 		input.allTokens;
 		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		input.lengthInformation?.forEach(r => r.forEach(e => applyAnyRange(e)));
 		applyAnyRange(input.elementType);
 	} else if(input instanceof ProgramASTBranchNode){
 		input.controlStatements.forEach(applyAnyRange);
@@ -417,4 +419,17 @@ export function classType(
 		([k, v]) => [k, [clazz, v]]
 	));
 	return clazz;
+}
+export function arrayType(
+	processedLengthInformation: [low:number, high:number][] | null,
+	elementType: VariableType,
+){
+	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType);
+	type.init(fakeObject<Runtime>({
+		evaluateExpr: ((expr:ExpressionAST, type:VariableType) => {
+			if(expr instanceof Token) return Runtime.evaluateToken(expr, type);
+			else impossible();
+		}) as never
+	}));
+	return type;
 }

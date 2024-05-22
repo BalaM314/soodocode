@@ -74,15 +74,10 @@ export const parseType = errorBoundary()((tokens) => {
         return new ExpressionASTArrayTypeNode(null, tokens.at(-1), tokens);
     if (checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", "keyword.of", "name"]))
         return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({ group, splitter }) => {
-            if (group.length != 3)
-                fail(f.quote `Invalid array range specifier ${group}`, group.length ? group : splitter);
-            if (group[0].type != "number.decimal")
-                fail(f.quote `Expected a number, got ${group[0]}`, group[0]);
-            if (group[1].type != "punctuation.colon")
-                fail(f.quote `Expected a colon, got ${group[1]}`, group[1]);
-            if (group[2].type != "number.decimal")
-                fail(f.quote `Expected a number, got ${group[2]}`, group[2]);
-            return [group[0], group[2]];
+            const groups = splitTokens(group, "punctuation.colon");
+            if (groups.length != 2)
+                fail(`Invalid array range specifier $rc: must consist of two expressions separated by a colon`, group);
+            return groups.map(a => parseExpression(a));
         }), tokens.at(-1), tokens);
     if (checkTokens(tokens, ["keyword.array"]))
         fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`, tokens);

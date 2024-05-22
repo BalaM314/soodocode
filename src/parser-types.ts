@@ -105,14 +105,14 @@ export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
-		public lengthInformation: [low:Token, high:Token][] | null, //TODO support expressions here
+		public lengthInformation: [low:ExpressionAST, high:ExpressionAST][] | null, //TODO support expressions here
 		public elementType: Token,
 		public allTokens: RangeArray<Token>,
 	){
 		this.range = getTotalRange(allTokens);
 	}
 	fmtText():string {
-		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l.text}:${h.text}`).join(", ")}]` : "";
+		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => f.text`${l}:${h}`).join(", ")}]` : "";
 		return `ARRAY OF ${this.elementType.text}`;
 	}
 	fmtDebug():string {

@@ -7,13 +7,14 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token, RangeArray, TokenizedProgram } from "../../build/lexer-types.js";
+import { RangeArray, Token, TokenizedProgram } from "../../build/lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
-import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
+import { PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
+import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, PassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
-import { SoodocodeError } from "../../build/utils.js";
-import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
+import { SoodocodeError, impossible } from "../../build/utils.js";
+import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 
@@ -3199,6 +3200,41 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 		],
 		"BOOLEAN"
 	]],
+	"2dArrayExpr": [[
+		"keyword.array",
+		"bracket.open",
+		0,
+		"punctuation.colon",
+		103,
+		"operator.add",
+		1,
+		"punctuation.comma",
+		103,
+		"operator.add",
+		1,
+		"punctuation.colon",
+		"parentheses.open",
+		"parentheses.open",
+		22,
+		"operator.divide",
+		1,
+		"parentheses.close",
+		"operator.mod",
+		"a",
+		"parentheses.close",
+		"bracket.close",
+		"keyword.of",
+		"BOOLEAN",
+	],[
+		[
+			[0, ["tree", "add", [103, 1]]],
+			[["tree", "mod", [
+				["tree", "divide", [22, 1]],
+				"a"
+			]], 22],
+		],
+		"BOOLEAN"
+	]],
 	"Cursed2dArray": [[
 		"keyword.array",
 		"bracket.open",
@@ -3394,32 +3430,38 @@ describe("parseFunctionArguments", () => {
 });
 
 describe("ArrayTypeData", () => {
+	const runtime = new Runtime(() => impossible(), () => {});
 	it(`should generate correct data`, () => {
-		const data1 = new ArrayVariableType([[0, 9]], [-1, -1], PrimitiveVariableType.BOOLEAN);
+		const data1 = arrayType([[0, 9]], PrimitiveVariableType.BOOLEAN);
+		data1.init(runtime);
 		expect(data1.arraySizes).toEqual([10]);
 		expect(data1.totalLength).toEqual(10);
-		const data2 = new ArrayVariableType([[1, 15]], [-1, -1], PrimitiveVariableType.STRING);
+		const data2 = arrayType([[1, 15]], PrimitiveVariableType.STRING);
+		data2.init(runtime);
 		expect(data2.arraySizes).toEqual([15]);
 		expect(data2.totalLength).toEqual(15);
-		const data3 = new ArrayVariableType([[0, 9], [0, 19]], [-1, -1], PrimitiveVariableType.BOOLEAN);
+		const data3 = arrayType([[0, 9], [0, 19]], PrimitiveVariableType.BOOLEAN);
+		data3.init(runtime);
 		expect(data3.arraySizes).toEqual([10, 20]);
 		expect(data3.totalLength).toEqual(200);
-		const data4 = new ArrayVariableType([[1, 10], [1, 15]], [-1, -1], PrimitiveVariableType.DATE);
+		const data4 = arrayType([[1, 10], [1, 15]], PrimitiveVariableType.DATE);
+		data4.init(runtime);
 		expect(data4.arraySizes).toEqual([10, 15]);
 		expect(data4.totalLength).toEqual(150);
-		const data5 = new ArrayVariableType([[0, 9], [1, 15], [0, 20]], [-1, -1], PrimitiveVariableType.INTEGER);
+		const data5 = arrayType([[0, 9], [1, 15], [0, 20]], PrimitiveVariableType.INTEGER);
+		data5.init(runtime);
 		expect(data5.arraySizes).toEqual([10, 15, 21]);
 		expect(data5.totalLength).toEqual(3150);
 	});
 	it(`should handle correct inputs`, () => {
-		expect(() => new ArrayVariableType([[0, 0]], [-1, -1], PrimitiveVariableType.CHAR)).not.toThrow();
-		expect(() => new ArrayVariableType([[5, 5]], [-1, -1], PrimitiveVariableType.CHAR)).not.toThrow();
+		expect(() => arrayType([[0, 0]], PrimitiveVariableType.CHAR).init(runtime)).not.toThrow();
+		expect(() => arrayType([[5, 5]], PrimitiveVariableType.CHAR).init(runtime)).not.toThrow();
 	});
 	it(`should handle incorrect inputs`, () => {
-		expect(() => new ArrayVariableType([[0, -1]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[2, 1]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[0, 10.5]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => new ArrayVariableType([[0, 1], [0, 10.5]], [-1, -1], PrimitiveVariableType.CHAR)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => arrayType([[0, -1]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => arrayType([[2, 1]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => arrayType([[0, 10.5]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
+		expect(() => arrayType([[0, 1], [0, 10.5]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
 	});
 });
 
