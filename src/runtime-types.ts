@@ -345,10 +345,37 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
 		//Initialize properties
 		const This = this as ClassVariableType<true>;
+		const propertiesInitializer = {};
+		Object.defineProperties(
+			propertiesInitializer,
+			Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
+				enumerable: true,
+				configurable: true,
+				get(){
+					const value = v[0].getInitValue(runtime, false);
+					Object.defineProperty(propertiesObj, k, {
+						configurable: true,
+						enumerable: true,
+						writable: true,
+						value,
+					});
+					return value;
+				},
+				set(val:VariableValue){
+					Object.defineProperty(propertiesObj, k, {
+						configurable: true,
+						enumerable: true,
+						writable: true,
+						value: val,
+					});
+				},
+			} satisfies PropertyDescriptor])) satisfies PropertyDescriptorMap
+		);
+		const propertiesObj = Object.create(propertiesInitializer) as Record<string, VariableValue | null>;
+		//Lazily initialize properties
 		const data:VariableTypeMapping<ClassVariableType> = {
-			properties: Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k,
-				v[0].getInitValue(runtime, false)
-			])) as Record<string, VariableValue>,
+			properties: propertiesObj,
+			propertyTypes: {},
 			type: This
 		};
 
@@ -356,6 +383,12 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		const [clazz, method] = This.allMethods["NEW"]
 			?? fail(f.quote`No constructor was defined for class ${this.name}`, this.statement);
 		runtime.callClassMethod(method, clazz, data, args);
+		//Access all the properties to initialize them if they havent been initialized yet
+		for(const key of Object.keys(This.properties)){
+			void propertiesObj[key];
+		}
+		//Unlink the initializer
+		Object.setPrototypeOf(propertiesObj, Object.prototype);
 		return data;
 	}
 	getScope(runtime:Runtime, instance:VariableTypeMapping<ClassVariableType>):VariableScope {
