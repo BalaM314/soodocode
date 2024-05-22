@@ -62,6 +62,15 @@ export function separateArray<T>(arr:T[], predicate:(item:T) => boolean):[true: 
 	}
 	return [a, b];
 }
+export function groupArray<T, const S extends PropertyKey>(arr:T[], predicate:(item:T) => S):Partial<Record<S, T[]>>;
+export function groupArray<T, const S extends PropertyKey>(arr:T[], predicate:(item:T) => S, keys:S[]):Record<S, T[]>;
+export function groupArray<T, const S extends PropertyKey>(arr:T[], predicate:(item:T) => S, keys?:S[]):Partial<Record<S, T[]>> {
+	const out:Partial<Record<S, T[]>> = keys ? Object.fromEntries(keys.map(k => [k, []])) : {};
+	for(const el of arr){
+		(out[predicate(el)] ??= []).push(el);
+	}
+	return out;
+}
 
 export function splitArray<T>(arr:T[], split:[T] | ((item:T, index:number, array:T[]) => boolean)):T[][] {
 	const output:T[][] = [[]];

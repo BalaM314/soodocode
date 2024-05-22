@@ -36,8 +36,8 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
+import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, tryRunOr, zip } from "./utils.js";
 export function typesEqual(a, b, types = new Array()) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
@@ -239,7 +239,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         const outputType = objType.fields[property]?.[0] ?? fail(f.quote `Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
                         const value = obj[property];
                         if (value === null)
-                            fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
+                            fail(f.text `Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
                         return this.finishEvaluation(value, outputType, type);
                     }
                     else if (objType instanceof ClassVariableType) {
@@ -270,7 +270,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                             const outputType = objType.properties[property][0];
                             const value = obj.properties[property];
                             if (value === null)
-                                fail(f.text `Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
+                                fail(f.text `Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
                             return this.finishEvaluation(value, outputType, type);
                         }
                     }
@@ -490,7 +490,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         if (type == "variable")
                             return variable;
                         if (variable.value == null)
-                            fail(`Cannot use the value of uninitialized variable ${token.text}`, token);
+                            fail(f.quote `Variable ${token.text} has not been initialized`, token);
                         return this.finishEvaluation(variable.value, variable.type, type);
                     }
                 }
@@ -838,8 +838,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             runBlock(code, ...scopes) {
                 this.scopes.push(...scopes);
                 let returned = null;
-                const [typeNodes, others] = separateArray(code, (c) => c instanceof TypeStatement ||
-                    c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement);
+                const { typeNodes, constants, others } = groupArray(code, c => (c instanceof TypeStatement ||
+                    c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement) ? "typeNodes" :
+                    c instanceof ConstantStatement ? "constants" :
+                        "others", ["constants", "others", "typeNodes"]);
+                for (const node of constants) {
+                    node.run(this);
+                }
                 const types = [];
                 for (const node of typeNodes) {
                     let name, type;

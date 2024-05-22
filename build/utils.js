@@ -44,6 +44,14 @@ export function separateArray(arr, predicate) {
     }
     return [a, b];
 }
+export function groupArray(arr, predicate, keys) {
+    var _a;
+    const out = keys ? Object.fromEntries(keys.map(k => [k, []])) : {};
+    for (const el of arr) {
+        (out[_a = predicate(el)] ?? (out[_a] = [])).push(el);
+    }
+    return out;
+}
 export function splitArray(arr, split) {
     const output = [[]];
     if (typeof split == "function") {

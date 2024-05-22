@@ -10,9 +10,9 @@ import { builtinFunctions } from "./builtin_functions.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
-import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -272,7 +272,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				if(type == "function") fail(f.quote`Expected this expression to evaluate to a function, but found a property access on a variable of type ${type}, which cannot have functions as properties`, expr);
 				const outputType = objType.fields[property]?.[0] ?? fail(f.quote`Property ${property} does not exist on value of type ${objType}`, expr.nodes[1]);
 				const value = (obj as Record<string, VariableValue>)[property];
-				if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
+				if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
 				return this.finishEvaluation(value, outputType, type);
 			} else if(objType instanceof ClassVariableType){
 				const classInstance = obj as VariableTypeMapping<ClassVariableType>;
@@ -306,7 +306,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 					if(propertyStatement.accessModifier == "private" && !this.canAccessClass(objType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 					const outputType = objType.properties[property][0];
 					const value = (obj as VariableTypeMapping<ClassVariableType>).properties[property] as VariableValue;
-					if(value === null) fail(f.text`Cannot use the value of uninitialized variable "${expr.nodes[0]}.${property}"`, expr.nodes[1]);
+					if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
 					return this.finishEvaluation(value, outputType, type);
 				}
 			} else fail(f.quote`Cannot access property on value of type ${objType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
@@ -536,7 +536,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			} else {
 				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
 				if(type == "variable") return variable;
-				if(variable.value == null) fail(`Cannot use the value of uninitialized variable ${token.text}`, token);
+				if(variable.value == null) fail(f.quote`Variable ${token.text} has not been initialized`, token);
 				return this.finishEvaluation(variable.value, variable.type, type);
 			}
 		}
@@ -865,11 +865,21 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}{
 		this.scopes.push(...scopes);
 		let returned:null | VariableValue = null;
-		const [typeNodes, others] = separateArray(code, (c):c is TypeStatement | (ProgramASTBranchNode & {controlStatements: [TypeStatement]}) =>
-			c instanceof TypeStatement ||
-			c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement
-		);
-		//First pass: initialize types
+		const {typeNodes, constants, others} = groupArray(code, c =>
+			(c instanceof TypeStatement ||
+			c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement) ? "typeNodes" :
+			c instanceof ConstantStatement ? "constants" :
+			"others"
+		, ["constants", "others", "typeNodes"]) as {
+			typeNodes: (TypeStatement | (ProgramASTBranchNode & {controlStatements: [TypeStatement]}))[],
+			constants: ConstantStatement[],
+			others: ProgramASTNode[]
+		};
+		//First types: run constants
+		for(const node of constants){
+			node.run(this);
+		}
+		//Second pass: initialize types
 		const types: [name:string, type:VariableType][] = [];
 		for(const node of typeNodes){
 			let name, type;
@@ -882,7 +892,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			this.getCurrentScope().types[name] = type;
 			types.push([name, type]);
 		}
-		//Second pass: resolve types
+		//Third pass: resolve types
 		for(const [name, type] of types){
 			this.currentlyResolvingTypeName = name;
 			if(type instanceof PointerVariableType) this.currentlyResolvingPointerTypeName = name;
@@ -890,10 +900,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			this.currentlyResolvingPointerTypeName = null;
 		}
 		this.currentlyResolvingTypeName = null;
-		//Third pass: check type size
+		//Fourth pass: check type size
 		for(const [name, type] of types){
 			type.checkSize();
 		}
+		//Fifth pass: everything else
 		for(const node of others){
 			let result;
 			if(node instanceof Statement){
