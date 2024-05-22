@@ -122,24 +122,27 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 export class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
+	lengthInformation: [low:number, high:number][] | null = null;
 	constructor(
-		public lengthInformation: [low:number, high:number][] | null, //TODO support runtime determined
+		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,
 		public lengthInformationRange: TextRange | null,
 		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
-	){
-		super();
-		if(this.lengthInformation){
-			if(this.lengthInformation.some(b => b[1] < b[0]))
-				fail(`Invalid length information: upper bound cannot be less than lower bound`, lengthInformationRange);
-			if(this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
-				fail(`Invalid length information: bound was not an integer`, lengthInformationRange);
-			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
-			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
-		}
-	}
+	){super();}
 	init(runtime:Runtime){
 		if(Array.isArray(this.elementType))
 			this.elementType = runtime.resolveVariableType(this.elementType);
+		if(this.lengthInformationExprs){
+			this.lengthInformation = new Array(this.lengthInformationExprs.length);
+			for(const [i, [low_, high_]] of this.lengthInformationExprs.entries()){
+				const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER)[1];
+				const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER)[1];
+				if(high < low)
+					fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
+				this.lengthInformation[i] = [low, high];
+			}
+			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
+			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+		}
 	}
 	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
@@ -162,7 +165,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType<false>(
-			node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text)) as [number, number]) ?? null,
+			node.lengthInformation,
 			node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null,
 			PrimitiveVariableType.resolve(node.elementType)
 		);

@@ -557,6 +557,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			case "number.decimal":
 				if(!type || type.is("INTEGER", "REAL", "STRING")){
 					const val = Number(token.text);
+					if(Number.isNaN(val)) crash(`number was nan`);
 					if(!Number.isFinite(val))
 						fail(f.quote`Value ${token} cannot be converted to a number: too large`, token);
 					if(type?.is("INTEGER")){

@@ -58,25 +58,30 @@ PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
 export class ArrayVariableType extends BaseVariableType {
-    constructor(lengthInformation, lengthInformationRange, elementType) {
+    constructor(lengthInformationExprs, lengthInformationRange, elementType) {
         super();
-        this.lengthInformation = lengthInformation;
+        this.lengthInformationExprs = lengthInformationExprs;
         this.lengthInformationRange = lengthInformationRange;
         this.elementType = elementType;
         this.totalLength = null;
         this.arraySizes = null;
-        if (this.lengthInformation) {
-            if (this.lengthInformation.some(b => b[1] < b[0]))
-                fail(`Invalid length information: upper bound cannot be less than lower bound`, lengthInformationRange);
-            if (this.lengthInformation.some(b => b.some(n => !Number.isSafeInteger(n))))
-                fail(`Invalid length information: bound was not an integer`, lengthInformationRange);
-            this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
-            this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
-        }
+        this.lengthInformation = null;
     }
     init(runtime) {
         if (Array.isArray(this.elementType))
             this.elementType = runtime.resolveVariableType(this.elementType);
+        if (this.lengthInformationExprs) {
+            this.lengthInformation = new Array(this.lengthInformationExprs.length);
+            for (const [i, [low_, high_]] of this.lengthInformationExprs.entries()) {
+                const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER)[1];
+                const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER)[1];
+                if (high < low)
+                    fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
+                this.lengthInformation[i] = [low, high];
+            }
+            this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
+            this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+        }
     }
     fmtText() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
@@ -101,7 +106,7 @@ export class ArrayVariableType extends BaseVariableType {
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
     static from(node) {
-        return new ArrayVariableType(node.lengthInformation?.map(bounds => bounds.map(t => Number(t.text))) ?? null, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType));
+        return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType));
     }
 }
 export class RecordVariableType extends BaseVariableType {

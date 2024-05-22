@@ -3227,11 +3227,16 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 		"BOOLEAN",
 	],[
 		[
-			[0, ["tree", "add", [103, 1]]],
-			[["tree", "mod", [
-				["tree", "divide", [22, 1]],
-				"a"
-			]], 22],
+			[
+				0,
+				["tree", "add", [103, 1]]
+			],[
+				["tree", "add", [103, 1]],
+				["tree", "mod", [
+					["tree", "divide", [22, 1]],
+					"a"
+				]]
+			],
 		],
 		"BOOLEAN"
 	]],

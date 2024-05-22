@@ -1,5 +1,5 @@
 import { RangeArray, Token } from "./lexer-types.js";
-import type { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -45,12 +45,13 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
-    lengthInformation: [low: number, high: number][] | null;
+    lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null;
     lengthInformationRange: TextRange | null;
     elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null;
     totalLength: number | null;
     arraySizes: number[] | null;
-    constructor(lengthInformation: [low: number, high: number][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
+    lengthInformation: [low: number, high: number][] | null;
+    constructor(lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
     init(runtime: Runtime): void;
     fmtText(): string;
     fmtShort(): string;

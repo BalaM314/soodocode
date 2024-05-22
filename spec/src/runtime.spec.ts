@@ -6,7 +6,7 @@ import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionD
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, fail, crash } from "../../build/utils.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
 	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
@@ -174,9 +174,7 @@ const expressionTests = ((data:Record<string, [
 		["INTEGER", 18],
 		r => {
 			r.getCurrentScope().variables["amogus"] = {
-				type: new ArrayVariableType([
-					[1, 10]
-				], [-1, -1], PrimitiveVariableType.INTEGER),
+				type: arrayType([[1, 10]], PrimitiveVariableType.INTEGER),
 				declaration: null!,
 				mutable: true,
 				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0]
@@ -251,7 +249,7 @@ const expressionTests = ((data:Record<string, [
 			});
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().variables["aaa"] = {
-				type: new ArrayVariableType([[1, 5]], [-1, -1], innerType),
+				type: arrayType([[1, 5]], innerType),
 				declaration: null!,
 				mutable: true,
 				value: [null, {
@@ -320,13 +318,9 @@ const expressionTests = ((data:Record<string, [
 	})(),
 	pointerRef_array_udt: (() => {
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
-		const arrayPointer = new PointerVariableType(true, "intPtr", new ArrayVariableType([
-			[1, 10]
-		], [-1, -1], foo));
+		const arrayPointer = new PointerVariableType(true, "intPtr", arrayType([[1, 10]], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
-			type: new ArrayVariableType([
-				[1, 10]
-			], [-1, -1], foo),
+			type: arrayType([[1, 10]], foo),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -346,13 +340,9 @@ const expressionTests = ((data:Record<string, [
 	})(),
 	pointerRef_array_udt_invalid: (() => {
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
-		const arrayPointer = new PointerVariableType(true, "intPtr", new ArrayVariableType([
-			[1, 10]
-		], [-1, -1], foo));
+		// const arrayPointer = new PointerVariableType(true, "intPtr", arrayType([[1, 10]], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
-			type: new ArrayVariableType([
-				[1, 10]
-			], [-1, -1], foo),
+			type: arrayType([[1, 10]], foo),
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -365,7 +355,7 @@ const expressionTests = ((data:Record<string, [
 			["error"],
 			r => {
 				r.getCurrentScope().types["foo"] = foo;
-				//r.getCurrentScope().types["arrayPointer"] = arrayPointer;
+				// r.getCurrentScope().types["arrayPointer"] = arrayPointer;
 				r.getCurrentScope().variables["amogus"] = arrayVar;
 			}
 		];
