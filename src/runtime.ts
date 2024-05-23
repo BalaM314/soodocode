@@ -253,7 +253,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 				} else {
 					//overload 5
 					const value = arg2 as ExpressionAST;
-					const [exprType, exprValue] = this.evaluateExpr(value, outputType);
+					const [exprType, exprValue] = this.evaluateExpr(value, variable.type.properties[property]?.[0]);
 					(variable.value as VariableTypeMapping<ClassVariableType>).properties[property] = exprValue;
 					if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
 						(variable.value as VariableTypeMapping<ClassVariableType>).propertyTypes[property] = exprType;

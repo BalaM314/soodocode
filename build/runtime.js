@@ -215,7 +215,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                         }
                         else {
                             const value = arg2;
-                            const [exprType, exprValue] = this.evaluateExpr(value, outputType);
+                            const [exprType, exprValue] = this.evaluateExpr(value, variable.type.properties[property]?.[0]);
                             variable.value.properties[property] = exprValue;
                             if (outputType instanceof ArrayVariableType && !outputType.lengthInformation)
                                 variable.value.propertyTypes[property] = exprType;

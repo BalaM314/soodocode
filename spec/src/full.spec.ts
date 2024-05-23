@@ -1151,6 +1151,38 @@ CALL run()
 `,
 ["hello! never gonna give you up never gonna let you down, never gonna run around and desert you. happy april fools' day"]
 ],
+vecinteger: [
+`CLASS VecInteger
+PUBLIC array: ARRAY OF INTEGER
+PUBLIC length: INTEGER
+PUBLIC PROCEDURE NEW(Length: INTEGER)
+	length <- Length
+	DECLARE arr: ARRAY[0:length - 1] OF INTEGER
+	array <- arr
+ENDPROCEDURE
+PUBLIC PROCEDURE Resize(Length: INTEGER)
+	IF length < Length THEN
+		DECLARE newArr: ARRAY[0:Length - 1] OF INTEGER
+		FOR i <- 1 TO length - 1
+			newArr[i] <- array[i]
+		NEXT i
+		array <- newArr
+	ENDIF
+ENDPROCEDURE
+ENDCLASS
+
+DECLARE x: VecInteger
+x <- NEW VecInteger(10)
+x.array[5] <- 20
+OUTPUT x.array[5]
+CALL x.Resize(20)
+OUTPUT x.array[5]
+x.array[15] <- 30
+OUTPUT x.array[15]
+DECLARE sussy: ARRAY[0:49] OF INTEGER
+x.array <- sussy`,
+["20", "20", "30"]
+]
 };
 
 describe("soodocode", () => {
