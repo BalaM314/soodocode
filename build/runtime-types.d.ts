@@ -174,6 +174,7 @@ export type OpenedFileOfType<T extends FileMode> = OpenedFile & {
 };
 export type VariableData<T extends VariableType = VariableType, Uninitialized = null> = {
     type: T;
+    assignabilityType?: T;
     updateType?: (type: VariableType) => unknown;
     value: VariableTypeMapping<T> | Uninitialized;
     declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | "dynamic";

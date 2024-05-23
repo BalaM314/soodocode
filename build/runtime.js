@@ -288,10 +288,10 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                     this.processRecordAccess(target, "set", src);
                 else {
                     const variable = this.evaluateExpr(target, "variable");
-                    const [valType, val] = this.evaluateExpr(src, variable.type);
-                    variable.value = val;
                     if (!variable.mutable)
                         fail(f.quote `Cannot assign to constant ${target}`, target);
+                    const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+                    variable.value = val;
                     variable.updateType?.(valType);
                 }
             }

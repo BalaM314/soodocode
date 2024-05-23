@@ -344,7 +344,8 @@ export class ClassVariableType extends BaseVariableType {
             opaque: true,
             types: {},
             variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
-                    type: v[0],
+                    type: instance.propertyTypes[k] ?? v[0],
+                    assignabilityType: v[0],
                     updateType(type) {
                         if (v[0] instanceof ArrayVariableType && !v[0].lengthInformation) {
                             instance.propertyTypes[k] = type;

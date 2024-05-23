@@ -409,7 +409,8 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			opaque: true,
 			types: {},
 			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
-				type: v[0],
+				type: instance.propertyTypes[k] ?? v[0],
+				assignabilityType: v[0],
 				updateType(type){
 					if(v[0] instanceof ArrayVariableType && !v[0].lengthInformation){
 						instance.propertyTypes[k] = type;
@@ -476,6 +477,9 @@ export type OpenedFileOfType<T extends FileMode> = OpenedFile & { mode: T; };
 
 export type VariableData<T extends VariableType = VariableType, /** Set this to never for initialized */ Uninitialized = null> = {
 	type: T;
+	/** Used for varlength arrays in classes */
+	assignabilityType?: T;
+	/** Used for varlength arrays in classes */
 	updateType?: (type:VariableType) => unknown;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
