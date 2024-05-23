@@ -37,7 +37,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, tryRunOr, zip } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, tryRun, tryRunOr, zip } from "./utils.js";
 export function typesEqual(a, b, types = new Array()) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
@@ -345,23 +345,16 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                                 fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`, expr);
                             if (type && !(type instanceof PointerVariableType))
                                 fail(f.quote `Expected result to be of type ${type}, but the reference operator will return a pointer`, expr);
-                            let variable;
-                            try {
-                                variable = this.evaluateExpr(expr.nodes[0], "variable", true);
-                            }
-                            catch (err) {
-                                if (err instanceof SoodocodeError) {
-                                    const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
-                                    const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
-                                    return this.finishEvaluation({
-                                        type: targetType,
-                                        declaration: "dynamic",
-                                        mutable: true,
-                                        value: targetValue
-                                    }, pointerType, type);
-                                }
-                                else
-                                    throw err;
+                            const [variable, err] = tryRun(() => this.evaluateExpr(expr.nodes[0], "variable", true));
+                            if (err) {
+                                const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
+                                const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
+                                return this.finishEvaluation({
+                                    type: targetType,
+                                    declaration: "dynamic",
+                                    mutable: true,
+                                    value: targetValue
+                                }, pointerType, type);
                             }
                             const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote `Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
                             return this.finishEvaluation(variable, pointerType, type);

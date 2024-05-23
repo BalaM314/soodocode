@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
+import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -73,7 +73,7 @@ export const parseType = errorBoundary()((tokens) => {
     if (checkTokens(tokens, ["keyword.array", "keyword.of", "name"]))
         return new ExpressionASTArrayTypeNode(null, tokens.at(-1), tokens);
     if (checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", "keyword.of", "name"]))
-        return new ExpressionASTArrayTypeNode(splitTokensWithSplitter(tokens.slice(2, -3), "punctuation.comma").map(({ group, splitter }) => {
+        return new ExpressionASTArrayTypeNode(splitTokensOnComma(tokens.slice(2, -3)).map((group) => {
             const groups = splitTokens(group, "punctuation.colon");
             if (groups.length != 2)
                 fail(`Invalid array range specifier $rc: must consist of two expressions separated by a colon`, group);

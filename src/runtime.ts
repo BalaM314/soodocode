@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, E
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, separateArray, tryRunOr, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, separateArray, tryRun, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
@@ -383,25 +383,20 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 				case operators.pointer_reference: {
 					if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`, expr);
 					if(type && !(type instanceof PointerVariableType)) fail(f.quote`Expected result to be of type ${type}, but the reference operator will return a pointer`, expr);
-					let variable; //TODO Replace this with tryRun
-					try {
-						variable = this.evaluateExpr(expr.nodes[0], "variable", true);
-						//Guess the type
-					} catch(err){
+					const [variable, err] = tryRun(() => this.evaluateExpr(expr.nodes[0], "variable", true));
+					if(err){
 						//If the thing we're referencing couldn't be evaluated to a variable
 						//create a fake variable
 						//CONFIG weird pointers to fake variables
-						if(err instanceof SoodocodeError){
-							const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
-							//Guess the type
-							const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
-							return this.finishEvaluation({
-								type: targetType,
-								declaration: "dynamic",
-								mutable: true,
-								value: targetValue
-							}, pointerType, type);
-						} else throw err;
+						const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
+						//Guess the type
+						const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
+						return this.finishEvaluation({
+							type: targetType,
+							declaration: "dynamic",
+							mutable: true,
+							value: targetValue
+						}, pointerType, type);
 					}
 					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
 					return this.finishEvaluation(variable, pointerType, type);

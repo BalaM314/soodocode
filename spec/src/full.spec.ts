@@ -144,6 +144,19 @@ ENDPROCEDURE
 CALL amogus(50)`,
 ["5", "51"]
 ],
+run_array_computed_size_parens_variable_available: [
+`FUNCTION sus(a, b: INTEGER) RETURNS INTEGER
+	RETURN 50
+ENDFUNCTION
+PROCEDURE amogus()
+	DECLARE x: ARRAY[1:sus(2, 2) + 1] OF INTEGER
+	x[20] <- 5
+	OUTPUT x[20]
+	OUTPUT LENGTH(x)
+ENDPROCEDURE
+CALL amogus()`,
+["5", "51"]
+],
 run_array_computed_size_constant_declare: [
 `CONSTANT a = 50
 DECLARE x: ARRAY[1:a+1] OF INTEGER
