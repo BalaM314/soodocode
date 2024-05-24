@@ -1149,7 +1149,7 @@ ENDCLASS
 DECLARE b: b
 b <- NEW b()
 OUTPUT 5 & b.Sus()`,
-`"NEW"`
+`member access on SUPER`
 ],
 rickroll: [
 `CONSTANT input = "qkfd{ql^yk  maqmthqkd^  ielfxthb  }uui|n  {oqo  ugfd}ok_wm  ieskplsid^  phj\`xp  yyui{o  j^pnyunn,,  sihb{qk_rr  ieqmomqkc_  vnzprj  b\`sqtjzpnndd  c_rjj^  gal^ssk_uous  yyuivt..  hhb\`qovj}u  b\`tltpmese  kaskvhoiss''  h\`c_~t"
