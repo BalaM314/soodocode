@@ -34,7 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { builtinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, tryRun, tryRunOr, zip } from "./utils.js";
@@ -127,7 +127,7 @@ let Runtime = (() => {
                 else
                     return [from, value];
             }
-            processArrayAccess(expr, operation, arg2) {
+            processArrayAccess(expr, type) {
                 const _variable = this.evaluateExpr(expr.target, "variable");
                 if (!(_variable.type instanceof ArrayVariableType))
                     fail(f.quote `Cannot convert variable of type ${_variable.type} to an array`, expr.target);
@@ -137,8 +137,8 @@ let Runtime = (() => {
                     crash(`Cannot access elements in an array of unknown length`);
                 if (!varTypeData.elementType)
                     crash(`Cannot access elements in an array of unknown type`);
-                if (arg2 instanceof ArrayVariableType)
-                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.elementType}`, expr.target);
+                if (type instanceof ArrayVariableType)
+                    fail(f.quote `Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${type}, but the array access produces a result of type ${varTypeData.elementType}`, expr.target);
                 if (expr.indices.length != varTypeData.lengthInformation.length)
                     fail(`Cannot evaluate expression starting with "array access": \
 ${varTypeData.lengthInformation.length}-dimensional array requires ${varTypeData.lengthInformation.length} indices, \
@@ -153,79 +153,62 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 const index = indexes.reduce((acc, [_expr, value], index) => (acc + value - varTypeData.lengthInformation[index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes[index + 1]), 0);
                 if (index >= variable.value.length)
                     crash(`Array index bounds check failed: ${indexes.map(v => v[1]).join(", ")}; ${index} > ${variable.value.length}`);
-                if (operation == "get") {
-                    const type = arg2;
-                    if (type == "variable") {
-                        return {
-                            type: varTypeData.elementType,
-                            declaration: variable.declaration,
-                            mutable: true,
-                            get value() { return variable.value[index]; },
-                            set value(val) { variable.value[index] = val; }
-                        };
-                    }
-                    const output = variable.value[index];
-                    if (output == null)
-                        fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-                    return this.finishEvaluation(output, varTypeData.elementType, type);
+                if (type == "variable") {
+                    return {
+                        type: varTypeData.elementType,
+                        declaration: variable.declaration,
+                        mutable: true,
+                        get value() { return variable.value[index]; },
+                        set value(val) { variable.value[index] = val; }
+                    };
                 }
-                else {
-                    variable.value[index] = this.evaluateExpr(arg2, varTypeData.elementType)[1];
-                }
+                const output = variable.value[index];
+                if (output == null)
+                    fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
+                return this.finishEvaluation(output, varTypeData.elementType, type);
             }
-            processRecordAccess(expr, operation, arg2) {
+            processRecordAccess(expr, type) {
                 if (!(expr.nodes[1] instanceof Token))
                     crash(`Second node in record access expression was not a token`);
                 const property = expr.nodes[1].text;
-                if (operation == "set" || arg2 == "variable") {
+                if (type == "variable") {
                     const variable = this.evaluateExpr(expr.nodes[0], "variable");
                     if (variable.type instanceof RecordVariableType) {
                         const outputType = variable.type.fields[property]?.[0] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
-                        if (arg2 == "variable") {
-                            return {
-                                type: outputType,
-                                declaration: variable.declaration,
-                                mutable: true,
-                                get value() { return variable.value[property]; },
-                                set value(val) {
-                                    variable.value[property] = val;
-                                }
-                            };
-                        }
-                        else {
-                            const value = arg2;
-                            variable.value[property] = this.evaluateExpr(value, outputType)[1];
-                        }
+                        return {
+                            type: outputType,
+                            declaration: variable.declaration,
+                            mutable: true,
+                            get value() { return variable.value[property]; },
+                            set value(val) {
+                                variable.value[property] = val;
+                            }
+                        };
                     }
                     else if (variable.type instanceof ClassVariableType) {
                         const propertyStatement = variable.type.properties[property]?.[1] ?? fail(f.quote `Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
                         if (propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type))
                             fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
                         const outputType = variable.type.getPropertyType(property, variable.value);
-                        if (arg2 == "variable") {
-                            return {
-                                type: outputType,
-                                declaration: variable.declaration,
-                                mutable: true,
-                                get value() { return variable.value.properties[property]; },
-                                set value(val) {
-                                    variable.value.properties[property] = val;
-                                }
-                            };
-                        }
-                        else {
-                            const value = arg2;
-                            const [exprType, exprValue] = this.evaluateExpr(value, variable.type.properties[property]?.[0]);
-                            variable.value.properties[property] = exprValue;
-                            if (outputType instanceof ArrayVariableType && !outputType.lengthInformation)
-                                variable.value.propertyTypes[property] = exprType;
-                        }
+                        return {
+                            type: outputType,
+                            assignabilityType: variable.type.properties[property][0],
+                            updateType(type) {
+                                if (outputType instanceof ArrayVariableType && !outputType.lengthInformation)
+                                    variable.value.propertyTypes[property] = type;
+                            },
+                            declaration: variable.declaration,
+                            mutable: true,
+                            get value() { return variable.value.properties[property]; },
+                            set value(val) {
+                                (variable.value.properties)[property] = val;
+                            }
+                        };
                     }
                     else
                         fail(f.quote `Cannot access property ${property} on variable of type ${variable.type} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
                 }
                 else {
-                    const type = arg2;
                     if (expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super") {
                         if (!this.classData)
                             fail(`SUPER is only valid within a class`, expr.nodes[0]);
@@ -282,18 +265,12 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                 }
             }
             assignExpr(target, src) {
-                if (target instanceof ExpressionASTArrayAccessNode)
-                    this.processArrayAccess(target, "set", src);
-                else if (target instanceof ExpressionASTBranchNode && target.operator === operators.access)
-                    this.processRecordAccess(target, "set", src);
-                else {
-                    const variable = this.evaluateExpr(target, "variable");
-                    if (!variable.mutable)
-                        fail(f.quote `Cannot assign to constant ${target}`, target);
-                    const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
-                    variable.value = val;
-                    variable.updateType?.(valType);
-                }
+                const variable = this.evaluateExpr(target, "variable");
+                if (!variable.mutable)
+                    fail(f.quote `Cannot assign to constant ${target}`, target);
+                const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+                variable.value = val;
+                variable.updateType?.(valType);
             }
             evaluateExpr(expr, type, _recursive = false) {
                 if (expr == undefined)
@@ -303,7 +280,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                 if (expr instanceof ExpressionASTArrayAccessNode) {
                     if (type == "function")
                         fail(`Expected this expression to evaluate to a function, but found an array access, which cannot return a function.`, expr);
-                    return this.processArrayAccess(expr, "get", type);
+                    return this.processArrayAccess(expr, type);
                 }
                 if (expr instanceof ExpressionASTFunctionCallNode) {
                     if (type == "variable")
@@ -339,7 +316,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1]
                 if (expr.operator.category == "special") {
                     switch (expr.operator) {
                         case operators.access:
-                            return this.processRecordAccess(expr, "get", type);
+                            return this.processRecordAccess(expr, type);
                         case operators.pointer_reference: {
                             if (type == "variable" || type == "function")
                                 fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`, expr);

@@ -64,8 +64,8 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
             ["ThisString", [["ANY"], "STRING"]],
         ],
         returnType: "INTEGER",
-        impl(str) {
-            return str.length;
+        impl(x) {
+            return x.length;
         },
     }),
     TO_UPPER: fn({

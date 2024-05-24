@@ -139,8 +139,8 @@ export const builtinFunctions = (
 			["ThisString", [["ANY"], "STRING"]],
 		],
 		returnType: "INTEGER",
-		impl(str){
-			return str.length;
+		impl(x){
+			return x.length;
 		},
 	}),
 	//Source: s23 P22 insert

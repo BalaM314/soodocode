@@ -133,12 +133,11 @@ export class Runtime {
 		else if(to) return [to, this.coerceValue(value, from, to)];
 		else return [from, value];
 	}
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type:"variable"):VariableData;
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"set", value:ExpressionAST):void;
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get", type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, type?:VariableType):[type:VariableType, value:VariableValue];
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, type:"variable"):VariableData;
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
 	@errorBoundary()
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, operation:"get" | "set", arg2?:VariableType | "variable" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | void {
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, type?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData | void {
 
 		//Make sure the variable exists and is an array
 		const _variable = this.evaluateExpr(expr.target, "variable");
@@ -150,8 +149,8 @@ export class Runtime {
 
 		//TODO is there any way of getting a 1D array out of a 2D array?
 		//Forbids getting any arrays from arrays
-		if(arg2 instanceof ArrayVariableType)
-			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${arg2}, but the array access produces a result of type ${varTypeData.elementType}`, expr.target);
+		if(type instanceof ArrayVariableType)
+			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${type}, but the array access produces a result of type ${varTypeData.elementType}`, expr.target);
 
 
 		if(expr.indices.length != varTypeData.lengthInformation.length)
@@ -177,37 +176,30 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			(acc + value - varTypeData.lengthInformation![index][0]) * (index == indexes.length - 1 ? 1 : varTypeData.arraySizes![index + 1]),
 		0);
 		if(index >= variable.value.length) crash(`Array index bounds check failed: ${indexes.map(v => v[1]).join(", ")}; ${index} > ${variable.value.length}`);
-		if(operation == "get"){
-			const type = arg2 as VariableType | "variable";
-			if(type == "variable"){
-				//i see nothing wrong with this bodged variable data
-				return {
-					type: varTypeData.elementType,
-					declaration: variable.declaration,
-					mutable: true,
-					get value(){ return variable.value[index]; },
-					set value(val){ variable.value[index] = val; }
-				};
-			}
-			const output = variable.value[index];
-			if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-			return this.finishEvaluation(output, varTypeData.elementType, type);
-		} else {
-			(variable.value as Array<VariableValue>)[index] = this.evaluateExpr(arg2 as ExpressionAST, varTypeData.elementType)[1];
+		if(type == "variable"){
+			//i see nothing wrong with this bodged variable data
+			return {
+				type: varTypeData.elementType,
+				declaration: variable.declaration,
+				mutable: true,
+				get value(){ return variable.value[index]; },
+				set value(val){ variable.value[index] = val; }
+			};
 		}
+		const output = variable.value[index];
+		if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
+		return this.finishEvaluation(output, varTypeData.elementType, type);
 	}
 	/* get a property, optionally specifying type */
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType):[type:VariableType, value:VariableValue];
+	processRecordAccess(expr:ExpressionASTBranchNode, type?:VariableType):[type:VariableType, value:VariableValue];
 	/* get a property as a variable (so it can be written to) */
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type:"variable"):VariableData | ConstantData;
+	processRecordAccess(expr:ExpressionASTBranchNode, type:"variable"):VariableData | ConstantData;
 	/* get a property as a function */
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type:"function"):ClassMethodCallInformation;
+	processRecordAccess(expr:ExpressionASTBranchNode, type:"function"):ClassMethodCallInformation;
 	/* loose overload */
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get", type?:VariableType | "variable" | "function"):[type:VariableType, value:VariableValue] | VariableData | ConstantData | ClassMethodCallInformation;
-	/* set the value of a property */
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"set", value:ExpressionAST):void;
+	processRecordAccess(expr:ExpressionASTBranchNode, type?:VariableType | "variable" | "function"):[type:VariableType, value:VariableValue] | VariableData | ConstantData | ClassMethodCallInformation;
 	@errorBoundary()
-	processRecordAccess(expr:ExpressionASTBranchNode, operation:"get" | "set", arg2?:VariableType | "variable" | "function" | ExpressionAST):[type:VariableType, value:VariableValue] | VariableData | ConstantData | ClassMethodCallInformation | void {
+	processRecordAccess(expr:ExpressionASTBranchNode, type?:VariableType | "variable" | "function"):[type:VariableType, value:VariableValue] | VariableData | ConstantData | ClassMethodCallInformation | void {
 		//this code is terrible
 		//note to self:
 		//do not use typescript overloads like this
@@ -215,52 +207,41 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		if(!(expr.nodes[1] instanceof Token)) crash(`Second node in record access expression was not a token`);
 		const property = expr.nodes[1].text;
 
-		if(operation == "set" || arg2 == "variable"){
-			//overloads 2 and 5
-			const variable = this.evaluateExpr(expr.nodes[0], "variable"); //TODO is this necessary? why can't we assign to some property on the result of a function call?
+		if(type == "variable"){
+			//overload 2
+			const variable = this.evaluateExpr(expr.nodes[0], "variable");
 			if(variable.type instanceof RecordVariableType){
 				const outputType = variable.type.fields[property]?.[0] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
-				if(arg2 == "variable"){ //overload 2
-					//i see nothing wrong with this bodged variable data
-					return {
-						type: outputType,
-						declaration: variable.declaration,
-						mutable: true, //Even if the record is immutable, the property is mutable
-						get value(){ return (variable.value as VariableTypeMapping<RecordVariableType>)[property]; },
-						set value(val){
-							(variable.value as VariableTypeMapping<RecordVariableType>)[property] = val;
-						}
-					} as (VariableData | ConstantData);
-				} else {
-					//overload 5
-					const value = arg2 as ExpressionAST;
-					(variable.value as VariableTypeMapping<RecordVariableType>)[property] = this.evaluateExpr(value, outputType)[1];
-				}
+				//i see nothing wrong with this bodged variable data
+				return {
+					type: outputType,
+					declaration: variable.declaration as (VariableData & ConstantData)["declaration"],
+					mutable: true, //Even if the record is immutable, the property is mutable
+					get value(){ return (variable.value as VariableTypeMapping<RecordVariableType>)[property]; },
+					set value(val){
+						(variable.value as VariableTypeMapping<RecordVariableType>)[property] = val;
+					}
+				} satisfies (VariableData | ConstantData);
 			} else if(variable.type instanceof ClassVariableType){
 				const propertyStatement = variable.type.properties[property]?.[1] ?? fail(f.quote`Property ${property} does not exist on type ${variable.type}`, expr.nodes[1]);
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(variable.type)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 				const outputType = variable.type.getPropertyType(property, variable.value as VariableTypeMapping<ClassVariableType>);
-				if(arg2 == "variable"){ //overload 2
-					return {
-						type: outputType,
-						declaration: variable.declaration,
-						mutable: true, //Even if the class instance variable is immutable, the property is mutable
-						get value(){ return ((variable.value as VariableTypeMapping<ClassVariableType>).properties as Record<string, VariableValue>)[property]; },
-						set value(val){
-							((variable.value as VariableTypeMapping<ClassVariableType>).properties as Record<string, VariableValue>)[property] = val;
-						}
-					} as (VariableData | ConstantData);
-				} else {
-					//overload 5
-					const value = arg2 as ExpressionAST;
-					const [exprType, exprValue] = this.evaluateExpr(value, variable.type.properties[property]?.[0]);
-					(variable.value as VariableTypeMapping<ClassVariableType>).properties[property] = exprValue;
-					if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
-						(variable.value as VariableTypeMapping<ClassVariableType>).propertyTypes[property] = exprType;
-				}
+				return {
+					type: outputType,
+					assignabilityType: variable.type.properties[property][0],
+					updateType(type){
+						if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
+							(variable.value as VariableTypeMapping<ClassVariableType>).propertyTypes[property] = type;
+					},
+					declaration: variable.declaration,
+					mutable: true, //Even if the class instance variable is immutable, the property is mutable
+					get value(){ return ((variable.value as VariableTypeMapping<ClassVariableType>).properties as Record<string, VariableValue>)[property]; },
+					set value(val){
+						((variable.value as VariableTypeMapping<ClassVariableType>).properties)[property] = val;
+					}
+				} as (VariableData | ConstantData);
 			} else fail(f.quote`Cannot access property ${property} on variable of type ${variable.type} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
 		} else { //overloads 1 and 3
-			const type = arg2 as VariableType | "function";
 			if(expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super"){
 				//Super method calls
 				if(!this.classData) fail(`SUPER is only valid within a class`, expr.nodes[0]);
@@ -316,16 +297,11 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 		}
 	}
 	assignExpr(target:ExpressionAST, src:ExpressionAST){
-		//TODO the control flow of expression evaluation is a mess: Remove "set" from process[Array/Record]Access, just use the fake variable
-		if(target instanceof ExpressionASTArrayAccessNode) this.processArrayAccess(target, "set", src);
-		else if(target instanceof ExpressionASTBranchNode && target.operator === operators.access) this.processRecordAccess(target, "set", src);
-		else {
-			const variable = this.evaluateExpr(target, "variable");
-			if(!variable.mutable) fail(f.quote`Cannot assign to constant ${target}`, target);
-			const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
-			variable.value = val;
-			variable.updateType?.(valType);
-		}
+		const variable = this.evaluateExpr(target, "variable");
+		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${target}`, target);
+		const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+		variable.value = val;
+		variable.updateType?.(valType);
 	}
 	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
 	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):[type:VariableType, value:VariableValue];
@@ -347,7 +323,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 		//Special cases where the operator isn't a normal operator
 		if(expr instanceof ExpressionASTArrayAccessNode){
 			if(type == "function") fail(`Expected this expression to evaluate to a function, but found an array access, which cannot return a function.`, expr);
-			return this.processArrayAccess(expr, "get", type);
+			return this.processArrayAccess(expr, type);
 		}
 		if(expr instanceof ExpressionASTFunctionCallNode){
 			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`, expr);
@@ -379,7 +355,7 @@ help: change the type of the variable to ${classType.fmtPlain()}`,
 		if(expr.operator.category == "special"){
 			switch(expr.operator){
 				case operators.access:
-					return this.processRecordAccess(expr, "get", type);
+					return this.processRecordAccess(expr, type);
 				case operators.pointer_reference: {
 					if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`, expr);
 					if(type && !(type instanceof PointerVariableType)) fail(f.quote`Expected result to be of type ${type}, but the reference operator will return a pointer`, expr);
