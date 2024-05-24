@@ -37,7 +37,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, groupArray, impossible, min, tryRun, tryRunOr, zip } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr, zip } from "./utils.js";
 export function typesEqual(a, b, types = new Array()) {
     return a == b ||
         (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
@@ -171,101 +171,102 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 if (!(expr.nodes[1] instanceof Token))
                     crash(`Second node in record access expression was not a token`);
                 const property = expr.nodes[1].text;
+                if (expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super") {
+                    if (!this.classData)
+                        fail(`SUPER is only valid within a class`, expr.nodes[0]);
+                    const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
+                    if (!(outType == "function"))
+                        fail(`Expected this expression to evaluate to a value, but it is a member access on SUPER, which can only return methods`, expr);
+                    const [clazz, method] = baseType.allMethods[property] ?? fail(f.quote `Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
+                    return {
+                        clazz, method, instance: this.classData.instance
+                    };
+                }
+                let target = undefined;
+                let targetType;
+                let targetValue;
                 if (outType == "variable") {
-                    const target = this.evaluateExpr(expr.nodes[0], "variable");
-                    if (target.type instanceof RecordVariableType) {
-                        const outputType = target.type.fields[property]?.[0] ?? fail(f.quote `Property ${property} does not exist on type ${target.type}`, expr.nodes[1]);
-                        return {
-                            type: outputType,
-                            declaration: target.declaration,
-                            mutable: true,
-                            get value() { return target.value[property]; },
-                            set value(val) {
-                                target.value[property] = val;
-                            }
-                        };
-                    }
-                    else if (target.type instanceof ClassVariableType) {
-                        const propertyStatement = target.type.properties[property]?.[1] ?? fail(f.quote `Property ${property} does not exist on type ${target.type}`, expr.nodes[1]);
-                        if (propertyStatement.accessModifier == "private" && !this.canAccessClass(target.type))
-                            fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                        const outputType = target.type.getPropertyType(property, target.value);
-                        return {
-                            type: outputType,
-                            assignabilityType: target.type.properties[property][0],
-                            updateType(type) {
-                                if (outputType instanceof ArrayVariableType && !outputType.lengthInformation)
-                                    target.value.propertyTypes[property] = type;
-                            },
-                            declaration: target.declaration,
-                            mutable: true,
-                            get value() { return target.value.properties[property]; },
-                            set value(val) {
-                                (target.value.properties)[property] = val;
-                            }
-                        };
-                    }
-                    else
-                        fail(f.quote `Cannot access property ${property} on variable of type ${target.type} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
+                    target = this.evaluateExpr(expr.nodes[0], "variable");
+                    targetType = target.type;
+                    targetValue = target.value;
                 }
                 else {
-                    if (expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super") {
-                        if (!this.classData)
-                            fail(`SUPER is only valid within a class`, expr.nodes[0]);
-                        const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
-                        if (!(outType == "function"))
-                            fail(`Expected this expression to evaluate to a value, but it is a member access on SUPER, which can only return methods`, expr);
-                        const [clazz, method] = baseType.allMethods[property] ?? fail(f.quote `Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
+                    [targetType, targetValue] = this.evaluateExpr(expr.nodes[0]);
+                }
+                if (targetType instanceof RecordVariableType) {
+                    forceType(targetValue);
+                    const outputType = targetType.fields[property]?.[0] ?? fail(f.quote `Property ${property} does not exist on type ${targetType}`, expr.nodes[1]);
+                    if (outType == "variable") {
                         return {
-                            clazz, method, instance: this.classData.instance
+                            type: outputType,
+                            declaration: (target).declaration,
+                            mutable: true,
+                            get value() { return targetValue[property]; },
+                            set value(val) { targetValue[property] = val; }
                         };
                     }
-                    const [targetType, _target] = this.evaluateExpr(expr.nodes[0]);
-                    if (targetType instanceof RecordVariableType) {
-                        const target = _target;
-                        if (outType == "function")
-                            fail(f.quote `Expected this expression to evaluate to a function, but found a property access on a variable of type ${outType}, which cannot have functions as properties`, expr);
-                        const outputType = targetType.fields[property]?.[0] ?? fail(f.quote `Property ${property} does not exist on value of type ${targetType}`, expr.nodes[1]);
-                        const value = target[property];
+                    else if (outType == "function") {
+                        fail(f.quote `Expected this expression to evaluate to a function, but found a property access on a variable of type ${targetType}, which cannot have functions as properties`, expr);
+                    }
+                    else {
+                        const value = targetValue[property];
                         if (value === null)
                             fail(f.text `Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
                         return this.finishEvaluation(value, outputType, outType);
                     }
-                    else if (targetType instanceof ClassVariableType) {
-                        const classInstance = _target;
-                        const classType = classInstance.type;
-                        if (outType == "function") {
-                            const [clazz, method] = targetType.allMethods[property]
-                                ? (classType.allMethods[property] ?? crash(`Inherited method not present`))
-                                : classType.allMethods[property]
-                                    ? fail(f.quote `Method ${property} does not exist on type ${targetType}.
-The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the method, \
+                }
+                else if (targetType instanceof ClassVariableType) {
+                    const classInstance = targetValue;
+                    const instanceType = classInstance.type;
+                    if (outType == "function") {
+                        const [clazz, method] = targetType.allMethods[property]
+                            ? (instanceType.allMethods[property] ?? crash(`Inherited method not present`))
+                            : instanceType.allMethods[property]
+                                ? fail(f.quote `Method ${property} does not exist on type ${targetType}.
+The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()} which has the method, \
 but the type of the variable is ${targetType.fmtPlain()}.
-help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1])
-                                    : fail(f.quote `Method ${property} does not exist on type ${targetType}`, expr.nodes[1]);
-                            if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(targetType))
-                                fail(f.quote `Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-                            return { method, instance: classInstance, clazz };
+help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes[1])
+                                : fail(f.quote `Method ${property} does not exist on type ${targetType}`, expr.nodes[1]);
+                        if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(targetType))
+                            fail(f.quote `Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
+                        return { method, instance: classInstance, clazz };
+                    }
+                    else {
+                        const propertyStatement = targetType.properties[property]?.[1] ?? (instanceType.properties[property]
+                            ? fail(f.quote `Property ${property} does not exist on type ${targetType}.
+The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()} which has the property, \
+but the type of the variable is ${targetType.fmtPlain()}.
+help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes[1])
+                            : fail(f.quote `Property ${property} does not exist on type ${targetType}`, expr.nodes[1]));
+                        if (propertyStatement.accessModifier == "private" && !this.canAccessClass(targetType))
+                            fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
+                        const outputType = targetType.getPropertyType(property, classInstance);
+                        if (outType == "variable") {
+                            return {
+                                type: outputType,
+                                assignabilityType: targetType.properties[property][0],
+                                updateType(type) {
+                                    if (outputType instanceof ArrayVariableType && !outputType.lengthInformation)
+                                        classInstance.propertyTypes[property] = type;
+                                },
+                                declaration: target.declaration,
+                                mutable: true,
+                                get value() { return classInstance.properties[property]; },
+                                set value(val) {
+                                    classInstance.properties[property] = val;
+                                }
+                            };
                         }
                         else {
-                            const propertyStatement = targetType.properties[property]?.[1] ?? (classType.properties[property]
-                                ? fail(f.quote `Property ${property} does not exist on type ${targetType}.
-The data in the variable ${expr.nodes[0]} is of type ${classType.fmtPlain()} which has the property, \
-but the type of the variable is ${targetType.fmtPlain()}.
-help: change the type of the variable to ${classType.fmtPlain()}`, expr.nodes[1])
-                                : fail(f.quote `Property ${property} does not exist on type ${targetType}`, expr.nodes[1]));
-                            if (propertyStatement.accessModifier == "private" && !this.canAccessClass(targetType))
-                                fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
                             const value = classInstance.properties[property];
-                            const outputType = targetType.getPropertyType(property, classInstance);
                             if (value === null)
                                 fail(f.text `Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
                             return this.finishEvaluation(value, outputType, outType);
                         }
                     }
-                    else
-                        fail(f.quote `Cannot access property on value of type ${targetType} because it is not a record type and cannot have proprties`, expr.nodes[0]);
                 }
+                else
+                    fail(f.quote `Cannot access property ${property} on variable of type ${targetType} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
             }
             assignExpr(target, src) {
                 const variable = this.evaluateExpr(target, "variable");
