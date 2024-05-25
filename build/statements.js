@@ -155,6 +155,9 @@ let Statement = (() => {
                 "class_function.end": "ENDFUNCTION (class)",
             }[type] ?? "unknown statement";
         }
+        static tokensSortScore({ tokens } = this) {
+            return tokens.filter(t => [".*", ".+", "expr+", "type+"].includes(t)).length * 100 - tokens.length;
+        }
         run(runtime) {
             crash(`Missing runtime implementation for statement ${this.stype}`);
         }

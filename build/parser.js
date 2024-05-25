@@ -168,6 +168,7 @@ export function getPossibleStatements(tokens, context) {
     let validStatements = (tokens[0].type in statements.byStartKeyword
         ? statements.byStartKeyword[tokens[0].type]
         : statements.irregular);
+    validStatements.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
     if (ctx?.allowOnly) {
         const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
         if (allowedValidStatements.length == 0) {

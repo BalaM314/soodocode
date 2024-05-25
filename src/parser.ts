@@ -93,7 +93,6 @@ export const parseType = errorBoundary()((tokens:RangeArray<Token>):ExpressionAS
 	if(checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", "keyword.of", "name"]))
 		return new ExpressionASTArrayTypeNode(
 			splitTokensOnComma(tokens.slice(2, -3)).map((group) => {
-				//TODO use splitTokensOnComma
 				const groups = splitTokens(group, "punctuation.colon");
 				if(groups.length != 2) fail(`Invalid array range specifier $rc: must consist of two expressions separated by a colon`, group);
 				return (groups as [RangeArray<Token>, RangeArray<Token>]).map(a => parseExpression(a));
@@ -188,6 +187,7 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
 	let validStatements = (tokens[0].type in statements.byStartKeyword
 		? statements.byStartKeyword[tokens[0].type]!
 		: statements.irregular);
+	validStatements.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
 	if(ctx?.allowOnly){
 		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
 		if(allowedValidStatements.length == 0){

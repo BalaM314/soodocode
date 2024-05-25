@@ -7,10 +7,10 @@ This file contains the definitions for every statement type supported by Soodoco
 
 
 import { builtinFunctions } from "./builtin_functions.js";
-import { Token, RangeArray, TokenType } from "./lexer-types.js";
+import { RangeArray, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ArrayVariableType, ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
@@ -167,6 +167,10 @@ export class Statement implements TextRanged, IFormattable {
 			"class_function": "Class function",
 			"class_function.end": "ENDFUNCTION (class)",
 		} satisfies Record<LegalStatementType, string> as Record<string, string | undefined>)[type] ?? "unknown statement";
+	}
+	/** Higher scores are given lower priority. */
+	static tokensSortScore({tokens}:typeof Statement = this):number {
+		return tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -979,7 +983,6 @@ export class ClassInheritsStatement extends ClassStatement {
 }
 
 
-//TODO deprioritize checking statements with more varargs
 @statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")
 export class ClassPropertyStatement extends DeclareStatement implements IClassMemberStatement {
 	accessModifierToken: Token;
