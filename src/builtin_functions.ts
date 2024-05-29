@@ -100,9 +100,11 @@ export const builtinFunctions = (
 		],
 		returnType: "STRING",
 		impl(str, num){
+			const chars = [...str];
+			//CONFIG unicode mode
 			if(num < 0) fail(`Number ${num} is negative`, num);
-			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`, num);
-			return str.slice(0, num);
+			if(num > chars.length) fail(`Number ${num} is greater than the length of the string (${chars.length})`, num);
+			return chars.slice(0, num).join("");
 		},
 	}),
 	//source: spec 5.5
@@ -113,9 +115,10 @@ export const builtinFunctions = (
 		],
 		returnType: "STRING",
 		impl(str, num){
+			const chars = [...str];
 			if(num < 0) fail(`Number ${num} is negative`, num);
-			if(num > str.length) fail(`Number ${num} is greater than the length of the string (${str.length})`, num);
-			return str.slice(-num);
+			if(num > chars.length) fail(`Number ${num} is greater than the length of the string (${chars.length})`, num);
+			return chars.slice(-num).join("");
 		},
 	}),
 	//source: spec 5.5
@@ -127,10 +130,11 @@ export const builtinFunctions = (
 		],
 		returnType: "STRING",
 		impl(str, start, length){
+			const chars = [...str];
 			if(start < 1) fail(`Start index ${start} is less than 1`, start);
 			if(length < 1) fail(`Slice length ${length} is less than 1`, length);
-			if(length + start - 1 > str.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${str.length})`, str);
-			return str.slice(start - 1, start + length - 1);
+			if(length + start - 1 > chars.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${chars.length})`, str);
+			return chars.slice(start - 1, start + length - 1).join("");
 		},
 	}),
 	//source: spec 5.5
@@ -140,7 +144,9 @@ export const builtinFunctions = (
 		],
 		returnType: "INTEGER",
 		impl(x){
-			return x.length;
+			if(Array.isArray(x))
+				return x.length;
+			else return [...x].length;
 		},
 	}),
 	//Source: s23 P22 insert
@@ -223,7 +229,7 @@ export const builtinFunctions = (
 		],
 		returnType: "INTEGER",
 		impl(str){
-			return str.charCodeAt(0);
+			return str.codePointAt(0)!;
 		},
 	}),
 	CHR: fn({
@@ -232,7 +238,7 @@ export const builtinFunctions = (
 		],
 		returnType: "CHAR",
 		impl(x){
-			return String.fromCharCode(x);
+			return String.fromCodePoint(x);
 		},
 	}),
 	//source: spec 5.6
