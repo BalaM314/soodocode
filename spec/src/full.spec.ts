@@ -56,6 +56,33 @@ x ⇠ 5
 x ⇽ 5`,
 []
 ],
+parse_high_unicode_chars: [
+`DECLARE sussy: CHAR
+sussy <- '😀'`,
+[]
+],
+parse_high_unicode_chars_illegal_flag: [
+`DECLARE amongus: CHAR
+amongus <- '🇺🇳'`,
+`Flags are actually two characters`
+],
+run_high_unicode_chars: [
+`OUTPUT ASC('🤖')
+OUTPUT CHR(129302), "gus"`,
+["129302", "🤖gus"]
+],
+run_length_high_unicode_chars: [
+`OUTPUT LENGTH("🤖")
+OUTPUT LENGTH("🇺🇳")
+OUTPUT LENGTH("am🇺🇳gus🤖🤖")`,
+["1", "2", "9"]
+],
+slice_high_unicode_chars: [
+`OUTPUT LEFT("🤖am🇺🇳gus", 4),
+OUTPUT RIGHT("am🇺🇳gus🤖", 5)
+OUTPUT MID("sussy am🤖🇺🇳🤖gus", 8, 6)`,
+["🤖am🇺", "🇳gus🤖", "m🤖🇺🇳🤖g"]
+],
 declare_duplicate_illegal: [
 `DECLARE x: INTEGER
 DECLARE x: INTEGER`,
