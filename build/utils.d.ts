@@ -63,4 +63,5 @@ export declare function fakeObject<T>(input: Partial<T>): T;
 export declare function tryRun<T>(callback: () => T): [T, null] | [null, SoodocodeError];
 export declare function tryRunOr<T>(callback: () => T, errorHandler: (err: SoodocodeError) => unknown): boolean;
 export declare function boxPrimitive<T>(input: T): BoxPrimitive<T>;
+export declare function unicodeSetsSupported(): boolean;
 export {};

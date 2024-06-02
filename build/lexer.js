@@ -1,5 +1,5 @@
 import { Symbol, Token, RangeArray } from "./lexer-types.js";
-import { access, crash, f, fail, impossible } from "./utils.js";
+import { access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
 export const symbolTypeData = [
     [/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],
@@ -257,10 +257,18 @@ export function tokenize(input) {
             if (symbol.type === "quote.single") {
                 state.sString = null;
                 const range = [symbol.range[1] - currentString.length, symbol.range[1]];
-                if (/^'\p{RGI_Emoji_Flag_Sequence}'$/v.test(currentString))
-                    fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
-                if ([...currentString].length != 3)
+                if (unicodeSetsSupported()) {
+                    if ((new RegExp(`^'\\p{RGI_Emoji_Flag_Sequence}'$`, "v")).test(currentString))
+                        fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
+                }
+                if ([...currentString].length != 3) {
+                    if (typeof Intl != "undefined") {
+                        const chars = (new Intl.Segmenter()).segment(currentString.slice(1, -1));
+                        if ([...chars].length == 1)
+                            fail(`Character ${currentString} has an invalid length: expected one character\nhelp: although it looks like one character, it is actually ${[...currentString].length - 2} characters, use a string to hold them all`, range);
+                    }
                     fail(`Character ${currentString} has an invalid length: expected one character`, range);
+                }
                 tokens.push(new Token("char", currentString, range));
                 currentString = "";
             }

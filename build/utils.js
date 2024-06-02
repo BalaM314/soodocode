@@ -436,3 +436,12 @@ export function boxPrimitive(input) {
         return new String(input);
     return input;
 }
+export function unicodeSetsSupported() {
+    try {
+        void new RegExp("", "v");
+        return true;
+    }
+    catch (err) {
+        return false;
+    }
+}

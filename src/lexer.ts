@@ -10,7 +10,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 
 import { Symbol, SymbolType, SymbolizedProgram, Token, RangeArray, TokenType, TokenizedProgram } from "./lexer-types.js";
 import { TextRange } from "./types.js";
-import { access, crash, f, fail, impossible } from "./utils.js";
+import { access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
 
 
 export const symbolTypeData: [
@@ -274,8 +274,17 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			if(symbol.type === "quote.single"){
 				state.sString = null;
 				const range:TextRange = [symbol.range[1] - currentString.length, symbol.range[1]];
-				if(/^'\p{RGI_Emoji_Flag_Sequence}'$/v.test(currentString)) fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
-				if([...currentString].length != 3) fail(`Character ${currentString} has an invalid length: expected one character`, range);
+				if(unicodeSetsSupported()){
+					if((new RegExp(`^'\\p{RGI_Emoji_Flag_Sequence}'$`, "v")).test(currentString)) fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
+				}
+				if([...currentString].length != 3){
+					if(typeof Intl != "undefined"){
+						//Use Intl.Segmenter to check if the user passed a grapheme made of multiple connected chars
+						const chars = (new Intl.Segmenter()).segment(currentString.slice(1, -1));
+						if([...chars].length == 1) fail(`Character ${currentString} has an invalid length: expected one character\nhelp: although it looks like one character, it is actually ${[...currentString].length - 2} characters, use a string to hold them all`, range);
+					}
+					fail(`Character ${currentString} has an invalid length: expected one character`, range);
+				}
 				tokens.push(new Token("char", currentString, range));
 				currentString = "";
 			}

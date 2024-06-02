@@ -389,6 +389,7 @@ export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionA
 		fail(`Invalid expression leaf node`, token);
 });
 
+//TODO handle attempting to parse expressions with "expected expression, found [something]"
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Cannot parse expression "$rc": `

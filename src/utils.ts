@@ -457,3 +457,12 @@ export function boxPrimitive<T>(input:T):BoxPrimitive<T> {
 	if(typeof input == "string") return new String(input) as never;
 	return input as never;
 }
+
+export function unicodeSetsSupported(){
+	try {
+		void new RegExp("", "v");
+		return true;
+	} catch(err){
+		return false;
+	}
+}
