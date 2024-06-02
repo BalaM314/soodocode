@@ -66,6 +66,11 @@ parse_high_unicode_chars_illegal_flag: [
 amongus <- '🇺🇳'`,
 `Flags are actually two characters`
 ],
+parse_high_unicode_chars_illegal_multi: [
+`DECLARE amongus: CHAR
+amongus <- '👨‍👨‍👧‍👧'`,
+`actually 7 characters`
+],
 run_high_unicode_chars: [
 `OUTPUT ASC('🤖')
 OUTPUT CHR(129302), "gus"`,
@@ -74,14 +79,17 @@ OUTPUT CHR(129302), "gus"`,
 run_length_high_unicode_chars: [
 `OUTPUT LENGTH("🤖")
 OUTPUT LENGTH("🇺🇳")
+OUTPUT LENGTH("👨‍👨‍👧‍👧")
 OUTPUT LENGTH("am🇺🇳gus🤖🤖")`,
-["1", "2", "9"]
+["1", "2", "7", "9"]
 ],
 slice_high_unicode_chars: [
-`OUTPUT LEFT("🤖am🇺🇳gus", 4),
+`OUTPUT LEFT("🤖am🇺🇳gus", 4)
 OUTPUT RIGHT("am🇺🇳gus🤖", 5)
-OUTPUT MID("sussy am🤖🇺🇳🤖gus", 8, 6)`,
-["🤖am🇺", "🇳gus🤖", "m🤖🇺🇳🤖g"]
+OUTPUT MID("sussy am🤖🇺🇳🤖gus", 8, 6)
+OUTPUT MID("👨‍👨‍👧‍👧", 3, 1)
+OUTPUT MID("👨‍👨‍👧‍👧", 3, 2)`,
+["🤖am🇺", "🇳gus🤖", "m🤖🇺🇳🤖g", "👨", "👨\u200D"]
 ],
 declare_duplicate_illegal: [
 `DECLARE x: INTEGER
