@@ -256,9 +256,12 @@ export function tokenize(input) {
             currentString += symbol.text;
             if (symbol.type === "quote.single") {
                 state.sString = null;
-                if (currentString.length != 3)
-                    fail(`Character ${currentString} has an invalid length: expected one character`, [symbol.range[1] - currentString.length, symbol.range[1]]);
-                tokens.push(new Token("char", currentString, [symbol.range[1] - 3, symbol.range[1]]));
+                const range = [symbol.range[1] - currentString.length, symbol.range[1]];
+                if (/^'\p{RGI_Emoji_Flag_Sequence}'$/v.test(currentString))
+                    fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
+                if ([...currentString].length != 3)
+                    fail(`Character ${currentString} has an invalid length: expected one character`, range);
+                tokens.push(new Token("char", currentString, range));
                 currentString = "";
             }
         }
