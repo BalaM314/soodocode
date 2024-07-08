@@ -10,11 +10,11 @@ which is the preferred representation of the program.
 
 import { Token, TokenizedProgram, RangeArray, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitArray, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitArray, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
 
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
@@ -182,11 +182,19 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
 	definitions: (typeof Statement)[],
 	error: ((valid:typeof Statement) => never) | null,
 ]{
-	//TODO somehow consider the ones like ENDCLASs
 	const ctx = context?.controlStatements[0].type;
-	let validStatements = (tokens[0].type in statements.byStartKeyword
-		? statements.byStartKeyword[tokens[0].type]!
-		: statements.irregular);
+	let validStatements =
+		statements.byStartKeyword[tokens[0].type]
+		?? (() => {
+			const closest = closestKeywordToken(tokens[0].text);
+			//Check if there are statements that start with a keyword that is close to the first token
+			//eg if the statement is "OUTPUY 5"
+			//Add those statements into the pool
+			if(closest && statements.byStartKeyword[closest]) 
+				return [...statements.irregular, ...statements.byStartKeyword[closest]!];
+			else return statements.irregular;
+		})();
+
 	validStatements.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
 	if(ctx?.allowOnly){
 		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
