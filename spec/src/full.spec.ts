@@ -444,6 +444,41 @@ ENDPROCEDURE
 CALL x()`,
 `"xvar" does not exist`
 ],
+parse_enum: [
+`TYPE enum = (a, b, ccccccc)`,
+[]
+],
+parse_enum_empty: [
+`TYPE enum = ()`,
+[]
+],
+run_enum: [
+`TYPE enum = (aaa, bbb, ccc)
+DECLARE x: enum
+x <- aaa
+IF x = bbb THEN
+	OUTPUT "true"
+ELSE
+	OUTPUT "false"
+ENDIF`,
+["false"]
+],
+add_enum: [
+`TYPE enum = (aaa, bbb, ccc)
+DECLARE x: enum
+x <- aaa
+IF x + 1 = bbb THEN
+	OUTPUT "true"
+ELSE
+	OUTPUT "false"
+ENDIF`,
+["true"]
+],
+coerce_enum_to_string: [
+`TYPE enum = (aaa, bbb, ccc)
+OUTPUT aaa`,
+["aaa"]
+],
 record_type_blank: [
 `TYPE amogus
 ENDTYPE`,
