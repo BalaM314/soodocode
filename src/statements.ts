@@ -306,7 +306,7 @@ export class ConstantStatement extends Statement {
 		};
 	}
 }
-@statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".+", "parentheses.close", "punctuation.colon", "name")
+@statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".*", "parentheses.close", "punctuation.colon", "name")
 export class DefineStatement extends Statement {
 	name: Token;
 	variableType: Token;
@@ -347,7 +347,7 @@ export class TypePointerStatement extends TypeStatement {
 		)] as [name: string, type: VariableType];
 	}
 }
-@statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".+", "parentheses.close")
+@statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".*", "parentheses.close")
 export class TypeEnumStatement extends TypeStatement {
 	name: Token;
 	values: RangeArray<Token>;
