@@ -1190,6 +1190,17 @@ check_typos_in_keywords: [
 `OUYPUT "aaa"`,
 `OUTPUT`
 ],
+check_typos_in_keywords_2: [
+`FUNCTION amogus() RETUNS INTEGER
+	RETURN 5
+ENDFUNCTION`,
+`RETURNS`
+],
+check_typos_in_keywords_3: [
+`FOR i <- 1 TO 10 STEp 1
+NEXT i`,
+`STEP`
+],
 check_typos_in_variables: [
 `DECLARE abcdefgh: INTEGER
 abcdefgH <- 5`,
