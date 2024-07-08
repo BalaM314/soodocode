@@ -296,12 +296,29 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 				};
 			}
 			let anyTokensSkipped = false;
+			const _j = j;
 			while(statement.tokens[i + 1] != input[j].type){ //Repeat until the current token in input is the next token
 				anyTokensSkipped = true;
 				j ++;
 				if(j >= input.length){ //end reached
 					if(i == statement.tokens.length - 1) break; //Consumed all tokens
-					return { message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
+					//Check for typos
+					const expectedType = statement.tokens[i + 1];
+					if(isKey(tokenTextMapping, expectedType)){
+						const expected = tokenTextMapping[expectedType];
+						for(let k = _j; k < input.length; k ++){
+							if((biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1) return {
+								message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found ${input[k].text}`,
+								priority: 50,
+								range: input[k].range
+							};
+						}
+					}
+					return {
+						message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, 
+						priority: 4,
+						range: input.at(-1)!.rangeAfter()
+					};
 				}
 			}
 			const end = j - 1;
