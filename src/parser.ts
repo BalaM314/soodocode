@@ -328,19 +328,20 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 				statement.tokens[i] == "name" && input[j].type == "keyword.new"
 			)){
 				output.push(input[j]);
-				j++; //Token matches, move to next one
+				j ++; //Token matches, move to next one
 			} else if(statement.tokens[i] == "literal" || statement.tokens[i] == "literal|otherwise"){
-				if(isLiteral(input[j].type) || (statement.tokens[i] == "literal|otherwise" && input[j].type == "keyword.otherwise"))
+				if(isLiteral(input[j].type) || (statement.tokens[i] == "literal|otherwise" && input[j].type == "keyword.otherwise")){
 					output.push(input[j++]); //The current token is a valid literal or it's "otherwise" and that's allowed
-				else if(input[j].type == "operator.minus" && j + 1 < input.length && input[j + 1].type == "number.decimal"){
+				} else if(input[j].type == "operator.minus" && j + 1 < input.length && input[j + 1].type == "number.decimal"){
 					//Replace the number token with a negative number, and drop the minus operator
 					const negativeNumber = input[j + 1].clone();
 					negativeNumber.extendRange(input[j]);
 					negativeNumber.text = input[j].text + negativeNumber.text;
 					output.push(negativeNumber);
 					j += 2;
-				} else return { message: getMessage(statement.tokens[i], input[j]), priority: 8, range: input[j].range };
-			} else return { message: getMessage(statement.tokens[i], input[j]), priority: 5, range: input[j].range };
+				} else return getMessage(statement.tokens[i], input[j], 5);
+			} else return getMessage(statement.tokens[i], input[j], 5);
+
 		}
 	}
 	if(j != input.length){
@@ -357,11 +358,26 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 	}
 	return output;
 });
-function getMessage(expected:TokenMatcher, found:Token){
-	if(isKey(tokenTextMapping, expected) && tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
-		return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`;
+function getMessage(expected:TokenMatcher, found:Token, priority:number):StatementCheckFailResult {
+	if(isKey(tokenTextMapping, expected)){
+		if(tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase()) return {
+			message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`,
+			priority: 50,
+			range: found.range
+		};
+		if((biasedLevenshtein(tokenTextMapping[expected], found.text) ?? NaN) < 2) return {
+			//Same message with higher priority
+			message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
+			priority: 50,
+			range: found.range
+		};
+	}
 
-	return f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
+	return {
+		message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
+		priority,
+		range: found.range
+	};
 }
 export function checkTokens(tokens:RangeArray<Token>, input:TokenMatcher[]):boolean {
 	return Array.isArray(checkStatement(fakeObject<typeof Statement>({
