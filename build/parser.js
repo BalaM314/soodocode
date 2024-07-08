@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
-import { crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()((tokens) => {
     if (tokens.length == 0)
         return new Map();
@@ -165,9 +165,14 @@ export function parse({ program, tokens }) {
 }
 export function getPossibleStatements(tokens, context) {
     const ctx = context?.controlStatements[0].type;
-    let validStatements = (tokens[0].type in statements.byStartKeyword
-        ? statements.byStartKeyword[tokens[0].type]
-        : statements.irregular);
+    let validStatements = statements.byStartKeyword[tokens[0].type]
+        ?? (() => {
+            const closest = closestKeywordToken(tokens[0].text);
+            if (closest && statements.byStartKeyword[closest])
+                return [...statements.irregular, ...statements.byStartKeyword[closest]];
+            else
+                return statements.irregular;
+        })();
     validStatements.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
     if (ctx?.allowOnly) {
         const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
@@ -275,13 +280,30 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
                     };
             }
             let anyTokensSkipped = false;
+            const _j = j;
             while (statement.tokens[i + 1] != input[j].type) {
                 anyTokensSkipped = true;
                 j++;
                 if (j >= input.length) {
                     if (i == statement.tokens.length - 1)
                         break;
-                    return { message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
+                    const expectedType = statement.tokens[i + 1];
+                    if (isKey(tokenTextMapping, expectedType)) {
+                        const expected = tokenTextMapping[expectedType];
+                        for (let k = _j; k < input.length; k++) {
+                            if ((biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1)
+                                return {
+                                    message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found ${input[k].text}`,
+                                    priority: 50,
+                                    range: input[k].range
+                                };
+                        }
+                    }
+                    return {
+                        message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`,
+                        priority: 4,
+                        range: input.at(-1).rangeAfter()
+                    };
                 }
             }
             const end = j - 1;
@@ -308,8 +330,9 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
                 j++;
             }
             else if (statement.tokens[i] == "literal" || statement.tokens[i] == "literal|otherwise") {
-                if (isLiteral(input[j].type) || (statement.tokens[i] == "literal|otherwise" && input[j].type == "keyword.otherwise"))
+                if (isLiteral(input[j].type) || (statement.tokens[i] == "literal|otherwise" && input[j].type == "keyword.otherwise")) {
                     output.push(input[j++]);
+                }
                 else if (input[j].type == "operator.minus" && j + 1 < input.length && input[j + 1].type == "number.decimal") {
                     const negativeNumber = input[j + 1].clone();
                     negativeNumber.extendRange(input[j]);
@@ -318,10 +341,10 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
                     j += 2;
                 }
                 else
-                    return { message: getMessage(statement.tokens[i], input[j]), priority: 8, range: input[j].range };
+                    return getMessage(statement.tokens[i], input[j], 5);
             }
             else
-                return { message: getMessage(statement.tokens[i], input[j]), priority: 5, range: input[j].range };
+                return getMessage(statement.tokens[i], input[j], 5);
         }
     }
     if (j != input.length) {
@@ -338,10 +361,26 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
     }
     return output;
 });
-function getMessage(expected, found) {
-    if (isKey(tokenTextMapping, expected) && tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
-        return f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`;
-    return f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
+function getMessage(expected, found, priority) {
+    if (isKey(tokenTextMapping, expected)) {
+        if (tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
+            return {
+                message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`,
+                priority: 50,
+                range: found.range
+            };
+        if ((biasedLevenshtein(tokenTextMapping[expected], found.text) ?? NaN) < 2)
+            return {
+                message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
+                priority: 50,
+                range: found.range
+            };
+    }
+    return {
+        message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
+        priority,
+        range: found.range
+    };
 }
 export function checkTokens(tokens, input) {
     return Array.isArray(checkStatement(fakeObject({

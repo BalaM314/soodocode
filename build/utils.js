@@ -1,5 +1,5 @@
 import { RangeArray } from "./lexer-types.js";
-import { tokenTextMapping } from "./lexer.js";
+import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
@@ -136,6 +136,8 @@ export function findLastNotInGroup(arr, target) {
     return null;
 }
 export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, validNames = ["name"]) {
+    if (tokens.length == 0)
+        return tokens;
     const names = [];
     let expected = "name";
     for (const token of tokens) {
@@ -388,11 +390,22 @@ export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
         }
     }
     const out = matrix.at(-1);
+    if (a.length <= 1 && b.length <= 1)
+        return out * 4;
+    if (a.length <= 2 && b.length <= 2)
+        return out * 2;
     if (b.startsWith(a) || a.startsWith(b))
         return out * 0.7;
     if (b.includes(a) || a.includes(b))
         return out * 0.9;
     return out;
+}
+export function closestKeywordToken(input, threshold = 1.5) {
+    const keywordTokens = Object.entries(tokenNameTypeData);
+    if (input.toUpperCase() in tokenNameTypeData) {
+        return tokenNameTypeData[input.toUpperCase()];
+    }
+    return min(keywordTokens, ([expected, type]) => biasedLevenshtein(expected, input) ?? Infinity, threshold)?.[1];
 }
 const fakeObjectTrap = new Proxy({}, {
     get(target, property) { crash(`Attempted to access property ${String(property)} on fake object`); },

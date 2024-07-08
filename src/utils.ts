@@ -6,7 +6,7 @@ This file contains utility functions.
 */
 
 import { Token, RangeArray, TokenType } from "./lexer-types.js";
-import { tokenTextMapping } from "./lexer.js";
+import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
 import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
@@ -151,8 +151,9 @@ export function findLastNotInGroup(arr:RangeArray<Token>, target:TokenType):numb
 }
 
 export function getUniqueNamesFromCommaSeparatedTokenList(tokens:RangeArray<Token>, nextToken?:Token, validNames:TokenType[] = ["name"]):RangeArray<Token> {
-	const names:Token[] = [];
+	if(tokens.length == 0) return tokens;
 
+	const names:Token[] = [];
 	let expected:"name" | "comma" = "name";
 	for(const token of tokens){
 		if(expected == "name"){
@@ -418,9 +419,19 @@ export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):n
 
 	const out = matrix.at(-1)!; //bottom right corner of matrix
 	//apply weighting
+	if(a.length <= 1 && b.length <= 1) return out * 4;
+	if(a.length <= 2 && b.length <= 2) return out * 2;
 	if(b.startsWith(a) || a.startsWith(b)) return out * 0.7;
 	if(b.includes(a) || a.includes(b)) return out * 0.9;
 	return out;
+}
+
+export function closestKeywordToken(input:string, threshold = 1.5):TokenType | undefined {
+	const keywordTokens = Object.entries(tokenNameTypeData);
+	if(input.toUpperCase() in tokenNameTypeData){
+		return tokenNameTypeData[input.toUpperCase() as keyof typeof tokenNameTypeData];
+	}
+	return min(keywordTokens, ([expected, type]) => biasedLevenshtein(expected, input) ?? Infinity, threshold)?.[1];
 }
 
 const fakeObjectTrap = new Proxy({}, {

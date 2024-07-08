@@ -335,7 +335,7 @@ let ConstantStatement = (() => {
 })();
 export { ConstantStatement };
 let DefineStatement = (() => {
-    let _classDecorators = [statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".+", "parentheses.close", "punctuation.colon", "name")];
+    let _classDecorators = [statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".*", "parentheses.close", "punctuation.colon", "name")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -399,7 +399,7 @@ let TypePointerStatement = (() => {
 })();
 export { TypePointerStatement };
 let TypeEnumStatement = (() => {
-    let _classDecorators = [statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".+", "parentheses.close")];
+    let _classDecorators = [statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".*", "parentheses.close")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -528,6 +528,7 @@ let AssignmentBadStatement = (() => {
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
     _classThis.invalidMessage = "Use the assignment operator (<-) to assign a value to a variable. The = sign is used to test for equality.";
+    _classThis.suppressErrors = true;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();

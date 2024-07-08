@@ -412,6 +412,7 @@ export class AssignmentStatement extends Statement {
 @statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")
 export class AssignmentBadStatement extends Statement {
 	static invalidMessage = "Use the assignment operator (<-) to assign a value to a variable. The = sign is used to test for equality.";
+	static suppressErrors = true;
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {

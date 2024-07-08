@@ -114,6 +114,7 @@ export declare class AssignmentStatement extends Statement {
 }
 export declare class AssignmentBadStatement extends Statement {
     static invalidMessage: string;
+    static suppressErrors: boolean;
 }
 export declare class OutputStatement extends Statement {
     outMessage: (Token | ExpressionAST)[];

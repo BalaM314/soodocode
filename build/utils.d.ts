@@ -59,6 +59,7 @@ export declare function isKey<T extends Record<PropertyKey, unknown>>(record: T,
 export declare function access<TVal, TNull>(record: Record<PropertyKey, TVal>, key: PropertyKey, fallback: TNull): TVal | TNull;
 export declare function min<T>(input: T[], predicate: (arg: T) => number, threshold?: number): T | null;
 export declare function biasedLevenshtein(a: string, b: string, maxLengthProduct?: number): number | null;
+export declare function closestKeywordToken(input: string, threshold?: number): TokenType | undefined;
 export declare function fakeObject<T>(input: Partial<T>): T;
 export declare function tryRun<T>(callback: () => T): [T, null] | [null, SoodocodeError];
 export declare function tryRunOr<T>(callback: () => T, errorHandler: (err: SoodocodeError) => unknown): boolean;
