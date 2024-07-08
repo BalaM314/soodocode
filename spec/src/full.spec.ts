@@ -1186,6 +1186,37 @@ b <- NEW b()
 OUTPUT 5 & b.Sus()`,
 `member access on SUPER`
 ],
+check_typos_in_keywords: [
+`OUYPUT "aaa"`,
+`OUTPUT`
+],
+check_typos_in_variables: [
+`DECLARE abcdefgh: INTEGER
+abcdefgH <- 5`,
+`abcdefgh`
+],
+check_typos_in_variables_2: [
+`DECLARE abcdefgh: INTEGER
+abcdefgj <- 5`,
+`abcdefgh`
+],
+check_typos_in_variables_3: [
+`DECLARE abcdefgh: INTEGER
+abcdefzgh <- 5`,
+`abcdefgh`
+],
+check_typos_in_types: [
+`TYPE abcdefgh = ^INTEGER
+DECLARE x: abcdefgH`,
+`abcdefgh`
+],
+check_typos_in_functions: [
+`PROCEDURE abcdefgh()
+
+ENDPROCEDURE
+CALL abcdefgH()`,
+`abcdefgh`
+],
 rickroll: [
 `CONSTANT input = "qkfd{ql^yk  maqmthqkd^  ielfxthb  }uui|n  {oqo  ugfd}ok_wm  ieskplsid^  phj\`xp  yyui{o  j^pnyunn,,  sihb{qk_rr  ieqmomqkc_  vnzprj  b\`sqtjzpnndd  c_rjj^  gal^ssk_uous  yyuivt..  hhb\`qovj}u  b\`tltpmese  kaskvhoiss''  h\`c_~t"
 FUNCTION parse(BYVAL input: STRING) RETURNS STRING
