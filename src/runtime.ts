@@ -725,8 +725,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as never) as never;
 		if(to.is("STRING")){
 			if(from.is("BOOLEAN")) return (value as boolean).toString().toUpperCase() as never;
-			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE")) return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
+			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE"))
+				return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
 			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
+			if(from instanceof EnumeratedVariableType) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
+		}
+		if(from instanceof EnumeratedVariableType){
+			if(to.is("INTEGER") || to.is("REAL")) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
 		}
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}`, undefined);
 	}

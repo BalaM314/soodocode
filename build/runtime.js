@@ -702,6 +702,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         return value.toString();
                     if (from instanceof ArrayVariableType)
                         return `[${value.join(",")}]`;
+                    if (from instanceof EnumeratedVariableType)
+                        return value;
+                }
+                if (from instanceof EnumeratedVariableType) {
+                    if (to.is("INTEGER") || to.is("REAL"))
+                        return from.values.indexOf(value);
                 }
                 fail(f.quote `Cannot coerce value of type ${from} to ${to}`, undefined);
             }
