@@ -107,6 +107,7 @@ parse_invalid_expression_statement: [
 `2 + 2`,
 `Expected a statement, not an expression`
 ],
+//#region arrays
 run_array_basic: [
 `DECLARE x: ARRAY[1:10] OF INTEGER
 x[10] <- 5
@@ -192,6 +193,21 @@ ENDPROCEDURE
 CALL amogus()`,
 ["5", "51"]
 ],
+run_array_computed_size_brackets_variable_available: [
+`FUNCTION sus(a, b: INTEGER) RETURNS INTEGER
+	RETURN 50
+ENDFUNCTION
+PROCEDURE amogus()
+	DECLARE array1: ARRAY[1:10] OF INTEGER
+	array1[4] <- 2
+	DECLARE x: ARRAY[1:sus(2, array1[2 + 2]) + 1] OF INTEGER
+	x[20] <- 5
+	OUTPUT x[20]
+	OUTPUT LENGTH(x)
+ENDPROCEDURE
+CALL amogus()`,
+["5", "51"]
+],
 run_array_computed_size_constant_declare: [
 `CONSTANT a = 50
 DECLARE x: ARRAY[1:a+1] OF INTEGER
@@ -226,7 +242,7 @@ OUTPUT x[20]
 OUTPUT LENGTH(x)`,
 `Variable "a"`
 ],
-run_array_computed_size_constant_record_type: [
+run_array_computed_size_constant_in_record_type: [
 `CONSTANT a = 50
 TYPE amogus
 	DECLARE prop: ARRAY[1:a+1] OF INTEGER
@@ -236,6 +252,18 @@ x.prop[20] <- 5
 OUTPUT x.prop[20]
 OUTPUT LENGTH(x.prop)`,
 ["5", "51"]
+],
+run_array_computed_size_variable_in_record_type: [
+`DECLARE a: INTEGER
+a <- 50
+TYPE amogus
+	DECLARE prop: ARRAY[1:a+1] OF INTEGER
+ENDTYPE
+DECLARE x: amogus
+x.prop[20] <- 5
+OUTPUT x.prop[20]
+OUTPUT LENGTH(x.prop)`,
+`"a" does not exist`
 ],
 function_variable_length_array_arg: [
 `FUNCTION amogus(x: ARRAY OF INTEGER) RETURNS INTEGER
@@ -257,7 +285,7 @@ x[7] <- 15
 OUTPUT amogus(x)`,
 ["15", "10"],
 ],
-function_different_valid_fixed_length_array_arg: [
+function_coerce_valid_fixed_length_array_arg: [ //ARRAY[1:10] coerces to ARRAY[0:9] CONFIG
 `FUNCTION amogus(x: ARRAY[0:9] OF INTEGER) RETURNS INTEGER
 	OUTPUT x[7]
 	OUTPUT x[6]
@@ -278,6 +306,8 @@ x[7] <- 15
 OUTPUT amogus(x)`,
 `Cannot coerce`,
 ],
+//#endregion
+//#region functions
 parse_procedure_blank: [
 `PROCEDURE name()
 ENDPROCEDURE`,
@@ -444,6 +474,7 @@ ENDPROCEDURE
 CALL x()`,
 `"xvar" does not exist`
 ],
+//#endregion
 parse_enum: [
 `TYPE enum = (a, b, ccccccc)`,
 []
@@ -479,6 +510,7 @@ coerce_enum_to_string: [
 OUTPUT aaa`,
 ["aaa"]
 ],
+//#region record types
 record_type_blank: [
 `TYPE amogus
 ENDTYPE`,
@@ -503,6 +535,8 @@ record_type_fields_nonexistent: [
 ENDTYPE`,
 "SUSSY"
 ],
+//#endregion
+//#region recursive types
 record_type_recursive_illegal_1: [
 `TYPE amogus
 	DECLARE sus: amogus
@@ -515,12 +549,6 @@ record_type_recursive_illegal_2: [
 ENDTYPE`,
 "infinite size"
 ],
-record_type_recursive_illegal_3: [
-`TYPE amogus
-	DECLARE sus: ARRAY[1:10] OF amogus
-ENDTYPE`,
-"infinite size"
-],
 record_type_recursive_legal_1: [
 `TYPE pAmogus = ^Amogus
 TYPE Amogus
@@ -528,7 +556,7 @@ TYPE Amogus
 ENDTYPE`,
 []
 ],
-record_type_recursive_hoisting_illegal_1: [
+record_type_multi_recursive_illegal_1: [
 `TYPE Amogus
 	DECLARE bmogus: Bmogus
 ENDTYPE
@@ -537,7 +565,7 @@ TYPE Bmogus
 ENDTYPE`,
 "infinite size"
 ],
-record_type_recursive_hoisting_illegal_2: [
+record_type_multi_recursive_illegal_2: [
 `TYPE Amogus
 DECLARE bmogus: Bmogus
 ENDTYPE
@@ -546,7 +574,7 @@ DECLARE amogus: ARRAY[1:10] OF Amogus
 ENDTYPE`,
 "infinite size"
 ],
-record_type_recursive_hoisting_legal_1: [
+record_type_multi_recursive_legal_1: [
 `TYPE Amogus
 	DECLARE value: INTEGER
 	DECLARE bmogus: pBmogus
@@ -568,7 +596,7 @@ x.value <- 123
 OUTPUT (((y.amogus^).bmogus^).amogus^).value`,
 ["123"]
 ],
-class_type_recursive_hoisting_1: [
+class_type_recursive_hoisting_1: [ //Unlike records, classes default to {null} instead of recursively initializ
 `CLASS Amogus
 PUBLIC amogus: Amogus
 ENDCLASS`,
@@ -592,6 +620,8 @@ PUBLIC amogus: ARRAY[1:10] OF Amogus
 ENDCLASS`,
 []
 ],
+//#endregion
+//#region classes
 parse_class_blank: [
 `CLASS amogus
 ENDCLASS`,
@@ -1221,6 +1251,8 @@ b <- NEW b()
 OUTPUT 5 & b.Sus()`,
 `member access on SUPER`
 ],
+//#endregion
+//#region typos
 check_typos_in_keywords: [
 `OUYPUT "aaa"`,
 `OUTPUT`
@@ -1258,11 +1290,11 @@ DECLARE x: abcdefgH`,
 ],
 check_typos_in_functions: [
 `PROCEDURE abcdefgh()
-
 ENDPROCEDURE
 CALL abcdefgH()`,
 `abcdefgh`
 ],
+//#endregion
 rickroll: [
 `CONSTANT input = "qkfd{ql^yk  maqmthqkd^  ielfxthb  }uui|n  {oqo  ugfd}ok_wm  ieskplsid^  phj\`xp  yyui{o  j^pnyunn,,  sihb{qk_rr  ieqmomqkc_  vnzprj  b\`sqtjzpnndd  c_rjj^  gal^ssk_uous  yyuivt..  hhb\`qovj}u  b\`tltpmese  kaskvhoiss''  h\`c_~t"
 FUNCTION parse(BYVAL input: STRING) RETURNS STRING
