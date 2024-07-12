@@ -158,13 +158,29 @@ const expressionTests = ((data:Record<string, [
 	v[2].length == 1 ? v[2] : [process_VariableType(v[2][0]), v[2][1]],
 	v[3] ?? (() => {})
 ]))({
-	addNumbers: [
+	add_numeric_literals: [
 		["tree", "add", [
 			5,
 			6
 		]],
 		"INTEGER",
 		["INTEGER", 11]
+	],
+	subtract_numeric_literals: [
+		["tree", "subtract", [
+			5,
+			6
+		]],
+		"INTEGER",
+		["INTEGER", -1]
+	],
+	equality_numbers: [
+		["tree", "equal_to", [
+			5,
+			6
+		]],
+		"BOOLEAN",
+		["BOOLEAN", false]
 	],
 	arrayAccess_simple: [
 		["tree", ["array access", "amogus"], [

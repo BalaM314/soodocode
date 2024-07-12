@@ -475,6 +475,7 @@ CALL x()`,
 `"xvar" does not exist`
 ],
 //#endregion
+//#region enum
 parse_enum: [
 `TYPE enum = (a, b, ccccccc)`,
 []
@@ -510,6 +511,7 @@ coerce_enum_to_string: [
 OUTPUT aaa`,
 ["aaa"]
 ],
+//#endregion
 //#region record types
 record_type_blank: [
 `TYPE amogus
@@ -1295,6 +1297,7 @@ CALL abcdefgH()`,
 `abcdefgh`
 ],
 //#endregion
+//#region programs
 rickroll: [
 `CONSTANT input = "qkfd{ql^yk  maqmthqkd^  ielfxthb  }uui|n  {oqo  ugfd}ok_wm  ieskplsid^  phj\`xp  yyui{o  j^pnyunn,,  sihb{qk_rr  ieqmomqkc_  vnzprj  b\`sqtjzpnndd  c_rjj^  gal^ssk_uous  yyuivt..  hhb\`qovj}u  b\`tltpmese  kaskvhoiss''  h\`c_~t"
 FUNCTION parse(BYVAL input: STRING) RETURNS STRING
@@ -1356,6 +1359,7 @@ DECLARE sussy: ARRAY[0:49] OF INTEGER
 x.array <- sussy`,
 ["20", "20", "30"]
 ]
+//#endregion
 };
 
 describe("soodocode", () => {
