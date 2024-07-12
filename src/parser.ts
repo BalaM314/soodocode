@@ -305,7 +305,13 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 			}
 			let anyTokensSkipped = false;
 			const _j = j;
-			while(statement.tokens[i + 1] != input[j].type){ //Repeat until the current token in input is the next token
+			let parenNestLevel = 0, bracketNestLevel = 0;
+			while(statement.tokens[i + 1] != input[j].type || parenNestLevel > 0 || bracketNestLevel > 0){ //Repeat until the current token in input is the next token
+				if(input[j].type == "parentheses.open") parenNestLevel ++;
+				else if(input[j].type == "parentheses.close") parenNestLevel --;
+				else if(input[j].type == "bracket.open") bracketNestLevel ++;
+				else if(input[j].type == "bracket.close") bracketNestLevel --;
+
 				anyTokensSkipped = true;
 				j ++;
 				if(j >= input.length){ //end reached
