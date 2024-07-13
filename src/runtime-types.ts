@@ -47,7 +47,7 @@ export type VariableTypeMapping<T> =
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
 	abstract init(runtime:Runtime):void;
-	checkSize(){}
+	validate(runtime:Runtime){}
 	is(...type:PrimitiveVariableTypeName[]) {
 		return false;
 	}
@@ -207,7 +207,7 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 			this.addDependencies(type.elementType);
 		}
 	}
-	checkSize(){
+	validate(){
 		for(const [name, [type, range]] of Object.entries((this as RecordVariableType<true>).fields)){
 			if(type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`, range);
 			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`, range);
@@ -348,11 +348,12 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
-	checkSize(){
+	validate(runtime:Runtime){
 		if(this.baseClass){
 			for(const name of Object.keys(this.baseClass.allMethods)){
 				if(this.ownMethods[name]){
 					checkClassMethodsCompatible(
+						runtime,
 						this.baseClass.allMethods[name][1].controlStatements[0],
 						this.ownMethods[name].controlStatements[0],
 					);
@@ -489,7 +490,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 
 export const checkClassMethodsCompatible = errorBoundary({
 	message: (base:ClassMethodStatement, derived:ClassMethodStatement) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})((base:ClassMethodStatement, derived:ClassMethodStatement) => {
+})((runtime:Runtime, base:ClassMethodStatement, derived:ClassMethodStatement) => {
 
 	if(base.accessModifier != derived.accessModifier)
 		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
@@ -504,7 +505,8 @@ export const checkClassMethodsCompatible = errorBoundary({
 		for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
 			//Changing the name is fine
 			let result;
-			if((result = typesAssignable(bType.type, aType.type)) != true) //parameter types are contravariant
+			//TODO cache the resolved type, store it in the class somehow, resolve these types at 2nd pass
+			if((result = typesAssignable(runtime.resolveVariableType(bType.type), runtime.resolveVariableType(aType.type))) != true) //parameter types are contravariant
 				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + (result ? `: ${result}.` : ""), derived.argsRange);
 			if(aType.passMode != bType.passMode)
 				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
@@ -513,7 +515,7 @@ export const checkClassMethodsCompatible = errorBoundary({
 
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
 		let result;
-		if((result = typesAssignable(base.returnType, derived.returnType)) != true) //return type is covariant
+		if((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true) //return type is covariant
 			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}` + (result ? `: ${result}.` : ""), derived.returnTypeToken);
 	}
 });

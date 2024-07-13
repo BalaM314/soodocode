@@ -1,7 +1,7 @@
 import { ClassFunctionStatement } from "./statements.js";
 import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 export class BaseVariableType {
-    checkSize() { }
+    validate(runtime) { }
     is(...type) {
         return false;
     }
@@ -144,7 +144,7 @@ export class RecordVariableType extends BaseVariableType {
             this.addDependencies(type.elementType);
         }
     }
-    checkSize() {
+    validate() {
         for (const [name, [type, range]] of Object.entries(this.fields)) {
             if (type == this)
                 fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`, range);
@@ -291,11 +291,11 @@ export class ClassVariableType extends BaseVariableType {
     getInitValue(runtime) {
         return null;
     }
-    checkSize() {
+    validate(runtime) {
         if (this.baseClass) {
             for (const name of Object.keys(this.baseClass.allMethods)) {
                 if (this.ownMethods[name]) {
-                    checkClassMethodsCompatible(this.baseClass.allMethods[name][1].controlStatements[0], this.ownMethods[name].controlStatements[0]);
+                    checkClassMethodsCompatible(runtime, this.baseClass.allMethods[name][1].controlStatements[0], this.ownMethods[name].controlStatements[0]);
                 }
             }
         }
@@ -411,7 +411,7 @@ export function typesAssignable(base, ext) {
 }
 export const checkClassMethodsCompatible = errorBoundary({
     message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})((base, derived) => {
+})((runtime, base, derived) => {
     if (base.accessModifier != derived.accessModifier)
         fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
     if (base.stype != derived.stype)
@@ -421,7 +421,7 @@ export const checkClassMethodsCompatible = errorBoundary({
             fail(`Method should have ${base.args.size} parameter${base.args.size == 1 ? "" : "s"}, but it has ${derived.args.size} parameter${derived.args.size == 1 ? "" : "s"}.`, derived.argsRange);
         for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
             let result;
-            if ((result = typesAssignable(bType.type, aType.type)) != true)
+            if ((result = typesAssignable(runtime.resolveVariableType(bType.type), runtime.resolveVariableType(aType.type))) != true)
                 fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + (result ? `: ${result}.` : ""), derived.argsRange);
             if (aType.passMode != bType.passMode)
                 fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
@@ -429,7 +429,7 @@ export const checkClassMethodsCompatible = errorBoundary({
     }
     if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
         let result;
-        if ((result = typesAssignable(base.returnType, derived.returnType)) != true)
+        if ((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true)
             fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}` + (result ? `: ${result}.` : ""), derived.returnTypeToken);
     }
 });

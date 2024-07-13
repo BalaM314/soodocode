@@ -16,7 +16,7 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
     abstract init(runtime: Runtime): void;
-    checkSize(): void;
+    validate(runtime: Runtime): void;
     is(...type: PrimitiveVariableTypeName[]): boolean;
     abstract fmtDebug(): string;
     fmtQuoted(): string;
@@ -69,7 +69,7 @@ export declare class RecordVariableType<Init extends boolean = true> extends Bas
     constructor(initialized: Init, name: string, fields: Record<string, [type: (Init extends true ? never : UnresolvedVariableType) | VariableType, range: TextRange]>);
     init(runtime: Runtime): void;
     addDependencies(type: VariableType): void;
-    checkSize(): void;
+    validate(): void;
     fmtText(): string;
     fmtShort(): string;
     fmtQuoted(): string;
@@ -128,7 +128,7 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
-    checkSize(): void;
+    validate(runtime: Runtime): void;
     getPropertyType(property: string, x: VariableTypeMapping<ClassVariableType>): VariableType;
     inherits(other: ClassVariableType): boolean;
     construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
@@ -147,7 +147,7 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
 export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType, types?: [VariableType, VariableType][]): boolean;
 export declare function typesAssignable(base: VariableType, ext: VariableType): true | string;
 export declare function typesAssignable(base: UnresolvedVariableType, ext: UnresolvedVariableType): true | string;
-export declare const checkClassMethodsCompatible: (base: ClassMethodStatement, derived: ClassMethodStatement) => void;
+export declare const checkClassMethodsCompatible: (runtime: Runtime, base: ClassMethodStatement, derived: ClassMethodStatement) => void;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType<false> | ["unresolved", name: string, range: TextRange];
 export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType | ClassVariableType;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;

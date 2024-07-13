@@ -836,7 +836,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		this.currentlyResolvingTypeName = null;
 		//Fourth pass: check type size
 		for(const [name, type] of types){
-			type.checkSize();
+			type.validate(this);
 		}
 		//Fifth pass: everything else
 		for(const node of others){

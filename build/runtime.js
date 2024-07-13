@@ -826,7 +826,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 this.currentlyResolvingTypeName = null;
                 for (const [name, type] of types) {
-                    type.checkSize();
+                    type.validate(this);
                 }
                 for (const node of others) {
                     let result;
