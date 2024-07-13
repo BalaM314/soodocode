@@ -398,6 +398,7 @@ export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):n
 	//case insensitive
 	a = a.toLowerCase();
 	b = b.toLowerCase();
+	if(a == b) return 0;
 
 	const length = (a.length + 1) * (b.length + 1);
 	if(length > maxLengthProduct) return null; //fail safe to prevent allocating a huge array due to user input

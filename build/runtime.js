@@ -48,15 +48,35 @@ export function typesEqual(a, b, types = new Array()) {
         (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
 }
 export function typesAssignable(base, ext) {
-    return base == ext ||
-        (Array.isArray(base) && Array.isArray(ext) && base[1] == ext[1]) ||
-        (base instanceof ArrayVariableType && ext instanceof ArrayVariableType && (base.arraySizes == null ||
-            base.arraySizes.toString() == ext.arraySizes?.toString()) && ((base.elementType == null ||
-            base.elementType == ext.elementType ||
-            Array.isArray(base.elementType) && Array.isArray(ext.elementType) && base.elementType[1] == ext.elementType[1]))) ||
-        (base instanceof PointerVariableType && ext instanceof PointerVariableType && typesEqual(base.target, ext.target)) ||
-        (base instanceof SetVariableType && ext instanceof SetVariableType && base.baseType == ext.baseType) ||
-        (base instanceof ClassVariableType && ext instanceof ClassVariableType && ext.inherits(base));
+    if (base == ext)
+        return true;
+    if (Array.isArray(base) && Array.isArray(ext))
+        return base[1] == ext[1] || "";
+    if (base instanceof ArrayVariableType && ext instanceof ArrayVariableType) {
+        if (base.elementType != null) {
+            if (ext.elementType == null)
+                return f.quote `Type "ANY" is not assignable to type ${base.elementType}`;
+            if (!typesEqual(base.elementType, ext.elementType))
+                return f.quote `Types ${base.elementType} and ${ext.elementType} are not equal`;
+        }
+        if (base.lengthInformation != null) {
+            if (ext.lengthInformation == null)
+                return `cannot assign an array with unknown length to an array requiring a specific length`;
+            if (base.arraySizes.toString() != ext.arraySizes.toString())
+                return "these array types have different length";
+        }
+        return true;
+    }
+    if (base instanceof PointerVariableType && ext instanceof PointerVariableType) {
+        return typesEqual(base.target, ext.target) || f.quote `Types ${base.target} and ${ext.target} are not equal`;
+    }
+    if (base instanceof SetVariableType && ext instanceof SetVariableType) {
+        return typesEqual(base.baseType, ext.baseType) || f.quote `Types ${base.baseType} and ${ext.baseType} are not equal`;
+    }
+    if (base instanceof ClassVariableType && ext instanceof ClassVariableType) {
+        return ext.inherits(base) || "";
+    }
+    return "";
 }
 export const checkClassMethodsCompatible = errorBoundary({
     message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
@@ -69,15 +89,17 @@ export const checkClassMethodsCompatible = errorBoundary({
         if (base.args.size != derived.args.size)
             fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
         for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
-            if (!typesAssignable(bType.type, aType.type))
-                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}.`, derived.argsRange);
+            let result;
+            if ((result = typesAssignable(bType.type, aType.type)) != true)
+                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + result ? `: ${result}.` : "", derived.argsRange);
             if (aType.passMode != bType.passMode)
                 fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
         }
     }
     if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
-        if (!typesAssignable(base.returnType, derived.returnType))
-            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`, derived.returnTypeToken);
+        let result;
+        if ((result = typesAssignable(base.returnType, derived.returnType)) != true)
+            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}` + result ? `: ${result}.` : "", derived.returnTypeToken);
     }
 });
 export class Files {
@@ -687,7 +709,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
             }
             coerceValue(value, from, to) {
-                if (typesAssignable(to, from))
+                let assignabilityError;
+                if ((assignabilityError = typesAssignable(to, from)) === true)
                     return value;
                 if (from.is("STRING") && to.is("CHAR"))
                     return value;
@@ -709,7 +732,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     if (to.is("INTEGER") || to.is("REAL"))
                         return from.values.indexOf(value);
                 }
-                fail(f.quote `Cannot coerce value of type ${from} to ${to}`, undefined);
+                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + assignabilityError ? `: ${assignabilityError}.` : "", undefined);
             }
             cloneValue(type, value) {
                 if (value == null)

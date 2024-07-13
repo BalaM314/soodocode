@@ -4,7 +4,8 @@ import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariab
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
 export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType, types?: [VariableType, VariableType][]): boolean;
-export declare function typesAssignable(base: VariableType | UnresolvedVariableType, ext: VariableType | UnresolvedVariableType): boolean;
+export declare function typesAssignable(base: VariableType, ext: VariableType): true | string;
+export declare function typesAssignable(base: UnresolvedVariableType, ext: UnresolvedVariableType): true | string;
 export declare const checkClassMethodsCompatible: (base: ClassMethodStatement, derived: ClassMethodStatement) => void;
 export declare class Files {
     files: Record<string, File>;

@@ -377,6 +377,8 @@ export function min(input, predicate, threshold = Infinity) {
 export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
     a = a.toLowerCase();
     b = b.toLowerCase();
+    if (a == b)
+        return 0;
     const length = (a.length + 1) * (b.length + 1);
     if (length > maxLengthProduct)
         return null;
