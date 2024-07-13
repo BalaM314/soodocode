@@ -27,6 +27,6 @@ type StatementCheckFailResult = {
 export declare const checkStatement: (statement: typeof Statement, input: RangeArray<Token>, allowRecursiveCall: boolean) => StatementCheckFailResult | StatementCheckTokenRange[];
 export declare function checkTokens(tokens: RangeArray<Token>, input: TokenMatcher[]): boolean;
 export declare const expressionLeafNodeTypes: TokenType[];
-export declare const parseExpressionLeafNode: (token: Token) => ExpressionASTLeafNode;
+export declare function parseExpressionLeafNode(token: Token): ExpressionASTLeafNode;
 export declare const parseExpression: (input: RangeArray<Token>, recursive?: any) => ExpressionASTNode;
 export {};

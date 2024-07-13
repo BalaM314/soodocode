@@ -405,15 +405,16 @@ function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
 }
 export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
-export const parseExpressionLeafNode = errorBoundary()((token) => {
+export function parseExpressionLeafNode(token) {
     if (expressionLeafNodeTypes.includes(token.type))
         return token;
     else
         fail(`Invalid expression leaf node`, token);
-});
+}
+;
 export const parseExpression = errorBoundary({
     predicate: (_input, recursive) => !recursive,
-    message: () => `Cannot parse expression "$rc": `
+    message: () => `Expected "$rc" to be an expression, but it was invalid: `
 })((input, recursive = false) => {
     if (!Array.isArray(input))
         crash(`parseExpression(): expected array of tokens, got ${input}`);

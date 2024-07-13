@@ -426,22 +426,21 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
 }
 
-export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"]; //TODO refactor this with methods on Token
+export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
 
-export const parseExpressionLeafNode = errorBoundary()((token:Token):ExpressionASTLeafNode => {
+export function parseExpressionLeafNode(token:Token):ExpressionASTLeafNode {
 	//Number, string, char, boolean, and variables can be parsed as-is
 	if(expressionLeafNodeTypes.includes(token.type))
 		return token;
 	else
 		fail(`Invalid expression leaf node`, token);
-});
+};
 
-//TODO handle attempting to parse expressions with "expected expression, found [something]"
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
-	message: () => `Cannot parse expression "$rc": `
+	message: () => `Expected "$rc" to be an expression, but it was invalid: `
 })((input:RangeArray<Token>, recursive = false):ExpressionASTNode => {
-	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input}`); // eslint-disable-line @typescript-eslint/restrict-template-expressions
+	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input as any}`);
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
 
