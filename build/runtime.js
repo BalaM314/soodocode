@@ -32,76 +32,12 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     if (target) Object.defineProperty(target, contextIn.name, descriptor);
     done = true;
 };
-import { builtinFunctions } from "./builtin_functions.js";
+import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr, zip } from "./utils.js";
-export function typesEqual(a, b, types = new Array()) {
-    return a == b ||
-        (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
-        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.elementType == b.elementType ||
-            Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1])) ||
-        (a instanceof PointerVariableType && b instanceof PointerVariableType && (types.some(([_a, _b]) => a == _a && b == _b) ||
-            typesEqual(a.target, b.target, types.concat([[a, b]])))) ||
-        (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
-}
-export function typesAssignable(base, ext) {
-    if (base == ext)
-        return true;
-    if (Array.isArray(base) && Array.isArray(ext))
-        return base[1] == ext[1] || "";
-    if (base instanceof ArrayVariableType && ext instanceof ArrayVariableType) {
-        if (base.elementType != null) {
-            if (ext.elementType == null)
-                return f.quote `Type "ANY" is not assignable to type ${base.elementType}`;
-            if (!typesEqual(base.elementType, ext.elementType))
-                return f.quote `Types ${base.elementType} and ${ext.elementType} are not equal`;
-        }
-        if (base.lengthInformation != null) {
-            if (ext.lengthInformation == null)
-                return `cannot assign an array with unknown length to an array requiring a specific length`;
-            if (base.arraySizes.toString() != ext.arraySizes.toString())
-                return "these array types have different length";
-        }
-        return true;
-    }
-    if (base instanceof PointerVariableType && ext instanceof PointerVariableType) {
-        return typesEqual(base.target, ext.target) || f.quote `Types ${base.target} and ${ext.target} are not equal`;
-    }
-    if (base instanceof SetVariableType && ext instanceof SetVariableType) {
-        return typesEqual(base.baseType, ext.baseType) || f.quote `Types ${base.baseType} and ${ext.baseType} are not equal`;
-    }
-    if (base instanceof ClassVariableType && ext instanceof ClassVariableType) {
-        return ext.inherits(base) || "";
-    }
-    return "";
-}
-export const checkClassMethodsCompatible = errorBoundary({
-    message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})((base, derived) => {
-    if (base.accessModifier != derived.accessModifier)
-        fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
-    if (base.stype != derived.stype)
-        fail(f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
-    if (!(base.name == "NEW" && derived.name == "NEW")) {
-        if (base.args.size != derived.args.size)
-            fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
-        for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
-            let result;
-            if ((result = typesAssignable(bType.type, aType.type)) != true)
-                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + result ? `: ${result}.` : "", derived.argsRange);
-            if (aType.passMode != bType.passMode)
-                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
-        }
-    }
-    if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
-        let result;
-        if ((result = typesAssignable(base.returnType, derived.returnType)) != true)
-            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}` + result ? `: ${result}.` : "", derived.returnTypeToken);
-    }
-});
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr } from "./utils.js";
 export class Files {
     constructor() {
         this.files = {};
@@ -124,12 +60,12 @@ export class Files {
     }
 }
 let Runtime = (() => {
-    var _c;
+    var _a;
     let _instanceExtraInitializers = [];
     let _processArrayAccess_decorators;
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
-    return _c = class Runtime {
+    return _a = class Runtime {
             constructor(_input, _output) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
@@ -140,6 +76,7 @@ let Runtime = (() => {
                 this.currentlyResolvingTypeName = null;
                 this.currentlyResolvingPointerTypeName = null;
                 this.fs = new Files();
+                this.builtinFunctions = getBuiltinFunctions();
             }
             finishEvaluation(value, from, to) {
                 if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
@@ -568,11 +505,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             static evaluateToken(token, type) {
                 try {
                     return this.prototype.evaluateToken.call(new Proxy({}, {
-                        get() { throw new _c.NotStaticError(); },
+                        get() { throw new _a.NotStaticError(); },
                     }), token, type);
                 }
                 catch (err) {
-                    if (err instanceof _c.NotStaticError)
+                    if (err instanceof _a.NotStaticError)
                         fail(f.quote `Cannot evaluate token ${token} in a static context`, token);
                     else
                         throw err;
@@ -607,9 +544,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             handleNonexistentFunction(name, range) {
                 const allFunctions = [
                     ...Object.entries(this.functions),
-                    ...Object.entries(builtinFunctions),
+                    ...Object.entries(this.builtinFunctions),
                 ];
-                if (builtinFunctions[name.toUpperCase()])
+                if (this.builtinFunctions[name.toUpperCase()])
                     fail(f.quote `Function ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
                 let found;
                 if ((found =
@@ -687,7 +624,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     return { clazz, method, instance: this.classData.instance };
                 }
                 else
-                    return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
+                    return this.functions[text] ?? this.builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
             }
             getClass(name, range) {
                 for (const scope of this.activeScopes()) {
@@ -944,13 +881,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     predicate: (_expr, _type, recursive) => !recursive,
                     message: () => `Cannot evaluate expression $rc: `
                 })];
-            __esDecorate(_c, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(_c, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
-            __esDecorate(_c, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
-            if (_metadata) Object.defineProperty(_c, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+            __esDecorate(_a, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(_a, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(_a, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
+            if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         })(),
-        _c.NotStaticError = class extends Error {
+        _a.NotStaticError = class extends Error {
         },
-        _c;
+        _a;
 })();
 export { Runtime };

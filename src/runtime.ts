@@ -6,7 +6,7 @@ This file contains the runtime, which executes the program AST.
 */
 
 
-import { builtinFunctions } from "./builtin_functions.js";
+import { getBuiltinFunctions } from "./builtin_functions.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesAssignable, typesEqual } from "./runtime-types.js";
@@ -59,6 +59,7 @@ export class Runtime {
 	/** While a pointer type is being resolved, this variable is set to the name of the type. */
 	currentlyResolvingPointerTypeName: string | null = null;
 	fs = new Files();
+	builtinFunctions = getBuiltinFunctions();
 	constructor(
 		public _input: (message:string) => string,
 		public _output: (message:string) => void,
@@ -552,9 +553,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	handleNonexistentFunction(name:string, range:TextRangeLike):never {
 		const allFunctions:(readonly [string, FunctionData | BuiltinFunctionData])[] = [
 			...Object.entries(this.functions),
-			...Object.entries(builtinFunctions as Record<string, BuiltinFunctionData>),
+			...Object.entries(this.builtinFunctions as Record<string, BuiltinFunctionData>),
 		];
-		if(builtinFunctions[name.toUpperCase()])
+		if(this.builtinFunctions[name.toUpperCase()])
 			fail(f.quote`Function ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
 		let found;
 		if((found =
@@ -630,7 +631,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(this.classData && this.classData.clazz.allMethods[text]){
 			const [clazz, method] = this.classData.clazz.allMethods[text];
 			return { clazz, method, instance: this.classData.instance };
-		} else return this.functions[text] ?? builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
+		} else return this.functions[text] ?? this.builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}
 	getClass<T extends boolean = boolean>(name:string, range:TextRange):ClassVariableType<T> {
 		for(const scope of this.activeScopes()){

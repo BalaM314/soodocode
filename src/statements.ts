@@ -6,12 +6,12 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import { builtinFunctions } from "./builtin_functions.js";
+import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { RangeArray, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
-import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
+import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 
@@ -744,7 +744,7 @@ export class FunctionStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
 		if(this.name in runtime.functions) fail(`Duplicate function definition for ${this.name}`, this.nameToken);
-		else if(this.name in builtinFunctions) fail(`Function ${this.name} is already defined as a builtin function`, this.nameToken);
+		else if(this.name in preprocessedBuiltinFunctions) fail(`Function ${this.name} is already defined as a builtin function`, this.nameToken);
 		//Don't actually run the block
 		runtime.functions[this.name] = node;
 	}

@@ -3,7 +3,8 @@ import { fail, f } from "./utils.js";
 function fn(data) {
     return data;
 }
-export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
+let builtinFunctions;
+export const getBuiltinFunctions = () => builtinFunctions ?? (builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
         args: new Map(data.args.map(([name, type]) => [name, {
                 passMode: "reference",
                 type: (Array.isArray(type) ? type : [type]).map(t => Array.isArray(t)
@@ -13,7 +14,8 @@ export const builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map
         name,
         impl: data.impl,
         returnType: PrimitiveVariableType.get(data.returnType)
-    }])))({
+    }])))(preprocessedBuiltinFunctions));
+export const preprocessedBuiltinFunctions = ({
     LEFT: fn({
         args: [
             ["ThisString", "STRING"],

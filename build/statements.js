@@ -36,12 +36,12 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { builtinFunctions } from "./builtin_functions.js";
+import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
-import { Runtime, checkClassMethodsCompatible } from "./runtime.js";
+import { Runtime } from "./runtime.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statementTypes = [
     "declare", "define", "constant", "assignment", "output", "input", "return", "call",
@@ -1119,7 +1119,7 @@ let FunctionStatement = (() => {
         runBlock(runtime, node) {
             if (this.name in runtime.functions)
                 fail(`Duplicate function definition for ${this.name}`, this.nameToken);
-            else if (this.name in builtinFunctions)
+            else if (this.name in preprocessedBuiltinFunctions)
                 fail(`Function ${this.name} is already defined as a builtin function`, this.nameToken);
             runtime.functions[this.name] = node;
         }
@@ -1485,10 +1485,7 @@ let ClassInheritsStatement = (() => {
                 }
             }
             for (const [name, value] of Object.entries(baseClass.allMethods)) {
-                if (extensions.ownMethods[name]) {
-                    checkClassMethodsCompatible(baseClass.allMethods[name][1].controlStatements[0], extensions.ownMethods[name].controlStatements[0]);
-                }
-                else {
+                if (!extensions.ownMethods[name]) {
                     extensions.allMethods[name] = value;
                 }
             }

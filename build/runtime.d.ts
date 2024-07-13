@@ -3,10 +3,6 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, P
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
-export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType, types?: [VariableType, VariableType][]): boolean;
-export declare function typesAssignable(base: VariableType, ext: VariableType): true | string;
-export declare function typesAssignable(base: UnresolvedVariableType, ext: UnresolvedVariableType): true | string;
-export declare const checkClassMethodsCompatible: (base: ClassMethodStatement, derived: ClassMethodStatement) => void;
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;
@@ -35,6 +31,7 @@ export declare class Runtime {
     currentlyResolvingTypeName: string | null;
     currentlyResolvingPointerTypeName: string | null;
     fs: Files;
+    builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
     constructor(_input: (message: string) => string, _output: (message: string) => void);
     finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): [type: VariableType, value: VariableValue];

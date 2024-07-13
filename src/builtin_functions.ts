@@ -23,7 +23,7 @@ import { fail, f } from "./utils.js";
 //for this reason, use .valueOf() before comparing two arguments with ==
 //To get around this, the preprocessed function data has its type definitions set to accept range tagged primitives
 //(which are impossible but typescript accepts them)
-//and the impl is type casted to the version that accepts range tagged boxed primitives
+//and the impl is unsoundly casted to the version that accepts range tagged boxed primitives
 
 /**
  * Represents the object used for specifying the type of a builtin function argument.
@@ -73,7 +73,8 @@ function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVaria
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
 
-export const builtinFunctions = (
+let builtinFunctions; //cache
+export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFunctions, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> => builtinFunctions ??= ( // eslint-disable-line @typescript-eslint/no-unsafe-return
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
 		Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
@@ -86,12 +87,13 @@ export const builtinFunctions = (
 					)
 				}])),
 				name,
-				//Unsafe cast
-				impl: data.impl as ((this:Runtime, ...args:RangeAttached<BoxPrimitive<VariableValue>>[]) => VariableTypeMapping<PrimitiveVariableType>),
+				//Unsound cast
+				impl: data.impl as never as ((this:Runtime, ...args:RangeAttached<BoxPrimitive<VariableValue>>[]) => VariableTypeMapping<PrimitiveVariableType>),
 				returnType: PrimitiveVariableType.get(data.returnType as PrimitiveVariableTypeName)
 			}]
 		))
-)({
+)(preprocessedBuiltinFunctions);
+export const preprocessedBuiltinFunctions = ({
 	//Source: s23 P22 insert
 	LEFT: fn({
 		args: [
@@ -332,4 +334,4 @@ export const builtinFunctions = (
 			return file.lineNumber >= file.lines.length;
 		}
 	})
-});
+}) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;

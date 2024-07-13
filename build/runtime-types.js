@@ -1,4 +1,5 @@
-import { crash, f, fail, getTotalRange, impossible } from "./utils.js";
+import { ClassFunctionStatement } from "./statements.js";
+import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 export class BaseVariableType {
     checkSize() { }
     is(...type) {
@@ -290,6 +291,15 @@ export class ClassVariableType extends BaseVariableType {
     getInitValue(runtime) {
         return null;
     }
+    checkSize() {
+        if (this.baseClass) {
+            for (const name of Object.keys(this.baseClass.allMethods)) {
+                if (this.ownMethods[name]) {
+                    checkClassMethodsCompatible(this.baseClass.allMethods[name][1].controlStatements[0], this.ownMethods[name].controlStatements[0]);
+                }
+            }
+        }
+    }
     getPropertyType(property, x) {
         if (!(this.properties[property]))
             crash(`Property ${property} does not exist`);
@@ -359,6 +369,70 @@ export class ClassVariableType extends BaseVariableType {
         };
     }
 }
+export function typesEqual(a, b, types = new Array()) {
+    return a == b ||
+        (Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
+        (a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (a.elementType == b.elementType ||
+            Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1])) ||
+        (a instanceof PointerVariableType && b instanceof PointerVariableType && (types.some(([_a, _b]) => a == _a && b == _b) ||
+            typesEqual(a.target, b.target, types.concat([[a, b]])))) ||
+        (a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType);
+}
+export function typesAssignable(base, ext) {
+    if (base == ext)
+        return true;
+    if (Array.isArray(base) && Array.isArray(ext))
+        return base[1] == ext[1] || "";
+    if (base instanceof ArrayVariableType && ext instanceof ArrayVariableType) {
+        if (base.elementType != null) {
+            if (ext.elementType == null)
+                return f.quote `Type "ANY" is not assignable to type ${base.elementType}`;
+            if (!typesEqual(base.elementType, ext.elementType))
+                return f.quote `Types ${base.elementType} and ${ext.elementType} are not equal`;
+        }
+        if (base.lengthInformation != null) {
+            if (ext.lengthInformation == null)
+                return `cannot assign an array with unknown length to an array requiring a specific length`;
+            if (base.arraySizes.toString() != ext.arraySizes.toString())
+                return "these array types have different length";
+        }
+        return true;
+    }
+    if (base instanceof PointerVariableType && ext instanceof PointerVariableType) {
+        return typesEqual(base.target, ext.target) || f.quote `Types ${base.target} and ${ext.target} are not equal`;
+    }
+    if (base instanceof SetVariableType && ext instanceof SetVariableType) {
+        return typesEqual(base.baseType, ext.baseType) || f.quote `Types ${base.baseType} and ${ext.baseType} are not equal`;
+    }
+    if (base instanceof ClassVariableType && ext instanceof ClassVariableType) {
+        return ext.inherits(base) || "";
+    }
+    return "";
+}
+export const checkClassMethodsCompatible = errorBoundary({
+    message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
+})((base, derived) => {
+    if (base.accessModifier != derived.accessModifier)
+        fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
+    if (base.stype != derived.stype)
+        fail(f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
+    if (!(base.name == "NEW" && derived.name == "NEW")) {
+        if (base.args.size != derived.args.size)
+            fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
+        for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
+            let result;
+            if ((result = typesAssignable(bType.type, aType.type)) != true)
+                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + result ? `: ${result}.` : "", derived.argsRange);
+            if (aType.passMode != bType.passMode)
+                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+        }
+    }
+    if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
+        let result;
+        if ((result = typesAssignable(base.returnType, derived.returnType)) != true)
+            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}` + result ? `: ${result}.` : "", derived.returnTypeToken);
+    }
+});
 export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"];
 export function FileMode(input) {
     if (fileModes.includes(input))
