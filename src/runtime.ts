@@ -671,7 +671,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(from instanceof EnumeratedVariableType){
 			if(to.is("INTEGER") || to.is("REAL")) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
 		}
-		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + assignabilityError ? `: ${assignabilityError}.` : "", undefined);
+		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), undefined);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
 		if(value == null) return value;

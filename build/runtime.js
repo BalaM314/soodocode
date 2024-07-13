@@ -669,7 +669,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     if (to.is("INTEGER") || to.is("REAL"))
                         return from.values.indexOf(value);
                 }
-                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + assignabilityError ? `: ${assignabilityError}.` : "", undefined);
+                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), undefined);
             }
             cloneValue(type, value) {
                 if (value == null)

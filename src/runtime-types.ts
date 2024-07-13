@@ -500,12 +500,12 @@ export const checkClassMethodsCompatible = errorBoundary({
 	if(!(base.name == "NEW" && derived.name == "NEW")){
 		//Skip assignability check for the constructor
 		if(base.args.size != derived.args.size)
-			fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
+			fail(`Method should have ${base.args.size} parameter${base.args.size == 1 ? "" : "s"}, but it has ${derived.args.size} parameter${derived.args.size == 1 ? "" : "s"}.`, derived.argsRange);
 		for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
 			//Changing the name is fine
 			let result;
 			if((result = typesAssignable(bType.type, aType.type)) != true) //parameter types are contravariant
-				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + result ? `: ${result}.` : "", derived.argsRange);
+				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + (result ? `: ${result}.` : ""), derived.argsRange);
 			if(aType.passMode != bType.passMode)
 				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
 		}
@@ -514,7 +514,7 @@ export const checkClassMethodsCompatible = errorBoundary({
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
 		let result;
 		if((result = typesAssignable(base.returnType, derived.returnType)) != true) //return type is covariant
-			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}` + result ? `: ${result}.` : "", derived.returnTypeToken);
+			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}` + (result ? `: ${result}.` : ""), derived.returnTypeToken);
 	}
 });
 

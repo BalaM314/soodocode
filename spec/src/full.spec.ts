@@ -304,7 +304,7 @@ ENDFUNCTION
 DECLARE x: ARRAY[1:10] OF INTEGER
 x[7] <- 15
 OUTPUT amogus(x)`,
-`Cannot coerce`,
+`different length`,
 ],
 //#endregion
 //#region functions
@@ -752,11 +752,157 @@ parse_class_inherits_override: [
 	ENDFUNCTION
 ENDCLASS
 CLASS mogus INHERITS amogus
-PUBLIC FUNCTION name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
-RETURN 0 + x
-ENDFUNCTION
+	PUBLIC FUNCTION name(BYVAL x, BYREF y: INTEGER, z, BYVAL aa_aaaa: ARRAY[0:50, 0:10] OF BOOLEAN) RETURNS INTEGER
+		RETURN 0 + x
+	ENDFUNCTION
 ENDCLASS`,
 []
+],
+parse_class_inherits_illegal_method_type: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION name() RETURNS INTEGER
+		RETURN 5
+	ENDFUNCTION
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name()
+
+	ENDPROCEDURE
+ENDCLASS`,
+`function`
+],
+parse_class_inherits_illegal_return_type_different: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION name() RETURNS INTEGER
+		RETURN 5
+	ENDFUNCTION
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC FUNCTION name() RETURNS CHAR
+		RETURN '5'
+	ENDFUNCTION
+ENDCLASS`,
+`"CHAR" is not assignable to "INTEGER"`
+],
+parse_class_inherits_return_type_covariant_1: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION name() RETURNS amogus
+		RETURN NEW amogus(2)
+	ENDFUNCTION
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC FUNCTION name() RETURNS mogus
+		RETURN NEW mogus(2)
+	ENDFUNCTION
+ENDCLASS`,
+[],
+],
+parse_class_inherits_return_type_covariant_2: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION name() RETURNS mogus
+		RETURN NEW mogus(2)
+	ENDFUNCTION
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC FUNCTION name() RETURNS amogus
+		RETURN NEW amogus(2)
+	ENDFUNCTION
+ENDCLASS`,
+`"amogus" is not assignable to "mogus"`
+],
+parse_class_inherits_parameter_type_count: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC PROCEDURE name(arg: INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name(arg: INTEGER, arg2: INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS`,
+`Method should have 1 parameter`
+],
+parse_class_inherits_parameter_type_mode: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC PROCEDURE name(BYREF arg: INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name(arg: INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS`,
+`pass mode`
+],
+parse_class_inherits_parameter_type_contravariant_1: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC PROCEDURE name(arg:mogus)
+		
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name(arg:amogus)
+		
+	ENDPROCEDURE
+ENDCLASS`,
+[]
+],
+parse_class_inherits_parameter_type_contravariant_2: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC PROCEDURE name(arg:amogus)
+		
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name(arg:mogus)
+		
+	ENDPROCEDURE
+ENDCLASS`,
+`"amogus" is not assignable to type "mogus"`
+],
+parse_class_inherits_recursive_illegal: [
+`CLASS amogus INHERITS mogus
+	PUBLIC PROCEDURE NEW()
+		CALL SUPER.NEW()
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+ENDCLASS`,
+``
 ],
 instantiate_class_blank: [
 `CLASS amogus
