@@ -208,6 +208,54 @@ td, th {
 	border-bottom: 5px solid gray;
 }
 
+#settings-dialog {
+	width: 80vw;
+	height: 90vh;
+	position: relative;
+	background-color: #001;
+	color: white;
+}
+#settings-dialog::backdrop {
+	backdrop-filter: blur(2px) brightness(0.7);
+	/* background-color: salmon; */
+}
+#settings-header {
+	font-size: 3em;
+	text-align: center;
+}
+#settings-dialog-close {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	font-size: 40px;
+}
+.settings-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+.settings-grid-item label {
+	font-size: 25px;
+	color: #CFC;
+}
+.settings-section-header {
+	font-size: 35px;
+	color: yellow;
+}
+.settings-description {
+	font-size: 18px;
+	color: #CCC;
+}
+.settings-grid-item input {
+	margin-right: 10px;
+}
+
+.text-button {
+	cursor: pointer;
+}
+.text-button:hover {
+	text-shadow: 0 0 5px white;
+}
+
 h2 {
 	margin: 0;
 	margin-top: 10px;
@@ -231,8 +279,6 @@ div.horizontal {
 
 input[type="checkbox"] {
   transform: translateY(-5px) scale(1.5);
-	margin: 0px;
-	padding: 0px;
 }
 
 footer {

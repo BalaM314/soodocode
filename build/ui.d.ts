@@ -6,6 +6,7 @@ export declare function flattenTree(program: ProgramASTNode[]): FlattenTreeOutpu
 export declare function displayExpressionHTML(node: ExpressionASTNode | ExpressionASTArrayTypeNode, expand?: boolean, format?: boolean): string;
 export declare function displayProgram(program: ProgramAST | ProgramASTNode[]): string;
 export declare function displayStatement(statement: Statement): string;
+export declare function generateConfigsDialog(): HTMLElement;
 export declare function evaluateExpressionDemo(node: ExpressionASTNode): number;
 export declare function download(filename: string, data: BlobPart): void;
 export declare function showRange(text: string, error: SoodocodeError): string;

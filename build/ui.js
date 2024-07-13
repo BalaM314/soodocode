@@ -10,6 +10,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
+import { configs } from "./config.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
@@ -84,6 +85,40 @@ export function displayStatement(statement) {
 ${statement.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpressionHTML(t, false)}</span>`).join(" ")}\
 </div>`);
 }
+export function generateConfigsDialog() {
+    const wrapper = document.createElement("div");
+    wrapper.id = "settings-dialog-inner";
+    for (const [sectionName, section] of Object.entries(configs)) {
+        const header = document.createElement("span");
+        header.classList.add("settings-section-header");
+        header.innerText = sectionName;
+        wrapper.append(header);
+        const settingsGrid = document.createElement("div");
+        settingsGrid.classList.add("settings-grid");
+        for (const [id, config] of Object.entries(section)) {
+            const gridItem = document.createElement("div");
+            gridItem.classList.add("settings-grid-item");
+            const label = document.createElement("label");
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.name = id;
+            input.checked = Boolean(config.value);
+            const description = document.createElement("div");
+            description.classList.add("settings-description");
+            description.innerText = config.description;
+            input.addEventListener("change", () => {
+                config.value = input.checked;
+            });
+            label.append(input);
+            label.append(config.name);
+            gridItem.append(label);
+            gridItem.append(description);
+            settingsGrid.append(gridItem);
+        }
+        wrapper.append(settingsGrid);
+    }
+    return wrapper;
+}
 export function evaluateExpressionDemo(node) {
     if (node instanceof Token) {
         if (node.type == "number.decimal")
@@ -126,6 +161,7 @@ const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
 const uploadButton = getElement("upload-button", HTMLInputElement);
+const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
 window.addEventListener("keydown", e => {
     if (e.key == "s" && e.ctrlKey) {
         e.preventDefault();
@@ -151,6 +187,10 @@ uploadButton.onchange = (event) => {
         }
     };
 };
+getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+    settingsDialog.showModal();
+});
+settingsDialog.append(generateConfigsDialog());
 soodocodeInput.onkeydown = e => {
     if ((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)) {
         e.preventDefault();

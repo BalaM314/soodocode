@@ -45,9 +45,16 @@
 			<div class="horizontal" style="margin-top: 20px;">
 				<button id="execute-soodocode-button">Execute</button><br>
 				<button id="dump-tokens-button">Show parser output</button>
+				<span id="settings-dialog-button" class="text-button" style="font-size: 25px;">⚙</span>
 			</div>
 			<h2>Program output</h2>
 			<div id="output-div" class="output-div"></div>
+			<dialog id="settings-dialog">
+				<div id="settings-header">
+					<span id="settings-header-text">Settings</span>
+				</div>
+				<span id="settings-dialog-close" class="text-button" onclick="document.getElementById('settings-dialog').close()">❌</span>
+			</dialog>
 			<footer>
 				Copyright © <a href="https://github.com/BalaM314">BalaM314</a>, 2024. All Rights Reserved. <a href="https://github.com/BalaM314/soodocode">Open source.</a>
 			</footer>

@@ -17,6 +17,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
+import { Config, configs } from "./config.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
@@ -102,6 +103,45 @@ ${statement.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span cla
 	);
 }
 
+export function generateConfigsDialog():HTMLElement {
+	const wrapper = document.createElement("div");
+	wrapper.id = "settings-dialog-inner";
+
+	for(const [sectionName, section] of Object.entries(configs)){
+		const header = document.createElement("span");
+		header.classList.add("settings-section-header");
+		header.innerText = sectionName;
+		wrapper.append(header);
+		const settingsGrid = document.createElement("div");
+		settingsGrid.classList.add("settings-grid");
+		for(const [id, config] of Object.entries(section)){
+			const gridItem = document.createElement("div");
+			gridItem.classList.add("settings-grid-item");
+			const label = document.createElement("label");
+			const input = document.createElement("input");
+			input.type = "checkbox";
+			input.name = id;
+			input.checked = Boolean(config.value);
+			const description = document.createElement("div");
+			description.classList.add("settings-description");
+			description.innerText = config.description;
+			input.addEventListener("change", () => {
+				config.value = input.checked; //TODO corrupts non-boolean sttings
+				//saveConfigs(); TODO save configs
+			});
+			label.append(input); //this is valid and removes the need for the 'for' attribute
+			label.append(config.name);
+			gridItem.append(label);
+			gridItem.append(description);
+			settingsGrid.append(gridItem);
+		}
+		wrapper.append(settingsGrid);
+	}
+
+	return wrapper;
+}
+
+
 export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	if(node instanceof Token){
 		if(node.type == "number.decimal") return Number(node.text);
@@ -145,6 +185,7 @@ const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButton
 // const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
 // const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 const uploadButton = getElement("upload-button", HTMLInputElement);
+const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
 
 window.addEventListener("keydown", e => {
 	if(e.key == "s" && e.ctrlKey){
@@ -170,6 +211,11 @@ uploadButton.onchange = (event:Event) => {
 		}
 	};
 };
+
+getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+	settingsDialog.showModal();
+});
+settingsDialog.append(generateConfigsDialog());
 
 /*evaluateExpressionButton.addEventListener("click", () => {
 	try {
@@ -480,7 +526,7 @@ function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
 	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => console.log(`[Runtime] ${m}`));
 	Object.assign(window,
-		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime
+		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime,
 	);
 }
 
