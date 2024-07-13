@@ -316,13 +316,19 @@ export const checkStatement = errorBoundary()((statement:typeof Statement, input
 				j ++;
 				if(j >= input.length){ //end reached
 					if(i == statement.tokens.length - 1) break; //Consumed all tokens
+					//End was reached but there are still matchers left, error
 					//Check for typos
 					const expectedType = statement.tokens[i + 1];
 					if(isKey(tokenTextMapping, expectedType)){
 						const expected = tokenTextMapping[expectedType];
+						let parenNestLevel = 0, bracketNestLevel = 0;
 						for(let k = _j; k < input.length; k ++){
-							if((biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1) return {
-								message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found ${input[k].text}`,
+							if(input[k].type == "parentheses.open") parenNestLevel ++;
+							else if(input[k].type == "parentheses.close") parenNestLevel --;
+							else if(input[k].type == "bracket.open") bracketNestLevel ++;
+							else if(input[k].type == "bracket.close") bracketNestLevel --; //TODO refactor this parenNestLevel mess into an iterator
+							if(parenNestLevel == 0 && bracketNestLevel == 0 && (biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1) return {
+								message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found "${input[k].text}"`,
 								priority: 50,
 								range: input[k].range
 							};

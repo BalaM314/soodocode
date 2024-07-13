@@ -299,10 +299,19 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
                     const expectedType = statement.tokens[i + 1];
                     if (isKey(tokenTextMapping, expectedType)) {
                         const expected = tokenTextMapping[expectedType];
+                        let parenNestLevel = 0, bracketNestLevel = 0;
                         for (let k = _j; k < input.length; k++) {
-                            if ((biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1)
+                            if (input[k].type == "parentheses.open")
+                                parenNestLevel++;
+                            else if (input[k].type == "parentheses.close")
+                                parenNestLevel--;
+                            else if (input[k].type == "bracket.open")
+                                bracketNestLevel++;
+                            else if (input[k].type == "bracket.close")
+                                bracketNestLevel--;
+                            if (parenNestLevel == 0 && bracketNestLevel == 0 && (biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1)
                                 return {
-                                    message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found ${input[k].text}`,
+                                    message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found "${input[k].text}"`,
                                     priority: 50,
                                     range: input[k].range
                                 };
