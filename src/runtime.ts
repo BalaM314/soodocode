@@ -9,94 +9,13 @@ This file contains the runtime, which executes the program AST.
 import { builtinFunctions } from "./builtin_functions.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, separateArray, tryRun, tryRunOr, zip } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr } from "./utils.js";
 
 //TODO: fix coercion
 //CONFIG: array initialization
-
-export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType, types = new Array<[VariableType, VariableType]>()):boolean {
-	return a == b ||
-		(Array.isArray(a) && Array.isArray(b) && a[1] == b[1]) ||
-		(a instanceof ArrayVariableType && b instanceof ArrayVariableType && a.arraySizes?.toString() == b.arraySizes?.toString() && (
-			a.elementType == b.elementType ||
-			Array.isArray(a.elementType) && Array.isArray(b.elementType) && a.elementType[1] == b.elementType[1]
-		)) ||
-		(a instanceof PointerVariableType && b instanceof PointerVariableType && (
-			types.some(([_a, _b]) => a == _a && b == _b) || //Prevent infinite recursion on infinite pointer types
-			typesEqual(a.target, b.target, types.concat([[a, b]]))
-		)) ||
-		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
-	;
-}
-
-/**
- * Checks if "ext" is assignable to "base". Does not attempt coercion.
- * @returns true if it is, or a string error message if it isn't. Error message may be empty.
- */
-export function typesAssignable(base:VariableType, ext:VariableType):true | string;
-export function typesAssignable(base:UnresolvedVariableType, ext:UnresolvedVariableType):true | string;
-export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:VariableType | UnresolvedVariableType):true | string {
-	if(base == ext) return true;
-	if(Array.isArray(base) && Array.isArray(ext))
-		return base[1] == ext[1] || "";
-	if(base instanceof ArrayVariableType && ext instanceof ArrayVariableType){
-		if(base.elementType != null){
-			if(ext.elementType == null) return f.quote`Type "ANY" is not assignable to type ${base.elementType}`;
-			//arrays are invariant
-			if(!typesEqual(base.elementType, ext.elementType)) return f.quote`Types ${base.elementType} and ${ext.elementType} are not equal`;
-		}
-		if(base.lengthInformation != null){
-			if(ext.lengthInformation == null) return `cannot assign an array with unknown length to an array requiring a specific length`;
-			//CONFIG allow reinterpreting 2D arrays?
-			if(base.arraySizes!.toString() != ext.arraySizes!.toString()) return "these array types have different length";
-		}
-		return true;
-	}
-	if(base instanceof PointerVariableType && ext instanceof PointerVariableType){
-		return typesEqual(base.target, ext.target) || f.quote`Types ${base.target} and ${ext.target} are not equal`;
-	}
-	if(base instanceof SetVariableType && ext instanceof SetVariableType){
-		return typesEqual(base.baseType, ext.baseType) || f.quote`Types ${base.baseType} and ${ext.baseType} are not equal`;
-	}
-	if(base instanceof ClassVariableType && ext instanceof ClassVariableType){
-		return ext.inherits(base) || "";
-	}
-	return "";
-}
-
-export const checkClassMethodsCompatible = errorBoundary({
-	message: (base:ClassMethodStatement, derived:ClassMethodStatement) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})((base:ClassMethodStatement, derived:ClassMethodStatement) => {
-
-	if(base.accessModifier != derived.accessModifier)
-		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
-
-	if(base.stype != derived.stype)
-		fail(f.text`Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
-
-	if(!(base.name == "NEW" && derived.name == "NEW")){
-		//Skip assignability check for the constructor
-		if(base.args.size != derived.args.size)
-			fail(`Method should have ${base.args.size} parameters, but it has ${derived.args.size} parameters.`, derived.argsRange);
-		for(const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())){
-			//Changing the name is fine
-			let result;
-			if((result = typesAssignable(bType.type, aType.type)) != true) //parameter types are contravariant
-				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + result ? `: ${result}.` : "", derived.argsRange);
-			if(aType.passMode != bType.passMode)
-				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
-		}
-	}
-
-	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
-		let result;
-		if((result = typesAssignable(base.returnType, derived.returnType)) != true) //return type is covariant
-			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}` + result ? `: ${result}.` : "", derived.returnTypeToken);
-	}
-});
 
 export class Files {
 	files: Record<string, File> = {};

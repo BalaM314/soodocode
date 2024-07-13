@@ -970,12 +970,7 @@ export class ClassInheritsStatement extends ClassStatement {
 		}
 		for(const [name, value] of Object.entries(baseClass.allMethods)){
 			//If the method has not been overriden, set it to the base class's method
-			if(extensions.ownMethods[name]){
-				checkClassMethodsCompatible(
-					baseClass.allMethods[name][1].controlStatements[0],
-					extensions.ownMethods[name].controlStatements[0],
-				);
-			} else {
+			if(!extensions.ownMethods[name]){
 				extensions.allMethods[name] = value;
 			}
 		}
