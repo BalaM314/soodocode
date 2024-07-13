@@ -97,7 +97,28 @@ export class Operator {
         Object.assign(this, args);
     }
     fmtText() {
-        return `${this.name}`;
+        return {
+            "operator.or": "or",
+            "operator.and": "and",
+            "operator.equal_to": "equal to",
+            "operator.not_equal_to": "not equal to",
+            "operator.less_than": "less than",
+            "operator.less_than_equal": "less than equal",
+            "operator.greater_than": "greater than",
+            "operator.greater_than_equal": "greater than equal",
+            "operator.add": "add",
+            "operator.subtract": "subtract",
+            "operator.string_concatenate": "string concatenate",
+            "operator.multiply": "multiply",
+            "operator.divide": "divide",
+            "operator.integer_divide": "integer divide",
+            "operator.mod": "mod",
+            "operator.pointer_reference": "pointer reference",
+            "operator.not": "not",
+            "operator.negate": "negate",
+            "operator.pointer_dereference": "pointer dereference",
+            "operator.access": "access",
+        }[this.name];
     }
     fmtDebug() {
         return `Operator [${this.name}] (${this.category} ${this.type})`;
@@ -205,7 +226,7 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => new
     ]
 ]);
 export const operators = Object.fromEntries(operatorsByPriority.flat().map(o => [
-    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
+    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : crash(`operator names should start with operator.`), o
 ]));
 export class ProgramASTBranchNode {
     constructor(type, controlStatements, nodeGroups) {

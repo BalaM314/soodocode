@@ -105,7 +105,7 @@ export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
-		public lengthInformation: [low:ExpressionAST, high:ExpressionAST][] | null, //TODO support expressions here
+		public lengthInformation: [low:ExpressionAST, high:ExpressionAST][] | null,
 		public elementType: Token,
 		public allTokens: RangeArray<Token>,
 	){
@@ -158,16 +158,58 @@ export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNod
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
+export type OperatorName =
+	| "operator.or"
+	| "operator.and"
+	| "operator.equal_to"
+	| "operator.not_equal_to"
+	| "operator.less_than"
+	| "operator.less_than_equal"
+	| "operator.greater_than"
+	| "operator.greater_than_equal"
+	| "operator.add"
+	| "operator.subtract"
+	| "operator.string_concatenate"
+	| "operator.multiply"
+	| "operator.divide"
+	| "operator.integer_divide"
+	| "operator.mod"
+	| "operator.pointer_reference"
+	| "operator.not"
+	| "operator.negate"
+	| "operator.pointer_dereference"
+	| "operator.access";
 export class Operator implements IFormattable {
 	token!: TokenType;
-	name!: string;
+	name!: OperatorName;
 	type!: OperatorMode;
 	category!: OperatorCategory;
 	constructor(args:ClassProperties<Operator>){
 		Object.assign(this, args);
 	}
 	fmtText(){
-		return `${this.name}`; //TODO display name
+		return {
+			"operator.or": "or",
+			"operator.and": "and",
+			"operator.equal_to": "equal to",
+			"operator.not_equal_to": "not equal to",
+			"operator.less_than": "less than",
+			"operator.less_than_equal": "less than equal",
+			"operator.greater_than": "greater than",
+			"operator.greater_than_equal": "greater than equal",
+			"operator.add": "add",
+			"operator.subtract": "subtract",
+			"operator.string_concatenate": "string concatenate",
+			"operator.multiply": "multiply",
+			"operator.divide": "divide",
+			"operator.integer_divide": "integer divide",
+			"operator.mod": "mod",
+			"operator.pointer_reference": "pointer reference",
+			"operator.not": "not",
+			"operator.negate": "negate",
+			"operator.pointer_dereference": "pointer dereference",
+			"operator.access": "access",
+		}[this.name];
 	}
 	fmtDebug(){
 		return `Operator [${this.name}] (${this.category} ${this.type})`;
@@ -181,7 +223,7 @@ export const operatorsByPriority = ((input:(PartialKey<ClassProperties<Operator>
 			token: o.token,
 			category: o.category,
 			type: o.type ?? "binary",
-			name: o.name ?? o.token,
+			name: o.name ?? o.token as OperatorName,
 		})
 	))
 )([
@@ -286,7 +328,7 @@ export const operatorsByPriority = ((input:(PartialKey<ClassProperties<Operator>
 /** Indexed by OperatorType */
 export const operators = Object.fromEntries(
 	operatorsByPriority.flat().map(o => [
-		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : o.name, o
+		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : crash(`operator names should start with operator.`), o
 	] as const)
 ) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
 
