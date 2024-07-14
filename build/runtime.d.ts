@@ -83,7 +83,7 @@ export declare class Runtime {
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     getClass<T extends boolean = boolean>(name: string, range: TextRange): ClassVariableType<T>;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
-    coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S): VariableTypeMapping<S>;
+    coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S, range?: TextRangeLike): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: RangeArray<ExpressionAST>): VariableScope;
     callFunction<T extends boolean>(funcNode: FunctionData, args: RangeArray<ExpressionAST>, requireReturnValue?: T): VariableValue | (T extends false ? null : never);

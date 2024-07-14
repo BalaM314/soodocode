@@ -252,7 +252,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):[type:T & {}, value:VariableTypeMapping<T>];
 	@errorBoundary({
 		predicate: (_expr, _type, recursive) => !recursive,
-		message: () => `Cannot evaluate expression $rc: `
+		message: () => `Cannot evaluate expression "$rc": `
 	})
 	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function", _recursive = false):[type:VariableType, value:unknown] | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(expr == undefined) crash(`expr was ${expr as null | undefined}`);
@@ -341,7 +341,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 
 		//arithmetic
 		if(type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic"){
-			if(type && !type.is("REAL", "INTEGER"))
+			if(type && !(type.is("REAL", "INTEGER") || type instanceof EnumeratedVariableType))
 				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`, expr);
 
 			const guessedType = (type as PrimitiveVariableType<"REAL" | "INTEGER">) ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
@@ -355,8 +355,50 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 					default: crash("impossible");
 				}
 			}
-			const [_leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
-			const [_rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
+			let _leftType, left, _rightType, right;
+			if(expr.operator == operators.add || expr.operator == operators.subtract){
+				[_leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
+				[_rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
+			} else {
+				[_leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
+				[_rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
+			}
+
+			if(_leftType instanceof EnumeratedVariableType){
+				left = left as VariableTypeMapping<EnumeratedVariableType>;
+				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
+				const other = this.coerceValue(right, _rightType, PrimitiveVariableType.INTEGER);
+				const value = _leftType.values.indexOf(left);
+				if(value == -1) crash(`enum fail`);
+				if(expr.operator == operators.add){
+					return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+				} else if(expr.operator == operators.subtract){
+					return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
+			} else if(_rightType instanceof EnumeratedVariableType){
+				right = right as VariableTypeMapping<EnumeratedVariableType>;
+				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
+				const other = this.coerceValue(left, _leftType, PrimitiveVariableType.INTEGER);
+				const value = _rightType.values.indexOf(right);
+				if(value == -1) crash(`enum fail`);
+				if(expr.operator == operators.add){
+					return this.finishEvaluation(_rightType.values[value + other] ?? fail(f.quote`Cannot add ${other} to ${value}: no corresponding value in ${_rightType}`, expr), _rightType, type);
+				} else if(expr.operator == operators.subtract){
+					fail(`Cannot subtract an enum value from a number`, expr);
+				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[1]);
+			} else {
+				if(_leftType != guessedType){
+					left = this.coerceValue(left, _leftType, guessedType, expr.nodes[0]);
+					_leftType = guessedType;
+				}
+				if(_rightType != guessedType){
+					right = this.coerceValue(right, _rightType, guessedType, expr.nodes[1]);
+					_rightType = guessedType;
+				}
+				forceType<number>(left);
+				forceType<number>(right);
+			}
+
 			switch(expr.operator){
 				case operators.add:
 					value = left + right;
@@ -654,7 +696,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		else
 			return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
 	}
-	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S):VariableTypeMapping<S> {
+	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
 		//typescript really hates this function, beware
 		let assignabilityError;
 		if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
@@ -668,10 +710,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
 			if(from instanceof EnumeratedVariableType) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
 		}
-		if(from instanceof EnumeratedVariableType){
-			if(to.is("INTEGER") || to.is("REAL")) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
-		}
-		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), undefined);
+		// if(from instanceof EnumeratedVariableType){
+		// 	if(to.is("INTEGER") || to.is("REAL")) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
+		// }
+		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), range);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
 		if(value == null) return value;

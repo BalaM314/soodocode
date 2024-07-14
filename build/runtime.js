@@ -325,7 +325,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 if (type == "variable" || type == "function")
                     fail(`Cannot evaluate this expression as a ${type}`, expr);
                 if (type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic") {
-                    if (type && !type.is("REAL", "INTEGER"))
+                    if (type && !(type.is("REAL", "INTEGER") || type instanceof EnumeratedVariableType))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`, expr);
                     const guessedType = type ?? PrimitiveVariableType.REAL;
                     let value;
@@ -337,8 +337,61 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                             default: crash("impossible");
                         }
                     }
-                    const [_leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
-                    const [_rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
+                    let _leftType, left, _rightType, right;
+                    if (expr.operator == operators.add || expr.operator == operators.subtract) {
+                        [_leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
+                        [_rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
+                    }
+                    else {
+                        [_leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
+                        [_rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
+                    }
+                    if (_leftType instanceof EnumeratedVariableType) {
+                        left = left;
+                        if (type && !(type instanceof EnumeratedVariableType))
+                            fail(f.quote `expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
+                        const other = this.coerceValue(right, _rightType, PrimitiveVariableType.INTEGER);
+                        const value = _leftType.values.indexOf(left);
+                        if (value == -1)
+                            crash(`enum fail`);
+                        if (expr.operator == operators.add) {
+                            return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text `Cannot add ${other} to enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+                        }
+                        else if (expr.operator == operators.subtract) {
+                            return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text `Cannot subtract ${other} from enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+                        }
+                        else
+                            fail(f.quote `Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
+                    }
+                    else if (_rightType instanceof EnumeratedVariableType) {
+                        right = right;
+                        if (type && !(type instanceof EnumeratedVariableType))
+                            fail(f.quote `expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
+                        const other = this.coerceValue(left, _leftType, PrimitiveVariableType.INTEGER);
+                        const value = _rightType.values.indexOf(right);
+                        if (value == -1)
+                            crash(`enum fail`);
+                        if (expr.operator == operators.add) {
+                            return this.finishEvaluation(_rightType.values[value + other] ?? fail(f.quote `Cannot add ${other} to ${value}: no corresponding value in ${_rightType}`, expr), _rightType, type);
+                        }
+                        else if (expr.operator == operators.subtract) {
+                            fail(`Cannot subtract an enum value from a number`, expr);
+                        }
+                        else
+                            fail(f.quote `Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[1]);
+                    }
+                    else {
+                        if (_leftType != guessedType) {
+                            left = this.coerceValue(left, _leftType, guessedType, expr.nodes[0]);
+                            _leftType = guessedType;
+                        }
+                        if (_rightType != guessedType) {
+                            right = this.coerceValue(right, _rightType, guessedType, expr.nodes[1]);
+                            _rightType = guessedType;
+                        }
+                        forceType(left);
+                        forceType(right);
+                    }
                     switch (expr.operator) {
                         case operators.add:
                             value = left + right;
@@ -645,7 +698,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 else
                     return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
             }
-            coerceValue(value, from, to) {
+            coerceValue(value, from, to, range) {
                 let assignabilityError;
                 if ((assignabilityError = typesAssignable(to, from)) === true)
                     return value;
@@ -665,11 +718,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     if (from instanceof EnumeratedVariableType)
                         return value;
                 }
-                if (from instanceof EnumeratedVariableType) {
-                    if (to.is("INTEGER") || to.is("REAL"))
-                        return from.values.indexOf(value);
-                }
-                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), undefined);
+                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), range);
             }
             cloneValue(type, value) {
                 if (value == null)
@@ -879,7 +928,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             _processRecordAccess_decorators = [errorBoundary()];
             _evaluateExpr_decorators = [errorBoundary({
                     predicate: (_expr, _type, recursive) => !recursive,
-                    message: () => `Cannot evaluate expression $rc: `
+                    message: () => `Cannot evaluate expression "$rc": `
                 })];
             __esDecorate(_a, null, _processArrayAccess_decorators, { kind: "method", name: "processArrayAccess", static: false, private: false, access: { has: obj => "processArrayAccess" in obj, get: obj => obj.processArrayAccess }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(_a, null, _processRecordAccess_decorators, { kind: "method", name: "processRecordAccess", static: false, private: false, access: { has: obj => "processRecordAccess" in obj, get: obj => obj.processRecordAccess }, metadata: _metadata }, null, _instanceExtraInitializers);

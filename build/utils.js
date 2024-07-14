@@ -293,11 +293,10 @@ export function tagProcessor(transformer) {
     };
 }
 function formatText(input) {
-    if (typeof input == "string")
-        return input;
-    if (input instanceof String || input instanceof Number || input instanceof Boolean)
+    if (input instanceof String || input instanceof Number || input instanceof Boolean ||
+        typeof input == "string" || typeof input == "number" || typeof input == "boolean")
         return input.toString();
-    else if (Array.isArray(input)) {
+    if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             return input[1];
         return input.map(formatText).join(" ");
@@ -306,11 +305,10 @@ function formatText(input) {
         return input.fmtText();
 }
 function formatShort(input) {
-    if (typeof input == "string")
-        return input;
-    if (input instanceof String || input instanceof Number || input instanceof Boolean)
+    if (input instanceof String || input instanceof Number || input instanceof Boolean ||
+        typeof input == "string" || typeof input == "number" || typeof input == "boolean")
         return input.toString();
-    else if (Array.isArray(input)) {
+    if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             return input[1];
         return input.map(formatShort).join(" ");
@@ -320,9 +318,8 @@ function formatShort(input) {
 }
 function formatQuoted(input) {
     let str;
-    if (typeof input == "string")
-        str = input;
-    else if (input instanceof String || input instanceof Number || input instanceof Boolean)
+    if (input instanceof String || input instanceof Number || input instanceof Boolean ||
+        typeof input == "string" || typeof input == "number" || typeof input == "boolean")
         str = input.toString();
     else if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
@@ -337,11 +334,10 @@ function formatQuoted(input) {
     return `"${str}"`;
 }
 function formatDebug(input) {
-    if (typeof input == "string")
-        return input;
-    else if (input instanceof String || input instanceof Number || input instanceof Boolean)
+    if (input instanceof String || input instanceof Number || input instanceof Boolean ||
+        typeof input == "string" || typeof input == "number" || typeof input == "boolean")
         return input.toString();
-    else if (Array.isArray(input)) {
+    if (Array.isArray(input)) {
         if (input[0] == "unresolved" && typeof input[1] == "string")
             return `UnresolvedVariableType[${input[1]}]`;
         return `[${input.map(formatDebug).join(", ")}]`;

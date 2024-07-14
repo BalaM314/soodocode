@@ -324,30 +324,33 @@ export function tagProcessor<T>(
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean;
+export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean | number | boolean;
 function formatText(input:Formattable):string {
-	if(typeof input == "string") return input;
-	// eslint-disable-next-line @typescript-eslint/no-base-to-string
-	if(input instanceof String || input instanceof Number || input instanceof Boolean) return input.toString();
-	else if(Array.isArray(input)){
+	if(
+		input instanceof String || input instanceof Number || input instanceof Boolean ||
+		typeof input == "string" || typeof input == "number" || typeof input == "boolean"
+	) return input.toString(); // eslint-disable-line @typescript-eslint/no-base-to-string
+	if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return input[1];
 		return (input as IFormattable[]).map(formatText).join(" ");
 	} else return input.fmtText();
 }
 function formatShort(input:Formattable):string {
-	if(typeof input == "string") return input;
-	// eslint-disable-next-line @typescript-eslint/no-base-to-string
-	if(input instanceof String || input instanceof Number || input instanceof Boolean) return input.toString();
-	else if(Array.isArray(input)){
+	if(
+		input instanceof String || input instanceof Number || input instanceof Boolean ||
+		typeof input == "string" || typeof input == "number" || typeof input == "boolean"
+	) return input.toString(); // eslint-disable-line @typescript-eslint/no-base-to-string
+	if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return input[1];
 		return (input as IFormattable[]).map(formatShort).join(" ");
 	} else return input.fmtShort?.() ?? input.fmtText();
 }
 function formatQuoted(input:Formattable):string {
 	let str:string;
-	if(typeof input == "string") str = input;
-	// eslint-disable-next-line @typescript-eslint/no-base-to-string
-	else if(input instanceof String || input instanceof Number || input instanceof Boolean) str = input.toString();
+	if(
+		input instanceof String || input instanceof Number || input instanceof Boolean ||
+		typeof input == "string" || typeof input == "number" || typeof input == "boolean"
+	) str = input.toString(); // eslint-disable-line @typescript-eslint/no-base-to-string
 	else if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") str = input[1];
 		else str = (input as IFormattable[]).map(formatText).join(" ");
@@ -357,10 +360,11 @@ function formatQuoted(input:Formattable):string {
 	return `"${str}"`;
 }
 function formatDebug(input:Formattable):string {
-	if(typeof input == "string") return input;
-	// eslint-disable-next-line @typescript-eslint/no-base-to-string
-	else if(input instanceof String || input instanceof Number || input instanceof Boolean) return input.toString();
-	else if(Array.isArray(input)){
+	if(
+		input instanceof String || input instanceof Number || input instanceof Boolean ||
+		typeof input == "string" || typeof input == "number" || typeof input == "boolean"
+	) return input.toString(); // eslint-disable-line @typescript-eslint/no-base-to-string
+	if(Array.isArray(input)){
 		if(input[0] == "unresolved" && typeof input[1] == "string") return `UnresolvedVariableType[${input[1]}]`;
 		return `[${(input as IFormattable[]).map(formatDebug).join(", ")}]`;
 	} else return input.fmtDebug();

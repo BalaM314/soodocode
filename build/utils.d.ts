@@ -47,7 +47,7 @@ type Iterators<T extends unknown[]> = {
 };
 export declare function zip<T extends unknown[]>(...iters: Iterators<T>): IterableIterator<T>;
 export declare function tagProcessor<T>(transformer: (chunk: T, index: number, allStringChunks: readonly string[], allVarChunks: readonly T[]) => string): TagFunction<T, string>;
-export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean;
+export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean | number | boolean;
 export declare const f: {
     text: TagFunction<Formattable, string>;
     short: TagFunction<Formattable, string>;
