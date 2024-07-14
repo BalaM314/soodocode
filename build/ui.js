@@ -89,6 +89,8 @@ export function generateConfigsDialog() {
     const wrapper = document.createElement("div");
     wrapper.id = "settings-dialog-inner";
     for (const [sectionName, section] of Object.entries(configs)) {
+        if (sectionName == "default_values")
+            continue;
         const header = document.createElement("span");
         header.classList.add("settings-section-header");
         header.innerText = sectionName;
