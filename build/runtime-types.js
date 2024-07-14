@@ -41,12 +41,12 @@ export class PrimitiveVariableType extends BaseVariableType {
     getInitValue(runtime, requireInit) {
         if (requireInit)
             return {
-                INTEGER: 0,
-                REAL: 0,
-                STRING: "",
-                CHAR: '',
-                BOOLEAN: false,
-                DATE: new Date()
+                INTEGER: configs.default_values.INTEGER.value,
+                REAL: configs.default_values.REAL.value,
+                STRING: configs.default_values.STRING.value,
+                CHAR: configs.default_values.CHAR.value,
+                BOOLEAN: configs.default_values.BOOLEAN.value,
+                DATE: new Date(configs.default_values.DATE.value),
             }[this.name];
         else
             return null;

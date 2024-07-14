@@ -37,6 +37,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
 import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
+import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
@@ -279,7 +280,7 @@ let DeclareStatement = (() => {
                     fail(`Variable ${variable} was already declared`, token);
                 runtime.getCurrentScope().variables[variable] = {
                     type: varType,
-                    value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),
+                    value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
                     declaration: this,
                     mutable: true,
                 };
@@ -696,8 +697,8 @@ let CallStatement = (() => {
             else {
                 if ("name" in func)
                     fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
-                if (func.controlStatements[0] instanceof FunctionStatement)
-                    fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, this.func);
+                if (func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
+                    fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, this.func);
                 runtime.callFunction(func, this.func.args);
             }
         }

@@ -66,7 +66,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
         call_functions: [
             "CALL functions",
             `Allow using the CALL statement to call functions`,
-            `Cambridge has explicitly stated that the CALL statement cannot be used to call functions, in section 8.2 of the official pseudocode guide, so this is disabled by default.`,
+            `Cambridge has explicitly stated that the CALL statement cannot be used to call functions, in section 8.2 of the official pseudocode guide.`,
             false
         ]
     },

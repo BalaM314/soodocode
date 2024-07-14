@@ -7,6 +7,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 
 import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
+import { configs } from "./config.js";
 import { RangeArray, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
@@ -277,7 +278,7 @@ export class DeclareStatement extends Statement {
 			if(runtime.getCurrentScope().variables[variable]) fail(`Variable ${variable} was already declared`, token);
 			runtime.getCurrentScope().variables[variable] = {
 				type: varType,
-				value: typeof varType == "string" ? null : varType.getInitValue(runtime, false),
+				value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
 				declaration: this,
 				mutable: true,
 			};
@@ -509,7 +510,8 @@ export class CallStatement extends Statement {
 			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
-			if(func.controlStatements[0] instanceof FunctionStatement) fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, this.func); //CONFIG
+			if(func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
+				fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, this.func);
 			runtime.callFunction(func, this.func.args);
 		}
 	}

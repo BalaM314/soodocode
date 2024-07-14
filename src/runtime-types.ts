@@ -5,6 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the runtime, such as the variable types and associated utility types.
 */
 
+import { configs } from "./config.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
@@ -110,12 +111,12 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):number | string | boolean | Date | null {
 		if(requireInit) return {
-			INTEGER: 0,
-			REAL: 0,
-			STRING: "",
-			CHAR: '',
-			BOOLEAN: false,
-			DATE: new Date()
+			INTEGER: configs.default_values.INTEGER.value,
+			REAL: configs.default_values.REAL.value,
+			STRING: configs.default_values.STRING.value,
+			CHAR: configs.default_values.CHAR.value,
+			BOOLEAN: configs.default_values.BOOLEAN.value,
+			DATE: new Date(configs.default_values.DATE.value),
 		}[this.name];
 		else return null;
 	}
@@ -145,7 +146,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			}
 			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
 			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
-		}
+		} else if(!configs.arrays.unspecified_length.value) fail(`Please specify the length of the array\n${configs.arrays.unspecified_length.errorHelp}`, this.range);
 	}
 	clone(){
 		const type = new ArrayVariableType<false>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
@@ -474,7 +475,14 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		if(base.lengthInformation != null){
 			if(ext.lengthInformation == null) return `cannot assign an array with unknown length to an array requiring a specific length`;
 			//CONFIG allow reinterpreting 2D arrays?
-			if(base.arraySizes!.toString() != ext.arraySizes!.toString()) return "these array types have different length";
+			if(configs.coercion.arrays_same_length.value){
+				if(base.arraySizes!.toString() != ext.arraySizes!.toString()) return "these array types have different lengths";
+			} else {
+				if(base.lengthInformation.toString() != ext.lengthInformation.toString()){
+					if(base.arraySizes!.toString() == ext.arraySizes!.toString()) return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
+					return "theses array types have different lengths";
+				}
+			}
 		}
 		return true;
 	}
