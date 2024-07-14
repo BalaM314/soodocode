@@ -1,8 +1,10 @@
 export type Config<T> = {
     name: string;
-    description: string;
+    shortDescription: string;
+    fullDescription: string;
     defaultValue: T;
     value: T;
+    errorHelp: string;
 };
 export declare const configs: {
     coercion: {

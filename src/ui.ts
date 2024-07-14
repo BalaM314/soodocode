@@ -124,7 +124,7 @@ export function generateConfigsDialog():HTMLElement {
 			input.checked = Boolean(config.value);
 			const description = document.createElement("div");
 			description.classList.add("settings-description");
-			description.innerText = config.description;
+			description.innerText = config.fullDescription;
 			input.addEventListener("change", () => {
 				config.value = input.checked; //TODO corrupts non-boolean sttings
 				//saveConfigs(); TODO save configs
