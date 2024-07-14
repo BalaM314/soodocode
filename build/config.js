@@ -9,7 +9,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
     coercion: {
         arrays_same_length: [
             "Coerce arrays of same length",
-            `Allow assigning array types with same length but different start and end indexes`,
+            `Allow assigning array types with same lengths but different start and end indexes`,
             `For example, "ARRAY[1:10] OF INTEGER" can be coerced to "ARRAY[0:9] OF INTEGER".`,
             true,
         ]
