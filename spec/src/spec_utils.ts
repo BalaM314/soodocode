@@ -424,7 +424,7 @@ export function arrayType(
 	processedLengthInformation: [low:number, high:number][] | null,
 	elementType: VariableType,
 ){
-	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType);
+	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType, [-1, -1]);
 	type.init(fakeObject<Runtime>({
 		evaluateExpr: ((expr:ExpressionAST, type:VariableType) => {
 			if(expr instanceof Token) return Runtime.evaluateToken(expr, type);

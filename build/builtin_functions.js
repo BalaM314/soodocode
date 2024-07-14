@@ -8,7 +8,7 @@ export const getBuiltinFunctions = () => builtinFunctions ?? (builtinFunctions =
         args: new Map(data.args.map(([name, type]) => [name, {
                 passMode: "reference",
                 type: (Array.isArray(type) ? type : [type]).map(t => Array.isArray(t)
-                    ? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]))
+                    ? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
                     : PrimitiveVariableType.get(t))
             }])),
         name,

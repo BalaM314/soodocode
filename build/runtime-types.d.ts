@@ -49,10 +49,11 @@ export declare class ArrayVariableType<Init extends boolean = true> extends Base
     lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null;
     lengthInformationRange: TextRange | null;
     elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null;
+    range: TextRange;
     totalLength: number | null;
     arraySizes: number[] | null;
     lengthInformation: [low: number, high: number][] | null;
-    constructor(lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null);
+    constructor(lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null, lengthInformationRange: TextRange | null, elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null, range: TextRange);
     init(runtime: Runtime): void;
     clone(): ArrayVariableType<true>;
     fmtText(): string;

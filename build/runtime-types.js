@@ -1,3 +1,4 @@
+import { configs } from "./config.js";
 import { ClassFunctionStatement } from "./statements.js";
 import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 export class BaseVariableType {
@@ -59,11 +60,12 @@ PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
 export class ArrayVariableType extends BaseVariableType {
-    constructor(lengthInformationExprs, lengthInformationRange, elementType) {
+    constructor(lengthInformationExprs, lengthInformationRange, elementType, range) {
         super();
         this.lengthInformationExprs = lengthInformationExprs;
         this.lengthInformationRange = lengthInformationRange;
         this.elementType = elementType;
+        this.range = range;
         this.totalLength = null;
         this.arraySizes = null;
         this.lengthInformation = null;
@@ -83,9 +85,11 @@ export class ArrayVariableType extends BaseVariableType {
             this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
             this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
         }
+        else if (!configs.arrays.unspecified_length.value)
+            fail(`Please specify the length of the array\n${configs.arrays.unspecified_length.errorHelp}`, this.range);
     }
     clone() {
-        const type = new ArrayVariableType(this.lengthInformationExprs, this.lengthInformationRange, this.elementType);
+        const type = new ArrayVariableType(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
         type.lengthInformation = this.lengthInformation;
         type.arraySizes = this.arraySizes;
         type.totalLength = this.totalLength;
@@ -114,7 +118,7 @@ export class ArrayVariableType extends BaseVariableType {
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
     }
     static from(node) {
-        return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType));
+        return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType), node.range);
     }
 }
 export class RecordVariableType extends BaseVariableType {
@@ -393,8 +397,17 @@ export function typesAssignable(base, ext) {
         if (base.lengthInformation != null) {
             if (ext.lengthInformation == null)
                 return `cannot assign an array with unknown length to an array requiring a specific length`;
-            if (base.arraySizes.toString() != ext.arraySizes.toString())
-                return "these array types have different length";
+            if (configs.coercion.arrays_same_length.value) {
+                if (base.arraySizes.toString() != ext.arraySizes.toString())
+                    return "these array types have different lengths";
+            }
+            else {
+                if (base.lengthInformation.toString() != ext.lengthInformation.toString()) {
+                    if (base.arraySizes.toString() == ext.arraySizes.toString())
+                        return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
+                    return "theses array types have different lengths";
+                }
+            }
         }
         return true;
     }

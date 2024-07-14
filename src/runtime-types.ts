@@ -129,6 +129,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,
 		public lengthInformationRange: TextRange | null,
 		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
+		public range: TextRange,
 	){super();}
 	init(runtime:Runtime){
 		if(Array.isArray(this.elementType))
@@ -147,7 +148,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		}
 	}
 	clone(){
-		const type = new ArrayVariableType<false>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType);
+		const type = new ArrayVariableType<false>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
 		type.lengthInformation = this.lengthInformation;
 		type.arraySizes = this.arraySizes;
 		type.totalLength = this.totalLength;
@@ -176,7 +177,8 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		return new ArrayVariableType<false>(
 			node.lengthInformation,
 			node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null,
-			PrimitiveVariableType.resolve(node.elementType)
+			PrimitiveVariableType.resolve(node.elementType),
+			node.range
 		);
 	}
 }
