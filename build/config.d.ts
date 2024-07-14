@@ -15,6 +15,7 @@ export declare const configs: {
     };
     initialization: {
         normal_variables_default: Config<boolean>;
+        arrays_default: Config<boolean>;
     };
     default_values: {
         INTEGER: Config<number>;
@@ -26,6 +27,7 @@ export declare const configs: {
     };
     statements: {
         call_functions: Config<boolean>;
+        auto_declare_classes: Config<boolean>;
     };
     misc: {};
 };

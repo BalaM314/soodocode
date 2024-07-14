@@ -499,6 +499,20 @@ let AssignmentStatement = (() => {
                 fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
         run(runtime) {
+            if (this.target instanceof Token && !runtime.getVariable(this.target.text)) {
+                const [type, value] = runtime.evaluateExpr(this.expr);
+                if (type instanceof ClassVariableType) {
+                    if (configs.statements.auto_declare_classes.value) {
+                        runtime.getCurrentScope().variables[this.target.text] = {
+                            type, value, declaration: this, mutable: true,
+                        };
+                    }
+                    else
+                        fail(f.quote `Variable ${this.target.text} does not exist\n` + configs.statements.auto_declare_classes.errorHelp, this.target);
+                }
+                else
+                    runtime.handleNonexistentVariable(this.target.text, this.target);
+            }
             runtime.assignExpr(this.target, this.expr);
         }
     };

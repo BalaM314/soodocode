@@ -9,7 +9,7 @@ import { configs } from "./config.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
-import type { BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
+import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
 import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
@@ -172,7 +172,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, undefined);
 		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, true) as VariableTypeMapping<ArrayElementVariableType> | null);
+		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, configs.initialization.arrays_default.value) as VariableTypeMapping<ArrayElementVariableType> | null);
 	}
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType<false>(
@@ -588,7 +588,7 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	updateType?: (type:VariableType) => unknown;
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
-	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | "dynamic";
+	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | AssignmentStatement | "dynamic";
 	mutable: true;
 }
 export type ConstantData<T extends VariableType = VariableType> = {

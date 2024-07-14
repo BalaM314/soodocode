@@ -115,7 +115,7 @@ export class ArrayVariableType extends BaseVariableType {
         const type = this.elementType;
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
-        return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, true));
+        return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, configs.initialization.arrays_default.value));
     }
     static from(node) {
         return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType), node.range);

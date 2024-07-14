@@ -7,6 +7,7 @@ This file contains the runtime, which executes the program AST.
 
 
 import { getBuiltinFunctions } from "./builtin_functions.js";
+import { configs } from "./config.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesAssignable, typesEqual } from "./runtime-types.js";
@@ -15,7 +16,6 @@ import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./ty
 import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr } from "./utils.js";
 
 //TODO: fix coercion
-//CONFIG: array initialization
 
 export class Files {
 	files: Record<string, File> = {};
@@ -794,8 +794,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		const func = method.controlStatements[0];
 		if(func instanceof ClassProcedureStatement && requireReturnValue === true)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
-		if(func instanceof ClassFunctionStatement && requireReturnValue === false)
-			fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, undefined); //CONFIG
+		if(func instanceof ClassFunctionStatement && requireReturnValue === false && !configs.statements.call_functions.value)
+			fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, undefined);
 
 		const classScope = instance.type.getScope(this, instance);
 		const methodScope = this.assembleScope(func, args);

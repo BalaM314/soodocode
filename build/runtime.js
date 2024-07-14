@@ -33,6 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { getBuiltinFunctions } from "./builtin_functions.js";
+import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesAssignable, typesEqual } from "./runtime-types.js";
@@ -803,8 +804,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 const func = method.controlStatements[0];
                 if (func instanceof ClassProcedureStatement && requireReturnValue === true)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
-                if (func instanceof ClassFunctionStatement && requireReturnValue === false)
-                    fail(`CALL cannot be used on functions because "Functions should only be called as part of an expression." according to Cambridge.`, undefined);
+                if (func instanceof ClassFunctionStatement && requireReturnValue === false && !configs.statements.call_functions.value)
+                    fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, undefined);
                 const classScope = instance.type.getScope(this, instance);
                 const methodScope = this.assembleScope(func, args);
                 const previousClassData = this.classData;

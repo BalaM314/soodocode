@@ -24,10 +24,16 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
     },
     initialization: {
         normal_variables_default: [
-            "Default values",
+            "Defaults",
             `Give uninitialized variables a default value`,
             `If disabled, uninitialized variables will throw an error upon being accessed.`,
             false
+        ],
+        arrays_default: [
+            "Array defaults",
+            `Automatically initialize all slots in arrays`,
+            `If disabled, uninitialized slots will throw an error upon being accessed.`,
+            true
         ],
     },
     default_values: {
@@ -67,6 +73,12 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             "CALL functions",
             `Allow using the CALL statement to call functions`,
             `Cambridge has explicitly stated that the CALL statement cannot be used to call functions, in section 8.2 of the official pseudocode guide.`,
+            false
+        ],
+        auto_declare_classes: [
+            "Automatic class declaration",
+            `Automatically declare a variable when initializing a class in an assignment statement`,
+            `If a variable has already been declared, that variable is used instead.`,
             false
         ]
     },

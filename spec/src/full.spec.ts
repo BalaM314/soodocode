@@ -285,7 +285,7 @@ x[7] <- 15
 OUTPUT amogus(x)`,
 ["15", "10"],
 ],
-function_coerce_valid_fixed_length_array_arg: [ //ARRAY[1:10] coerces to ARRAY[0:9] CONFIG
+function_coerce_valid_fixed_length_array_arg: [
 `FUNCTION amogus(x: ARRAY[0:9] OF INTEGER) RETURNS INTEGER
 	OUTPUT x[7]
 	OUTPUT x[6]
