@@ -42,7 +42,55 @@ export const configs = (<T extends Record<string, Record<string, ConfigData<unkn
 			shortDescription: `Allow assigning array types with same lengths but different start and end indexes.`,
 			fullDescription: `For example, "ARRAY[1:10] OF INTEGER" can be coerced to "ARRAY[0:9] OF INTEGER".`,
 			value: true,
-		}
+		},
+		enums_to_integer: {
+			name: "Coerce enum values to INTEGER",
+			shortDescription: `Allow implicitly converting an enum value to an INTEGER.`,
+			fullDescription: `If this is disabled, adding and subtracting from enum values will still work.`,
+			value: false,
+		},
+		string_to_char: {
+			name: "Coerce STRING to CHAR",
+			description: `Allow implicitly converting a STRING to a CHAR, if the string has a length of 1.`,
+			errorHelp: `Allow implicitly converting a STRING to a CHAR`,
+			value: true,
+		},
+		numbers_to_string: {
+			name: "Coerce numbers to STRING",
+			description: `Allow implicitly converting an INTEGER or a REAL to a STRING without using the NUM_TO_STR function.\nFor example, LEFT(1234, 2) returns "12". If this is disabled, the OUTPUT statement will still be able to print numbers.`,
+			errorHelp: `Allow implicitly converting numbers to strings`,
+			value: false,
+		},
+		enums_to_string: {
+			name: "Coerce enum values to STRING",
+			shortDescription: `Allow implicitly converting an enum value to a STRING.`,
+			fullDescription: `If this is disabled, the OUTPUT statement will still be able to print numbers.`,
+			value: false,
+		},
+		booleans_to_string: {
+			name: "Coerce BOOLEAN to STRING",
+			shortDescription: `Allow implicitly converting a boolean to a STRING.`,
+			fullDescription: `If this is disabled, the OUTPUT statement will still be able to print booleans.`,
+			value: false,
+		},
+		char_to_string: {
+			name: "Coerce CHAR to STRING",
+			shortDescription: `Allow implicitly converting a CHAR to a STRING.`,
+			fullDescription: `If this is disabled, the OUTPUT statement will still be able to print CHARs.`,
+			value: true,
+		},
+		date_to_string: {
+			name: "Coerce DATE to STRING",
+			shortDescription: `Allow implicitly converting a DATE to a STRING.`,
+			fullDescription: `If this is disabled, the OUTPUT statement will still be able to print dates.`,
+			value: false,
+		},
+		arrays_to_string: {
+			name: "Coerce arrays to STRING",
+			shortDescription: `Allow implicitly converting an array to a STRING.`,
+			fullDescription: `If this is disabled, the OUTPUT statement will still be able to print arrays.`,
+			value: false,
+		},
 	},
 	arrays: {
 		unspecified_length: {

@@ -7,7 +7,7 @@ This file contains the runtime, which executes the program AST.
 
 
 import { getBuiltinFunctions } from "./builtin_functions.js";
-import { configs } from "./config.js";
+import { Config, configs } from "./config.js";
 import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesAssignable, typesEqual } from "./runtime-types.js";
@@ -700,20 +700,49 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		//typescript really hates this function, beware
 		let assignabilityError;
 		if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
-		if(from.is("STRING") && to.is("CHAR")) return value as never;
-		if(from.is("INTEGER") && to.is("REAL")) return value as never;
-		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as never) as never;
-		if(to.is("STRING")){
-			if(from.is("BOOLEAN")) return (value as boolean).toString().toUpperCase() as never;
-			if(from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE"))
-				return (value as VariableTypeMapping<PrimitiveVariableType>).toString() as never;
-			if(from instanceof ArrayVariableType) return `[${(value as unknown[]).join(",")}]` as never;
-			if(from instanceof EnumeratedVariableType) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
+		let disabledConfig:Config<unknown, true> | null = null;
+		if(from.is("STRING") && to.is("CHAR")){
+			if(configs.coercion.string_to_char.value){
+				let v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
+				if(v.length == 1) return v as never;
+				else assignabilityError = f.quote`the length of the string ${v} is not 1`;
+			} else disabledConfig = configs.coercion.string_to_char;
 		}
-		// if(from instanceof EnumeratedVariableType){
-		// 	if(to.is("INTEGER") || to.is("REAL")) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
-		// }
-		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), range);
+		if(from.is("INTEGER") && to.is("REAL")) return value as never;
+		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as VariableTypeMapping<PrimitiveVariableType<"REAL" | "INTEGER">>) as never;
+		if(to.is("STRING")){
+			if(from.is("BOOLEAN")){
+				if(configs.coercion.booleans_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase() as never;
+				else disabledConfig = configs.coercion.booleans_to_string;
+			} else if(from.is("INTEGER") || from.is("REAL")){
+				if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
+				else disabledConfig = configs.coercion.numbers_to_string;
+			} else if(from.is("CHAR")){
+				if(configs.coercion.char_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>).toString() as never;
+				else disabledConfig = configs.coercion.char_to_string;
+			} else if(from.is("DATE")){
+				if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
+				else disabledConfig = configs.coercion.numbers_to_string;
+			} else if(from instanceof ArrayVariableType){
+				if(configs.coercion.arrays_to_string.value){
+					if(from.elementType instanceof PrimitiveVariableType || from.elementType instanceof EnumeratedVariableType){
+						(null! as VariableTypeMapping<EnumeratedVariableType>) satisfies string;
+						return `[${(value as VariableTypeMapping<ArrayVariableType>).join(",")}]` as never;
+					} else assignabilityError = `the type of the elements in the array does not support coercion to string`;
+				} else disabledConfig = configs.coercion.arrays_to_string;
+			} else if(from instanceof EnumeratedVariableType){
+				if(configs.coercion.enums_to_string.value) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
+				else disabledConfig = configs.coercion.enums_to_string;
+			}
+		}
+		if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
+			if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
+			else disabledConfig = configs.coercion.enums_to_integer;
+		}
+		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (
+			assignabilityError ? `: ${assignabilityError}.` :
+			disabledConfig ? `\nhelp: enable the config "${disabledConfig}" to allow this` : ""
+		), range);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
 		if(value == null) return value;

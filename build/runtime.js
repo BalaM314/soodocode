@@ -703,23 +703,74 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 let assignabilityError;
                 if ((assignabilityError = typesAssignable(to, from)) === true)
                     return value;
-                if (from.is("STRING") && to.is("CHAR"))
-                    return value;
+                let disabledConfig = null;
+                if (from.is("STRING") && to.is("CHAR")) {
+                    if (configs.coercion.string_to_char.value) {
+                        let v = value;
+                        if (v.length == 1)
+                            return v;
+                        else
+                            assignabilityError = f.quote `the length of the string ${v} is not 1`;
+                    }
+                    else
+                        disabledConfig = configs.coercion.string_to_char;
+                }
                 if (from.is("INTEGER") && to.is("REAL"))
                     return value;
                 if (from.is("REAL") && to.is("INTEGER"))
                     return Math.trunc(value);
                 if (to.is("STRING")) {
-                    if (from.is("BOOLEAN"))
-                        return value.toString().toUpperCase();
-                    if (from.is("INTEGER") || from.is("REAL") || from.is("CHAR") || from.is("STRING") || from.is("DATE"))
-                        return value.toString();
-                    if (from instanceof ArrayVariableType)
-                        return `[${value.join(",")}]`;
-                    if (from instanceof EnumeratedVariableType)
-                        return value;
+                    if (from.is("BOOLEAN")) {
+                        if (configs.coercion.booleans_to_string.value)
+                            return value.toString().toUpperCase();
+                        else
+                            disabledConfig = configs.coercion.booleans_to_string;
+                    }
+                    else if (from.is("INTEGER") || from.is("REAL")) {
+                        if (configs.coercion.numbers_to_string.value)
+                            return value.toString();
+                        else
+                            disabledConfig = configs.coercion.numbers_to_string;
+                    }
+                    else if (from.is("CHAR")) {
+                        if (configs.coercion.char_to_string.value)
+                            return value.toString();
+                        else
+                            disabledConfig = configs.coercion.char_to_string;
+                    }
+                    else if (from.is("DATE")) {
+                        if (configs.coercion.numbers_to_string.value)
+                            return value.toString();
+                        else
+                            disabledConfig = configs.coercion.numbers_to_string;
+                    }
+                    else if (from instanceof ArrayVariableType) {
+                        if (configs.coercion.arrays_to_string.value) {
+                            if (from.elementType instanceof PrimitiveVariableType || from.elementType instanceof EnumeratedVariableType) {
+                                null;
+                                return `[${value.join(",")}]`;
+                            }
+                            else
+                                assignabilityError = `the type of the elements in the array does not support coercion to string`;
+                        }
+                        else
+                            disabledConfig = configs.coercion.arrays_to_string;
+                    }
+                    else if (from instanceof EnumeratedVariableType) {
+                        if (configs.coercion.enums_to_string.value)
+                            return value;
+                        else
+                            disabledConfig = configs.coercion.enums_to_string;
+                    }
                 }
-                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` : ""), range);
+                if (from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))) {
+                    if (configs.coercion.enums_to_integer.value)
+                        return from.values.indexOf(value);
+                    else
+                        disabledConfig = configs.coercion.enums_to_integer;
+                }
+                fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` :
+                    disabledConfig ? `\nhelp: enable the config "${disabledConfig}" to allow this` : ""), range);
             }
             cloneValue(type, value) {
                 if (value == null)
