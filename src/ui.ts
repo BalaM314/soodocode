@@ -104,6 +104,7 @@ ${statement.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span cla
 }
 
 export function generateConfigsDialog():HTMLElement {
+	// Behold, the Document Object Model!
 	const wrapper = document.createElement("div");
 	wrapper.id = "settings-dialog-inner";
 
