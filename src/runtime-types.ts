@@ -500,7 +500,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 
 export const checkClassMethodsCompatible = errorBoundary({
 	message: (base:ClassMethodStatement, derived:ClassMethodStatement) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})((runtime:Runtime, base:ClassMethodStatement, derived:ClassMethodStatement) => {
+})(function _checkClassMethodsCompatible(runtime:Runtime, base:ClassMethodStatement, derived:ClassMethodStatement){
 
 	if(base.accessModifier != derived.accessModifier)
 		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);

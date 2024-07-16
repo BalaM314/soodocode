@@ -64,6 +64,9 @@ declare global {
 	interface ArrayConstructor {
 		isArray(arg: any): arg is unknown[];
 	}
+	interface Function {
+		displayName?: string;
+	}
 }
 
 

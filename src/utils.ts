@@ -248,18 +248,21 @@ export function Abstract<TClass extends new (...args:any[]) => any>(input:TClass
  * Decorator to apply an error boundary to functions.
  * @param predicate General range is set if this returns true.
  */
+//TODO partially remove this
 export function errorBoundary({predicate = (() => true), message}:Partial<{
 	predicate(...args:any[]): boolean;
 	message(...args:any[]): string;
 }> = {}){
 	return function decorator<T extends (...args:any[]) => unknown>(func:T, _ctx?:ClassMethodDecoratorContext):T {
-		return function replacedFunction(this:ThisParameterType<T>, ...args:Parameters<T>){
+		const name = func.name.startsWith("_") ? `wrapped${func.name}` : `wrapped_${func.name}`;
+		const replacedFunction = {[name](this:ThisParameterType<T>, ...args:Parameters<T>){
 			try {
 				return func.apply(this, args);
 			} catch(err){
 				if(err instanceof SoodocodeError){
 					if(message && !err.modified){
 						err.message = message(...args) + err.message;
+						if(err.rangeOther) impossible();
 						err.rangeOther = findRange(args);
 					}
 					//Try to find the range
@@ -277,7 +280,10 @@ export function errorBoundary({predicate = (() => true), message}:Partial<{
 				}
 				throw err;
 			}
-		} as T;
+		}}[name];
+		Object.defineProperty(replacedFunction, "name", { value: name });
+		replacedFunction.displayName = name;
+		return replacedFunction as T;
 	};
 }
 

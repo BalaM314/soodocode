@@ -4,7 +4,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
 import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
-export const parseFunctionArguments = errorBoundary()((tokens) => {
+export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens) {
     if (tokens.length == 0)
         return new Map();
     let passMode = "value";
@@ -58,14 +58,14 @@ export const parseFunctionArguments = errorBoundary()((tokens) => {
     }
     return argumentsMap;
 });
-export const processTypeData = errorBoundary()((typeNode) => {
+export const processTypeData = errorBoundary()(function _processTypeData(typeNode) {
     if (typeNode instanceof Token) {
         return PrimitiveVariableType.resolve(typeNode);
     }
     else
         return ArrayVariableType.from(typeNode);
 });
-export const parseType = errorBoundary()((tokens) => {
+export const parseType = errorBoundary()(function _parseType(tokens) {
     if (tokens.length == 0)
         crash(`Cannot parse empty type`);
     if (checkTokens(tokens, ["name"]))
@@ -196,7 +196,7 @@ export function getPossibleStatements(tokens, context) {
     validStatements = allowedValidStatements;
     return [validStatements, null];
 }
-export const parseStatement = errorBoundary()((tokens, context, allowRecursiveCall) => {
+export const parseStatement = errorBoundary()(function _parseStatement(tokens, context, allowRecursiveCall) {
     if (tokens.length < 1)
         crash("Empty statement");
     const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
@@ -257,7 +257,7 @@ export function isLiteral(type) {
         default: return false;
     }
 }
-export const checkStatement = errorBoundary()((statement, input, allowRecursiveCall) => {
+export function checkStatement(statement, input, allowRecursiveCall) {
     if (input.length == 0)
         crash(`checkStatement() called with empty input`);
     if (statement.category == "block_multi_split" && !statement.blockType)
@@ -378,7 +378,7 @@ export const checkStatement = errorBoundary()((statement, input, allowRecursiveC
         return { message: f.quote `Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
     }
     return output;
-});
+}
 function getMessage(expected, found, priority) {
     if (isKey(tokenTextMapping, expected)) {
         if (tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
@@ -424,7 +424,7 @@ export function parseExpressionLeafNode(token) {
 export const parseExpression = errorBoundary({
     predicate: (_input, recursive) => !recursive,
     message: () => `Expected "$rc" to be an expression, but it was invalid: `
-})((input, recursive = false) => {
+})(function _parseExpression(input, recursive = false) {
     if (!Array.isArray(input))
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     if (input.length == 1)

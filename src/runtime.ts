@@ -741,7 +741,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (
 			assignabilityError ? `: ${assignabilityError}.` :
-			disabledConfig ? `\nhelp: enable the config "${disabledConfig}" to allow this` : ""
+			disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""
 		), range);
 	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
