@@ -764,7 +764,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				.map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v as VariableValue)])
 			),
 			propertyTypes: {},
-			type: value.type as ClassVariableType
+			type: (value as VariableTypeMapping<ClassVariableType>).type
 		} satisfies VariableTypeMapping<ClassVariableType> as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}

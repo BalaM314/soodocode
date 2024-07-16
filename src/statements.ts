@@ -434,8 +434,8 @@ export class OutputStatement extends Statement {
 	run(runtime:Runtime){
 		let outStr = "";
 		for(const token of this.outMessage){
-			const expr = runtime.evaluateExpr(token, PrimitiveVariableType.STRING)[1];
-			outStr += expr;
+			const [type, value] = runtime.evaluateExpr(token);
+			outStr += type.asString(value);
 		}
 		runtime._output(outStr);
 	}

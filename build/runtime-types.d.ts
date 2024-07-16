@@ -4,7 +4,15 @@ import type { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? {
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<(number | string | boolean | Date | {
+    [index: string]: VariableTypeMapping<any> | null;
+} | VariableData | ConstantData | string | (number | string | boolean | Date)[] | {
+    properties: {
+        [index: string]: VariableTypeMapping<any> | null;
+    };
+    propertyTypes: Record<string, VariableType>;
+    type: ClassVariableType;
+}) | null> : T extends RecordVariableType ? {
     [index: string]: VariableTypeMapping<any> | null;
 } : T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
     properties: {
@@ -21,6 +29,7 @@ export declare abstract class BaseVariableType implements IFormattable {
     abstract fmtDebug(): string;
     fmtQuoted(): string;
     abstract fmtText(): string;
+    abstract asString(value: VariableValue): string;
 }
 export type PrimitiveVariableTypeName = "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE";
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
@@ -44,6 +53,7 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static get(type: string): PrimitiveVariableType | undefined;
     static resolve(token: Token): Exclude<UnresolvedVariableType, ArrayVariableType>;
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
+    asString(value: VariableValue): string;
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
     lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null;
@@ -61,6 +71,7 @@ export declare class ArrayVariableType<Init extends boolean = true> extends Base
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableTypeMapping<ArrayVariableType>;
     static from(node: ExpressionASTArrayTypeNode): ArrayVariableType<false>;
+    asString(value: VariableValue): string;
 }
 export declare class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
@@ -76,6 +87,7 @@ export declare class RecordVariableType<Init extends boolean = true> extends Bas
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime, requireInit: boolean): VariableValue | null;
+    asString(value: VariableValue): string;
 }
 export declare class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
@@ -88,6 +100,7 @@ export declare class PointerVariableType<Init extends boolean = true> extends Ba
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    asString(value: VariableValue): string;
 }
 export declare class EnumeratedVariableType extends BaseVariableType {
     name: string;
@@ -99,6 +112,7 @@ export declare class EnumeratedVariableType extends BaseVariableType {
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    asString(value: VariableValue): string;
 }
 export declare class SetVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
@@ -111,6 +125,7 @@ export declare class SetVariableType<Init extends boolean = true> extends BaseVa
     toQuotedString(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
+    asString(value: VariableValue): string;
 }
 export declare class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
@@ -135,15 +150,34 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
     construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
         properties: {
             [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
-            } | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | {
+                    properties: {
+                        [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | any | null)[] | {
+                            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | any | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+                        } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+                    };
+                    propertyTypes: Record<string, VariableType>;
+                    type: ClassVariableType<true>;
+                } | null)[] | {
+                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | any | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+                } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | {
+                properties: {
+                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | any | null)[] | {
+                        [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | any | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+                    } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
+                };
+                propertyTypes: Record<string, VariableType>;
+                type: ClassVariableType<true>;
+            } | null)[] | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType, null> | ConstantData<VariableType> | (string | number | boolean | Date)[] | any | null)[] | any | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
             } | VariableData<any, null> | ConstantData<any> | (string | number | boolean | Date)[] | any | null;
         };
         propertyTypes: Record<string, VariableType>;
         type: ClassVariableType<true>;
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
+    asString(value: VariableValue): string;
 }
 export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: VariableType | UnresolvedVariableType, types?: [VariableType, VariableType][]): boolean;
 export declare function typesAssignable(base: VariableType, ext: VariableType): true | string;
@@ -151,7 +185,7 @@ export declare function typesAssignable(base: UnresolvedVariableType, ext: Unres
 export declare const checkClassMethodsCompatible: (runtime: Runtime, base: ClassMethodStatement, derived: ClassMethodStatement) => void;
 export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType<false> | ["unresolved", name: string, range: TextRange];
 export type VariableType = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | SetVariableType | ClassVariableType;
-export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
+export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | ClassVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 export declare const fileModes: readonly ["READ", "WRITE", "APPEND", "RANDOM"];
 export type FileMode = typeof fileModes extends ReadonlyArray<infer T> ? T : never;

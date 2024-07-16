@@ -15,7 +15,7 @@ import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./typ
 import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
-export type VariableTypeMapping<T> =
+export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValue
 	T extends PrimitiveVariableType<infer U> ? (
 		U extends "INTEGER" ? number :
 		U extends "REAL" ? number :
@@ -25,7 +25,22 @@ export type VariableTypeMapping<T> =
 		U extends "DATE" ? Date :
 		never
 	) :
-	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
+	T extends ArrayVariableType ? Array<(
+		| number | string | boolean | Date
+		| {
+			[index:string]: VariableTypeMapping<any> | null;
+		}
+		| VariableData | ConstantData
+		| string
+		| (number | string | boolean | Date)[]
+		| {
+			properties: {
+				[index:string]: VariableTypeMapping<any> | null;
+			};
+			propertyTypes: Record<string, VariableType>;
+			type: ClassVariableType;
+		}
+	) | null> :
 	T extends RecordVariableType ? {
 		[index:string]: VariableTypeMapping<any> | null;
 	} :
@@ -58,6 +73,7 @@ export abstract class BaseVariableType implements IFormattable {
 		return `"${this.fmtText()}"`;
 	}
 	abstract fmtText():string;
+	abstract asString(value:VariableValue):string;
 }
 
 export type PrimitiveVariableTypeName =
@@ -119,6 +135,17 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 			DATE: new Date(configs.default_values.DATE.value),
 		}[this.name];
 		else return null;
+	}
+	asString(value:VariableValue):string {
+		switch(this.name){
+			case "CHAR": case "STRING": case "INTEGER": case "REAL":
+				return value.toString();
+			case "BOOLEAN":
+				return value.toString().toUpperCase();
+			case "DATE":
+				return (value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB");
+			default: impossible();
+		}
 	}
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
@@ -182,6 +209,11 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			node.range
 		);
 	}
+	asString(value:VariableValue):string {
+		return `[${(value as VariableTypeMapping<ArrayVariableType>).map(v =>
+			(this as ArrayVariableType<true>).elementType!.asString(v as never) //correspondence problem
+		).join(", ")}]`;
+	}
 }
 export class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
 	directDependencies = new Set<VariableType>();
@@ -235,6 +267,9 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 			.map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)])
 		) as VariableValue | null;
 	}
+	asString(value:VariableValue):string {
+		fail(`Outputting record type instances is not yet implemented`, undefined); //TODO
+	}
 }
 export class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
 	constructor(
@@ -261,6 +296,9 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
+	asString(value:VariableValue):string {
+		return "pointer";
+	}
 }
 export class EnumeratedVariableType extends BaseVariableType {
 	constructor(
@@ -282,6 +320,9 @@ export class EnumeratedVariableType extends BaseVariableType {
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
+	}
+	asString(value:VariableValue):string {
+		return value as VariableTypeMapping<EnumeratedVariableType>;
 	}
 }
 export class SetVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -308,6 +349,9 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		crash(`Cannot initialize a variable of type SET`);
+	}
+	asString(value:VariableValue):string {
+		return `[${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asString(v)).join(", ")}]`;
 	}
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -439,6 +483,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			} as VariableData]))
 		};
 	}
+	asString(value:VariableValue):string {
+		return `${this.name} { NOT_YET_IMPLEMENTED }`;
+	}
 }
 
 export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableType | UnresolvedVariableType, types = new Array<[VariableType, VariableType]>()):boolean {
@@ -550,7 +597,7 @@ export type VariableType =
 	| SetVariableType
 	| ClassVariableType
 ;
-export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType;
+export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | ClassVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 
 export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"] as const;

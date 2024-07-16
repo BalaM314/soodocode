@@ -51,6 +51,20 @@ export class PrimitiveVariableType extends BaseVariableType {
         else
             return null;
     }
+    asString(value) {
+        switch (this.name) {
+            case "CHAR":
+            case "STRING":
+            case "INTEGER":
+            case "REAL":
+                return value.toString();
+            case "BOOLEAN":
+                return value.toString().toUpperCase();
+            case "DATE":
+                return value.toLocaleDateString("en-GB");
+            default: impossible();
+        }
+    }
 }
 PrimitiveVariableType.all = [];
 PrimitiveVariableType.INTEGER = new PrimitiveVariableType("INTEGER");
@@ -120,6 +134,9 @@ export class ArrayVariableType extends BaseVariableType {
     static from(node) {
         return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType), node.range);
     }
+    asString(value) {
+        return `[${value.map(v => this.elementType.asString(v)).join(", ")}]`;
+    }
 }
 export class RecordVariableType extends BaseVariableType {
     constructor(initialized, name, fields) {
@@ -176,6 +193,9 @@ export class RecordVariableType extends BaseVariableType {
         return Object.fromEntries(Object.entries(this.fields)
             .map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)]));
     }
+    asString(value) {
+        fail(`Outputting record type instances is not yet implemented`, undefined);
+    }
 }
 export class PointerVariableType extends BaseVariableType {
     constructor(initialized, name, target) {
@@ -204,6 +224,9 @@ export class PointerVariableType extends BaseVariableType {
     getInitValue(runtime) {
         return null;
     }
+    asString(value) {
+        return "pointer";
+    }
 }
 export class EnumeratedVariableType extends BaseVariableType {
     constructor(name, values) {
@@ -226,6 +249,9 @@ export class EnumeratedVariableType extends BaseVariableType {
     }
     getInitValue(runtime) {
         return null;
+    }
+    asString(value) {
+        return value;
     }
 }
 export class SetVariableType extends BaseVariableType {
@@ -254,6 +280,9 @@ export class SetVariableType extends BaseVariableType {
     }
     getInitValue(runtime) {
         crash(`Cannot initialize a variable of type SET`);
+    }
+    asString(value) {
+        return `[${value.map(v => this.baseType.asString(v)).join(", ")}]`;
     }
 }
 export class ClassVariableType extends BaseVariableType {
@@ -371,6 +400,9 @@ export class ClassVariableType extends BaseVariableType {
                     mutable: true,
                 }]))
         };
+    }
+    asString(value) {
+        return `${this.name} { NOT_YET_IMPLEMENTED }`;
     }
 }
 export function typesEqual(a, b, types = new Array()) {
