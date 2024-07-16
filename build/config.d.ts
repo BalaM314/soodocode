@@ -67,5 +67,15 @@ export declare const configs: {
         call_functions: Config<boolean, true>;
         auto_declare_classes: Config<boolean, true>;
     };
-    misc: {};
+    classes: {
+        delegate_access_privileges: {
+            name: string;
+            description: string | null;
+            value: boolean;
+            defaultValue: boolean;
+        };
+    };
+    pointers: {
+        implicit_variable_creation: Config<boolean, true>;
+    };
 };

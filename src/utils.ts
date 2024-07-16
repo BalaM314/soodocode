@@ -224,8 +224,12 @@ export class SoodocodeError extends Error {
 	}
 }
 
-export function fail(message:string, rangeSpecific:TextRangeLike | null | undefined, rangeGeneral?:TextRangeLike | null):never {
-	throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral));
+export function fail(message:string, rangeSpecific:TextRangeLike | null | undefined, rangeGeneral?:TextRangeLike | null, rangeOther?:TextRangeLike):never {
+	throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral), getRange(rangeOther));
+}
+export function rethrow(error:SoodocodeError, msg:(old:string) => string){
+	error.message = msg(error.message);
+	throw error;
 }
 export function crash(message:string):never {
 	throw new Error(message);

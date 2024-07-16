@@ -38,7 +38,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
 export class Files {
     constructor() {
         this.files = {};
@@ -248,7 +248,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 }
                 if (expr instanceof ExpressionASTFunctionCallNode) {
                     if (type == "variable")
-                        fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`, expr);
+                        fail(`Expected this expression to evaluate to a variable, but found a function call, which cannot return a variable.`, expr);
                     if (type == "function")
                         fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`, expr);
                     const func = this.evaluateExpr(expr.functionName, "function");
@@ -290,6 +290,8 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                             if (err) {
                                 const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
                                 const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
+                                if (!configs.pointers.implicit_variable_creation.value)
+                                    rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
                                 return this.finishEvaluation({
                                     type: targetType,
                                     declaration: "dynamic",
@@ -667,7 +669,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 for (const { statement } of this.scopes.slice().reverse()) {
                     if (statement instanceof ClassStatement)
                         return statement == clazz.statement;
-                    if (statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement)
+                    if ((statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement) && !configs.classes.delegate_access_privileges.value)
                         return false;
                 }
                 return false;
@@ -770,7 +772,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         disabledConfig = configs.coercion.enums_to_integer;
                 }
                 fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` :
-                    disabledConfig ? `\nhelp: enable the config "${disabledConfig}" to allow this` : ""), range);
+                    disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""), range);
             }
             cloneValue(type, value) {
                 if (value == null)

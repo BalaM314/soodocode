@@ -212,8 +212,12 @@ export class SoodocodeError extends Error {
                 `<empty>`);
     }
 }
-export function fail(message, rangeSpecific, rangeGeneral) {
-    throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral));
+export function fail(message, rangeSpecific, rangeGeneral, rangeOther) {
+    throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral), getRange(rangeOther));
+}
+export function rethrow(error, msg) {
+    error.message = msg(error.message);
+    throw error;
 }
 export function crash(message) {
     throw new Error(message);
@@ -232,30 +236,36 @@ export function Abstract(input, context) {
 }
 export function errorBoundary({ predicate = (() => true), message } = {}) {
     return function decorator(func, _ctx) {
-        return function replacedFunction(...args) {
-            try {
-                return func.apply(this, args);
-            }
-            catch (err) {
-                if (err instanceof SoodocodeError) {
-                    if (message && !err.modified) {
-                        err.message = message(...args) + err.message;
-                        err.rangeOther = findRange(args);
-                    }
-                    if (err.rangeSpecific === undefined)
-                        err.rangeSpecific = findRange(args);
-                    else if (err.rangeGeneral === undefined && predicate(...args)) {
-                        const _rangeGeneral = findRange(args);
-                        if (_rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
-                            err.rangeGeneral = null;
-                        else
-                            err.rangeGeneral = _rangeGeneral;
-                    }
-                    err.modified = true;
+        const name = func.name.startsWith("_") ? `wrapped${func.name}` : `wrapped_${func.name}`;
+        const replacedFunction = { [name](...args) {
+                try {
+                    return func.apply(this, args);
                 }
-                throw err;
-            }
-        };
+                catch (err) {
+                    if (err instanceof SoodocodeError) {
+                        if (message && !err.modified) {
+                            err.message = message(...args) + err.message;
+                            if (err.rangeOther)
+                                impossible();
+                            err.rangeOther = findRange(args);
+                        }
+                        if (err.rangeSpecific === undefined)
+                            err.rangeSpecific = findRange(args);
+                        else if (err.rangeGeneral === undefined && predicate(...args)) {
+                            const _rangeGeneral = findRange(args);
+                            if (_rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
+                                err.rangeGeneral = null;
+                            else
+                                err.rangeGeneral = _rangeGeneral;
+                        }
+                        err.modified = true;
+                    }
+                    throw err;
+                }
+            } }[name];
+        Object.defineProperty(replacedFunction, "name", { value: name });
+        replacedFunction.displayName = name;
+        return replacedFunction;
     };
 }
 export function escapeHTML(input) {

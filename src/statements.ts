@@ -419,7 +419,7 @@ export class AssignmentStatement extends Statement {
 		runtime.assignExpr(this.target, this.expr);
 	}
 }
-@statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")
+@statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+") //TODO move to end of list
 export class AssignmentBadStatement extends Statement {
 	static invalidMessage = "Use the assignment operator (<-) to assign a value to a variable. The = sign is used to test for equality.";
 	static suppressErrors = true;
@@ -709,6 +709,7 @@ export class WhileStatement extends Statement {
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
 	static maxLoops = 10_000; //CONFIG
+	//TODO automatically fail if no state changes
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		let i = 0;
 		do {

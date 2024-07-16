@@ -154,7 +154,22 @@ export const configs = (<T extends Record<string, Record<string, ConfigData<unkn
 			value: false
 		},
 	},
-	misc: {
-
+	classes: {
+		delegate_access_privileges: {
+			name: "Delegate access privileges",
+			description: `Allows class methods to delegate their permission to access private class members to functions that they call. For example, if an external function tries to access a private property on a class instance, calling it normally will result in an error, but calling it from a method of the class will work.`,
+			value: false
+		},
+	},
+	pointers: {
+		implicit_variable_creation: {
+			name: "Implicit variable creation",
+			description: `Enabling this config allows using the pointer reference operator on expressions. This implicitly creates a variable, sets its value to the expression's result, and returns a pointer to the new variable.`,
+			errorHelp: `Allow implicit variable creation`,
+			value: true
+		},
 	}
+	// misc: {
+
+	// }
 });

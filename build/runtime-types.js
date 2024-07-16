@@ -424,7 +424,7 @@ export function typesAssignable(base, ext) {
 }
 export const checkClassMethodsCompatible = errorBoundary({
     message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})((runtime, base, derived) => {
+})(function _checkClassMethodsCompatible(runtime, base, derived) {
     if (base.accessModifier != derived.accessModifier)
         fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
     if (base.stype != derived.stype)

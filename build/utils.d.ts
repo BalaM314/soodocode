@@ -32,7 +32,8 @@ export declare class SoodocodeError extends Error {
     constructor(message: string, rangeSpecific?: TextRange | null | undefined, rangeGeneral?: TextRange | null | undefined, rangeOther?: TextRange | undefined);
     formatMessage(text: string): string;
 }
-export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null): never;
+export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;
+export declare function rethrow(error: SoodocodeError, msg: (old: string) => string): void;
 export declare function crash(message: string): never;
 export declare function impossible(): never;
 export declare function Abstract<TClass extends new (...args: any[]) => any>(input: TClass, context: ClassDecoratorContext<TClass>): TClass;

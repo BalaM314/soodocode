@@ -13,7 +13,7 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, E
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, tryRun, tryRunOr } from "./utils.js";
+import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
 
 //TODO: fix coercion
 
@@ -268,7 +268,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 			return this.processArrayAccess(expr, type);
 		}
 		if(expr instanceof ExpressionASTFunctionCallNode){
-			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a function call, which can only return values, not variables.`, expr);
+			if(type == "variable") fail(`Expected this expression to evaluate to a variable, but found a function call, which cannot return a variable.`, expr);
 			if(type == "function") fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`, expr);
 			const func = this.evaluateExpr(expr.functionName, "function");
 			if("clazz" in func){
@@ -309,6 +309,8 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 						const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
 						//Guess the type
 						const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
+						if(!configs.pointers.implicit_variable_creation.value)
+							rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
 						return this.finishEvaluation({
 							type: targetType,
 							declaration: "dynamic",
@@ -659,11 +661,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
 	canAccessClass(clazz:ClassVariableType):boolean {
-		//CONFIG privilege delegation to other functions?
 		for(const { statement } of this.scopes.slice().reverse()){
 			if(statement instanceof ClassStatement)
 				return statement == clazz.statement;
-			if(statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement)
+			if((statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement
+				) && !configs.classes.delegate_access_privileges.value ) //if this setting is enabled, skip function scopes
 				return false; //closest relevant statement is a function, cant access classes
 			//Ignore classmethodstatement because it always has a ClassStatement just above it
 		}
