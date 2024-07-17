@@ -9,6 +9,7 @@ export type Config<T, Help extends boolean> = {
 export declare const configs: {
     coercion: {
         arrays_same_length: Config<boolean, true>;
+        arrays_same_total_size: Config<boolean, true>;
         enums_to_integer: Config<boolean, true>;
         string_to_char: Config<boolean, true>;
         numbers_to_string: Config<boolean, true>;

@@ -12,6 +12,12 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             fullDescription: `For example, "ARRAY[1:10] OF INTEGER" can be coerced to "ARRAY[0:9] OF INTEGER".`,
             value: true,
         },
+        arrays_same_total_size: {
+            name: "Coerce arrays of same total length",
+            shortDescription: `Allow assigning multi-dimensional array types with same total lengths but different lengths for each dimension`,
+            fullDescription: `For example, "ARRAY[1:10, 1:10] OF INTEGER" can be coerced to "ARRAY[1:5, 1:20] OF INTEGER".`,
+            value: true,
+        },
         enums_to_integer: {
             name: "Coerce enum values to INTEGER",
             shortDescription: `Allow implicitly converting an enum value to an INTEGER.`,

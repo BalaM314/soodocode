@@ -429,17 +429,14 @@ export function typesAssignable(base, ext) {
         if (base.lengthInformation != null) {
             if (ext.lengthInformation == null)
                 return `cannot assign an array with unknown length to an array requiring a specific length`;
-            if (configs.coercion.arrays_same_length.value) {
-                if (base.arraySizes.toString() != ext.arraySizes.toString())
-                    return "these array types have different lengths";
-            }
-            else {
-                if (base.lengthInformation.toString() != ext.lengthInformation.toString()) {
-                    if (base.arraySizes.toString() == ext.arraySizes.toString())
-                        return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
-                    return "theses array types have different lengths";
-                }
-            }
+            if (base.totalLength != ext.totalLength)
+                return "these array types have different lengths";
+            if (!configs.coercion.arrays_same_total_size.value &&
+                base.arraySizes.toString() != ext.arraySizes.toString())
+                return `these array types have different lengths\n${configs.coercion.arrays_same_total_size.errorHelp}`;
+            if (!configs.coercion.arrays_same_length.value &&
+                base.lengthInformation.toString() != ext.lengthInformation.toString())
+                return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
         }
         return true;
     }

@@ -521,15 +521,18 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		}
 		if(base.lengthInformation != null){
 			if(ext.lengthInformation == null) return `cannot assign an array with unknown length to an array requiring a specific length`;
-			//CONFIG allow reinterpreting 2D arrays?
-			if(configs.coercion.arrays_same_length.value){
-				if(base.arraySizes!.toString() != ext.arraySizes!.toString()) return "these array types have different lengths";
-			} else {
-				if(base.lengthInformation.toString() != ext.lengthInformation.toString()){
-					if(base.arraySizes!.toString() == ext.arraySizes!.toString()) return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
-					return "theses array types have different lengths";
-				}
-			}
+			//Total length is different
+			if(base.totalLength != ext.totalLength) return "these array types have different lengths";
+			
+			if( //Total length is same but sub-sizes are different
+				!configs.coercion.arrays_same_total_size.value &&
+				base.arraySizes!.toString() != ext.arraySizes!.toString()
+			) return `these array types have different lengths\n${configs.coercion.arrays_same_total_size.errorHelp}`;
+			
+			if( //Sub-sizes are same but start and end indexes are different
+				!configs.coercion.arrays_same_length.value &&
+				base.lengthInformation.toString() != ext.lengthInformation.toString()
+			) return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
 		}
 		return true;
 	}

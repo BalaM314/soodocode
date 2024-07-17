@@ -305,7 +305,6 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 					if(err){
 						//If the thing we're referencing couldn't be evaluated to a variable
 						//create a fake variable
-						//CONFIG weird pointers to fake variables
 						const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
 						//Guess the type
 						const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
