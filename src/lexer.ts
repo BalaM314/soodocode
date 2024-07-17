@@ -20,6 +20,7 @@ export const symbolTypeData: [
 	[">=", "operator.greater_than_equal"],
 	["<=", "operator.less_than_equal"],
 	["<>", "operator.not_equal_to"],
+	["!=", "invalid.not_equal_to"],
 	["//", "comment.singleline"],
 	["/*", "comment.multiline.open"],
 	["*/", "comment.multiline.close"],
@@ -323,6 +324,8 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			tokens.push(new Token("number.decimal", symbol.text, symbol.range.slice()));
 		} else if(symbol.type === "word"){
 			write(access(tokenNameTypeData, symbol.text, "name"));
+		} else if(symbol.type == "invalid.not_equal_to"){
+			fail(f.quote`Invalid operator ${symbol}: the not_equal_to operator in pseudocode is "<>"`, symbol);
 		} else {
 			symbol.type satisfies TokenType;
 			tokens.push(symbol.toToken());

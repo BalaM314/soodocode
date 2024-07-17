@@ -9,6 +9,7 @@ export const symbolTypes = [
     "comment.singleline", "comment.multiline.open", "comment.multiline.close",
     "word",
     "unknown",
+    "invalid.not_equal_to",
     "space",
     "newline",
     "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"
