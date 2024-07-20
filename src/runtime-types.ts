@@ -73,7 +73,7 @@ export abstract class BaseVariableType implements IFormattable {
 		return `"${this.fmtText()}"`;
 	}
 	abstract fmtText():string;
-	abstract asString(value:VariableValue):string;
+	abstract asString(value:VariableValue, recursive:boolean):string;
 }
 
 export type PrimitiveVariableTypeName =
@@ -136,10 +136,16 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 		}[this.name];
 		else return null;
 	}
-	asString(value:VariableValue):string {
+	asString(value:VariableValue, recursive:boolean):string {
 		switch(this.name){
-			case "CHAR": case "STRING": case "INTEGER": case "REAL":
+			case "INTEGER":
 				return value.toString();
+			case "REAL":
+				return Number.isInteger(value) ? `${value.toString()}.0` : value.toString();
+			case "CHAR":
+				return recursive ? `'${value}'` : value as string;
+			case "STRING":
+				return recursive ? `"${value}"` : value as string;
 			case "BOOLEAN":
 				return value.toString().toUpperCase();
 			case "DATE":
@@ -209,9 +215,9 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			node.range
 		);
 	}
-	asString(value:VariableValue):string {
+	asString(value:VariableValue, recursive:boolean):string {
 		return `[${(value as VariableTypeMapping<ArrayVariableType>).map(v =>
-			(this as ArrayVariableType<true>).elementType!.asString(v as never) //correspondence problem
+			(this as ArrayVariableType<true>).elementType!.asString(v as never, true) //correspondence problem
 		).join(", ")}]`;
 	}
 }
@@ -268,7 +274,13 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		) as VariableValue | null;
 	}
 	asString(value:VariableValue):string {
-		fail(`Outputting record type instances is not yet implemented`, undefined); //TODO
+		return `${this.name} {\n${
+			Object.entries((this as RecordVariableType<true>).fields)
+				.map(([name, [type, range]]) => {
+					const propValue = (value as VariableTypeMapping<RecordVariableType>)[name];
+					return `\t${name}: ${propValue != null ? type.asString(propValue, true) : "<uninitialized>"},`.replaceAll("\n", "\n\t") + "\n";
+				}).join("")
+		}}`;
 	}
 }
 export class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -297,7 +309,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		return null;
 	}
 	asString(value:VariableValue):string {
-		return "pointer";
+		return "<pointer>";
 	}
 }
 export class EnumeratedVariableType extends BaseVariableType {
@@ -351,7 +363,7 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 		crash(`Cannot initialize a variable of type SET`);
 	}
 	asString(value:VariableValue):string {
-		return `[${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asString(v)).join(", ")}]`;
+		return `[${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asString(v, true)).join(", ")}]`;
 	}
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {

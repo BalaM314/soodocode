@@ -565,7 +565,7 @@ let OutputStatement = (() => {
             let outStr = "";
             for (const token of this.outMessage) {
                 const [type, value] = runtime.evaluateExpr(token);
-                outStr += type.asString(value);
+                outStr += type.asString(value, false);
             }
             runtime._output(outStr);
         }

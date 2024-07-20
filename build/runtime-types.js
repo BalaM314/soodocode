@@ -51,13 +51,16 @@ export class PrimitiveVariableType extends BaseVariableType {
         else
             return null;
     }
-    asString(value) {
+    asString(value, recursive) {
         switch (this.name) {
-            case "CHAR":
-            case "STRING":
             case "INTEGER":
-            case "REAL":
                 return value.toString();
+            case "REAL":
+                return Number.isInteger(value) ? `${value.toString()}.0` : value.toString();
+            case "CHAR":
+                return recursive ? `'${value}'` : value;
+            case "STRING":
+                return recursive ? `"${value}"` : value;
             case "BOOLEAN":
                 return value.toString().toUpperCase();
             case "DATE":
@@ -134,8 +137,8 @@ export class ArrayVariableType extends BaseVariableType {
     static from(node) {
         return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType), node.range);
     }
-    asString(value) {
-        return `[${value.map(v => this.elementType.asString(v)).join(", ")}]`;
+    asString(value, recursive) {
+        return `[${value.map(v => this.elementType.asString(v, true)).join(", ")}]`;
     }
 }
 export class RecordVariableType extends BaseVariableType {
@@ -194,7 +197,11 @@ export class RecordVariableType extends BaseVariableType {
             .map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)]));
     }
     asString(value) {
-        fail(`Outputting record type instances is not yet implemented`, undefined);
+        return `${this.name} {\n${Object.entries(this.fields)
+            .map(([name, [type, range]]) => {
+            const propValue = value[name];
+            return `\t${name}: ${propValue != null ? type.asString(propValue, true) : "<uninitialized>"},`.replaceAll("\n", "\n\t") + "\n";
+        }).join("")}}`;
     }
 }
 export class PointerVariableType extends BaseVariableType {
@@ -225,7 +232,7 @@ export class PointerVariableType extends BaseVariableType {
         return null;
     }
     asString(value) {
-        return "pointer";
+        return "<pointer>";
     }
 }
 export class EnumeratedVariableType extends BaseVariableType {
@@ -282,7 +289,7 @@ export class SetVariableType extends BaseVariableType {
         crash(`Cannot initialize a variable of type SET`);
     }
     asString(value) {
-        return `[${value.map(v => this.baseType.asString(v)).join(", ")}]`;
+        return `[${value.map(v => this.baseType.asString(v, true)).join(", ")}]`;
     }
 }
 export class ClassVariableType extends BaseVariableType {
