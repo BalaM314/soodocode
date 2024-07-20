@@ -178,6 +178,7 @@ td, th {
 	animation-duration: 1000ms;
 	animation-timing-function: cubic-bezier(0.08, 1.05, 0.39, 0.87);
 	animation-fill-mode: both;
+	tab-size: 4;
 	/* animation-name: flash-output; */
 }
 
