@@ -328,8 +328,9 @@ let lastOutputText = "";
 function executeSoodocode() {
     const output = [];
     const runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => {
-        output.push(m);
-        console.log(`[Runtime] ${m}`);
+        const str = m.map(([type, value]) => type.asHTML(value, false)).join("");
+        output.push(str);
+        console.log(`[Runtime] ${str}`);
     });
     try {
         console.time("parsing");
@@ -347,7 +348,7 @@ function executeSoodocode() {
         runtime.runProgram(program.nodes);
         console.timeEnd("execution");
         const outputText = output.join("\n") || "<no output>";
-        outputDiv.innerText = outputText;
+        outputDiv.innerHTML = outputText;
         if (lastOutputText == outputText) {
             outputDiv.style.animationName = "";
             void outputDiv.offsetHeight;

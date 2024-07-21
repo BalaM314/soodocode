@@ -562,10 +562,10 @@ let OutputStatement = (() => {
             this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
         }
         run(runtime) {
-            let outStr = "";
+            let outStr = [];
             for (const token of this.outMessage) {
                 const [type, value] = runtime.evaluateExpr(token);
-                outStr += type.asString(value, false);
+                outStr.push([type, value]);
             }
             runtime._output(outStr);
         }
@@ -596,7 +596,7 @@ let InputStatement = (() => {
             const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.tokens[1].range);
             if (!variable.mutable)
                 fail(`Cannot INPUT ${this.name} because it is a constant`, this.tokens[1]);
-            const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`);
+            const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
             switch (variable.type) {
                 case PrimitiveVariableType.BOOLEAN:
                     variable.value = input.toLowerCase() != "false";

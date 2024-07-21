@@ -73,7 +73,7 @@ export abstract class BaseVariableType implements IFormattable {
 		return `"${this.fmtText()}"`;
 	}
 	abstract fmtText():string;
-	abstract asString(value:VariableValue, recursive:boolean):string;
+	abstract asHTML(value:VariableValue, recursive:boolean):string;
 }
 
 export type PrimitiveVariableTypeName =
@@ -136,34 +136,22 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 		}[this.name];
 		else return null;
 	}
-	asString(value:VariableValue, recursive:boolean):string {
-		if(recursive) switch(this.name){
+	asHTML(value:VariableValue, recursive:boolean):string {
+		switch(this.name){
 			case "INTEGER":
 				return `<span class="sth-number">${value.toString()}</span>`;
 			case "REAL":
 				return `<span class="sth-number">${Number.isInteger(value) ? `${value.toString()}.0` : value.toString()}</span>`;
 			case "CHAR":
-				return `<span class="sth-char">${escapeHTML(`'${value}'`)}</span>`;
+				if(recursive) return `<span class="sth-char">${escapeHTML(`'${value}'`)}</span>`;
+				else return escapeHTML(value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>);
 			case "STRING":
-				return `<span class="sth-string">${escapeHTML(`"${value}"`)}</span>`;
+				if(recursive) return `<span class="sth-string">${escapeHTML(`"${value}"`)}</span>`;
+				else return escapeHTML(value as VariableTypeMapping<PrimitiveVariableType<"STRING">>);
 			case "BOOLEAN":
 				return `<span class="sth-boolean">${value.toString().toUpperCase()}</span>`;
 			case "DATE":
 				return `<span class="sth-date">${escapeHTML((value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB"))}</span>`;
-			}
-		else switch(this.name){
-			case "INTEGER":
-				return value.toString();
-			case "REAL":
-				return Number.isInteger(value) ? `${value}.0` : value.toString();
-			case "CHAR":
-				return escapeHTML(value as string);
-			case "STRING":
-				return escapeHTML(value as string);
-			case "BOOLEAN":
-				return value.toString().toUpperCase();
-			case "DATE":
-				return escapeHTML((value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB"));
 		}
 		this.name satisfies never;
 		impossible();
@@ -230,9 +218,9 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			node.range
 		);
 	}
-	asString(value:VariableValue, recursive:boolean):string {
+	asHTML(value:VariableValue, recursive:boolean):string {
 		return `<span class="sth-bracket">[</span>${(value as VariableTypeMapping<ArrayVariableType>).map(v =>
-			(this as ArrayVariableType<true>).elementType!.asString(v as never, true) //correspondence problem
+			(this as ArrayVariableType<true>).elementType!.asHTML(v as never, true) //correspondence problem
 		).join(", ")}<span class="sth-bracket">]</span>`;
 	}
 }
@@ -288,12 +276,12 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 			.map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)])
 		) as VariableValue | null;
 	}
-	asString(value:VariableValue):string {
+	asHTML(value:VariableValue):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			Object.entries((this as RecordVariableType<true>).fields)
 				.map(([name, [type, range]]) => {
 					const propValue = (value as VariableTypeMapping<RecordVariableType>)[name];
-					return `\t${escapeHTML(name)}: ${propValue != null ? type.asString(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+					return `\t${escapeHTML(name)}: ${propValue != null ? type.asHTML(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
 				}).join("")
 		}<span class="sth-brace">}</span>`;
 	}
@@ -323,7 +311,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
-	asString(value:VariableValue):string {
+	asHTML(value:VariableValue):string {
 		return "(pointer)";
 	}
 }
@@ -348,7 +336,7 @@ export class EnumeratedVariableType extends BaseVariableType {
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
-	asString(value:VariableValue):string {
+	asHTML(value:VariableValue):string {
 		return escapeHTML(value as VariableTypeMapping<EnumeratedVariableType>);
 	}
 }
@@ -377,8 +365,8 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	getInitValue(runtime:Runtime):VariableValue | null {
 		crash(`Cannot initialize a variable of type SET`);
 	}
-	asString(value:VariableValue):string {
-		return `[${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asString(v, true)).join(", ")}]`;
+	asHTML(value:VariableValue):string {
+		return `[${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asHTML(v, true)).join(", ")}]`;
 	}
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -510,12 +498,12 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			} as VariableData]))
 		};
 	}
-	asString(value:VariableValue):string {
+	asHTML(value:VariableValue):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			Object.entries((this as ClassVariableType<true>).properties)
 				.map(([prop, [type, range]]) => {
 					const propValue = (value as VariableTypeMapping<ClassVariableType>).properties[prop];
-					return `\t${escapeHTML(prop)}: ${propValue != null ? type.asString(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+					return `\t${escapeHTML(prop)}: ${propValue != null ? type.asHTML(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
 				}).join("")
 		}<span class="sth-brace">}</span>`;
 	}

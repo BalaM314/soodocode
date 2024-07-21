@@ -330,7 +330,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 if (type?.is("REAL", "INTEGER") || expr.operator.category == "arithmetic") {
                     if (type && !(type.is("REAL", "INTEGER") || type instanceof EnumeratedVariableType))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`, expr);
-                    const guessedType = type ?? PrimitiveVariableType.REAL;
+                    let guessedType = type ?? PrimitiveVariableType.REAL;
                     let value;
                     if (expr.operator.type == "unary_prefix") {
                         const [_operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType, true);
@@ -417,6 +417,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                             if (right == 0)
                                 fail(`Division by zero`, expr.nodes[1], expr);
                             value = Math.trunc(left / right);
+                            if (!type)
+                                guessedType = PrimitiveVariableType.INTEGER;
                             break;
                         case operators.mod:
                             if (right == 0)

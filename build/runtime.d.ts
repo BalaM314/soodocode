@@ -18,8 +18,8 @@ export type ClassMethodCallInformation = {
     method: ClassMethodData;
 };
 export declare class Runtime {
-    _input: (message: string) => string;
-    _output: (message: string) => void;
+    _input: (message: string, type: VariableType) => string;
+    _output: (values: [type: VariableType, value: VariableValue][]) => void;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
     openFiles: Record<string, OpenedFile | undefined>;
@@ -32,7 +32,7 @@ export declare class Runtime {
     currentlyResolvingPointerTypeName: string | null;
     fs: Files;
     builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
-    constructor(_input: (message: string) => string, _output: (message: string) => void);
+    constructor(_input: (message: string, type: VariableType) => string, _output: (values: [type: VariableType, value: VariableValue][]) => void);
     finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType: "variable"): VariableData;

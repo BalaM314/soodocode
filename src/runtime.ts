@@ -61,8 +61,8 @@ export class Runtime {
 	fs = new Files();
 	builtinFunctions = getBuiltinFunctions();
 	constructor(
-		public _input: (message:string) => string,
-		public _output: (message:string) => void,
+		public _input: (message:string, type:VariableType) => string,
+		public _output: (values:[type:VariableType, value:VariableValue][]) => void,
 	){}
 	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):[type:VariableType, value:VariableValue] {
 		if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
