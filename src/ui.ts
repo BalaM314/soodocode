@@ -482,7 +482,7 @@ function executeSoodocode(){
 		runtime.runProgram(program.nodes);
 		console.timeEnd("execution");
 		const outputText = output.join("\n") || "<no output>";
-		outputDiv.innerText = outputText;
+		outputDiv.innerHTML = outputText;
 		if(lastOutputText == outputText){
 			//flash
 			outputDiv.style.animationName = "";

@@ -12,7 +12,7 @@ import type { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
-import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
+import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValue
@@ -137,21 +137,36 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 		else return null;
 	}
 	asString(value:VariableValue, recursive:boolean):string {
-		switch(this.name){
+		if(recursive) switch(this.name){
+			case "INTEGER":
+				return `<span class="sth-number">${value.toString()}</span>`;
+			case "REAL":
+				return `<span class="sth-number">${Number.isInteger(value) ? `${value.toString()}.0` : value.toString()}</span>`;
+			case "CHAR":
+				return `<span class="sth-char">${escapeHTML(`'${value}'`)}</span>`;
+			case "STRING":
+				return `<span class="sth-string">${escapeHTML(`"${value}"`)}</span>`;
+			case "BOOLEAN":
+				return `<span class="sth-boolean">${value.toString().toUpperCase()}</span>`;
+			case "DATE":
+				return `<span class="sth-date">${escapeHTML((value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB"))}</span>`;
+			}
+		else switch(this.name){
 			case "INTEGER":
 				return value.toString();
 			case "REAL":
-				return Number.isInteger(value) ? `${value.toString()}.0` : value.toString();
+				return Number.isInteger(value) ? `${value}.0` : value.toString();
 			case "CHAR":
-				return recursive ? `'${value}'` : value as string;
+				return escapeHTML(value as string);
 			case "STRING":
-				return recursive ? `"${value}"` : value as string;
+				return escapeHTML(value as string);
 			case "BOOLEAN":
 				return value.toString().toUpperCase();
 			case "DATE":
-				return (value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB");
-			default: impossible();
+				return escapeHTML((value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB"));
 		}
+		this.name satisfies never;
+		impossible();
 	}
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
@@ -216,9 +231,9 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		);
 	}
 	asString(value:VariableValue, recursive:boolean):string {
-		return `[${(value as VariableTypeMapping<ArrayVariableType>).map(v =>
+		return `<span class="sth-bracket">[</span>${(value as VariableTypeMapping<ArrayVariableType>).map(v =>
 			(this as ArrayVariableType<true>).elementType!.asString(v as never, true) //correspondence problem
-		).join(", ")}]`;
+		).join(", ")}<span class="sth-bracket">]</span>`;
 	}
 }
 export class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -274,13 +289,13 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		) as VariableValue | null;
 	}
 	asString(value:VariableValue):string {
-		return `${this.name} {\n${
+		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			Object.entries((this as RecordVariableType<true>).fields)
 				.map(([name, [type, range]]) => {
 					const propValue = (value as VariableTypeMapping<RecordVariableType>)[name];
-					return `\t${name}: ${propValue != null ? type.asString(propValue, true) : "<uninitialized>"},`.replaceAll("\n", "\n\t") + "\n";
+					return `\t${escapeHTML(name)}: ${propValue != null ? type.asString(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
 				}).join("")
-		}}`;
+		}<span class="sth-brace">}</span>`;
 	}
 }
 export class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -309,7 +324,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		return null;
 	}
 	asString(value:VariableValue):string {
-		return "<pointer>";
+		return "(pointer)";
 	}
 }
 export class EnumeratedVariableType extends BaseVariableType {
@@ -334,7 +349,7 @@ export class EnumeratedVariableType extends BaseVariableType {
 		return null;
 	}
 	asString(value:VariableValue):string {
-		return value as VariableTypeMapping<EnumeratedVariableType>;
+		return escapeHTML(value as VariableTypeMapping<EnumeratedVariableType>);
 	}
 }
 export class SetVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -496,7 +511,13 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		};
 	}
 	asString(value:VariableValue):string {
-		return `${this.name} { NOT_YET_IMPLEMENTED }`;
+		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
+			Object.entries((this as ClassVariableType<true>).properties)
+				.map(([prop, [type, range]]) => {
+					const propValue = (value as VariableTypeMapping<ClassVariableType>).properties[prop];
+					return `\t${escapeHTML(prop)}: ${propValue != null ? type.asString(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+				}).join("")
+		}<span class="sth-brace">}</span>`;
 	}
 }
 

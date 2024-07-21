@@ -182,6 +182,34 @@ td, th {
 	/* animation-name: flash-output; */
 }
 
+.sth-number {
+	color: #B5CEA8;
+}
+.sth-string {
+	color: #CE9178;
+}
+.sth-char {
+	color: #CE9178;
+}
+.sth-boolean {
+	color: #569cd6;
+}
+.sth-date {
+	color: #aea8ce;
+}
+.sth-type {
+	color: #4ec9b0;
+}
+.sth-bracket {
+	color: #ffd700;
+}
+.sth-brace {
+	color: #da70d6;
+}
+.sth-invalid {
+	color: #ff4444;
+}
+
 .program-display-inner {
 	border-left: 15px solid var(--program-block-accent-color);
 	padding: 5px;

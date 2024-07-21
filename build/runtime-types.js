@@ -1,6 +1,6 @@
 import { configs } from "./config.js";
 import { ClassFunctionStatement } from "./statements.js";
-import { crash, errorBoundary, f, fail, getTotalRange, impossible, zip } from "./utils.js";
+import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 export class BaseVariableType {
     validate(runtime) { }
     is(...type) {
@@ -52,21 +52,38 @@ export class PrimitiveVariableType extends BaseVariableType {
             return null;
     }
     asString(value, recursive) {
-        switch (this.name) {
-            case "INTEGER":
-                return value.toString();
-            case "REAL":
-                return Number.isInteger(value) ? `${value.toString()}.0` : value.toString();
-            case "CHAR":
-                return recursive ? `'${value}'` : value;
-            case "STRING":
-                return recursive ? `"${value}"` : value;
-            case "BOOLEAN":
-                return value.toString().toUpperCase();
-            case "DATE":
-                return value.toLocaleDateString("en-GB");
-            default: impossible();
-        }
+        if (recursive)
+            switch (this.name) {
+                case "INTEGER":
+                    return `<span class="sth-number">${value.toString()}</span>`;
+                case "REAL":
+                    return `<span class="sth-number">${Number.isInteger(value) ? `${value.toString()}.0` : value.toString()}</span>`;
+                case "CHAR":
+                    return `<span class="sth-char">${escapeHTML(`'${value}'`)}</span>`;
+                case "STRING":
+                    return `<span class="sth-string">${escapeHTML(`"${value}"`)}</span>`;
+                case "BOOLEAN":
+                    return `<span class="sth-boolean">${value.toString().toUpperCase()}</span>`;
+                case "DATE":
+                    return `<span class="sth-date">${escapeHTML(value.toLocaleDateString("en-GB"))}</span>`;
+            }
+        else
+            switch (this.name) {
+                case "INTEGER":
+                    return value.toString();
+                case "REAL":
+                    return Number.isInteger(value) ? `${value}.0` : value.toString();
+                case "CHAR":
+                    return escapeHTML(value);
+                case "STRING":
+                    return escapeHTML(value);
+                case "BOOLEAN":
+                    return value.toString().toUpperCase();
+                case "DATE":
+                    return escapeHTML(value.toLocaleDateString("en-GB"));
+            }
+        this.name;
+        impossible();
     }
 }
 PrimitiveVariableType.all = [];
@@ -138,7 +155,7 @@ export class ArrayVariableType extends BaseVariableType {
         return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType), node.range);
     }
     asString(value, recursive) {
-        return `[${value.map(v => this.elementType.asString(v, true)).join(", ")}]`;
+        return `<span class="sth-bracket">[</span>${value.map(v => this.elementType.asString(v, true)).join(", ")}<span class="sth-bracket">]</span>`;
     }
 }
 export class RecordVariableType extends BaseVariableType {
@@ -197,11 +214,11 @@ export class RecordVariableType extends BaseVariableType {
             .map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)]));
     }
     asString(value) {
-        return `${this.name} {\n${Object.entries(this.fields)
+        return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${Object.entries(this.fields)
             .map(([name, [type, range]]) => {
             const propValue = value[name];
-            return `\t${name}: ${propValue != null ? type.asString(propValue, true) : "<uninitialized>"},`.replaceAll("\n", "\n\t") + "\n";
-        }).join("")}}`;
+            return `\t${escapeHTML(name)}: ${propValue != null ? type.asString(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+        }).join("")}<span class="sth-brace">}</span>`;
     }
 }
 export class PointerVariableType extends BaseVariableType {
@@ -232,7 +249,7 @@ export class PointerVariableType extends BaseVariableType {
         return null;
     }
     asString(value) {
-        return "<pointer>";
+        return "(pointer)";
     }
 }
 export class EnumeratedVariableType extends BaseVariableType {
@@ -258,7 +275,7 @@ export class EnumeratedVariableType extends BaseVariableType {
         return null;
     }
     asString(value) {
-        return value;
+        return escapeHTML(value);
     }
 }
 export class SetVariableType extends BaseVariableType {
@@ -409,7 +426,11 @@ export class ClassVariableType extends BaseVariableType {
         };
     }
     asString(value) {
-        return `${this.name} { NOT_YET_IMPLEMENTED }`;
+        return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${Object.entries(this.properties)
+            .map(([prop, [type, range]]) => {
+            const propValue = value.properties[prop];
+            return `\t${escapeHTML(prop)}: ${propValue != null ? type.asString(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+        }).join("")}<span class="sth-brace">}</span>`;
     }
 }
 export function typesEqual(a, b, types = new Array()) {
