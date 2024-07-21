@@ -223,7 +223,7 @@ export const preprocessedBuiltinFunctions = ({
         ],
         returnType: "DATE",
         impl(d, m, y) {
-            return new Date(y, m, d);
+            return new Date(y, m - 1, d);
         }
     }),
     TODAY: fn({
