@@ -345,7 +345,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 			if(type && !(type.is("REAL", "INTEGER") || type instanceof EnumeratedVariableType))
 				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`, expr);
 
-			const guessedType = (type as PrimitiveVariableType<"REAL" | "INTEGER">) ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
+			let guessedType = (type as PrimitiveVariableType<"REAL" | "INTEGER">) ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
 			let value:number;
 			//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
 			if(expr.operator.type == "unary_prefix"){
@@ -422,6 +422,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				case operators.integer_divide:
 					if(right == 0) fail(`Division by zero`, expr.nodes[1], expr);
 					value = Math.trunc(left / right);
+					if(!type) guessedType = PrimitiveVariableType.INTEGER;
 					break;
 				case operators.mod:
 					if(right == 0) fail(`Division by zero`, expr.nodes[1], expr);
