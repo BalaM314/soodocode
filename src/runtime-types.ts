@@ -162,6 +162,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
 	lengthInformation: [low:number, high:number][] | null = null;
+	static maxLength = 10_000_000;
 	constructor(
 		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,
 		public lengthInformationRange: TextRange | null,
@@ -183,6 +184,10 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
 			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
 		} else if(!configs.arrays.unspecified_length.value) fail(`Please specify the length of the array\n${configs.arrays.unspecified_length.errorHelp}`, this.range);
+	}
+	validate(runtime:Runtime){
+		if(this.totalLength && this.totalLength > ArrayVariableType.maxLength)
+			fail(`Length ${this.totalLength} too large for array variable type`, this.range);
 	}
 	clone(){
 		const type = new ArrayVariableType<false>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);

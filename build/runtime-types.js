@@ -112,6 +112,10 @@ export class ArrayVariableType extends BaseVariableType {
         else if (!configs.arrays.unspecified_length.value)
             fail(`Please specify the length of the array\n${configs.arrays.unspecified_length.errorHelp}`, this.range);
     }
+    validate(runtime) {
+        if (this.totalLength && this.totalLength > ArrayVariableType.maxLength)
+            fail(`Length ${this.totalLength} too large for array variable type`, this.range);
+    }
     clone() {
         const type = new ArrayVariableType(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
         type.lengthInformation = this.lengthInformation;
@@ -148,6 +152,7 @@ export class ArrayVariableType extends BaseVariableType {
         return `<span class="sth-bracket">[</span>${value.map(v => this.elementType.asHTML(v, true)).join(", ")}<span class="sth-bracket">]</span>`;
     }
 }
+ArrayVariableType.maxLength = 10000000;
 export class RecordVariableType extends BaseVariableType {
     constructor(initialized, name, fields) {
         super();
