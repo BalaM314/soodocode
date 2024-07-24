@@ -398,9 +398,9 @@ export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
         }
     }
     const out = matrix.at(-1);
-    if (a.length <= 1 && b.length <= 1)
+    if (a.length <= 1 || b.length <= 1)
         return out * 4;
-    if (a.length <= 2 && b.length <= 2)
+    if (a.length <= 2 || b.length <= 2)
         return out * 2;
     if (b.startsWith(a) || a.startsWith(b))
         return out * 0.7;
