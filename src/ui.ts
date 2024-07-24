@@ -435,19 +435,18 @@ export function showRange(text:string, error:SoodocodeError):string {
 		const formattedRangeText = error.rangeSpecific ?
 			applyRangeTransformers(rangeText, [[
 				error.rangeSpecific.map(n => n - range[0]),
-				`<span style="text-decoration: underline wavy red;">`, "</span>", escapeHTML
+				`<span class="error-range-inner">`, "</span>", escapeHTML
 			]])
 			: escapeHTML(rangeText);
 		return `
 ${formattedPreviousLine}\
-${lineNumber} | ${escapeHTML(startOfLine)}<span style="background-color: #FF03;">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
-		//TODO use CSS classes
+${lineNumber} | ${escapeHTML(startOfLine)}<span class="error-range-outer">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
 	} else {
 		//Drop the general range TODO fix
 		const trimEnd = text.slice(error.rangeSpecific[1]).indexOf("\n");
 		text = text.slice(0, trimEnd);
 		const fullText = applyRangeTransformers(text, [
-			[error.rangeSpecific, `<span style="text-decoration: underline wavy red;">`, "</span>", escapeHTML]
+			[error.rangeSpecific, `<span class="error-range-inner">`, "</span>", escapeHTML]
 		]);
 		const trimStart = fullText.slice(0, error.rangeSpecific[0]).lastIndexOf("\n");
 		return fullText.slice(trimStart);
@@ -494,12 +493,12 @@ function executeSoodocode(){
 	} catch(err){
 		runtime.fs.loadBackup();
 		if(err instanceof SoodocodeError){
-			outputDiv.innerHTML = `<span style="color: red;">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
+			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
 				+ showRange(soodocodeInput.value, err);
 		} else if(["too much recursion", "Maximum call stack size exceeded"].includes((err as Record<string, unknown>)?.message)){
-			outputDiv.innerHTML = `<span style="color: red;">Maximum call stack size exceeded\nhelp: make sure your recursive functions can reach their base case</span>`;
+			outputDiv.innerHTML = `<span class="error-message">Maximum call stack size exceeded\nhelp: make sure your recursive functions can reach their base case</span>`;
 		} else {
-			outputDiv.innerHTML = `<span style="color: red;">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
+			outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
 		}
 		console.error(err);
 	}

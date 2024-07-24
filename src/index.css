@@ -210,6 +210,16 @@ td, th {
 	color: #ff4444;
 }
 
+.error-range-inner {
+	text-decoration: underline wavy red;
+}
+.error-range-outer {
+	background-color: #FF03;
+}
+.error-message {
+	color: red;
+}
+
 .program-display-inner {
 	border-left: 15px solid var(--program-block-accent-color);
 	padding: 5px;
