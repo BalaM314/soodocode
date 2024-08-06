@@ -664,8 +664,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		for(const { statement } of this.scopes.slice().reverse()){
 			if(statement instanceof ClassStatement)
 				return statement == clazz.statement;
-			if((statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement
-				) && !configs.classes.delegate_access_privileges.value ) //if this setting is enabled, skip function scopes
+			if((
+				statement.constructor == FunctionStatement || statement.constructor == ProcedureStatement
+			) && !configs.classes.delegate_access_privileges.value ) //if this setting is enabled, skip function scopes
 				return false; //closest relevant statement is a function, cant access classes
 			//Ignore classmethodstatement because it always has a ClassStatement just above it
 		}
@@ -705,7 +706,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		let disabledConfig:Config<unknown, true> | null = null;
 		if(from.is("STRING") && to.is("CHAR")){
 			if(configs.coercion.string_to_char.value){
-				let v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
+				const v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
 				if(v.length == 1) return v as never;
 				else assignabilityError = f.quote`the length of the string ${v} is not 1`;
 			} else disabledConfig = configs.coercion.string_to_char;
@@ -887,7 +888,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			node.run(this);
 		}
 		//Second pass: initialize types
-		const types: [name:string, type:VariableType][] = [];
+		const types: [name:string, type:VariableType<boolean>][] = [];
 		for(const node of typeNodes){
 			let name, type;
 			if(node instanceof Statement){
@@ -896,7 +897,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				[name, type] = node.controlStatements[0].createTypeBlock(this, node);
 			}
 			if(this.getCurrentScope().types[name]) fail(f.quote`Type ${name} was defined twice`, node);
-			this.getCurrentScope().types[name] = type;
+			this.getCurrentScope().types[name] = type as VariableType<any>; //it will get initialized later
 			types.push([name, type]);
 		}
 		//Third pass: resolve types

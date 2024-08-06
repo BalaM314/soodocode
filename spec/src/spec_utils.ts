@@ -11,7 +11,7 @@ import { Runtime } from "../../build/runtime.js";
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
 
 export type _Symbol = [type:SymbolType, text:string];
-export type _Token = [type:TokenType, text:string] | TokenType | string | number;
+export type _Token = [type:TokenType, text:string] | TokenType | (string & {}) | number;
 
 export type _ExpressionAST = _ExpressionASTNode;
 export type _ExpressionASTLeafNode = _Token;
@@ -108,7 +108,7 @@ export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _Expression
 }
 
 export function process_Statement(input:_Statement):Statement {
-	if(typeof input[0] == "string") return statement(...(input as any as [any]));
+	if(typeof input[0] == "string") return statement(...(input as never as [any]));
 	else return new input[0](new RangeArray(input[1].map(process_ExpressionASTExt), [-1, -1]));
 }
 
@@ -197,55 +197,48 @@ export function fakeStatement(type:typeof Statement):Statement {
 	});
 }
 
-export const anyRange = [jasmine.any(Number), jasmine.any(Number)];
+/** Assigns potentially invalid values to a property, if the property has the expected type. */
+function assignUnsafeChecked<T extends Record<K, unknown>, K extends PropertyKey>(object:T, key:K, value:jasmine.Expected<T[K]>){
+	object[key] = value as never;
+}
+
+export const anyRange = [jasmine.any(Number), jasmine.any(Number)] as never as jasmine.AsymmetricMatcher<TextRange>;
 /** Mutates input unsafely */
 export function applyAnyRange<TIn extends
 	ExpressionAST | ExpressionASTArrayTypeNode | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<any>
 >(input:TIn):jasmine.Expected<TIn> {
 	if(input instanceof RangeArray){
-		input.range = anyRange as never as TextRange;
+		assignUnsafeChecked(input, "range", anyRange);
 	} else if(input instanceof Token){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
+		assignUnsafeChecked(input, "range", anyRange);
 	} else if(input instanceof Statement){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
+		assignUnsafeChecked(input, "range", anyRange);
 		applyAnyRange(input.tokens);
 		input.tokens.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTBranchNode){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
-		input.allTokens;
-		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		assignUnsafeChecked(input, "range", anyRange);
+		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
 		applyAnyRange(input.operatorToken);
 		input.nodes.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTArrayAccessNode){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
-		input.allTokens;
-		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		assignUnsafeChecked(input, "range", anyRange);
+		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
 		applyAnyRange(input.target);
 		input.indices.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTFunctionCallNode){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
-		input.allTokens;
-		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		assignUnsafeChecked(input, "range", anyRange);
+		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
 		applyAnyRange(input.functionName);
 		input.args.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTClassInstantiationNode){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
-		input.allTokens;
-		(input as Record<string, any>).allTokens = jasmine.any(Array);
+		assignUnsafeChecked(input, "range", anyRange);
+		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
 		applyAnyRange(input.className);
 		input.args.forEach(applyAnyRange);
 	} else if(input instanceof ExpressionASTArrayTypeNode){
-		input.range;
-		(input as Record<string, any>).range = anyRange;
-		input.allTokens;
-		(input as Record<string, any>).allTokens = jasmine.any(Array);
-		input.lengthInformation?.forEach(r => r.forEach(e => applyAnyRange(e)));
+		assignUnsafeChecked(input, "range", anyRange);
+		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
+		input.lengthInformation?.flat().forEach(applyAnyRange);
 		applyAnyRange(input.elementType);
 	} else if(input instanceof ProgramASTBranchNode){
 		input.controlStatements.forEach(applyAnyRange);

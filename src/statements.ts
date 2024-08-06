@@ -250,10 +250,10 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 }
 
 export class TypeStatement extends Statement {
-	createType(runtime:Runtime):[name:string, type:VariableType] {
+	createType(runtime:Runtime):[name:string, type:VariableType<false>] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
-	createTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):[name:string, type:VariableType] {
+	createTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):[name:string, type:VariableType<false>] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
 }
@@ -345,7 +345,7 @@ export class TypePointerStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name, new PointerVariableType(
 			false, this.name, this.targetType
-		)] as [name: string, type: VariableType];
+		)] as [name: string, type: VariableType<false>];
 	}
 }
 @statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".*", "parentheses.close")
@@ -360,7 +360,7 @@ export class TypeEnumStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name.text, new EnumeratedVariableType(
 			this.name.text, this.values.map(t => t.text)
-		)] as [name: string, type: VariableType];
+		)] as [name: string, type: VariableType<false>];
 	}
 }
 @statement("type.set", "TYPE myIntegerSet = SET OF INTEGER", "keyword.type", "name", "operator.equal_to", "keyword.set", "keyword.of", "name")
@@ -375,7 +375,7 @@ export class TypeSetStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name.text, new SetVariableType(
 			false, this.name.text, this.setType
-		)] as [name: string, type: VariableType]; //TODO allow sets of UDTs
+		)] as [name: string, type: VariableType<false>]; //TODO allow sets of UDTs
 	}
 }
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
@@ -391,7 +391,7 @@ export class TypeRecordStatement extends TypeStatement {
 			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`, statement);
 			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
 		}
-		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as [name: string, type: VariableType];
+		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as [name: string, type: VariableType<false>];
 	}
 }
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
@@ -432,7 +432,8 @@ export class OutputStatement extends Statement {
 		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
 	}
 	run(runtime:Runtime){
-		let outStr:[type:VariableType, value:VariableValue][] = [];
+		//TODO clean
+		const outStr:[type:VariableType, value:VariableValue][] = [];
 		for(const token of this.outMessage){
 			const [type, value] = runtime.evaluateExpr(token);
 			outStr.push([type, value]);
@@ -957,7 +958,7 @@ export class ClassStatement extends TypeStatement {
 		return classData;
 	}
 	createTypeBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
-		return [this.name.text, this.initializeClass(runtime, branchNode)] as [name: string, type: VariableType];
+		return [this.name.text, this.initializeClass(runtime, branchNode)] as [name: string, type: VariableType<false>];
 	}
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")

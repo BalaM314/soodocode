@@ -3351,7 +3351,7 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 }).map<{name:string; input:RangeArray<Token>; output:jasmine.Expected<Token | ExpressionASTArrayTypeNode> | "error";}>(([name, [input, output]]) => ({
 	name,
 	input: new RangeArray<Token>(input.map(process_Token)),
-	output: output == "error" ? output : applyAnyRange(process_ExpressionASTExt(output))
+	output: output == "error" ? (output as "error") : applyAnyRange(process_ExpressionASTExt(output))
 }));
 
 

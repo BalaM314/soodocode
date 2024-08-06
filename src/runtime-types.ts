@@ -137,19 +137,20 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 		else return null;
 	}
 	asHTML(value:VariableValue, recursive:boolean):string {
+		//TODO PrimitiveVariableTypeMapping
 		switch(this.name){
 			case "INTEGER":
-				return `<span class="sth-number">${value.toString()}</span>`;
+				return `<span class="sth-number">${(value as VariableTypeMapping<PrimitiveVariableType<"INTEGER">>).toString()}</span>`;
 			case "REAL":
-				return `<span class="sth-number">${Number.isInteger(value) ? `${value.toString()}.0` : value.toString()}</span>`;
+				return `<span class="sth-number">${Number.isInteger(value) ? `${(value as VariableTypeMapping<PrimitiveVariableType<"REAL">>).toString()}.0` : (value as VariableTypeMapping<PrimitiveVariableType<"REAL">>).toString()}</span>`;
 			case "CHAR":
-				if(recursive) return `<span class="sth-char">${escapeHTML(`'${value}'`)}</span>`;
+				if(recursive) return `<span class="sth-char">${escapeHTML(`'${value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>}'`)}</span>`;
 				else return escapeHTML(value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>);
 			case "STRING":
-				if(recursive) return `<span class="sth-string">${escapeHTML(`"${value}"`)}</span>`;
+				if(recursive) return `<span class="sth-string">${escapeHTML(`"${value as VariableTypeMapping<PrimitiveVariableType<"STRING">>}"`)}</span>`;
 				else return escapeHTML(value as VariableTypeMapping<PrimitiveVariableType<"STRING">>);
 			case "BOOLEAN":
-				return `<span class="sth-boolean">${value.toString().toUpperCase()}</span>`;
+				return `<span class="sth-boolean">${(value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase()}</span>`;
 			case "DATE":
 				return `<span class="sth-date">${escapeHTML((value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB"))}</span>`;
 		}
@@ -611,7 +612,7 @@ export type UnresolvedVariableType =
 	| ArrayVariableType<false>
 	| ["unresolved", name:string, range:TextRange]
 ;
-export type VariableType =
+export type VariableType<Init extends boolean = true> =
 	| PrimitiveVariableType<"INTEGER">
 	| PrimitiveVariableType<"REAL">
 	| PrimitiveVariableType<"STRING">
@@ -619,12 +620,12 @@ export type VariableType =
 	| PrimitiveVariableType<"BOOLEAN">
 	| PrimitiveVariableType<"DATE">
 	| PrimitiveVariableType
-	| ArrayVariableType
-	| RecordVariableType
-	| PointerVariableType
+	| ArrayVariableType<Init>
+	| RecordVariableType<Init>
+	| PointerVariableType<Init>
 	| EnumeratedVariableType
-	| SetVariableType
-	| ClassVariableType
+	| SetVariableType<Init>
+	| ClassVariableType<Init>
 ;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | ClassVariableType;
 export type VariableValue = VariableTypeMapping<any>;

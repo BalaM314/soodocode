@@ -453,6 +453,10 @@ ${lineNumber} | ${escapeHTML(startOfLine)}<span class="error-range-outer">${form
 	}
 }
 
+function printPrefixed(value:unknown){
+	console.log(`%c[Runtime]`, `color: lime;`, value);
+}
+
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 let lastOutputText:string = "";
@@ -463,7 +467,7 @@ function executeSoodocode(){
 		m => {
 			const str = m.map(([type, value]) => type.asHTML(value, false)).join("");
 			output.push(str);
-			console.log(`[Runtime] ${str}`);
+			printPrefixed(str);
 		}
 	);
 	try {
@@ -528,7 +532,7 @@ setInterval(() => {
 
 function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
-	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => console.log(`[Runtime] ${m}`));
+	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
 	Object.assign(window,
 		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime,
 	);
