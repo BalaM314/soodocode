@@ -69,6 +69,24 @@ export class TypedValue_<T extends VariableType> {
 		public type:T,
 		public value:VariableTypeMapping<T>,
 	){}
+	typeIs<Type extends
+		| typeof ArrayVariableType
+		| typeof RecordVariableType
+		| typeof PointerVariableType
+		| typeof EnumeratedVariableType
+		| typeof SetVariableType
+		| typeof ClassVariableType
+	>(clazz:Type):
+		this is TypedValue_<Type["prototype"]>;
+	typeIs<Type extends PrimitiveVariableTypeName>(type:Type):
+		this is TypedValue_<PrimitiveVariableType<Type>>;
+	typeIs(type:unknown){
+		if(type instanceof Function && type.prototype instanceof BaseVariableType)
+			return this.type instanceof type;
+		if(typeof type == "string")
+			return this.type == PrimitiveVariableType.get(type);
+		impossible();
+	}
 	asHTML(recursive:boolean):string {
 		return this.type.asHTML(this.value, recursive);
 	}
@@ -229,12 +247,12 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		if(this.totalLength && this.totalLength > ArrayVariableType.maxLength)
 			fail(`Length ${this.totalLength} too large for array variable type`, this.range);
 	}
-	clone(){
-		const type = new ArrayVariableType<false>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
+	clone():ArrayVariableType<Init> {
+		const type = new ArrayVariableType<Init>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
 		type.lengthInformation = this.lengthInformation;
 		type.arraySizes = this.arraySizes;
 		type.totalLength = this.totalLength;
-		return type as never as ArrayVariableType<true>;
+		return type;
 	}
 	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
@@ -303,9 +321,21 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 	}
 	validate(){
 		for(const [name, [type, range]] of Object.entries((this as RecordVariableType<true>).fields)){
-			if(type == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`, range);
-			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text`Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`, range);
-			if(type instanceof RecordVariableType && type.directDependencies.has(this as never)) fail(f.quote`Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`, range);
+			if(type == this) fail(f.text
+`Recursive type "${this.name}" has infinite size: \
+field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object
+help: change the field's type to be "pointer to ${this.name}"`,
+			range);
+			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text
+`Recursive type "${this.name}" has infinite size: \
+field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object
+help: change the field's type to be "array of pointer to ${this.name}"`,
+			range);
+			if(type instanceof RecordVariableType && type.directDependencies.has(this as RecordVariableType<true>)) fail(f.quote
+`Recursive type ${this.name} has infinite size: \
+initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again
+help: change the field's type to be a pointer`,
+			range);
 		}
 	}
 	fmtText(){

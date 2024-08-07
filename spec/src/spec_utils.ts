@@ -4,7 +4,7 @@ import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariabl
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
 import { crash, fakeObject, impossible } from "../../build/utils.js";
 import { tokenTextMapping } from "../../build/lexer.js";
-import { TextRange } from "../../src/types.js";
+import { TextRange, TextRanged2 } from "../../src/types.js";
 import { Runtime } from "../../build/runtime.js";
 
 
@@ -94,11 +94,9 @@ export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
 export function process_Token(input:_Token):Token {
 	if(Array.isArray(input)) return token(...input);
 	else if(typeof input == "number") return token("number.decimal", input.toString());
-	else return (
-		tokenTextMapping[input as never] ? token(input as TokenType, tokenTextMapping[input as never]) :
-		input.includes(".") ? crash(`Invalid name type token shorthand ${input}`) :
-		token("name", input)
-	);
+	else if(input in tokenTextMapping) return token(input as keyof typeof tokenTextMapping, tokenTextMapping[input as keyof typeof tokenTextMapping]);
+	else if(input.includes(".")) crash(`Invalid name type token shorthand ${input}`);
+	else return token("name", input);
 }
 //\[("operator\.and"|"keyword\.file_mode\.append"|"keyword\.array"|"keyword\.pass_mode\.by_reference"|"keyword\.pass_mode\.by_value"|"keyword\.call"|"keyword\.case"|"keyword\.class"|"keyword\.close_file"|"keyword\.constant"|"keyword\.declare"|"keyword\.define"|"operator\.integer_divide"|"keyword\.else"|"keyword\.case_end"|"keyword\.class_end"|"keyword\.function_end"|"keyword\.if_end"|"keyword\.procedure_end"|"keyword\.type_end"|"keyword\.while_end"|"boolean\.false"|"keyword\.for"|"keyword\.function"|"keyword\.get_record"|"keyword\.if"|"keyword\.inherits"|"keyword\.input"|"operator\.mod"|"keyword\.new"|"keyword\.for_end"|"operator\.not"|"keyword\.of"|"keyword\.open_file"|"operator\.or"|"keyword\.otherwise"|"keyword\.output"|"keyword\.class_modifier\.private"|"keyword\.procedure"|"keyword\.class_modifier\.public"|"keyword\.put_record"|"keyword\.file_mode\.random"|"keyword\.file_mode\.read"|"keyword\.read_file"|"keyword\.dowhile"|"keyword\.return"|"keyword\.returns"|"keyword\.seek"|"keyword\.set"|"keyword\.step"|"keyword\.super"|"keyword\.then"|"keyword\.to"|"boolean\.true"|"keyword\.type"|"keyword\.dowhile_end"|"keyword\.while"|"keyword\.file_mode\.write"|"keyword\.write_file"|"operator\.assignment"|"operator\.greater_than_equal"|"operator\.less_than_equal"|"operator\.not_equal_to"|"operator\.equal_to"|"operator\.greater_than"|"operator\.less_than"|"operator\.add"|"operator\.minus"|"operator\.multiply"|"operator\.divide"|"operator\.pointer"|"operator\.string_concatenate"|"parentheses\.open"|"parentheses\.close"|"bracket\.open"|"bracket\.close"|"brace\.open"|"brace\.close"|"punctuation\.colon"|"punctuation\.semicolon"|"punctuation\.comma"|"punctuation\.period"|"newline"),( ?)".+?"\]
 
@@ -205,7 +203,7 @@ function assignUnsafeChecked<T extends Record<K, unknown>, K extends PropertyKey
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)] as never as jasmine.AsymmetricMatcher<TextRange>;
 /** Mutates input unsafely */
 export function applyAnyRange<TIn extends
-	ExpressionAST | ExpressionASTArrayTypeNode | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<any>
+	ExpressionAST | ExpressionASTArrayTypeNode | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<TextRanged2>
 >(input:TIn):jasmine.Expected<TIn> {
 	if(input instanceof RangeArray){
 		assignUnsafeChecked(input, "range", anyRange);
@@ -419,10 +417,11 @@ export function arrayType(
 ){
 	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType, [-1, -1]);
 	type.init(fakeObject<Runtime>({
-		evaluateExpr: ((expr:ExpressionAST, type:VariableType) => {
-			if(expr instanceof Token) return Runtime.evaluateToken(expr, type);
+		evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function"){
+			if(typeof type == "string") impossible();
+			if(expr instanceof Token) return Runtime.evaluateToken(expr, type) as never;
 			else impossible();
-		}) as never
+		}
 	}));
 	return type;
 }

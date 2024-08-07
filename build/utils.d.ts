@@ -25,18 +25,18 @@ export declare function getRange(input?: TextRangeLike): TextRange | undefined;
 export declare function getRange(input?: TextRangeLike | null): TextRange | undefined | null;
 export declare function findRange(args: unknown[]): TextRange | undefined;
 export declare class SoodocodeError extends Error {
-    rangeSpecific?: (TextRange | null) | undefined;
-    rangeGeneral?: (TextRange | null) | undefined;
+    rangeSpecific?: TextRange | null | undefined;
+    rangeGeneral?: TextRange | null | undefined;
     rangeOther?: TextRange | undefined;
     modified: boolean;
-    constructor(message: string, rangeSpecific?: (TextRange | null) | undefined, rangeGeneral?: (TextRange | null) | undefined, rangeOther?: TextRange | undefined);
+    constructor(message: string, rangeSpecific?: TextRange | null | undefined, rangeGeneral?: TextRange | null | undefined, rangeOther?: TextRange | undefined);
     formatMessage(text: string): string;
 }
 export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;
 export declare function rethrow(error: SoodocodeError, msg: (old: string) => string): void;
 export declare function crash(message: string): never;
 export declare function impossible(): never;
-export declare function Abstract<TClass extends new (...args: any[]) => any>(input: TClass, context: ClassDecoratorContext<TClass>): TClass;
+export declare function Abstract<TClass extends new (...args: any[]) => {}>(input: TClass, context: ClassDecoratorContext<TClass>): TClass;
 export declare function errorBoundary({ predicate, message }?: Partial<{
     predicate(...args: any[]): boolean;
     message(...args: any[]): string;

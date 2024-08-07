@@ -52,19 +52,19 @@ export declare class Runtime {
     evaluateToken(token: Token, type: "function"): FunctionData | BuiltinFunctionData;
     evaluateToken<T extends VariableType | undefined>(token: Token, type: T): [type: T & {}, value: VariableTypeMapping<T>];
     static NotStaticError: {
-        new (message?: string): {
+        new (message?: string | undefined): {
             name: string;
             message: string;
-            stack?: string;
+            stack?: string | undefined;
             cause?: unknown;
         };
-        new (message?: string, options?: ErrorOptions): {
+        new (message?: string | undefined, options?: ErrorOptions | undefined): {
             name: string;
             message: string;
-            stack?: string;
+            stack?: string | undefined;
             cause?: unknown;
         };
-        captureStackTrace(targetObject: object, constructorOpt?: Function): void;
+        captureStackTrace(targetObject: object, constructorOpt?: Function | undefined): void;
         prepareStackTrace?: ((err: Error, stackTraces: NodeJS.CallSite[]) => any) | undefined;
         stackTraceLimit: number;
     };

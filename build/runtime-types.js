@@ -6,6 +6,13 @@ export class TypedValue_ {
         this.type = type;
         this.value = value;
     }
+    typeIs(type) {
+        if (type instanceof Function && type.prototype instanceof BaseVariableType)
+            return this.type instanceof type;
+        if (typeof type == "string")
+            return this.type == PrimitiveVariableType.get(type);
+        impossible();
+    }
     asHTML(recursive) {
         return this.type.asHTML(this.value, recursive);
     }
@@ -15,6 +22,12 @@ export class TypedValue_ {
 }
 export function typedValue(type, value) {
     return new TypedValue_(type, value);
+}
+function foo(tval) {
+    if (tval.typeIs(RecordVariableType)) {
+        tval.type;
+        tval.value;
+    }
 }
 export class BaseVariableType {
     validate(runtime) { }
@@ -219,11 +232,17 @@ export class RecordVariableType extends BaseVariableType {
     validate() {
         for (const [name, [type, range]] of Object.entries(this.fields)) {
             if (type == this)
-                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "pointer to ${this.name}"`, range);
+                fail(f.text `Recursive type "${this.name}" has infinite size: \
+field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object
+help: change the field's type to be "pointer to ${this.name}"`, range);
             if (type instanceof ArrayVariableType && type.elementType == this)
-                fail(f.text `Recursive type "${this.name}" has infinite size: field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object\nhelp: change the field's type to be "array of pointer to ${this.name}"`, range);
+                fail(f.text `Recursive type "${this.name}" has infinite size: \
+field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object
+help: change the field's type to be "array of pointer to ${this.name}"`, range);
             if (type instanceof RecordVariableType && type.directDependencies.has(this))
-                fail(f.quote `Recursive type ${this.name} has infinite size: initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again\nhelp: change the field's type to be a pointer`, range);
+                fail(f.quote `Recursive type ${this.name} has infinite size: \
+initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again
+help: change the field's type to be a pointer`, range);
         }
     }
     fmtText() {

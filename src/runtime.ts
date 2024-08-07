@@ -191,7 +191,6 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 					? (instanceType.allMethods[property] ?? crash(`Inherited method not present`)) //If the method is present on the variable type, use the instance's type to get the method implementation
 					: instanceType.allMethods[property] //Method not present on the variable type
 						? fail(f.quote //If it doesn't exist on the variable type but does exist on the instance type, long error message
-						// eslint-disable-next-line no-unexpected-multiline
 `Method ${property} does not exist on type ${targetType}.
 The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()} which has the method, \
 but the type of the variable is ${targetType.fmtPlain()}.
@@ -205,7 +204,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 				//Use the variable type, properties cannot be overriden
 				const propertyStatement = targetType.properties[property]?.[1] ?? (
 					instanceType.properties[property]
-						? fail(f.quote // eslint-disable-next-line no-unexpected-multiline
+						? fail(f.quote
 `Property ${property} does not exist on type ${targetType}.
 The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()} which has the property, \
 but the type of the variable is ${targetType.fmtPlain()}.

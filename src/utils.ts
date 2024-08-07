@@ -238,7 +238,7 @@ export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
 }
 
-export function Abstract<TClass extends new (...args:any[]) => any>(input:TClass, context:ClassDecoratorContext<TClass>):TClass {
+export function Abstract<TClass extends new (...args:any[]) => {}>(input:TClass, context:ClassDecoratorContext<TClass>):TClass {
 	return class __temp extends input {
 		constructor(...args:any[]){
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument

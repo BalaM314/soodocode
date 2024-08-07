@@ -39,6 +39,7 @@ export default tseslint.config(
 			],
 			"no-unused-vars": "off",
 			"prefer-const": "warn",
+			"no-unexpected-multiline": "off",
 			"@typescript-eslint/no-unused-vars": "off",
 			"@typescript-eslint/unbound-method": "off",
 			"@typescript-eslint/no-explicit-any": "off",

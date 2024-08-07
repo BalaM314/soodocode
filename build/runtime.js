@@ -159,7 +159,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     if (outType == "variable") {
                         return {
                             type: outputType,
-                            declaration: target.declaration,
+                            declaration: (target).declaration,
                             mutable: true,
                             get value() { return targetValue[property]; },
                             set value(val) { targetValue[property] = val; }
