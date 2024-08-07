@@ -13,7 +13,6 @@ export default tseslint.config(
 		languageOptions: {
 			parserOptions: {
 				project: ["./src/tsconfig.json", "./spec/tsconfig.json", "./scripts/tsconfig.json"],
-				// @ts-expect-error cannot type in .js file
 				tsconfigRootDir: import.meta.dirname,
 			}
 		},

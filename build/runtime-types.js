@@ -75,6 +75,24 @@ export class PrimitiveVariableType extends BaseVariableType {
         this.name;
         impossible();
     }
+    asString(value) {
+        switch (this.name) {
+            case "INTEGER":
+                return value.toString();
+            case "REAL":
+                return Number.isInteger(value) ? value.toFixed(1) : value.toString();
+            case "CHAR":
+                return value;
+            case "STRING":
+                return value;
+            case "BOOLEAN":
+                return value.toString().toUpperCase();
+            case "DATE":
+                return value.toLocaleDateString("en-GB");
+        }
+        this.name;
+        impossible();
+    }
 }
 PrimitiveVariableType.all = [];
 PrimitiveVariableType.INTEGER = new PrimitiveVariableType("INTEGER");
@@ -151,6 +169,9 @@ export class ArrayVariableType extends BaseVariableType {
     asHTML(value, recursive) {
         return `<span class="sth-bracket">[</span>${value.map(v => this.elementType.asHTML(v, true)).join(", ")}<span class="sth-bracket">]</span>`;
     }
+    asString(value) {
+        return value.map(v => this.elementType.asString(v)).join(", ");
+    }
 }
 ArrayVariableType.maxLength = 10000000;
 export class RecordVariableType extends BaseVariableType {
@@ -215,6 +236,13 @@ export class RecordVariableType extends BaseVariableType {
             return `\t${escapeHTML(name)}: ${propValue != null ? type.asHTML(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
         }).join("")}<span class="sth-brace">}</span>`;
     }
+    asString(value) {
+        return `${this.name} {\n${Object.entries(this.fields)
+            .map(([name, [type, range]]) => {
+            const propValue = value[name];
+            return `\t${name}: ${propValue != null ? type.asString(propValue) : '(uninitialized)'},`.replaceAll("\n", "\n\t");
+        }).join("\n")}\n}`;
+    }
 }
 export class PointerVariableType extends BaseVariableType {
     constructor(initialized, name, target) {
@@ -246,6 +274,9 @@ export class PointerVariableType extends BaseVariableType {
     asHTML(value) {
         return "(pointer)";
     }
+    asString(value) {
+        return "(pointer)";
+    }
 }
 export class EnumeratedVariableType extends BaseVariableType {
     constructor(name, values) {
@@ -271,6 +302,9 @@ export class EnumeratedVariableType extends BaseVariableType {
     }
     asHTML(value) {
         return escapeHTML(value);
+    }
+    asString(value) {
+        return value;
     }
 }
 export class SetVariableType extends BaseVariableType {
@@ -301,7 +335,10 @@ export class SetVariableType extends BaseVariableType {
         crash(`Cannot initialize a variable of type SET`);
     }
     asHTML(value) {
-        return `[${value.map(v => this.baseType.asHTML(v, true)).join(", ")}]`;
+        return `Set <span style="sth-bracket">[</span>${value.map(v => this.baseType.asHTML(v, true)).join(", ")}<span style="sth-bracket">]</span>`;
+    }
+    asString(value) {
+        return `Set [${value.map(v => this.baseType.asString(v)).join(", ")}]`;
     }
 }
 export class ClassVariableType extends BaseVariableType {
@@ -426,6 +463,13 @@ export class ClassVariableType extends BaseVariableType {
             const propValue = value.properties[prop];
             return `\t${escapeHTML(prop)}: ${propValue != null ? type.asHTML(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
         }).join("")}<span class="sth-brace">}</span>`;
+    }
+    asString(value) {
+        return `${this.name} {\n${Object.entries(this.properties)
+            .map(([prop, [type, range]]) => {
+            const propValue = value.properties[prop];
+            return `\t${prop}: ${propValue != null ? type.asString(propValue) : '(uninitialized)'},`.replaceAll("\n", "\n\t");
+        }).join("\n")}\n}`;
     }
 }
 export function typesEqual(a, b, types = new Array()) {

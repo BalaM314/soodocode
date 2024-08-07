@@ -562,7 +562,7 @@ let OutputStatement = (() => {
             this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
         }
         run(runtime) {
-            let outStr = [];
+            const outStr = [];
             for (const token of this.outMessage) {
                 const [type, value] = runtime.evaluateExpr(token);
                 outStr.push([type, value]);

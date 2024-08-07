@@ -10,6 +10,7 @@ import { symbolize, tokenize } from "../../build/lexer.js";
 import { parse } from "../../build/parser.js";
 import { Runtime } from "../../build/runtime.js";
 import { SoodocodeError, crash, fail } from "../../build/utils.js";
+import { VariableValue } from "../../src/runtime-types.js";
 
 type ErrorData = string;
 
@@ -1511,8 +1512,13 @@ x.array <- sussy`,
 describe("soodocode", () => {
 	for(const [name, [code, expectedOutput, inputs]] of Object.entries(fullTests)){
 		it(`should produce the expected output for ${name}`, () => {
-			const outputs:unknown[] = [];
-			const runtime = new Runtime(() => inputs?.shift() ?? crash(`Program required input, but none was available`), t => outputs.push(t));
+			const outputs:string[] = [];
+			const runtime = new Runtime(
+				() => inputs?.shift() ?? crash(`Program required input, but none was available`),
+				//TODO eslint wth??
+				// // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+				t => outputs.push(t.map(([type, value]) => type.asString(value)).join(""))
+			);
 			if(Array.isArray(expectedOutput)){
 				runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
 				expect(outputs).toEqual(expectedOutput);

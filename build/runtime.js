@@ -710,7 +710,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 let disabledConfig = null;
                 if (from.is("STRING") && to.is("CHAR")) {
                     if (configs.coercion.string_to_char.value) {
-                        let v = value;
+                        const v = value;
                         if (v.length == 1)
                             return v;
                         else
