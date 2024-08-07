@@ -88,13 +88,46 @@ export class TypedValue_<T extends VariableType> {
 		impossible();
 	}
 	asHTML(recursive:boolean):string {
-		return this.type.asHTML(this.value, recursive);
+		if(this.type instanceof PrimitiveVariableType){
+			if(this.typeIs("INTEGER"))
+				return `<span class="sth-number">${this.value}</span>`;
+			if(this.typeIs("REAL"))
+				return `<span class="sth-number">${Number.isInteger(this.value) ? `${this.value}.0` : this.value}</span>`;
+			if(this.typeIs("CHAR"))
+				if(recursive) return `<span class="sth-char">${escapeHTML(`'${this.value}'`)}</span>`;
+				else return escapeHTML(this.value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>);
+			if(this.typeIs("STRING"))
+				if(recursive) return `<span class="sth-string">${escapeHTML(`"${this.value}"`)}</span>`;
+				else return escapeHTML(this.value as VariableTypeMapping<PrimitiveVariableType<"STRING">>);
+			if(this.typeIs("BOOLEAN"))
+				return `<span class="sth-boolean">${this.value.toString().toUpperCase()}</span>`;
+			if(this.typeIs("DATE"))
+				return `<span class="sth-date">${escapeHTML(this.value.toLocaleDateString("en-GB"))}</span>`;
+			impossible();
+		}
+		return this.type.asHTML(this.value as never, recursive); //corr
 	}
 	asString():string {
-		return this.type.asString(this.value);
+		if(this.type instanceof PrimitiveVariableType){
+			if(this.typeIs("INTEGER"))
+				return this.value.toString();
+			if(this.typeIs("REAL"))
+				return Number.isInteger(this.value) ? this.value.toFixed(1) : this.value.toString();
+			if(this.typeIs("CHAR"))
+				return this.value;
+			if(this.typeIs("STRING"))
+				return this.value;
+			if(this.typeIs("BOOLEAN"))
+				return this.value.toString().toUpperCase();
+			if(this.typeIs("DATE"))
+				return this.value.toLocaleDateString("en-GB");
+			impossible();
+		}
+		return this.type.asString(this.value as never); //corr
 	}
 }
 export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
+	if(type == null || value == null) impossible();
 	return new TypedValue_(type, value) as TypedValue;
 }
 
@@ -111,8 +144,6 @@ export abstract class BaseVariableType implements IFormattable {
 		return `"${this.fmtText()}"`;
 	}
 	abstract fmtText():string;
-	abstract asHTML(value:VariableValue, recursive:boolean):string;
-	abstract asString(value:VariableValue):string;
 }
 
 export type PrimitiveVariableTypeName =
@@ -174,45 +205,6 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 			DATE: new Date(configs.default_values.DATE.value),
 		}[this.name];
 		else return null;
-	}
-	asHTML(value:VariableValue, recursive:boolean):string {
-		//TODO PrimitiveVariableTypeMapping
-		switch(this.name){
-			case "INTEGER":
-				return `<span class="sth-number">${(value as VariableTypeMapping<PrimitiveVariableType<"INTEGER">>).toString()}</span>`;
-			case "REAL":
-				return `<span class="sth-number">${Number.isInteger(value) ? `${(value as VariableTypeMapping<PrimitiveVariableType<"REAL">>).toString()}.0` : (value as VariableTypeMapping<PrimitiveVariableType<"REAL">>).toString()}</span>`;
-			case "CHAR":
-				if(recursive) return `<span class="sth-char">${escapeHTML(`'${value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>}'`)}</span>`;
-				else return escapeHTML(value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>);
-			case "STRING":
-				if(recursive) return `<span class="sth-string">${escapeHTML(`"${value as VariableTypeMapping<PrimitiveVariableType<"STRING">>}"`)}</span>`;
-				else return escapeHTML(value as VariableTypeMapping<PrimitiveVariableType<"STRING">>);
-			case "BOOLEAN":
-				return `<span class="sth-boolean">${(value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase()}</span>`;
-			case "DATE":
-				return `<span class="sth-date">${escapeHTML((value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB"))}</span>`;
-		}
-		this.name satisfies never;
-		impossible();
-	}
-	asString(value:VariableValue):string {
-		switch(this.name){
-			case "INTEGER":
-				return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER">>).toString();
-			case "REAL":
-				return Number.isInteger(value) ? (value as VariableTypeMapping<PrimitiveVariableType<"REAL">>).toFixed(1) : (value as VariableTypeMapping<PrimitiveVariableType<"REAL">>).toString();
-			case "CHAR":
-				return value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>;
-			case "STRING":
-				return value as VariableTypeMapping<PrimitiveVariableType<"STRING">>;
-			case "BOOLEAN":
-				return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase();
-			case "DATE":
-				return (value as VariableTypeMapping<PrimitiveVariableType<"DATE">>).toLocaleDateString("en-GB");
-		}
-		this.name satisfies never;
-		impossible();
 	}
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
@@ -281,15 +273,20 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			node.range
 		);
 	}
-	asHTML(value:VariableValue, recursive:boolean):string {
-		return `<span class="sth-bracket">[</span>${(value as VariableTypeMapping<ArrayVariableType>).map(v =>
-			(this as ArrayVariableType<true>).elementType!.asHTML(v as never, true) //correspondence problem
-		).join(", ")}<span class="sth-bracket">]</span>`;
+	mapValues<T>(value:VariableTypeMapping<ArrayVariableType>, callback:(tval:TypedValue | null) => T):T[] {
+		return value.map(v =>
+			callback(v != null ? typedValue((this as ArrayVariableType<true>).elementType!, v) : null)
+		);
 	}
-	asString(value:VariableValue):string {
-		return (value as VariableTypeMapping<ArrayVariableType>).map(v =>
-			(this as ArrayVariableType<true>).elementType!.asString(v as never) //correspondence problem
-		).join(", ");
+	asHTML(value:VariableTypeMapping<ArrayVariableType>, recursive:boolean):string {
+		return `<span class="sth-bracket">[</span>${
+			this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)<span>`).join(", ")
+		}<span class="sth-bracket">]</span>`;
+	}
+	asString(value:VariableTypeMapping<ArrayVariableType>):string {
+		return `[${
+			this.mapValues(value, tval => tval?.asString() ?? `(uninitialized)`).join(", ")
+		}]`;
 	}
 }
 export class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -356,23 +353,24 @@ help: change the field's type to be a pointer`,
 			.map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)])
 		) as VariableValue | null;
 	}
-	asHTML(value:VariableValue):string {
+	iterate<T>(value:VariableTypeMapping<RecordVariableType>, callback:(tval:TypedValue | null, name:string, range:TextRange) => T):T[] {
+		return Object.entries((this as RecordVariableType<true>).fields).map(([name, [type, range]]) =>
+			callback(value[name] != null ? typedValue(type, value[name]!) : null, name, range)
+		);
+	}
+	asHTML(value:VariableTypeMapping<RecordVariableType>):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
-			Object.entries((this as RecordVariableType<true>).fields)
-				.map(([name, [type, range]]) => {
-					const propValue = (value as VariableTypeMapping<RecordVariableType>)[name];
-					return `\t${escapeHTML(name)}: ${propValue != null ? type.asHTML(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
-				}).join("")
+			this.iterate(value, (tval, name) =>
+				`\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n"
+			).join("")
 		}<span class="sth-brace">}</span>`;
 	}
-	asString(value:VariableValue):string {
+	asString(value:VariableTypeMapping<RecordVariableType>):string {
 		return `${this.name} {\n${
-			Object.entries((this as RecordVariableType<true>).fields)
-				.map(([name, [type, range]]) => {
-					const propValue = (value as VariableTypeMapping<RecordVariableType>)[name];
-					return `\t${name}: ${propValue != null ? type.asString(propValue) : '(uninitialized)'},`.replaceAll("\n", "\n\t");
-				}).join("\n")
-		}\n}`;
+			this.iterate(value, (tval, name) =>
+				`\t${name}: ${tval != null ? tval.asString() : '(uninitialized)'},`.replaceAll("\n", "\n\t") + "\n"
+			).join("")
+		}}`;
 	}
 }
 export class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -460,11 +458,16 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	getInitValue(runtime:Runtime):VariableValue | null {
 		crash(`Cannot initialize a variable of type SET`);
 	}
-	asHTML(value:VariableValue):string {
-		return `Set <span style="sth-bracket">[</span>${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asHTML(v, true)).join(", ")}<span style="sth-bracket">]</span>`;
+	mapValues<T>(value:VariableTypeMapping<SetVariableType>, callback:(tval:TypedValue) => T):T[] {
+		return value.map(v =>
+			callback(typedValue((this as SetVariableType<true>).baseType, v))
+		);
 	}
-	asString(value:VariableValue):string {
-		return `Set [${(value as VariableTypeMapping<SetVariableType>).map(v => (this as SetVariableType<true>).baseType.asString(v)).join(", ")}]`;
+	asHTML(value:VariableTypeMapping<SetVariableType>):string {
+		return `Set <span style="sth-bracket">[</span>${this.mapValues(value, tval => tval.asHTML(true)).join(", ")}<span style="sth-bracket">]</span>`;
+	}
+	asString(value:VariableTypeMapping<SetVariableType>):string {
+		return `Set [${this.mapValues(value, tval => tval.asString()).join(", ")}]`;
 	}
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
@@ -596,23 +599,24 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			} as VariableData]))
 		};
 	}
-	asHTML(value:VariableValue):string {
+	iterateProperties<T>(value:VariableTypeMapping<ClassVariableType>, callback:(tval:TypedValue | null, name:string, statement:ClassPropertyStatement) => T):T[] {
+		return Object.entries((this as ClassVariableType<true>).properties).map(([name, [type, statement]]) =>
+			callback(value.properties[name] != null ? typedValue(type, value.properties[name]!) : null, name, statement)
+		);
+	}
+	asHTML(value:VariableTypeMapping<ClassVariableType>):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
-			Object.entries((this as ClassVariableType<true>).properties)
-				.map(([prop, [type, range]]) => {
-					const propValue = (value as VariableTypeMapping<ClassVariableType>).properties[prop];
-					return `\t${escapeHTML(prop)}: ${propValue != null ? type.asHTML(propValue, true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
-				}).join("")
+			this.iterateProperties(value, (tval, name) => {
+				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+			}).join("")
 		}<span class="sth-brace">}</span>`;
 	}
-	asString(value:VariableValue):string {
-		return `${this.name} {\n${
-			Object.entries((this as ClassVariableType<true>).properties)
-				.map(([prop, [type, range]]) => {
-					const propValue = (value as VariableTypeMapping<ClassVariableType>).properties[prop];
-					return `\t${prop}: ${propValue != null ? type.asString(propValue) : '(uninitialized)'},`.replaceAll("\n", "\n\t");
-				}).join("\n")
-		}\n}`;
+	asString(value:VariableTypeMapping<ClassVariableType>):string {
+		return `${escapeHTML(this.name)} {\n${
+			this.iterateProperties(value, (tval, name) => {
+				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+			}).join("")
+		}}`;
 	}
 }
 
