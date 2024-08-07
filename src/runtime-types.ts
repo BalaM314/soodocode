@@ -44,7 +44,7 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 	T extends RecordVariableType ? {
 		[index:string]: VariableTypeMapping<any> | null;
 	} :
-	T extends PointerVariableType ? VariableData<T["target"]> | ConstantData<T["target"]> :
+	T extends PointerVariableType ? VariableData<VariableType> | ConstantData<VariableType> :
 	T extends EnumeratedVariableType ? string :
 	T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> :
 	T extends ClassVariableType ? {
@@ -59,6 +59,26 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 	never
 ;
 
+export type TypedValue =
+	//Trigger DCT
+	VariableType extends infer T extends VariableType ? T extends unknown ?
+		TypedValue_<T>
+	: never : never;
+export class TypedValue_<T extends VariableType> {
+	constructor(
+		public type:T,
+		public value:VariableTypeMapping<T>,
+	){}
+	asHTML(recursive:boolean):string {
+		return this.type.asHTML(this.value, recursive);
+	}
+	asString():string {
+		return this.type.asString(this.value);
+	}
+}
+export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
+	return new TypedValue_(type, value) as TypedValue;
+}
 
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;

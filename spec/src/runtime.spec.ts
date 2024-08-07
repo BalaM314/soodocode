@@ -1928,7 +1928,7 @@ describe("runtime's statement executor", () => {
 			let output:string | null = null;
 			const runtime = new Runtime(
 				() => inputs.shift() ?? crash(`Program required input, but none was available`),
-				message => output = message.map(([type, value]) => type.asString(value)).join("")
+				message => output = message.map(x => x.asString()).join("")
 			);
 			runtime.scopes.push({
 				statement: "global",
@@ -1953,7 +1953,7 @@ describe("runtime's program execution", () => {
 			const outputs:string[] = [];
 			const runtime = new Runtime(
 				() => inputs.shift() ?? crash(`Program required input, but none was available`),
-				values => outputs.push(values.map(([type, value]) => type.asString(value)).join(""))
+				values => outputs.push(values.map(x => x.asString()).join(""))
 			);
 			if(Array.isArray(output)){
 				expect(() => runtime.runProgram(program.nodes)).toThrowMatching(e => e instanceof SoodocodeError);

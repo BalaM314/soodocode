@@ -1517,7 +1517,7 @@ describe("soodocode", () => {
 				() => inputs?.shift() ?? crash(`Program required input, but none was available`),
 				//TODO eslint wth??
 				// // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-				t => outputs.push(t.map(([type, value]) => type.asString(value)).join(""))
+				t => outputs.push(t.map(x => x.asString()).join(""))
 			);
 			if(Array.isArray(expectedOutput)){
 				runtime.runProgram(parse(tokenize(symbolize(code))).nodes);

@@ -11,7 +11,7 @@ import { configs } from "./config.js";
 import { RangeArray, Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue, TypedValue, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
@@ -432,13 +432,9 @@ export class OutputStatement extends Statement {
 		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
 	}
 	run(runtime:Runtime){
-		//TODO clean
-		const outStr:[type:VariableType, value:VariableValue][] = [];
-		for(const token of this.outMessage){
-			const [type, value] = runtime.evaluateExpr(token);
-			outStr.push([type, value]);
-		}
-		runtime._output(outStr);
+		runtime._output(this.outMessage.map(expr =>
+			typedValue(...runtime.evaluateExpr(expr))
+		));
 	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")

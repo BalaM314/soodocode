@@ -1,6 +1,6 @@
 import { RangeArray, Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
-import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
 export declare class Files {
@@ -19,7 +19,7 @@ export type ClassMethodCallInformation = {
 };
 export declare class Runtime {
     _input: (message: string, type: VariableType) => string;
-    _output: (values: [type: VariableType, value: VariableValue][]) => void;
+    _output: (values: TypedValue[]) => void;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
     openFiles: Record<string, OpenedFile | undefined>;
@@ -32,7 +32,7 @@ export declare class Runtime {
     currentlyResolvingPointerTypeName: string | null;
     fs: Files;
     builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
-    constructor(_input: (message: string, type: VariableType) => string, _output: (values: [type: VariableType, value: VariableValue][]) => void);
+    constructor(_input: (message: string, type: VariableType) => string, _output: (values: TypedValue[]) => void);
     finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): [type: VariableType, value: VariableValue];
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType: "variable"): VariableData;
@@ -52,19 +52,19 @@ export declare class Runtime {
     evaluateToken(token: Token, type: "function"): FunctionData | BuiltinFunctionData;
     evaluateToken<T extends VariableType | undefined>(token: Token, type: T): [type: T & {}, value: VariableTypeMapping<T>];
     static NotStaticError: {
-        new (message?: string | undefined): {
+        new (message?: string): {
             name: string;
             message: string;
-            stack?: string | undefined;
+            stack?: string;
             cause?: unknown;
         };
-        new (message?: string | undefined, options?: ErrorOptions | undefined): {
+        new (message?: string, options?: ErrorOptions): {
             name: string;
             message: string;
-            stack?: string | undefined;
+            stack?: string;
             cause?: unknown;
         };
-        captureStackTrace(targetObject: object, constructorOpt?: Function | undefined): void;
+        captureStackTrace(targetObject: object, constructorOpt?: Function): void;
         prepareStackTrace?: ((err: Error, stackTraces: NodeJS.CallSite[]) => any) | undefined;
         stackTraceLimit: number;
     };

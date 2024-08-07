@@ -41,7 +41,7 @@ import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statementTypes = [
@@ -562,12 +562,7 @@ let OutputStatement = (() => {
             this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
         }
         run(runtime) {
-            const outStr = [];
-            for (const token of this.outMessage) {
-                const [type, value] = runtime.evaluateExpr(token);
-                outStr.push([type, value]);
-            }
-            runtime._output(outStr);
+            runtime._output(this.outMessage.map(expr => typedValue(...runtime.evaluateExpr(expr))));
         }
     };
     __setFunctionName(_classThis, "OutputStatement");

@@ -1,6 +1,21 @@
 import { configs } from "./config.js";
 import { ClassFunctionStatement } from "./statements.js";
 import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
+export class TypedValue_ {
+    constructor(type, value) {
+        this.type = type;
+        this.value = value;
+    }
+    asHTML(recursive) {
+        return this.type.asHTML(this.value, recursive);
+    }
+    asString() {
+        return this.type.asString(this.value);
+    }
+}
+export function typedValue(type, value) {
+    return new TypedValue_(type, value);
+}
 export class BaseVariableType {
     validate(runtime) { }
     is(...type) {

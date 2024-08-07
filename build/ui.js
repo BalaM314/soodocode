@@ -331,7 +331,7 @@ let lastOutputText = "";
 function executeSoodocode() {
     const output = [];
     const runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => {
-        const str = m.map(([type, value]) => type.asHTML(value, false)).join("");
+        const str = m.map(x => x.asHTML(false)).join("");
         output.push(str);
         printPrefixed(str);
     });
