@@ -25,22 +25,7 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 		U extends "DATE" ? Date :
 		never
 	) :
-	T extends ArrayVariableType ? Array<(
-		| number | string | boolean | Date
-		| {
-			[index:string]: VariableTypeMapping<any> | null;
-		}
-		| VariableData | ConstantData
-		| string
-		| (number | string | boolean | Date)[]
-		| {
-			properties: {
-				[index:string]: VariableTypeMapping<any> | null;
-			};
-			propertyTypes: Record<string, VariableType>;
-			type: ClassVariableType;
-		}
-	) | null> :
+	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
 	T extends RecordVariableType ? {
 		[index:string]: VariableTypeMapping<any> | null;
 	} :
@@ -95,10 +80,10 @@ export class TypedValue_<T extends VariableType> {
 				return `<span class="sth-number">${Number.isInteger(this.value) ? `${this.value}.0` : this.value}</span>`;
 			if(this.typeIs("CHAR"))
 				if(recursive) return `<span class="sth-char">${escapeHTML(`'${this.value}'`)}</span>`;
-				else return escapeHTML(this.value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>);
+				else return escapeHTML(this.value);
 			if(this.typeIs("STRING"))
 				if(recursive) return `<span class="sth-string">${escapeHTML(`"${this.value}"`)}</span>`;
-				else return escapeHTML(this.value as VariableTypeMapping<PrimitiveVariableType<"STRING">>);
+				else return escapeHTML(this.value);
 			if(this.typeIs("BOOLEAN"))
 				return `<span class="sth-boolean">${this.value.toString().toUpperCase()}</span>`;
 			if(this.typeIs("DATE"))
@@ -182,7 +167,7 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 		return this.name;
 	}
 	is<T extends PrimitiveVariableTypeName>(...type:T[]):this is PrimitiveVariableType<T> {
-		return (type as PrimitiveVariableTypeName[]).includes(this.name);
+		return type.includes(this.name);
 	}
 	static valid(input:string):input is PrimitiveVariableTypeName {
 		return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
@@ -351,7 +336,7 @@ help: change the field's type to be a pointer`,
 		if(!this.initialized) crash(`Type not initialized`);
 		return Object.fromEntries(Object.entries((this as RecordVariableType<true>).fields)
 			.map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)])
-		) as VariableValue | null;
+		) satisfies VariableTypeMapping<RecordVariableType>;
 	}
 	iterate<T>(value:VariableTypeMapping<RecordVariableType>, callback:(tval:TypedValue | null, name:string, range:TextRange) => T):T[] {
 		return Object.entries((this as RecordVariableType<true>).fields).map(([name, [type, range]]) =>
@@ -426,11 +411,11 @@ export class EnumeratedVariableType extends BaseVariableType {
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
-	asHTML(value:VariableValue):string {
-		return escapeHTML(value as VariableTypeMapping<EnumeratedVariableType>);
+	asHTML(value:VariableTypeMapping<EnumeratedVariableType>):string {
+		return escapeHTML(value);
 	}
-	asString(value:VariableValue):string {
-		return value as VariableTypeMapping<EnumeratedVariableType>;
+	asString(value:VariableTypeMapping<EnumeratedVariableType>):string {
+		return value;
 	}
 }
 export class SetVariableType<Init extends boolean = true> extends BaseVariableType {

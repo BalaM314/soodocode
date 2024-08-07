@@ -4,15 +4,7 @@ import type { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<(number | string | boolean | Date | {
-    [index: string]: VariableTypeMapping<any> | null;
-} | VariableData | ConstantData | string | (number | string | boolean | Date)[] | {
-    properties: {
-        [index: string]: VariableTypeMapping<any> | null;
-    };
-    propertyTypes: Record<string, VariableType>;
-    type: ClassVariableType;
-}) | null> : T extends RecordVariableType ? {
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? {
     [index: string]: VariableTypeMapping<any> | null;
 } : T extends PointerVariableType ? VariableData<VariableType> | ConstantData<VariableType> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
     properties: {
@@ -28,7 +20,7 @@ export declare class TypedValue_<T extends VariableType> {
     constructor(type: T, value: VariableTypeMapping<T>);
     typeIs<Type extends typeof ArrayVariableType | typeof RecordVariableType | typeof PointerVariableType | typeof EnumeratedVariableType | typeof SetVariableType | typeof ClassVariableType>(clazz: Type): this is TypedValue_<Type["prototype"]>;
     typeIs<Type extends PrimitiveVariableTypeName>(type: Type): this is TypedValue_<PrimitiveVariableType<Type>>;
-    asHTML(recursive?: boolean): string;
+    asHTML(recursive: boolean): string;
     asString(): string;
 }
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
@@ -128,8 +120,8 @@ export declare class EnumeratedVariableType extends BaseVariableType {
     fmtQuoted(): string;
     fmtDebug(): string;
     getInitValue(runtime: Runtime): VariableValue | null;
-    asHTML(value: VariableValue): string;
-    asString(value: VariableValue): string;
+    asHTML(value: VariableTypeMapping<EnumeratedVariableType>): string;
+    asString(value: VariableTypeMapping<EnumeratedVariableType>): string;
 }
 export declare class SetVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
@@ -168,28 +160,10 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
     inherits(other: ClassVariableType): boolean;
     construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
         properties: {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | {
-                    properties: {
-                        [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | any | (string | number | boolean | Date)[] | null)[] | {
-                            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | any | (string | number | boolean | Date)[] | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                        } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                    };
-                    propertyTypes: Record<string, VariableType<true>>;
-                    type: ClassVariableType<true>;
-                } | (string | number | boolean | Date)[] | null)[] | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | any | (string | number | boolean | Date)[] | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            } | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | any | (string | number | boolean | Date)[] | null)[] | {
-                        [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | any | (string | number | boolean | Date)[] | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                    } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | (string | number | boolean | Date)[] | null)[] | {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | any | (string | number | boolean | Date)[] | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
             } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
         };
         propertyTypes: Record<string, VariableType<true>>;

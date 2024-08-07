@@ -128,7 +128,7 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => new
     token: o.token,
     category: o.category,
     type: o.type ?? "binary",
-    name: o.name ?? o.token,
+    name: "name" in o ? o.name : o.token,
 }))))([
     [
         {
@@ -235,7 +235,10 @@ export class ProgramASTBranchNode {
         this.nodeGroups = nodeGroups;
     }
     range() {
-        return getTotalRange(this.controlStatements.concat(this.nodeGroups.flat()));
+        return getTotalRange([
+            ...this.controlStatements,
+            ...this.nodeGroups.flat()
+        ]);
     }
     static typeName(type) {
         return {

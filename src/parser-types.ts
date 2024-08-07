@@ -216,14 +216,25 @@ export class Operator implements IFormattable {
 	}
 }
 
+export type PreprocessedOperator = {
+	token: TokenType;
+	category: OperatorCategory;
+	type?: OperatorMode;
+	name: OperatorName;
+} | {
+	token: OperatorName & TokenType;
+	category: OperatorCategory;
+	type?: OperatorMode;
+};
+
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
-export const operatorsByPriority = ((input:(PartialKey<ClassProperties<Operator>, "type" | "name">)[][]):Operator[][] =>
+export const operatorsByPriority = ((input:PreprocessedOperator[][]):Operator[][] =>
 	input.map(row => row.map(o =>
 		new Operator({
 			token: o.token,
 			category: o.category,
 			type: o.type ?? "binary",
-			name: o.name ?? o.token as OperatorName,
+			name: "name" in o ? o.name : o.token,
 		})
 	))
 )([
@@ -330,7 +341,7 @@ export const operators = Object.fromEntries(
 	operatorsByPriority.flat().map(o => [
 		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : crash(`operator names should start with operator.`), o
 	] as const)
-) as Omit<Record<OperatorType, Operator>, "assignment" | "pointer">;
+) as Record<Exclude<OperatorType, "assignment" | "pointer">, Operator>;
 
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
@@ -357,7 +368,10 @@ export class ProgramASTBranchNode implements TextRanged {
 		public nodeGroups: ProgramASTNode[][],
 	){}
 	range():TextRange {
-		return getTotalRange((this.controlStatements as (Statement | ProgramASTNode)[]).concat(this.nodeGroups.flat()));
+		return getTotalRange([
+			...this.controlStatements,
+			...this.nodeGroups.flat()
+		]);
 	}
 	static typeName(type:ProgramASTBranchNodeType){
 		return {

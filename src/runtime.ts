@@ -78,7 +78,8 @@ export class Runtime {
 
 		//Make sure the variable exists and is an array
 		const _target = this.evaluateExpr(expr.target, "variable");
-		if(!(_target.type instanceof ArrayVariableType)) fail(f.quote`Cannot convert variable of type ${_target.type} to an array`, expr.target);
+		if(!(_target.type instanceof ArrayVariableType))
+			fail(f.quote`Cannot convert variable of type ${_target.type} to an array`, expr.target);
 		const target = _target as VariableData<ArrayVariableType, never>;
 		const targetType = target.type;
 		if(!targetType.lengthInformation) crash(`Cannot access elements in an array of unknown length`);

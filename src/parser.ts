@@ -356,7 +356,7 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 				output.push(...input.slice(start, end + 1));
 		} else {
 			if(j >= input.length) return { message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
-			if(statement.tokens[i] as string == "#") impossible();
+			if(statement.tokens[i] as any == "#") impossible();
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (
 				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
 			) || (
