@@ -111,7 +111,7 @@ export class Token implements TextRanged, IFormattable {
 		return `Token [${this.type} ${this.text}]`;
 	}
 	clone():Token {
-		return new Token(this.type, this.text, this.range);
+		return new Token(this.type, this.text, this.range.slice());
 	}
 	extendRange(other:TextRangeLike):Token {
 		this.range = getTotalRange([getRange(other), this]);

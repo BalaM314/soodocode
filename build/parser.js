@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens) {
     if (tokens.length == 0)
         return new Map();
@@ -280,17 +280,9 @@ export function checkStatement(statement, input, allowRecursiveCall) {
                     };
             }
             let anyTokensSkipped = false;
-            const _j = j;
-            let parenNestLevel = 0, bracketNestLevel = 0;
-            while (statement.tokens[i + 1] != input[j].type || parenNestLevel > 0 || bracketNestLevel > 0) {
-                if (input[j].type == "parentheses.open")
-                    parenNestLevel++;
-                else if (input[j].type == "parentheses.close")
-                    parenNestLevel--;
-                else if (input[j].type == "bracket.open")
-                    bracketNestLevel++;
-                else if (input[j].type == "bracket.close")
-                    bracketNestLevel--;
+            const nestLevel = manageNestLevel();
+            while (statement.tokens[i + 1] != input[j].type || nestLevel.in()) {
+                nestLevel.update(input[j]);
                 anyTokensSkipped = true;
                 j++;
                 if (j >= input.length) {
@@ -299,17 +291,10 @@ export function checkStatement(statement, input, allowRecursiveCall) {
                     const expectedType = statement.tokens[i + 1];
                     if (isKey(tokenTextMapping, expectedType)) {
                         const expected = tokenTextMapping[expectedType];
-                        let parenNestLevel = 0, bracketNestLevel = 0;
-                        for (let k = _j; k < input.length; k++) {
-                            if (input[k].type == "parentheses.open")
-                                parenNestLevel++;
-                            else if (input[k].type == "parentheses.close")
-                                parenNestLevel--;
-                            else if (input[k].type == "bracket.open")
-                                bracketNestLevel++;
-                            else if (input[k].type == "bracket.close")
-                                bracketNestLevel--;
-                            if (parenNestLevel == 0 && bracketNestLevel == 0 && (biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1)
+                        const nestLevel = manageNestLevel();
+                        for (let k = start; k < input.length; k++) {
+                            nestLevel.update(input[k]);
+                            if (nestLevel.out() && biasedLevenshtein(expected, input[k].text) <= 1)
                                 return {
                                     message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found "${input[k].text}"`,
                                     priority: 50,
@@ -325,7 +310,7 @@ export function checkStatement(statement, input, allowRecursiveCall) {
                 }
             }
             const end = j - 1;
-            if (!anyTokensSkipped && !allowEmpty)
+            if (end < start && !allowEmpty)
                 return {
                     message: `Expected ${displayTokenMatcher(statement.tokens[i])} before this token`,
                     priority: 6,
@@ -387,7 +372,7 @@ function getMessage(expected, found, priority) {
                 priority: 50,
                 range: found.range
             };
-        if ((biasedLevenshtein(tokenTextMapping[expected], found.text) ?? NaN) < 2)
+        if (biasedLevenshtein(tokenTextMapping[expected], found.text) < 2)
             return {
                 message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
                 priority: 50,
@@ -429,24 +414,13 @@ export const parseExpression = errorBoundary({
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     if (input.length == 1)
         return parseExpressionLeafNode(input[0]);
-    let error = null;
+    let error = () => fail(`No operators found`, input.length > 0 ? input : undefined);
     for (const operatorsOfCurrentPriority of operatorsByPriority) {
-        let parenNestLevel = 0, bracketNestLevel = 0;
+        const nestLevel = manageNestLevel(true);
         for (let i = input.length - 1; i >= 0; i--) {
-            if (input[i].type == "parentheses.close")
-                parenNestLevel++;
-            else if (input[i].type == "parentheses.open")
-                parenNestLevel--;
-            else if (input[i].type == "bracket.close")
-                bracketNestLevel++;
-            else if (input[i].type == "bracket.open")
-                bracketNestLevel--;
-            if (parenNestLevel < 0)
-                fail(`Unclosed parentheses`, input[i]);
-            if (bracketNestLevel < 0)
-                fail(`Unclosed square bracket`, input[i]);
+            nestLevel.update(input[i]);
             let operator;
-            if (parenNestLevel == 0 && bracketNestLevel == 0 &&
+            if (nestLevel.out() &&
                 operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type)) {
                 if (operator.type.startsWith("unary_prefix")) {
                     const right = input.slice(i + 1);
@@ -503,30 +477,7 @@ export const parseExpression = errorBoundary({
                 }
             }
         }
-        if (parenNestLevel != 0) {
-            input.reduce((acc, item) => {
-                if (item.type == "parentheses.open")
-                    acc++;
-                else if (item.type == "parentheses.close")
-                    acc--;
-                if (acc < 0)
-                    fail(`No parentheses group to close`, item);
-                return acc;
-            }, 0);
-            impossible();
-        }
-        if (bracketNestLevel != 0) {
-            input.reduce((acc, item) => {
-                if (item.type == "bracket.open")
-                    acc++;
-                else if (item.type == "bracket.close")
-                    acc--;
-                if (acc < 0)
-                    fail(`No bracket group to close`, item);
-                return acc;
-            }, 0);
-            impossible();
-        }
+        nestLevel.done(input);
     }
     if (input[0]?.type == "keyword.new" && input[1]?.type == "name" && input[2]?.type == "parentheses.open" && input.at(-1)?.type == "parentheses.close") {
         return new ExpressionASTClassInstantiationNode(input[1], new RangeArray(input.length == 4
@@ -560,7 +511,5 @@ export const parseExpression = errorBoundary({
         const parsedTarget = parseExpression(target, true);
         return new ExpressionASTArrayAccessNode(parsedTarget, new RangeArray(splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true))), input);
     }
-    if (error)
-        error();
-    fail(`No operators found`, input.length > 0 ? input : undefined);
+    error();
 });

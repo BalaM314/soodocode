@@ -84,7 +84,7 @@ export class Token {
         return `Token [${this.type} ${this.text}]`;
     }
     clone() {
-        return new Token(this.type, this.text, this.range);
+        return new Token(this.type, this.text, this.range.slice());
     }
     extendRange(other) {
         this.range = getTotalRange([getRange(other), this]);

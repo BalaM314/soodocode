@@ -14,7 +14,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
@@ -279,7 +279,7 @@ type StatementCheckFailResult = { message: string; priority: number; range: Text
 /**
  * Checks if a RangeArray<Token> is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
- * `input` must not be empty.
+ * `input` must not be empty. TODO rm
  */
 export function checkStatement(statement:typeof Statement, input:RangeArray<Token>, allowRecursiveCall:boolean):
 	StatementCheckFailResult | StatementCheckTokenRange[] {
@@ -304,15 +304,11 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 				};
 			}
 			let anyTokensSkipped = false;
-			const _j = j;
-			let parenNestLevel = 0, bracketNestLevel = 0;
-			while(statement.tokens[i + 1] != input[j].type || parenNestLevel > 0 || bracketNestLevel > 0){ //Repeat until the current token in input is the next token
-				if(input[j].type == "parentheses.open") parenNestLevel ++;
-				else if(input[j].type == "parentheses.close") parenNestLevel --;
-				else if(input[j].type == "bracket.open") bracketNestLevel ++;
-				else if(input[j].type == "bracket.close") bracketNestLevel --;
-
+			const nestLevel = manageNestLevel();
+			while(statement.tokens[i + 1] != input[j].type || nestLevel.in()){ //Repeat until the current token in input is the next token
+				nestLevel.update(input[j]);
 				anyTokensSkipped = true;
+				
 				j ++;
 				if(j >= input.length){ //end reached
 					if(i == statement.tokens.length - 1) break; //Consumed all tokens
@@ -321,13 +317,10 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 					const expectedType = statement.tokens[i + 1];
 					if(isKey(tokenTextMapping, expectedType)){ //TODO consider move this to the lexer
 						const expected = tokenTextMapping[expectedType];
-						let parenNestLevel = 0, bracketNestLevel = 0;
-						for(let k = _j; k < input.length; k ++){
-							if(input[k].type == "parentheses.open") parenNestLevel ++;
-							else if(input[k].type == "parentheses.close") parenNestLevel --;
-							else if(input[k].type == "bracket.open") bracketNestLevel ++;
-							else if(input[k].type == "bracket.close") bracketNestLevel --; //TODO refactor this parenNestLevel mess into an iterator
-							if(parenNestLevel == 0 && bracketNestLevel == 0 && (biasedLevenshtein(expected, input[k].text) ?? NaN) <= 1) return {
+						const nestLevel = manageNestLevel();
+						for(let k = start; k < input.length; k ++){
+							nestLevel.update(input[k]);
+							if(nestLevel.out() && biasedLevenshtein(expected, input[k].text) <= 1) return {
 								message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found "${input[k].text}"`,
 								priority: 50,
 								range: input[k].range
@@ -341,8 +334,9 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 					};
 				}
 			}
+			/** Inclusive */
 			const end = j - 1;
-			if(!anyTokensSkipped && !allowEmpty) //this triggers on input like `IF THEN`, where the expression is missing
+			if(end < start && !allowEmpty) //this triggers on input like `IF THEN`, where the expression is missing
 				return {
 					message: `Expected ${displayTokenMatcher(statement.tokens[i])} before this token`,
 					priority: 6,
@@ -402,7 +396,7 @@ function getMessage(expected:TokenMatcher, found:Token, priority:number):Stateme
 			priority: 50,
 			range: found.range
 		};
-		if((biasedLevenshtein(tokenTextMapping[expected], found.text) ?? NaN) < 2) return {
+		if(biasedLevenshtein(tokenTextMapping[expected], found.text) < 2) return {
 			//Same message with higher priority
 			message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
 			priority: 50,
@@ -450,30 +444,19 @@ export const parseExpression = errorBoundary({
 	//If there is only one token
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
 
-	let error: typeof impossible | null = null;
+	let error: typeof impossible = () => fail(`No operators found`, input.length > 0 ? input : undefined);
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
 	for(const operatorsOfCurrentPriority of operatorsByPriority){
-		let parenNestLevel = 0, bracketNestLevel = 0;
+		const nestLevel = manageNestLevel(true);
 		//Find the index of the last (lowest priority) operator of the current priority
 		//Iterate through token list backwards
 		for(let i = input.length - 1; i >= 0; i --){
-			//Handle parentheses
-			//The token list is being iterated through backwards, so ) means go up a level and ( means go down a level
-			if(input[i].type == "parentheses.close") parenNestLevel ++;
-			else if(input[i].type == "parentheses.open") parenNestLevel --;
-			else if(input[i].type == "bracket.close") bracketNestLevel ++;
-			else if(input[i].type == "bracket.open") bracketNestLevel --;
-			if(parenNestLevel < 0)
-				//nest level going below 0 means too many (
-				fail(`Unclosed parentheses`, input[i]);
-			if(bracketNestLevel < 0)
-				//nest level going below 0 means too many [
-				fail(`Unclosed square bracket`, input[i]);
+			nestLevel.update(input[i]);
 
 			let operator!:Operator; //assignment assertion goes brrrrr
 			if(
-				parenNestLevel == 0 && bracketNestLevel == 0 && //the operator is not inside parentheses and
-				operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for
+				nestLevel.out() && //the operator is not inside parentheses and
+				operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for, TODO optimize triple nested loop
 			){
 				//this is the lowest priority operator in the expression and should become the root node
 				if(operator.type.startsWith("unary_prefix")){
@@ -504,8 +487,7 @@ export const parseExpression = errorBoundary({
 					if(right.length == 0) fail(f.text`Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
 					if(right.length == 1 && operator.name == "operator.negate" && right[0].type == "number.decimal"){
 						//Special handling for negative numbers:
-						//Do not create an expression, instead mutate the number token into a negative number
-						//Very cursed
+						//Do not create an expression, instead create a negative number token
 						const negativeNumber = right[0].clone();
 						negativeNumber.extendRange(input[i]);
 						negativeNumber.text = input[i].text + negativeNumber.text;
@@ -559,29 +541,7 @@ export const parseExpression = errorBoundary({
 				}
 			}
 		}
-		//Nest level being above zero at the beginning of the token list means too many )
-		if(parenNestLevel != 0){
-			//Iterate through the tokens left-to-right to find the unmatched paren
-			input.reduce((acc, item) => {
-				if(item.type == "parentheses.open") acc ++;
-				else if(item.type == "parentheses.close") acc --;
-				if(acc < 0) //found the extra )
-					fail(`No parentheses group to close`, item);
-				return acc;
-			}, 0);
-			impossible();
-		}
-		if(bracketNestLevel != 0){
-			//Iterate through the tokens left-to-right to find the unmatched bracket
-			input.reduce((acc, item) => {
-				if(item.type == "bracket.open") acc ++;
-				else if(item.type == "bracket.close") acc --;
-				if(acc < 0) //found the extra ]
-					fail(`No bracket group to close`, item);
-				return acc;
-			}, 0);
-			impossible();
-		}
+		nestLevel.done(input);
 
 		//No operators of the current priority found, look for operator with the next level higher priority
 	}
@@ -643,6 +603,5 @@ export const parseExpression = errorBoundary({
 	}
 
 	//No operators found at all, something went wrong
-	if(error) error();
-	fail(`No operators found`, input.length > 0 ? input : undefined);
+	error();
 });
