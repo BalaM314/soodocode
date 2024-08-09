@@ -1,5 +1,5 @@
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
-import { fail, f } from "./utils.js";
+import { f, fail } from "./utils.js";
 function fn(data) {
     return data;
 }

@@ -1,9 +1,9 @@
-import { Token, RangeArray } from "./lexer-types.js";
+import { Token } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens) {
     if (tokens.length == 0)
         return new Map();

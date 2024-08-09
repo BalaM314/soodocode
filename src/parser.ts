@@ -8,13 +8,13 @@ which is the preferred representation of the program.
 */
 
 
-import { Token, TokenizedProgram, RangeArray, TokenType } from "./lexer-types.js";
+import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, SoodocodeError, splitArray, splitTokens, splitTokensOnComma, splitTokensWithSplitter, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 
 
 /** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
@@ -319,7 +319,7 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 					//End was reached but there are still matchers left, error
 					//Check for typos
 					const expectedType = statement.tokens[i + 1];
-					if(isKey(tokenTextMapping, expectedType)){
+					if(isKey(tokenTextMapping, expectedType)){ //TODO consider move this to the lexer
 						const expected = tokenTextMapping[expectedType];
 						let parenNestLevel = 0, bracketNestLevel = 0;
 						for(let k = _j; k < input.length; k ++){

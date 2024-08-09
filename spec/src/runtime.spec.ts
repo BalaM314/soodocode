@@ -2,10 +2,10 @@
 import "jasmine";
 import { Token } from "../../build/lexer-types.js";
 import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser-types.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, VariableData, VariableType, VariableValue } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
-import { SoodocodeError, fail, crash } from "../../build/utils.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
+import { SoodocodeError, crash } from "../../build/utils.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,

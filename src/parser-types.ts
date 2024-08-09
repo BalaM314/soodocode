@@ -5,10 +5,10 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the parser.
 */
 
-import type { Token, RangeArray, TokenType } from "./lexer-types.js";
+import type { Token, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
-import type { ClassProperties, IFormattable, PartialKey, TextRange, TextRanged } from "./types.js";
-import { crash, f, getTotalRange } from "./utils.js";
+import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
+import { crash, f, getTotalRange, RangeArray } from "./utils.js";
 
 
 /** Represents an expression tree. */

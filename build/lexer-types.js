@@ -101,35 +101,3 @@ export class Token {
         return [this.range[1], this.range[1] + 1];
     }
 }
-export class RangeArray extends Array {
-    constructor(arg0, range) {
-        if (typeof arg0 == "number") {
-            super(arg0);
-            this.range = null;
-        }
-        else {
-            super(...arg0);
-            this.range = range ?? getTotalRange(arg0);
-        }
-    }
-    slice(start = 0, end = this.length) {
-        const arr = super.slice(start, end);
-        if (arr.length == 0) {
-            let range;
-            if (this.length == 0)
-                range = this.range;
-            else {
-                const rangeStart = this[start - 1]?.range[1] ?? this.range[0];
-                const rangeEnd = this.at(end)?.range[0] ?? this.range[1];
-                range = [rangeStart, rangeEnd];
-            }
-            return new RangeArray(arr, range);
-        }
-        else {
-            return new RangeArray(arr);
-        }
-    }
-    map(fn) {
-        return [...this].map(fn);
-    }
-}

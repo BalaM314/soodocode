@@ -1,7 +1,7 @@
-import { Token, RangeArray, TokenType } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
+import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
 export declare function getText(tokens: RangeArray<Token>): string;
 export declare function displayTokenMatcher(input: TokenMatcher): string;
 export declare function applyRangeTransformers(text: string, ranges: [range: TextRange, start: string, end: string, transformer?: (rangeText: string) => string][]): string;
@@ -66,4 +66,10 @@ export declare function tryRun<T>(callback: () => T): [T, null] | [null, Soodoco
 export declare function tryRunOr<T>(callback: () => T, errorHandler: (err: SoodocodeError) => unknown): boolean;
 export declare function boxPrimitive<T>(input: T): BoxPrimitive<T>;
 export declare function unicodeSetsSupported(): boolean;
+export declare class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
+    range: TextRange;
+    constructor(tokens: T[], range?: TextRange);
+    slice(start?: number, end?: number): RangeArray<T>;
+    map<U>(fn: (v: T, i: number, a: T[]) => U): U[];
+}
 export {};

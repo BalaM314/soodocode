@@ -1,8 +1,9 @@
-import { RangeArray, Token } from "./lexer-types.js";
+import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
+import { RangeArray } from "./utils.js";
 export declare class Files {
     files: Record<string, File>;
     private backupFiles;

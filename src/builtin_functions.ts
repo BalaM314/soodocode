@@ -9,7 +9,7 @@ This file contains all builtin functions defined in the insert.
 import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BoxPrimitive, RangeAttached } from "./types.js";
-import { fail, f } from "./utils.js";
+import { f, fail } from "./utils.js";
 
 //Warning: this file contains extremely sane code
 //Function implementations have the parameter arg types determined by the following generics

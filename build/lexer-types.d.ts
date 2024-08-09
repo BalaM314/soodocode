@@ -1,4 +1,5 @@
-import type { IFormattable, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
+import type { IFormattable, TextRange, TextRanged, TextRangeLike } from "./types.js";
+import { RangeArray } from "./utils.js";
 export declare const symbolTypes: readonly ["numeric_fragment", "quote.single", "quote.double", "brace.open", "brace.close", "bracket.open", "bracket.close", "parentheses.open", "parentheses.close", "punctuation.colon", "punctuation.semicolon", "punctuation.comma", "punctuation.period", "comment.singleline", "comment.multiline.open", "comment.multiline.close", "word", "unknown", "invalid.not_equal_to", "space", "newline", "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate"];
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
 export type SymbolizedProgram = {
@@ -36,10 +37,4 @@ export declare class Token implements TextRanged, IFormattable {
     clearRange(): Token;
     rangeBefore(): TextRange;
     rangeAfter(): TextRange;
-}
-export declare class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
-    range: TextRange;
-    constructor(tokens: T[], range?: TextRange);
-    slice(start?: number, end?: number): RangeArray<T>;
-    map<U>(fn: (v: T, i: number, a: T[]) => U): U[];
 }

@@ -5,11 +5,11 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
-import { Token, RangeArray, TokenType } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged } from "./types.js";
+import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
 
 
 export function getText(tokens:RangeArray<Token>){
@@ -490,5 +490,46 @@ export function unicodeSetsSupported(){
 		return true;
 	} catch(err){
 		return false;
+	}
+}
+
+export class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
+	range:TextRange;
+	// constructor(length:number);
+	constructor(tokens:T[], range?:TextRange);
+	/** range must be specified if the array is empty */
+	constructor(arg0:number | T[], range?:TextRange){
+		if(typeof arg0 == "number"){
+			super(arg0);
+			this.range = null!;
+		} else {
+			super(...arg0);
+			this.range = range ?? getTotalRange(arg0);
+		}
+	}
+	slice(start:number = 0, end:number = this.length):RangeArray<T> {
+		const arr = super.slice(start, end);
+		if(arr.length == 0){
+			//Determine the range
+			let range:TextRange;
+			if(this.length == 0) range = this.range; //slicing an empty array, no other information is available so just use the same range
+			else {
+				//If the element before the start of the slice exists
+				//Pick the end of that element's range
+				//Otherwise, pick the start of the array's range
+				const rangeStart = this[start - 1]?.range[1] ?? this.range[0];
+				//If the element after the end of the slice exists
+				//Pick the beginning of that element's range
+				//Otherwise, pick the end of the array's range
+				const rangeEnd = this.at(end)?.range[0] ?? this.range[1];
+				range = [rangeStart, rangeEnd];
+			}
+			return new RangeArray<T>(arr, range);
+		} else {
+			return new RangeArray<T>(arr);
+		}
+	}
+	map<U>(fn:(v:T, i:number, a:T[]) => U):U[] {
+		return [...this].map(fn);
 	}
 }

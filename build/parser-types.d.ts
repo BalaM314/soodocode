@@ -1,6 +1,7 @@
-import type { Token, RangeArray, TokenType } from "./lexer-types.js";
+import type { Token, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
+import { RangeArray } from "./utils.js";
 export type ExpressionAST = ExpressionASTNode;
 export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode | ExpressionASTClassInstantiationNode;
 export type ExpressionASTLeafNode = Token;

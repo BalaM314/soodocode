@@ -1,5 +1,5 @@
-import { Symbol, Token, RangeArray } from "./lexer-types.js";
-import { access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
+import { Symbol, Token } from "./lexer-types.js";
+import { RangeArray, access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
 export const symbolTypeData = [
     [/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],

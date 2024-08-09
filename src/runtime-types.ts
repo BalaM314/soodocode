@@ -6,13 +6,13 @@ This file contains the types for the runtime, such as the variable types and ass
 */
 
 import { configs } from "./config.js";
-import { RangeArray, Token } from "./lexer-types.js";
+import { Token } from "./lexer-types.js";
 import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
-import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
+import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, RangeArray, zip } from "./utils.js";
 
 /**Stores the JS type used for each pseudocode variable type */
 export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValue
