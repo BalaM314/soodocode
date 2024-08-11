@@ -333,5 +333,16 @@ export const preprocessedBuiltinFunctions = ({
 			const file = this.getOpenFile(filename, ["READ"], `EOF function`);
 			return file.lineNumber >= file.lines.length;
 		}
-	})
+	}),
+	ROUND: fn({
+		args: [
+			["Value", "REAL"],
+			["Places", "INTEGER"]
+		],
+		returnType: "REAL", //real or integer, but int coerces to real
+		impl(value, places){
+			const mult = 10 ** places;
+			return Math.round(value * mult) / mult;
+		},
+	}),
 }) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;

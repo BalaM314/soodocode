@@ -235,3 +235,7 @@ Syntax: `NEW a()` or `NEW a(b, c, d)`
 ### Class property
 ### Class procedure
 ### Class function
+
+# Builtin functions
+
+TODO

@@ -242,5 +242,16 @@ export const preprocessedBuiltinFunctions = ({
             const file = this.getOpenFile(filename, ["READ"], `EOF function`);
             return file.lineNumber >= file.lines.length;
         }
-    })
+    }),
+    ROUND: fn({
+        args: [
+            ["Value", "REAL"],
+            ["Places", "INTEGER"]
+        ],
+        returnType: "REAL",
+        impl(value, places) {
+            const mult = 10 ** places;
+            return Math.round(value * mult) / mult;
+        },
+    }),
 });
