@@ -233,7 +233,7 @@ export function symbolize(input:string):SymbolizedProgram {
 				}
 			}
 		}
-		impossible();
+		crash(`The last symbol type should match everything`);
 	}
 	return {
 		program: input,
@@ -300,16 +300,16 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		else if(symbol.type === "comment.multiline.open") state.mComment = symbol;
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
-			const num = tokens.at(-1) ?? impossible();
+			const num = tokens.at(-1)!;
 			if(symbol.type == "numeric_fragment"){
-				//very cursed modifying of the token
-				num.text += "." + symbol.text;
-				num.range[1] += (1 + symbol.text.length);
+				//Modify the previously added number
+				num.mergeFrom(symbol);
 				if(isNaN(Number(num.text))) crash(f.quote`Invalid parsed number ${symbol}`);
 				state.decimalNumber = "none";
-			} else fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`, symbol);
+			} else fail(f.quote`Expected a number to follow ${num.text}, but found ${symbol.type}`, symbol);
 		} else if(state.decimalNumber == "allowDecimal" && symbol.type == "punctuation.period"){
 			state.decimalNumber = "requireNumber";
+			tokens.at(-1)!.mergeFrom(symbol);
 		} else if(symbol.type === "quote.single"){
 			state.sString = symbol;
 			currentString += symbol.text;
