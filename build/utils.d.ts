@@ -34,7 +34,7 @@ export declare class SoodocodeError extends Error {
 }
 export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;
 export declare function rethrow(error: SoodocodeError, msg: (old: string) => string): void;
-export declare function crash(message: string): never;
+export declare function crash(message: string, ...extra: unknown[]): never;
 export declare function impossible(): never;
 export declare function Abstract<TClass extends new (...args: any[]) => {}>(input: TClass, context: ClassDecoratorContext<TClass>): TClass;
 export declare function errorBoundary({ predicate, message }?: Partial<{

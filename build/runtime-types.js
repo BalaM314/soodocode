@@ -1,6 +1,14 @@
 import { configs } from "./config.js";
 import { ClassFunctionStatement } from "./statements.js";
 import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
+export const primitiveVariableTypeNames = [
+    "INTEGER",
+    "REAL",
+    "STRING",
+    "CHAR",
+    "BOOLEAN",
+    "DATE",
+];
 class TypedValue_ {
     constructor(type, value) {
         this.type = type;
@@ -56,53 +64,20 @@ class TypedValue_ {
         return this.type.asString(this.value);
     }
 }
-export const TypedValue = {
-    INTEGER(value) {
+export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n => [n, function (value) {
         if (value == undefined) {
             value;
             crash(`nullish values are not allowed here`);
         }
-        return new TypedValue_(PrimitiveVariableType.INTEGER, value);
-    },
-    REAL(value) {
-        if (value == undefined) {
-            value;
-            crash(`nullish values are not allowed here`);
-        }
-        return new TypedValue_(PrimitiveVariableType.REAL, value);
-    },
-    STRING(value) {
-        if (value == undefined) {
-            value;
-            crash(`nullish values are not allowed here`);
-        }
-        return new TypedValue_(PrimitiveVariableType.STRING, value);
-    },
-    CHAR(value) {
-        if (value == undefined) {
-            value;
-            crash(`nullish values are not allowed here`);
-        }
-        return new TypedValue_(PrimitiveVariableType.CHAR, value);
-    },
-    BOOLEAN(value) {
-        if (value == undefined) {
-            value;
-            crash(`nullish values are not allowed here`);
-        }
-        return new TypedValue_(PrimitiveVariableType.BOOLEAN, value);
-    },
-    DATE(value) {
-        if (value == undefined) {
-            value;
-            crash(`nullish values are not allowed here`);
-        }
-        return new TypedValue_(PrimitiveVariableType.DATE, value);
-    },
-};
+        return new TypedValue_(PrimitiveVariableType.get(n), value);
+    }]));
 export function typedValue(type, value) {
     if (type == null || value == null)
         impossible();
+    if (!(type instanceof BaseVariableType)) {
+        (type);
+        crash(`Type was not a valid type`, type);
+    }
     return new TypedValue_(type, value);
 }
 export class BaseVariableType {

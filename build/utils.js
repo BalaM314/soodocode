@@ -218,7 +218,8 @@ export function rethrow(error, msg) {
     error.message = msg(error.message);
     throw error;
 }
-export function crash(message) {
+export function crash(message, ...extra) {
+    console.error(...extra);
     throw new Error(message);
 }
 export function impossible() {

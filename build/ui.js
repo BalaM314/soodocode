@@ -3,6 +3,7 @@ import * as lexer from "./lexer.js";
 import * as parserTypes from "./parser-types.js";
 import * as parser from "./parser.js";
 import * as runtime from "./runtime.js";
+import * as runtimeTypes from "./runtime-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import { Token } from "./lexer-types.js";
@@ -401,6 +402,6 @@ setInterval(() => {
 function dumpFunctionsToGlobalScope() {
     shouldDump = true;
     window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
-    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime);
+    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes);
 }
 dumpFunctionsToGlobalScope();

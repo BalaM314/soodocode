@@ -14,6 +14,8 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
     propertyTypes: Record<string, VariableType>;
     type: ClassVariableType;
 } : never;
+export declare const primitiveVariableTypeNames: readonly ["INTEGER", "REAL", "STRING", "CHAR", "BOOLEAN", "DATE"];
+export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extends ReadonlyArray<infer T> ? T : never;
 export type TypedValue<T extends VariableType = VariableType> = T extends unknown ? TypedValue_<T> : never;
 declare class TypedValue_<T extends VariableType> {
     type: T;
@@ -25,12 +27,12 @@ declare class TypedValue_<T extends VariableType> {
     asString(): string;
 }
 export declare const TypedValue: {
-    INTEGER(value: VariableTypeMapping<PrimitiveVariableType<"INTEGER">>): TypedValue_<PrimitiveVariableType<"INTEGER">>;
-    REAL(value: VariableTypeMapping<PrimitiveVariableType<"REAL">>): TypedValue_<PrimitiveVariableType<"REAL">>;
-    STRING(value: VariableTypeMapping<PrimitiveVariableType<"STRING">>): TypedValue_<PrimitiveVariableType<"STRING">>;
-    CHAR(value: VariableTypeMapping<PrimitiveVariableType<"CHAR">>): TypedValue_<PrimitiveVariableType<"CHAR">>;
-    BOOLEAN(value: VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>): TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
-    DATE(value: VariableTypeMapping<PrimitiveVariableType<"DATE">>): TypedValue_<PrimitiveVariableType<"DATE">>;
+    INTEGER: (value: number) => TypedValue_<PrimitiveVariableType<"INTEGER">>;
+    REAL: (value: number) => TypedValue_<PrimitiveVariableType<"REAL">>;
+    BOOLEAN: (value: boolean) => TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
+    STRING: (value: string) => TypedValue_<PrimitiveVariableType<"STRING">>;
+    CHAR: (value: string) => TypedValue_<PrimitiveVariableType<"CHAR">>;
+    DATE: (value: Date) => TypedValue_<PrimitiveVariableType<"DATE">>;
 };
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
 export declare abstract class BaseVariableType implements IFormattable {
@@ -42,7 +44,6 @@ export declare abstract class BaseVariableType implements IFormattable {
     fmtQuoted(): string;
     abstract fmtText(): string;
 }
-export type PrimitiveVariableTypeName = "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE";
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
 export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
     name: T;

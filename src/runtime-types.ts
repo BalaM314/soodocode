@@ -44,6 +44,16 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 	never
 ;
 
+export const primitiveVariableTypeNames = [
+	"INTEGER",
+	"REAL",
+	"STRING",
+	"CHAR",
+	"BOOLEAN",
+	"DATE",
+] as const;
+export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extends ReadonlyArray<infer T> ? T : never;
+
 export type TypedValue<T extends VariableType = VariableType> =
 	//Trigger DCT
 	T extends unknown ? TypedValue_<T> : never;
@@ -109,52 +119,23 @@ class TypedValue_<T extends VariableType> {
 		return this.type.asString(this.value as never); //corr
 	}
 }
-export const TypedValue = { //TODO autogen
-	INTEGER(value:VariableTypeMapping<PrimitiveVariableType<"INTEGER">>){
+export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n =>
+	[n, function(value:VariableTypeMapping<PrimitiveVariableType>){
 		if(value == undefined){
 			value satisfies never;
 			crash(`nullish values are not allowed here`);
 		}
-		return new TypedValue_(PrimitiveVariableType.INTEGER, value);
-	},
-	REAL(value:VariableTypeMapping<PrimitiveVariableType<"REAL">>){
-		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
-		}
-		return new TypedValue_(PrimitiveVariableType.REAL, value);
-	},
-	STRING(value:VariableTypeMapping<PrimitiveVariableType<"STRING">>){
-		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
-		}
-		return new TypedValue_(PrimitiveVariableType.STRING, value);
-	},
-	CHAR(value:VariableTypeMapping<PrimitiveVariableType<"CHAR">>){
-		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
-		}
-		return new TypedValue_(PrimitiveVariableType.CHAR, value);
-	},
-	BOOLEAN(value:VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>){
-		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
-		}
-		return new TypedValue_(PrimitiveVariableType.BOOLEAN, value);
-	},
-	DATE(value:VariableTypeMapping<PrimitiveVariableType<"DATE">>){
-		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
-		}
-		return new TypedValue_(PrimitiveVariableType.DATE, value);
-	},
+		return new TypedValue_(PrimitiveVariableType.get(n), value);
+	}] as const
+)) as {
+	[N in PrimitiveVariableTypeName]: (value:VariableTypeMapping<PrimitiveVariableType<N>>) => TypedValue_<PrimitiveVariableType<N>>;
 };
 export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
 	if(type == null || value == null) impossible();
+	if(!(type instanceof BaseVariableType)){
+		(type satisfies never);
+		crash(`Type was not a valid type`, type);
+	}
 	return new TypedValue_(type, value) as TypedValue;
 }
 
@@ -173,14 +154,6 @@ export abstract class BaseVariableType implements IFormattable {
 	abstract fmtText():string;
 }
 
-export type PrimitiveVariableTypeName =
-	| "INTEGER"
-	| "REAL"
-	| "STRING"
-	| "CHAR"
-	| "BOOLEAN"
-	| "DATE"
-;
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
 export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
 	static all:PrimitiveVariableType[] = [];

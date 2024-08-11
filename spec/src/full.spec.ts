@@ -1515,8 +1515,6 @@ describe("soodocode", () => {
 			const outputs:string[] = [];
 			const runtime = new Runtime(
 				() => inputs?.shift() ?? crash(`Program required input, but none was available`),
-				//TODO eslint wth??
-				// // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
 				t => outputs.push(t.map(x => x.asString()).join(""))
 			);
 			if(Array.isArray(expectedOutput)){

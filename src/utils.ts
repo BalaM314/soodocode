@@ -231,7 +231,8 @@ export function rethrow(error:SoodocodeError, msg:(old:string) => string){
 	error.message = msg(error.message);
 	throw error;
 }
-export function crash(message:string):never {
+export function crash(message:string, ...extra:unknown[]):never {
+	console.error(...extra);
 	throw new Error(message);
 }
 export function impossible():never {
