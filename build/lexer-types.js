@@ -86,6 +86,10 @@ export class Token {
     clone() {
         return new Token(this.type, this.text, this.range.slice());
     }
+    mergeFrom(other) {
+        this.text += other.text;
+        this.extendRange(other);
+    }
     extendRange(other) {
         this.range = getTotalRange([getRange(other), this]);
         return this;

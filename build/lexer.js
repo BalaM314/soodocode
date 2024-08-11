@@ -1,5 +1,5 @@
 import { Symbol, Token } from "./lexer-types.js";
-import { RangeArray, access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
+import { RangeArray, access, crash, f, fail, unicodeSetsSupported } from "./utils.js";
 export const symbolTypeData = [
     [/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
     [">=", "operator.greater_than_equal"],
@@ -217,7 +217,7 @@ export function symbolize(input) {
                 }
             }
         }
-        impossible();
+        crash(`The last symbol type should match everything`);
     }
     return {
         program: input,
@@ -287,19 +287,19 @@ export function tokenize(input) {
         else if (symbol.type === "comment.multiline.open")
             state.mComment = symbol;
         else if (state.decimalNumber == "requireNumber") {
-            const num = tokens.at(-1) ?? impossible();
+            const num = tokens.at(-1);
             if (symbol.type == "numeric_fragment") {
-                num.text += "." + symbol.text;
-                num.range[1] += (1 + symbol.text.length);
+                num.mergeFrom(symbol);
                 if (isNaN(Number(num.text)))
                     crash(f.quote `Invalid parsed number ${symbol}`);
                 state.decimalNumber = "none";
             }
             else
-                fail(`Expected a number to follow "${num.text}.", but found ${symbol.type}`, symbol);
+                fail(f.quote `Expected a number to follow ${num.text}, but found ${symbol.type}`, symbol);
         }
         else if (state.decimalNumber == "allowDecimal" && symbol.type == "punctuation.period") {
             state.decimalNumber = "requireNumber";
+            tokens.at(-1).mergeFrom(symbol);
         }
         else if (symbol.type === "quote.single") {
             state.sString = symbol;
