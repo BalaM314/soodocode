@@ -620,7 +620,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			fail(f.quote`Type ${name} does not exist yet, it is currently being initialized`, range);
 		let found;
 		if((found =
-			min(allTypes, t => t[0] == this.currentlyResolvingPointerTypeName ? Infinity : biasedLevenshtein(t[0], name) ?? Infinity, 2.5)
+			min(allTypes, t => t[0] == this.currentlyResolvingPointerTypeName ? Infinity : biasedLevenshtein(t[0], name), 2.5)
 		) != undefined){
 			fail(f.quote`Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
 		}
@@ -635,7 +635,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			fail(f.quote`Function ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
 		let found;
 		if((found =
-			min(allFunctions, t => biasedLevenshtein(t[0], name) ?? Infinity, 3)
+			min(allFunctions, t => biasedLevenshtein(t[0], name), 3)
 		) != undefined){
 			fail(f.quote`Function ${name} does not exist\nhelp: perhaps you meant ${found[0]}`, range);
 		}
@@ -647,7 +647,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		];
 		let found;
 		if((found =
-			min(allVariables, t => biasedLevenshtein(t, name) ?? Infinity, 2)
+			min(allVariables, t => biasedLevenshtein(t, name), 2)
 		) != undefined){
 			fail(f.quote`Variable ${name} does not exist\nhelp: perhaps you meant ${found}`, range);
 		}

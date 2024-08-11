@@ -2,6 +2,52 @@ import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
 export function getText(tokens) {
     return tokens.map(t => t.text).join(" ");
 }
+export function manageNestLevel(reversed = false, validate = true) {
+    let paren = 0;
+    let bracket = 0;
+    const sign = reversed ? -1 : +1;
+    return {
+        update(token) {
+            if (token.type == "parentheses.open")
+                paren += sign;
+            else if (token.type == "parentheses.close")
+                paren -= sign;
+            else if (token.type == "bracket.open")
+                bracket += sign;
+            else if (token.type == "bracket.close")
+                bracket -= sign;
+            if (validate) {
+                if (paren < 0)
+                    fail(reversed ? `Unclosed parenthesis group` : `No parenthesis group to close`, token);
+                if (bracket < 0)
+                    fail(reversed ? `Unclosed square bracket group` : `No square bracket group to close`, token);
+            }
+        },
+        out() {
+            return paren == 0 && bracket == 0;
+        },
+        in() {
+            return paren != 0 || bracket != 0;
+        },
+        done(input) {
+            if (isRange(input)) {
+                if (paren != 0)
+                    fail(reversed ? `No square bracket group to close` : `Unclosed square bracket group`, input);
+                if (bracket != 0)
+                    fail(reversed ? `No parenthesis group to close` : `Unclosed parenthesis group`, input);
+            }
+            else {
+                if (paren != 0 || bracket != 0) {
+                    const reverse = !reversed;
+                    const reverseIter = manageNestLevel(reverse, true);
+                    for (const token of (reverse ? input.slice().reverse() : input))
+                        reverseIter.update(token);
+                    impossible();
+                }
+            }
+        }
+    };
+}
 export function displayTokenMatcher(input) {
     if (isKey(tokenTextMapping, input)) {
         return `the ${input.startsWith("keyword.") ? "keyword" :
@@ -100,36 +146,23 @@ export function splitTokensWithSplitter(arr, split) {
 export function splitTokensOnComma(arr) {
     const output = [];
     let lastBoundary = 0;
-    let parenNestLevel = 0, bracketNestLevel = 0;
+    const nestLevel = manageNestLevel();
     for (const [i, token] of arr.entries()) {
-        if (token.type == "parentheses.open")
-            parenNestLevel++;
-        else if (token.type == "parentheses.close")
-            parenNestLevel--;
-        else if (token.type == "bracket.open")
-            bracketNestLevel++;
-        else if (token.type == "bracket.close")
-            bracketNestLevel--;
-        if (parenNestLevel == 0 && bracketNestLevel == 0 && token.type == "punctuation.comma") {
+        nestLevel.update(token);
+        if (nestLevel.out() && token.type == "punctuation.comma") {
             output.push(arr.slice(lastBoundary, i));
             lastBoundary = i + 1;
         }
     }
+    nestLevel.done(arr);
     output.push(arr.slice(lastBoundary));
     return output;
 }
 export function findLastNotInGroup(arr, target) {
-    let parenNestLevel = 0, bracketNestLevel = 0;
+    const nestLevel = manageNestLevel(true);
     for (const [i, token] of [...arr.entries()].reverse()) {
-        if (token.type == "parentheses.open")
-            parenNestLevel++;
-        else if (token.type == "parentheses.close")
-            parenNestLevel--;
-        else if (token.type == "bracket.open")
-            bracketNestLevel++;
-        else if (token.type == "bracket.close")
-            bracketNestLevel--;
-        if (parenNestLevel == 0 && bracketNestLevel == 0 && token.type == target)
+        nestLevel.update(token);
+        if (nestLevel.out() && token.type == target)
             return i;
     }
     return null;
@@ -387,7 +420,7 @@ export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
         return 0;
     const length = (a.length + 1) * (b.length + 1);
     if (length > maxLengthProduct)
-        return null;
+        return NaN;
     const matrix = new Uint8Array(length);
     let ij = 0;
     for (let i = 0; i <= a.length; i++) {
@@ -413,7 +446,7 @@ export function closestKeywordToken(input, threshold = 1.5) {
     if (input.toUpperCase() in tokenNameTypeData) {
         return tokenNameTypeData[input.toUpperCase()];
     }
-    return min(keywordTokens, ([expected, type]) => biasedLevenshtein(expected, input) ?? Infinity, threshold)?.[1];
+    return min(keywordTokens, ([expected, type]) => biasedLevenshtein(expected, input), threshold)?.[1];
 }
 const fakeObjectTrap = new Proxy({}, {
     get(target, property) { crash(`Attempted to access property ${String(property)} on fake object`); },
