@@ -164,11 +164,11 @@ export class IntegerRangeVariableType extends BaseVariableType {
     fmtDebug() {
         return `IntegerRangeVariableType { ${this.low} .. ${this.high} }`;
     }
-    asString() {
-        return `${this.low}..${this.high}`;
+    asString(value) {
+        return `${value}`;
     }
-    asHTML() {
-        return `<span class="sth-range"><span class="sth-number">${this.low}</span>..<span class="sth-number">${this.high}</span></span>`;
+    asHTML(value) {
+        return `<span class="sth-number" title="Type: ${this.fmtText()}">${value}</span>`;
     }
     static from(node) {
         return new this(Number(node.low.text), Number(node.high.text), node.range);

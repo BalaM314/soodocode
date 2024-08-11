@@ -29,9 +29,9 @@ declare class TypedValue_<T extends VariableType> {
 export declare const TypedValue: {
     INTEGER: (value: number) => TypedValue_<PrimitiveVariableType<"INTEGER">>;
     REAL: (value: number) => TypedValue_<PrimitiveVariableType<"REAL">>;
-    BOOLEAN: (value: boolean) => TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
     STRING: (value: string) => TypedValue_<PrimitiveVariableType<"STRING">>;
     CHAR: (value: string) => TypedValue_<PrimitiveVariableType<"CHAR">>;
+    BOOLEAN: (value: boolean) => TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
     DATE: (value: Date) => TypedValue_<PrimitiveVariableType<"DATE">>;
 };
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
@@ -76,8 +76,8 @@ export declare class IntegerRangeVariableType extends BaseVariableType {
     getInitValue(runtime: Runtime, requireInit: boolean): number | null;
     fmtText(): string;
     fmtDebug(): string;
-    asString(): string;
-    asHTML(): string;
+    asString(value: VariableTypeMapping<this>): string;
+    asHTML(value: VariableTypeMapping<this>): string;
     static from(node: ExpressionASTRangeTypeNode): IntegerRangeVariableType;
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
