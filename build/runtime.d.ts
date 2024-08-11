@@ -34,7 +34,6 @@ export declare class Runtime {
     fs: Files;
     builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF" | "ROUND", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
     constructor(_input: (message: string, type: VariableType) => string, _output: (values: TypedValue[]) => void);
-    finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): TypedValue;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): TypedValue;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType: "variable"): VariableData;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType | "variable"): TypedValue | VariableData;
@@ -86,7 +85,6 @@ export declare class Runtime {
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     getClass(name: string, range: TextRange): ClassVariableType<boolean>;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
-    coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S, range?: TextRangeLike): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: RangeArray<ExpressionAST>): VariableScope;
     callFunction<T extends boolean>(funcNode: FunctionData, args: RangeArray<ExpressionAST>, requireReturnValue?: T): VariableValue | (T extends false ? null : never);

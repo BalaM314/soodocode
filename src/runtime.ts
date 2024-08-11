@@ -43,6 +43,70 @@ export type ClassMethodCallInformation = {
 	instance: VariableTypeMapping<ClassVariableType>;
 	method: ClassMethodData;
 };
+
+function coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
+	//typescript really hates this function, beware
+	let assignabilityError;
+	if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
+	let disabledConfig:Config<unknown, true> | null = null;
+	if(from.is("STRING") && to.is("CHAR")){
+		if(configs.coercion.string_to_char.value){
+			const v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
+			if(v.length == 1) return v as never;
+			else assignabilityError = f.quote`the length of the string ${v} is not 1`;
+		} else disabledConfig = configs.coercion.string_to_char;
+	}
+	if(from.is("INTEGER") && to.is("REAL")) return value as never;
+	//TODO config, truncate or throw? also change the integer range coercion
+	if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as VariableTypeMapping<PrimitiveVariableType<"REAL" | "INTEGER">>) as never;
+	if(to.is("STRING")){
+		if(from.is("BOOLEAN")){
+			if(configs.coercion.booleans_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase() as never;
+			else disabledConfig = configs.coercion.booleans_to_string;
+		} else if(from.is("INTEGER") || from.is("REAL")){
+			if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
+			else disabledConfig = configs.coercion.numbers_to_string;
+		} else if(from.is("CHAR")){
+			if(configs.coercion.char_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>).toString() as never;
+			else disabledConfig = configs.coercion.char_to_string;
+		} else if(from.is("DATE")){
+			if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
+			else disabledConfig = configs.coercion.numbers_to_string;
+		} else if(from instanceof ArrayVariableType){
+			if(configs.coercion.arrays_to_string.value){
+				if(from.elementType instanceof PrimitiveVariableType || from.elementType instanceof EnumeratedVariableType){
+					(null! as VariableTypeMapping<EnumeratedVariableType>) satisfies string;
+					return `[${(value as VariableTypeMapping<ArrayVariableType>).join(",")}]` as never;
+				} else assignabilityError = `the type of the elements in the array does not support coercion to string`;
+			} else disabledConfig = configs.coercion.arrays_to_string;
+		} else if(from instanceof EnumeratedVariableType){
+			if(configs.coercion.enums_to_string.value) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
+			else disabledConfig = configs.coercion.enums_to_string;
+		}
+	}
+	if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
+		if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
+		else disabledConfig = configs.coercion.enums_to_integer;
+	}
+	if(to instanceof IntegerRangeVariableType && from.is("INTEGER", "REAL")){
+		const v = value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>;
+		if(Number.isInteger(v)){
+			if(to.low <= v && v <= to.high) return v as never;
+			else assignabilityError = f.quote`Value ${v} is not in range ${to}`;
+		} else assignabilityError = f.quote`Value ${v} is not an integer`;
+	}
+	fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (
+		assignabilityError ? `: ${assignabilityError}.` :
+		disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""
+	), range);
+}
+function finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
+	if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
+		return typedValue(from, coerceValue(value, from, to)); //don't have a varlength array as the output type
+	else if(to) return typedValue(to, coerceValue(value, from, to));
+	else return typedValue(from, value);
+}
+
 export class Runtime {
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
@@ -64,12 +128,6 @@ export class Runtime {
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
 	){}
-	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
-		if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
-			return typedValue(from, this.coerceValue(value, from, to)); //don't have a varlength array as the output type
-		else if(to) return typedValue(to, this.coerceValue(value, from, to));
-		else return typedValue(from, value);
-	}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):TypedValue | VariableData;
@@ -125,7 +183,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		}
 		const output = target.value[index];
 		if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
-		return this.finishEvaluation(output, targetType.elementType, outType);
+		return finishEvaluation(output, targetType.elementType, outType);
 	}
 	/* get a property, optionally specifying type */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType):TypedValue;
@@ -182,7 +240,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			} else {
 				const value = targetValue[property];
 				if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
-				return this.finishEvaluation(value, outputType, outType);
+				return finishEvaluation(value, outputType, outType);
 			}
 		} else if(targetType instanceof ClassVariableType){
 			const classInstance = targetValue as VariableTypeMapping<ClassVariableType>;
@@ -233,7 +291,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 				}	else {
 					const value = classInstance.properties[property];
 					if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
-					return this.finishEvaluation(value, outputType, outType);
+					return finishEvaluation(value, outputType, outType);
 				}
 			}
 		} else fail(f.quote`Cannot access property ${property} on variable of type ${targetType} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
@@ -275,22 +333,22 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 				if(func.method.type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`, expr.functionName);
 				//Class method
 				const output = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
-				return this.finishEvaluation(output.value, output.type, type);
+				return finishEvaluation(output.value, output.type, type);
 			} else if("name" in func){
 				const output = this.callBuiltinFunction(func, expr.args);
-				return this.finishEvaluation(output.value, output.type, type);
+				return finishEvaluation(output.value, output.type, type);
 			} else {
 				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`, expr.functionName);
 				const statement = func.controlStatements[0];
 				const output = this.callFunction(func, expr.args, true);
-				return this.finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
+				return finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
 			}
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
 			if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`, expr);
 			const clazz = this.getClass(expr.className.text, expr.className.range) as ClassVariableType<true>;
 			const output = clazz.construct(this, expr.args);
-			return this.finishEvaluation(output, clazz, type);
+			return finishEvaluation(output, clazz, type);
 		}
 
 		//Operator that returns a result of unknown type
@@ -310,7 +368,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						if(!configs.pointers.implicit_variable_creation.value)
 							rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
-						return this.finishEvaluation({
+						return finishEvaluation({
 							type: target.type,
 							declaration: "dynamic",
 							mutable: true,
@@ -318,7 +376,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 						}, pointerType, type);
 					}
 					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
-					return this.finishEvaluation(variable, pointerType, type);
+					return finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
 					if(type == "function") fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`, expr);
@@ -330,7 +388,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 						return pointerVariable.value;
 					} else {
 						if(pointerVariable.value.value == null) fail(f.quote`Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
-						return this.finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
+						return finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
 					}
 				}
 				default: impossible();
@@ -366,27 +424,27 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 
 			if(left.typeIs(EnumeratedVariableType)){
 				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
-				const other = this.coerceValue(right.value, right.type, PrimitiveVariableType.INTEGER);
+				const other = coerceValue(right.value, right.type, PrimitiveVariableType.INTEGER);
 				const value = left.type.values.indexOf(left.value);
 				if(value == -1) crash(`enum fail`);
 				if(expr.operator == operators.add){
-					return this.finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
+					return finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else if(expr.operator == operators.subtract){
-					return this.finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
+					return finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
 			} else if(right.typeIs(EnumeratedVariableType)){
 				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
-				const other = this.coerceValue(left.value, left.type, PrimitiveVariableType.INTEGER);
+				const other = coerceValue(left.value, left.type, PrimitiveVariableType.INTEGER);
 				const value = right.type.values.indexOf(right.value);
 				if(value == -1) crash(`enum fail`);
 				if(expr.operator == operators.add){
-					return this.finishEvaluation(right.type.values[value + other] ?? fail(f.quote`Cannot add ${other} to ${value}: no corresponding value in ${right.type}`, expr), right.type, type);
+					return finishEvaluation(right.type.values[value + other] ?? fail(f.quote`Cannot add ${other} to ${value}: no corresponding value in ${right.type}`, expr), right.type, type);
 				} else if(expr.operator == operators.subtract){
 					fail(`Cannot subtract an enum value from a number`, expr);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[1]);
 			} else {
-				left = this.coerceValue(left.value, left.type, guessedType, expr.nodes[0]);
-				right = this.coerceValue(right.value, right.type, guessedType, expr.nodes[1]);
+				left = coerceValue(left.value, left.type, guessedType, expr.nodes[0]);
+				right = coerceValue(right.value, right.type, guessedType, expr.nodes[1]);
 			}
 
 			switch(expr.operator){
@@ -513,52 +571,38 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			const enumType = this.getEnumFromValue(token.text);
 			if(enumType){
 				if(type == "variable") fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`, token);
-				return this.finishEvaluation(token.text, enumType, type);
+				return finishEvaluation(token.text, enumType, type);
 			} else {
 				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
 				if(type == "variable") return variable;
 				if(variable.value == null) fail(f.quote`Variable ${token.text} has not been initialized`, token);
-				return this.finishEvaluation(variable.value, variable.type, type);
+				return finishEvaluation(variable.value, variable.type, type);
 			}
 		}
 		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${token.text} as a ${type}`, token);
-		//TODO move the string conversions to VariableType
 		switch(token.type){
 			case "boolean.false":
-				//TODO bad coercion
-				if(!type || type.is("BOOLEAN")) return TypedValue.BOOLEAN(false);
-				else if(type.is("STRING")) return TypedValue.STRING("FALSE");
-				else fail(f.text`Cannot convert value FALSE to type ${type}`, token);
-				break;
+				return finishEvaluation(false, PrimitiveVariableType.BOOLEAN, type);
 			case "boolean.true":
-				if(!type || type.is("BOOLEAN")) return TypedValue.BOOLEAN(true);
-				else if(type.is("STRING")) return TypedValue.STRING("TRUE");
-				else fail(f.text`Cannot convert value TRUE to type ${type}`, token);
-				break;
-			case "number.decimal":
-				if(!type || type.is("INTEGER", "REAL", "STRING")){
-					const val = Number(token.text);
-					if(Number.isNaN(val)) crash(`number was nan`);
-					if(!Number.isFinite(val))
-						fail(f.quote`Value ${token} cannot be converted to a number: too large`, token);
-					if(type?.is("INTEGER")){
-						if(!Number.isInteger(val))
-							fail(f.quote`Value ${token} cannot be converted to an integer`, token);
-						if(!Number.isSafeInteger(val))
-							fail(f.quote`Value ${token} cannot be converted to an integer: too large`, token);
-						return TypedValue.INTEGER(val);
-					}
-					return this.finishEvaluation(val, PrimitiveVariableType.REAL, type);
-				} else fail(f.quote`Cannot convert number to type ${type}`, token);
-				break;
+				return finishEvaluation(true, PrimitiveVariableType.BOOLEAN, type);
+			case "number.decimal": {
+				const val = Number(token.text);
+				if(Number.isNaN(val)) crash(`number was nan`);
+				if(!Number.isFinite(val))
+					fail(f.quote`Value ${token} cannot be converted to a number: too large`, token);
+				if(type?.is("INTEGER")){
+					if(!Number.isInteger(val))
+						fail(f.quote`Value ${token} cannot be converted to an integer`, token);
+					if(!Number.isSafeInteger(val))
+						fail(f.quote`Value ${token} cannot be converted to an integer: too large`, token);
+					return TypedValue.INTEGER(val);
+				}
+				return finishEvaluation(val, PrimitiveVariableType.REAL, type);
+			}
 			case "string":
-				if(!type || type.is("STRING")) return TypedValue.STRING(token.text.slice(1, -1)); //remove the quotes
-				else fail(f.quote`Cannot convert value ${token} to type ${type}`, token);
-				break;
+				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.STRING, type); //remove the quotes
 			case "char":
-				if(!type || type.is("CHAR") || type.is("STRING")) return TypedValue.CHAR(token.text.slice(1, -1)); //remove the quotes
-				else fail(f.quote`Cannot convert value ${token} to type ${type}`, token);
-				break;
+				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.CHAR, type); //remove the quotes
 			default: fail(f.quote`Cannot evaluate token ${token}`, token);
 		}
 	}
@@ -729,59 +773,6 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		else
 			return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
 	}
-	coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
-		//typescript really hates this function, beware
-		let assignabilityError;
-		if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
-		let disabledConfig:Config<unknown, true> | null = null;
-		if(from.is("STRING") && to.is("CHAR")){
-			if(configs.coercion.string_to_char.value){
-				const v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
-				if(v.length == 1) return v as never;
-				else assignabilityError = f.quote`the length of the string ${v} is not 1`;
-			} else disabledConfig = configs.coercion.string_to_char;
-		}
-		if(from.is("INTEGER") && to.is("REAL")) return value as never;
-		if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as VariableTypeMapping<PrimitiveVariableType<"REAL" | "INTEGER">>) as never;
-		if(to.is("STRING")){
-			if(from.is("BOOLEAN")){
-				if(configs.coercion.booleans_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase() as never;
-				else disabledConfig = configs.coercion.booleans_to_string;
-			} else if(from.is("INTEGER") || from.is("REAL")){
-				if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
-				else disabledConfig = configs.coercion.numbers_to_string;
-			} else if(from.is("CHAR")){
-				if(configs.coercion.char_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>).toString() as never;
-				else disabledConfig = configs.coercion.char_to_string;
-			} else if(from.is("DATE")){
-				if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
-				else disabledConfig = configs.coercion.numbers_to_string;
-			} else if(from instanceof ArrayVariableType){
-				if(configs.coercion.arrays_to_string.value){
-					if(from.elementType instanceof PrimitiveVariableType || from.elementType instanceof EnumeratedVariableType){
-						(null! as VariableTypeMapping<EnumeratedVariableType>) satisfies string;
-						return `[${(value as VariableTypeMapping<ArrayVariableType>).join(",")}]` as never;
-					} else assignabilityError = `the type of the elements in the array does not support coercion to string`;
-				} else disabledConfig = configs.coercion.arrays_to_string;
-			} else if(from instanceof EnumeratedVariableType){
-				if(configs.coercion.enums_to_string.value) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
-				else disabledConfig = configs.coercion.enums_to_string;
-			}
-		}
-		if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
-			if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
-			else disabledConfig = configs.coercion.enums_to_integer;
-		}
-		if(from.is("INTEGER") && to instanceof IntegerRangeVariableType){
-			const v = value as VariableTypeMapping<PrimitiveVariableType<"INTEGER">>;
-			if(to.low <= v && v <= to.high) return v as never;
-			else assignabilityError = f.quote`Value ${v} is not in range ${to}`;
-		}
-		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (
-			assignabilityError ? `: ${assignabilityError}.` :
-			disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""
-		), range);
-	}
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
 		if(value == null) return value;
 		if(typeof value == "string") return value;
@@ -900,7 +891,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				//Attach the range to the values
 				Object.assign(boxPrimitive(value), {range})
 			);
-		if(returnType) return typedValue(returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
+		if(returnType) return typedValue(returnType, coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
 		else return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
 	}
 	runBlock(code:ProgramASTNode[], ...scopes:VariableScope[]):void | {
