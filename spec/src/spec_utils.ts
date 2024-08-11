@@ -28,7 +28,7 @@ export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
 export type _VariableType = Exclude<VariableType, PrimitiveVariableType> | PrimitiveVariableTypeName;
 export type _UnresolvedVariableType = string;
 
-export type _Operator = Exclude<OperatorType, "assignment" | "pointer">;
+export type _Operator = OperatorType;
 
 export type StatementUnion<T extends keyof typeof statementCreators = keyof typeof statementCreators> = T extends unknown ? [statementType:T, ...Parameters<(typeof statementCreators)[T]>] : never;
 export type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]] | StatementUnion;
@@ -61,8 +61,7 @@ export type Processed<T> =
 	never
 ;
 
-
-export const operatorTokens: Record<Exclude<OperatorType, "assignment" | "pointer">, Token> = {
+export const operatorTokens: Record<OperatorType, Token> = {
 	"add": token("operator.add", "+"),
 	"subtract": token("operator.minus", "-"),
 	"multiply": token("operator.multiply", "*"),

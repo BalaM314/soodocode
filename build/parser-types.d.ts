@@ -57,7 +57,7 @@ export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormatta
 }
 export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";
 export type OperatorName = "operator.or" | "operator.and" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.less_than_equal" | "operator.greater_than" | "operator.greater_than_equal" | "operator.add" | "operator.subtract" | "operator.string_concatenate" | "operator.multiply" | "operator.divide" | "operator.integer_divide" | "operator.mod" | "operator.pointer_reference" | "operator.not" | "operator.negate" | "operator.pointer_dereference" | "operator.access";

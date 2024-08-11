@@ -108,6 +108,15 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 			["word", "PastLast"],
 		]
 	],
+	otherStuff: [
+		"1.. 10",
+		[
+			["numeric_fragment", "1"],
+			["operator.range", ".."],
+			["space", " "],
+			["numeric_fragment", "10"],
+		]
+	],
 	invalidChars: [
 		`OUTPUT "!@#$%^&*()_+", amogus, 😀βγδ😀`,
 		[
@@ -413,6 +422,7 @@ const tokenizerTests = ((data:Record<string, [input:_Symbol[], output:_Token[] |
 			["space", " "],
 			["word", "PROCEDURE"],
 			["quote.double", `"`],
+			["operator.range", ".."],
 		], [
 			["keyword.declare", "DECLARE"],
 			["keyword.while", "WHILE"],
@@ -421,6 +431,7 @@ const tokenizerTests = ((data:Record<string, [input:_Symbol[], output:_Token[] |
 			["number.decimal", "501"],
 			["operator.and", "AND"],
 			["string", `"sussy PROCEDURE"`],
+			["operator.range", ".."],
 		]
 	],
 	keywords2: [

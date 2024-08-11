@@ -108,6 +108,64 @@ parse_invalid_expression_statement: [
 `2 + 2`,
 `Expected a statement, not an expression`
 ],
+//#region types
+run_bool: [
+`DECLARE x: BOOLEAN
+x <- TRUE
+x <- FALSE`,
+[]
+],
+run_integer: [
+`DECLARE x: INTEGER
+x <- 5
+x <- 12345`,
+[]
+],
+run_real: [
+`DECLARE x: REAL
+x <- 5.9
+x <- 0.1234
+x <- 13434.133`,
+[]
+],
+run_real_with_int_literal: [
+`DECLARE x: REAL
+x <- 5
+x <- 12`,
+[]
+],
+run_string: [
+`DECLARE x: STRING
+x <- "h"
+x <- "ell"
+x <- "o world!"`,
+[]
+],
+run_char: [
+`DECLARE x: CHAR
+x <- 'h'
+x <- ' '`,
+[]
+],
+run_int_range: [
+`DECLARE x: 1..10
+x <- 1
+x <- 2
+x <- 9
+x <- 10`,
+[]
+],
+run_int_range_fail1: [
+`DECLARE x: 1..10
+x <- 0`,
+`not in range`
+],
+run_int_range_fail2: [
+`DECLARE x: 1..10
+x <- 11`,
+`not in range`
+],
+//#endregion
 //#region arrays
 run_array_basic: [
 `DECLARE x: ARRAY[1:10] OF INTEGER

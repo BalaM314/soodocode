@@ -155,7 +155,7 @@ export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
 /** Represents an "extended" expression AST node, which may also be an array type node */
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
 
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends "minus" ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
+export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
 export type OperatorName =
@@ -341,7 +341,7 @@ export const operators = Object.fromEntries(
 	operatorsByPriority.flat().map(o => [
 		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : crash(`operator names should start with operator.`), o
 	] as const)
-) as Record<Exclude<OperatorType, "assignment" | "pointer">, Operator>;
+) as Record<OperatorType, Operator>;
 
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
