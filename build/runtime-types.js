@@ -1,7 +1,7 @@
 import { configs } from "./config.js";
 import { ClassFunctionStatement } from "./statements.js";
 import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
-export class TypedValue_ {
+class TypedValue_ {
     constructor(type, value) {
         this.type = type;
         this.value = value;
@@ -56,6 +56,50 @@ export class TypedValue_ {
         return this.type.asString(this.value);
     }
 }
+export const TypedValue = {
+    INTEGER(value) {
+        if (value == undefined) {
+            value;
+            crash(`nullish values are not allowed here`);
+        }
+        return new TypedValue_(PrimitiveVariableType.INTEGER, value);
+    },
+    REAL(value) {
+        if (value == undefined) {
+            value;
+            crash(`nullish values are not allowed here`);
+        }
+        return new TypedValue_(PrimitiveVariableType.REAL, value);
+    },
+    STRING(value) {
+        if (value == undefined) {
+            value;
+            crash(`nullish values are not allowed here`);
+        }
+        return new TypedValue_(PrimitiveVariableType.STRING, value);
+    },
+    CHAR(value) {
+        if (value == undefined) {
+            value;
+            crash(`nullish values are not allowed here`);
+        }
+        return new TypedValue_(PrimitiveVariableType.CHAR, value);
+    },
+    BOOLEAN(value) {
+        if (value == undefined) {
+            value;
+            crash(`nullish values are not allowed here`);
+        }
+        return new TypedValue_(PrimitiveVariableType.BOOLEAN, value);
+    },
+    DATE(value) {
+        if (value == undefined) {
+            value;
+            crash(`nullish values are not allowed here`);
+        }
+        return new TypedValue_(PrimitiveVariableType.DATE, value);
+    },
+};
 export function typedValue(type, value) {
     if (type == null || value == null)
         impossible();
@@ -136,8 +180,8 @@ export class ArrayVariableType extends BaseVariableType {
         if (this.lengthInformationExprs) {
             this.lengthInformation = new Array(this.lengthInformationExprs.length);
             for (const [i, [low_, high_]] of this.lengthInformationExprs.entries()) {
-                const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER)[1];
-                const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER)[1];
+                const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER).value;
+                const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER).value;
                 if (high < low)
                     fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
                 this.lengthInformation[i] = [low, high];

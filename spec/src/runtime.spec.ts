@@ -1884,7 +1884,7 @@ const programTests = ((data:Record<string,
 
 
 describe("runtime's token evaluator", () => {
-	for(const [name, token, type, output, setup] of tokenTests){
+	for(const [name, token, requestedType, output, setup] of tokenTests){
 		it(`should produce the expected output for ${name}`, () => {
 			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
@@ -1894,17 +1894,20 @@ describe("runtime's token evaluator", () => {
 				types: {}
 			});
 			setup(runtime);
-			if(output[0] == "error")
-				expect(() => runtime.evaluateToken(token, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
-			else
-				expect(runtime.evaluateToken(token, type ?? undefined)).toEqual(output);
+			if(output[0] == "error"){
+				expect(() => runtime.evaluateToken(token, requestedType ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
+			} else {
+				const {type, value} = runtime.evaluateToken(token, requestedType ?? undefined);
+				expect(type).toEqual(output[0]);
+				expect(value).toEqual(output[1]);
+			}
 		});
 	}
 });
 
 type expect_ = <T>(actual: T) => jasmine.Matchers<T>;
 describe("runtime's expression evaluator", () => {
-	for(const [name, expression, type, output, setup] of expressionTests){
+	for(const [name, expression, requestedType, output, setup] of expressionTests){
 		it(`should produce the expected output for ${name}`, () => {
 			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
@@ -1914,10 +1917,14 @@ describe("runtime's expression evaluator", () => {
 				types: {}
 			});
 			setup(runtime);
-			if(output[0] == "error")
-				(expect as expect_)(() => runtime.evaluateExpr(expression, type ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
-			else
-				(expect as expect_)(runtime.evaluateExpr(expression, type ?? undefined)).toEqual(output);
+			if(output[0] == "error"){
+				(expect as expect_)(() => runtime.evaluateExpr(expression, requestedType ?? undefined))
+					.toThrowMatching(e => e instanceof SoodocodeError);
+			} else {
+				const {type, value} = runtime.evaluateExpr(expression, requestedType ?? undefined);
+				expect(type).toEqual(output[0]);
+				expect(value).toEqual(output[1]);
+			}
 		});
 	}
 });

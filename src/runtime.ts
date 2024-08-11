@@ -10,7 +10,7 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
@@ -64,17 +64,17 @@ export class Runtime {
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
 	){}
-	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):[type:VariableType, value:VariableValue] {
+	finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
 		if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
-			return [from, this.coerceValue(value, from, to)]; //don't have a varlength array as the output type
-		else if(to) return [to, this.coerceValue(value, from, to)];
-		else return [from, value];
+			return typedValue(from, this.coerceValue(value, from, to)); //don't have a varlength array as the output type
+		else if(to) return typedValue(to, this.coerceValue(value, from, to));
+		else return typedValue(from, value);
 	}
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):[type:VariableType, value:VariableValue];
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData;
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):TypedValue | VariableData;
 	@errorBoundary()
-	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):[type:VariableType, value:VariableValue] | VariableData | void {
+	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):TypedValue | VariableData | void {
 
 		//Make sure the variable exists and is an array
 		const _target = this.evaluateExpr(expr.target, "variable");
@@ -98,7 +98,7 @@ ${targetType.lengthInformation.length}-dimensional array requires ${targetType.l
 but found ${expr.indices.length} indices`,
 				expr.indices
 			);
-		const indexes:[ExpressionASTNode, number][] = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER)[1]]);
+		const indexes:[ExpressionASTNode, number][] = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER).value]);
 		let invalidIndexIndex;
 		if(
 			(invalidIndexIndex = indexes.findIndex(([_expr, value], index) =>
@@ -128,15 +128,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		return this.finishEvaluation(output, targetType.elementType, outType);
 	}
 	/* get a property, optionally specifying type */
-	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType):[type:VariableType, value:VariableValue];
+	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType):TypedValue;
 	/* get a property as a variable (so it can be written to) */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType:"variable"):VariableData | ConstantData;
 	/* get a property as a function */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType:"function"):ClassMethodCallInformation;
 	/* loose overload */
-	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType | "variable" | "function"):[type:VariableType, value:VariableValue] | VariableData | ConstantData | ClassMethodCallInformation;
+	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | ClassMethodCallInformation;
 	@errorBoundary()
-	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType | "variable" | "function"):[type:VariableType, value:VariableValue] | VariableData | ConstantData | ClassMethodCallInformation {
+	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | ClassMethodCallInformation {
 		//this code is dubious
 		//note to self:
 		//do not use typescript overloads like this
@@ -163,7 +163,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			targetType = target.type;
 			targetValue = target.value;
 		} else {
-			[targetType, targetValue] = this.evaluateExpr(expr.nodes[0]);
+			({ type:targetType, value:targetValue } = this.evaluateExpr(expr.nodes[0]));
 		}
 		if(targetType instanceof RecordVariableType){
 			forceType<VariableTypeMapping<RecordVariableType>>(targetValue);
@@ -241,20 +241,20 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 	assignExpr(target:ExpressionAST, src:ExpressionAST){
 		const variable = this.evaluateExpr(target, "variable");
 		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${target}`, target);
-		const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
-		variable.value = val;
-		variable.updateType?.(valType);
+		const {type, value} = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+		variable.value = value;
+		variable.updateType?.(type);
 	}
-	evaluateExpr(expr:ExpressionAST):[type:VariableType, value:VariableValue];
-	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):[type:VariableType, value:VariableValue];
+	evaluateExpr(expr:ExpressionAST):TypedValue;
+	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):TypedValue;
 	evaluateExpr(expr:ExpressionAST, type:"variable", recursive?:boolean):VariableData | ConstantData;
 	evaluateExpr(expr:ExpressionAST, type:"function", recursive?:boolean):FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
-	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):[type:T & {}, value:VariableTypeMapping<T>];
+	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):TypedValue<T extends undefined ? VariableType : T & {}>
 	@errorBoundary({
 		predicate: (_expr, _type, recursive) => !recursive,
 		message: () => `Cannot evaluate expression "$rc": `
 	})
-	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function", _recursive = false):[type:VariableType, value:unknown] | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
+	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function", _recursive = false):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(expr == undefined) crash(`expr was ${expr as null | undefined}`);
 
 		if(expr instanceof Token)
@@ -274,11 +274,11 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 			if("clazz" in func){
 				if(func.method.type == "class_procedure") fail(f.quote`Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`, expr.functionName);
 				//Class method
-				const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
-				return this.finishEvaluation(output, outputType, type);
+				const output = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
+				return this.finishEvaluation(output.value, output.type, type);
 			} else if("name" in func){
 				const output = this.callBuiltinFunction(func, expr.args);
-				return this.finishEvaluation(output[1], output[0], type);
+				return this.finishEvaluation(output.value, output.type, type);
 			} else {
 				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`, expr.functionName);
 				const statement = func.controlStatements[0];
@@ -305,16 +305,16 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 					if(err){
 						//If the thing we're referencing couldn't be evaluated to a variable
 						//create a fake variable
-						const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
+						const target = this.evaluateExpr(expr.nodes[0], type?.target, true);
 						//Guess the type
-						const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote`Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
+						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						if(!configs.pointers.implicit_variable_creation.value)
 							rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
 						return this.finishEvaluation({
-							type: targetType,
+							type: target.type,
 							declaration: "dynamic",
 							mutable: true,
-							value: targetValue
+							value: target.value
 						}, pointerType, type);
 					}
 					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
@@ -322,16 +322,15 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 				}
 				case operators.pointer_dereference: {
 					if(type == "function") fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`, expr);
-					const [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
-					if(variableValue == null) fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
-					if(!(pointerVariableType instanceof PointerVariableType)) fail(f.quote`Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
-					const pointerVariableData = variableValue as VariableTypeMapping<PointerVariableType>;
+					const pointerVariable = this.evaluateExpr(expr.nodes[0], undefined, true);
+					if(pointerVariable.value == null) fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
+					if(!(pointerVariable.typeIs(PointerVariableType))) fail(f.quote`Cannot dereference value of type ${pointerVariable.type} because it is not a pointer`, expr.nodes[0]);
 					if(type == "variable"){
-						if(!pointerVariableData.mutable) fail(`Cannot assign to constant`, expr);
-						return pointerVariableData;
+						if(!pointerVariable.value.mutable) fail(`Cannot assign to constant`, expr);
+						return pointerVariable.value;
 					} else {
-						if(pointerVariableData.value == null) fail(f.quote`Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
-						return this.finishEvaluation(pointerVariableData.value, pointerVariableType.target, type);
+						if(pointerVariable.value.value == null) fail(f.quote`Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
+						return this.finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
 					}
 				}
 				default: impossible();
@@ -349,55 +348,45 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 			let value:number;
 			//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
 			if(expr.operator.type == "unary_prefix"){
-				const [_operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType, true);
+				const operand = this.evaluateExpr(expr.nodes[0], guessedType, true);
 				switch(expr.operator){
 					case operators.negate:
-						return [PrimitiveVariableType.INTEGER, -operand];
+						return TypedValue.INTEGER(-operand.value);
 					default: crash("impossible");
 				}
 			}
-			let _leftType, left, _rightType, right;
+			let left, right;
 			if(expr.operator == operators.add || expr.operator == operators.subtract){
-				[_leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
-				[_rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
+				left = this.evaluateExpr(expr.nodes[0], undefined, true);
+				right = this.evaluateExpr(expr.nodes[1], undefined, true);
 			} else {
-				[_leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
-				[_rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
+				left = this.evaluateExpr(expr.nodes[0], guessedType, true);
+				right = this.evaluateExpr(expr.nodes[1], guessedType, true);
 			}
 
-			if(_leftType instanceof EnumeratedVariableType){
-				left = left as VariableTypeMapping<EnumeratedVariableType>;
+			if(left.typeIs(EnumeratedVariableType)){
 				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
-				const other = this.coerceValue(right, _rightType, PrimitiveVariableType.INTEGER);
-				const value = _leftType.values.indexOf(left);
+				const other = this.coerceValue(right.value, right.type, PrimitiveVariableType.INTEGER);
+				const value = left.type.values.indexOf(left.value);
 				if(value == -1) crash(`enum fail`);
 				if(expr.operator == operators.add){
-					return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+					return this.finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else if(expr.operator == operators.subtract){
-					return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+					return this.finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
-			} else if(_rightType instanceof EnumeratedVariableType){
-				right = right as VariableTypeMapping<EnumeratedVariableType>;
+			} else if(right.typeIs(EnumeratedVariableType)){
 				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
-				const other = this.coerceValue(left, _leftType, PrimitiveVariableType.INTEGER);
-				const value = _rightType.values.indexOf(right);
+				const other = this.coerceValue(left.value, left.type, PrimitiveVariableType.INTEGER);
+				const value = right.type.values.indexOf(right.value);
 				if(value == -1) crash(`enum fail`);
 				if(expr.operator == operators.add){
-					return this.finishEvaluation(_rightType.values[value + other] ?? fail(f.quote`Cannot add ${other} to ${value}: no corresponding value in ${_rightType}`, expr), _rightType, type);
+					return this.finishEvaluation(right.type.values[value + other] ?? fail(f.quote`Cannot add ${other} to ${value}: no corresponding value in ${right.type}`, expr), right.type, type);
 				} else if(expr.operator == operators.subtract){
 					fail(`Cannot subtract an enum value from a number`, expr);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[1]);
 			} else {
-				if(_leftType != guessedType){
-					left = this.coerceValue(left, _leftType, guessedType, expr.nodes[0]);
-					_leftType = guessedType;
-				}
-				if(_rightType != guessedType){
-					right = this.coerceValue(right, _rightType, guessedType, expr.nodes[1]);
-					_rightType = guessedType;
-				}
-				forceType<number>(left);
-				forceType<number>(right);
+				left = this.coerceValue(left.value, left.type, guessedType, expr.nodes[0]);
+				right = this.coerceValue(right.value, right.type, guessedType, expr.nodes[1]);
 			}
 
 			switch(expr.operator){
@@ -431,7 +420,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				default:
 					fail(f.quote`Expected this expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`, expr);
 			}
-			return [guessedType, value];
+			return typedValue(guessedType, value);
 		}
 
 		//logical
@@ -440,38 +429,56 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				fail(f.quote`Expected this expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`, expr);
 
 			if(expr.operator.type == "unary_prefix"){
+				const operand = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true);
 				switch(expr.operator){
-					case operators.not:
-						return [PrimitiveVariableType.BOOLEAN, !this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1]];
+					case operators.not: {
+						return TypedValue.BOOLEAN(!operand.value);
+					}
 					default: crash("impossible");
 				}
 			}
 			switch(expr.operator){
-				case operators.and:
-					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] && this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
-				case operators.or:
-					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] || this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
-				case operators.equal_to:
-				case operators.not_equal_to: {
+				case operators.equal_to: case operators.not_equal_to: {
 					//Type is unknown
-					const [leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
-					const [rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
+					const left = this.evaluateExpr(expr.nodes[0], undefined, true);
+					const right = this.evaluateExpr(expr.nodes[1], undefined, true);
 					const typesMatch =
-						(leftType == rightType) ||
-						(leftType.is("INTEGER") && rightType.is("REAL")) ||
-						(leftType.is("REAL") && rightType.is("INTEGER"));
-					const is_equal = typesMatch && (left == right);
-					if(expr.operator == operators.equal_to) return [PrimitiveVariableType.BOOLEAN, is_equal];
-					else return [PrimitiveVariableType.BOOLEAN, !is_equal];
+						(left.type == right.type) ||
+						(left.typeIs("INTEGER") && right.typeIs("REAL")) ||
+						(left.typeIs("REAL") && right.typeIs("INTEGER"));
+					const is_equal = typesMatch && (left.value == right.value);
+					return TypedValue.BOOLEAN((() => {
+						switch(expr.operator){
+							case operators.equal_to: return is_equal;
+							case operators.not_equal_to: return !is_equal;
+						}
+					})()!);
+				}
+				case operators.and: case operators.or: {
+					const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true).value;
+					const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true).value;
+					return TypedValue.BOOLEAN((() => {
+						switch(expr.operator){
+							case operators.and: return left && right;
+							case operators.or: return left || right;
+						}
+					})()!);
 				}
 				case operators.greater_than:
-					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] > this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
 				case operators.greater_than_equal:
-					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] >= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
 				case operators.less_than:
-					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] < this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
-				case operators.less_than_equal:
-					return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] <= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
+				case operators.less_than_equal: {
+					const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true).value;
+					const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true).value;
+					return TypedValue.BOOLEAN((() => {
+						switch(expr.operator){
+							case operators.greater_than: return left > right;
+							case operators.greater_than_equal: return left >= right;
+							case operators.less_than: return left < right;
+							case operators.less_than_equal: return left <= right;
+						}
+					})()!);
+				}
 				default:
 					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`, expr);
 			}
@@ -481,9 +488,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(type?.is("STRING") || expr.operator.category == "string"){
 			if(type && !type.is("STRING"))
 				fail(f.quote`expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`, expr);
+
+			const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true).value;
+			const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true).value;
 			switch(expr.operator){
 				case operators.string_concatenate:
-					return [PrimitiveVariableType.STRING, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)[1] + this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)[1]];
+					return TypedValue.STRING(left + right);
 				default:
 					fail(f.quote`Expected the expression to evaluate to a value of type ${type!}, but the operator ${expr.operator} returns another type`, expr);
 			}
@@ -492,11 +502,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		expr.operator.category satisfies never;
 		impossible();
 	}
-	evaluateToken(token:Token):[type:VariableType, value:VariableValue];
+	evaluateToken(token:Token):TypedValue;
 	evaluateToken(token:Token, type:"variable"):VariableData | ConstantData;
 	evaluateToken(token:Token, type:"function"):FunctionData | BuiltinFunctionData;
-	evaluateToken<T extends VariableType | undefined>(token:Token, type:T):[type:T & {}, value:VariableTypeMapping<T>];
-	evaluateToken(token:Token, type?:VariableType | "variable" | "function"):[type:VariableType, value:unknown] | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
+	evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
+	evaluateToken(token:Token, type?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(token.type == "name"){
 			if(type == "function") return this.getFunction(token);
 
@@ -516,13 +526,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		switch(token.type){
 			case "boolean.false":
 				//TODO bad coercion
-				if(!type || type.is("BOOLEAN")) return [PrimitiveVariableType.BOOLEAN, false];
-				else if(type.is("STRING")) return [PrimitiveVariableType.STRING, "FALSE"];
+				if(!type || type.is("BOOLEAN")) return TypedValue.BOOLEAN(false);
+				else if(type.is("STRING")) return TypedValue.STRING("FALSE");
 				else fail(f.text`Cannot convert value FALSE to type ${type}`, token);
 				break;
 			case "boolean.true":
-				if(!type || type.is("BOOLEAN")) return [PrimitiveVariableType.BOOLEAN, true];
-				else if(type.is("STRING")) return [PrimitiveVariableType.STRING, "TRUE"];
+				if(!type || type.is("BOOLEAN")) return TypedValue.BOOLEAN(true);
+				else if(type.is("STRING")) return TypedValue.STRING("TRUE");
 				else fail(f.text`Cannot convert value TRUE to type ${type}`, token);
 				break;
 			case "number.decimal":
@@ -536,27 +546,29 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 							fail(f.quote`Value ${token} cannot be converted to an integer`, token);
 						if(!Number.isSafeInteger(val))
 							fail(f.quote`Value ${token} cannot be converted to an integer: too large`, token);
-						return [PrimitiveVariableType.INTEGER, val];
+						return TypedValue.INTEGER(val);
 					} else if(type?.is("STRING")){
-						return [PrimitiveVariableType.STRING, token.text];
+						return TypedValue.STRING(token.text);
 					} else {
-						return [PrimitiveVariableType.REAL, val];
+						return TypedValue.REAL(val);
 					}
 				} else fail(f.quote`Cannot convert number to type ${type}`, token);
 				break;
 			case "string":
-				if(!type || type.is("STRING")) return [PrimitiveVariableType.STRING, token.text.slice(1, -1)]; //remove the quotes
+				if(!type || type.is("STRING")) return TypedValue.STRING(token.text.slice(1, -1)); //remove the quotes
 				else fail(f.quote`Cannot convert value ${token} to type ${type}`, token);
 				break;
 			case "char":
-				if(!type || type.is("CHAR") || type.is("STRING")) return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)]; //remove the quotes
+				if(!type || type.is("CHAR") || type.is("STRING")) return TypedValue.CHAR(token.text.slice(1, -1)); //remove the quotes
 				else fail(f.quote`Cannot convert value ${token} to type ${type}`, token);
 				break;
 			default: fail(f.quote`Cannot evaluate token ${token}`, token);
 		}
 	}
 	static NotStaticError = class extends Error {};
-	static evaluateToken(token:Token, type?:VariableType):[type:VariableType, value:VariableValue] {
+	static evaluateToken(token:Token):TypedValue;
+	static evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
+	static evaluateToken(token:Token, type?:VariableType):TypedValue {
 		//major shenanigans
 		try {
 			return this.prototype.evaluateToken.call(new Proxy({}, {
@@ -810,7 +822,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 					set value(value){ varData.value = value; }
 				};
 			} else {
-				const [type, value] = this.evaluateExpr(args[i], rType);
+				const { type, value } = this.evaluateExpr(args[i], rType);
 				if(type instanceof ArrayVariableType && !type.lengthInformation) crash(f.quote`evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
 				scope.variables[name] = {
 					declaration: func,
@@ -831,7 +843,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		const output = this.runBlock(funcNode.nodeGroups[0], scope);
 		if(func instanceof ProcedureStatement){
 			//requireReturnValue satisfies false;
-			return null!;
+			return null as never;
 		} else { //must be functionstatement
 			if(!output) fail(f.quote`Function ${func.name} did not return a value`, undefined); //TODO create rangeExternal and set it to funcNode.nodeGroups[0] here
 			return output.value;
@@ -839,8 +851,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}
 	callClassMethod<T extends boolean>(method:ClassMethodData, clazz:ClassVariableType, instance:VariableTypeMapping<ClassVariableType>, args:RangeArray<ExpressionAST>, requireReturnValue?:T):(
 		T extends false ? null :
-		T extends undefined ? [type:VariableType, value:VariableValue] | null :
-		T extends true ? [type:VariableType, value:VariableValue] :
+		T extends undefined ? TypedValue | null :
+		T extends true ? TypedValue :
 		never
 	) {
 		const func = method.controlStatements[0];
@@ -857,12 +869,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		this.classData = previousClassData;
 		if(func instanceof ClassProcedureStatement){
 			//requireReturnValue satisfies false;
-			return null!;
+			return null as never;
 		} else { //must be functionstatement
-			return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote`Function ${func.name} did not return a value`, undefined)) as never;
+			if(!output) fail(f.quote`Function ${func.name} did not return a value`, undefined);
+			return typedValue(this.resolveVariableType(func.returnType), output.value) as never;
 		}
 	}
-	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):[type:VariableType, value:VariableValue] {
+	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):TypedValue {
 		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`, undefined);
 		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const evaluatedArgs:[VariableValue, TextRange][] = [];
@@ -872,7 +885,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			const errors:SoodocodeError[] = [];
 			for(const possibleType of type){
 				if(tryRunOr(() => {
-					evaluatedArgs.push([this.evaluateExpr(args[i], possibleType)[1], args[i].range]);
+					evaluatedArgs.push([this.evaluateExpr(args[i], possibleType).value, args[i].range]);
 					i ++;
 				}, err => errors.push(err)))
 					continue nextArg;
@@ -884,8 +897,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				//Attach the range to the values
 				Object.assign(boxPrimitive(value), {range})
 			);
-		if(returnType) return [returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType)];
-		else return [fn.returnType, fn.impl.apply(this, processedArgs)];
+		if(returnType) return typedValue(returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
+		else return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
 	}
 	runBlock(code:ProgramASTNode[], ...scopes:VariableScope[]):void | {
 		type: "function_return";

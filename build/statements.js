@@ -41,7 +41,7 @@ import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statementTypes = [
@@ -317,7 +317,7 @@ let ConstantStatement = (() => {
         run(runtime) {
             if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`, this);
-            const [type, value] = Runtime.evaluateToken(this.expr);
+            const { type, value } = Runtime.evaluateToken(this.expr);
             runtime.getCurrentScope().variables[this.name] = {
                 type,
                 get value() { return value; },
@@ -359,7 +359,7 @@ let DefineStatement = (() => {
                 type,
                 declaration: this,
                 mutable: true,
-                value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1])
+                value: this.values.map(t => Runtime.evaluateToken(t, type.baseType).value)
             };
         }
     };
@@ -503,7 +503,7 @@ let AssignmentStatement = (() => {
         }
         run(runtime) {
             if (this.target instanceof Token && !runtime.getVariable(this.target.text)) {
-                const [type, value] = runtime.evaluateExpr(this.expr);
+                const { type, value } = runtime.evaluateExpr(this.expr);
                 if (type instanceof ClassVariableType) {
                     if (configs.statements.auto_declare_classes.value) {
                         runtime.getCurrentScope().variables[this.target.text] = {
@@ -565,7 +565,7 @@ let OutputStatement = (() => {
             this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
         }
         run(runtime) {
-            runtime._output(this.outMessage.map(expr => typedValue(...runtime.evaluateExpr(expr))));
+            runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
         }
     };
     __setFunctionName(_classThis, "OutputStatement");
@@ -671,7 +671,7 @@ let ReturnStatement = (() => {
             }
             return {
                 type: "function_return",
-                value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type))[1]
+                value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type)).value
             };
         }
     };
@@ -738,7 +738,7 @@ let IfStatement = (() => {
             this.condition = tokens[1];
         }
         runBlock(runtime, node) {
-            if (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]) {
+            if (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value) {
                 return runtime.runBlock(node.nodeGroups[0]);
             }
             else if (node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]) {
@@ -803,7 +803,7 @@ let SwitchStatement = (() => {
                 fail(`OTHERWISE case branch must be the last case branch`, err);
         }
         runBlock(runtime, { controlStatements, nodeGroups }) {
-            const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
+            const { type: switchType, value: switchValue } = runtime.evaluateExpr(this.expression);
             for (const [i, statement] of controlStatements.entries()) {
                 if (i == 0)
                     continue;
@@ -850,7 +850,7 @@ let CaseBranchStatement = (() => {
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
                 return true;
-            const [_caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+            const { value: caseValue } = Runtime.evaluateToken(this.value, switchType);
             return switchValue == caseValue;
         }
     };
@@ -886,8 +886,8 @@ let CaseBranchRangeStatement = (() => {
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
                 return true;
-            const [_lType, lValue] = Runtime.evaluateToken(this.value, switchType);
-            const [_uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
+            const { value: lValue } = Runtime.evaluateToken(this.value, switchType);
+            const { value: uValue } = Runtime.evaluateToken(this.upperBound, switchType);
             return lValue <= switchValue && switchValue <= uValue;
         }
     };
@@ -923,8 +923,8 @@ let ForStatement = (() => {
             return 1;
         }
         runBlock(runtime, node) {
-            const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER)[1];
-            const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER)[1];
+            const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
+            const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
             if (upper < lower)
                 return;
             const end = node.controlStatements[1];
@@ -974,7 +974,7 @@ let ForStepStatement = (() => {
             this.stepToken = tokens[7];
         }
         step(runtime) {
-            return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)[1];
+            return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER).value;
         }
     };
     __setFunctionName(_classThis, "ForStepStatement");
@@ -1027,7 +1027,7 @@ let WhileStatement = (() => {
             this.condition = tokens[1];
         }
         runBlock(runtime, node) {
-            while (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]) {
+            while (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     opaque: false,
@@ -1070,7 +1070,7 @@ let DoWhileStatement = (() => {
                     return result;
                 if (++i > DoWhileStatement.maxLoops)
                     fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
-            } while (!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN)[1]);
+            } while (!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN).value);
         }
     };
     __setFunctionName(_classThis, "DoWhileStatement");
@@ -1188,7 +1188,7 @@ let OpenFileStatement = (() => {
             [, this.filename, , this.mode] = tokens;
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
             const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this);
             if (mode == "READ") {
@@ -1237,7 +1237,7 @@ let CloseFileStatement = (() => {
             [, this.filename] = tokens;
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             if (runtime.openFiles[name])
                 runtime.openFiles[name] = undefined;
             else if (name in runtime.openFiles)
@@ -1269,7 +1269,7 @@ let ReadFileStatement = (() => {
             [, this.filename, , this.output] = tokens;
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
             if (data.lineNumber >= data.lines.length)
                 fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
@@ -1300,9 +1300,9 @@ let WriteFileStatement = (() => {
             [, this.filename, , this.data] = tokens;
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-            data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING)[1] + "\n";
+            data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING).value + "\n";
         }
     };
     __setFunctionName(_classThis, "WriteFileStatement");
@@ -1328,10 +1328,10 @@ let SeekStatement = (() => {
             [, this.filename, , this.index] = tokens;
         }
         run(runtime) {
-            const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER)[1];
+            const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER).value;
             if (index < 0)
                 fail(`SEEK index must be positive`, this.index);
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
             fail(`Not yet implemented`, this);
         }
@@ -1359,7 +1359,7 @@ let GetRecordStatement = (() => {
             [, this.filename, , this.variable] = tokens;
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
             const variable = runtime.evaluateExpr(this.variable, "variable");
             fail(`Not yet implemented`, this);
@@ -1388,9 +1388,9 @@ let PutRecordStatement = (() => {
             [, this.filename, , this.variable] = tokens;
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
             const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
-            const [type, value] = runtime.evaluateExpr(this.variable);
+            const { type, value } = runtime.evaluateExpr(this.variable);
             fail(`Not yet implemented`, this);
         }
     };

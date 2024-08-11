@@ -44,12 +44,10 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 	never
 ;
 
-export type TypedValue =
+export type TypedValue<T extends VariableType = VariableType> =
 	//Trigger DCT
-	VariableType extends infer T extends VariableType ? T extends unknown ?
-		TypedValue_<T>
-	: never : never;
-export class TypedValue_<T extends VariableType> {
+	T extends unknown ? TypedValue_<T> : never;
+class TypedValue_<T extends VariableType> {
 	constructor(
 		public type:T,
 		public value:VariableTypeMapping<T>,
@@ -111,6 +109,50 @@ export class TypedValue_<T extends VariableType> {
 		return this.type.asString(this.value as never); //corr
 	}
 }
+export const TypedValue = { //TODO autogen
+	INTEGER(value:VariableTypeMapping<PrimitiveVariableType<"INTEGER">>){
+		if(value == undefined){
+			value satisfies never;
+			crash(`nullish values are not allowed here`);
+		}
+		return new TypedValue_(PrimitiveVariableType.INTEGER, value);
+	},
+	REAL(value:VariableTypeMapping<PrimitiveVariableType<"REAL">>){
+		if(value == undefined){
+			value satisfies never;
+			crash(`nullish values are not allowed here`);
+		}
+		return new TypedValue_(PrimitiveVariableType.REAL, value);
+	},
+	STRING(value:VariableTypeMapping<PrimitiveVariableType<"STRING">>){
+		if(value == undefined){
+			value satisfies never;
+			crash(`nullish values are not allowed here`);
+		}
+		return new TypedValue_(PrimitiveVariableType.STRING, value);
+	},
+	CHAR(value:VariableTypeMapping<PrimitiveVariableType<"CHAR">>){
+		if(value == undefined){
+			value satisfies never;
+			crash(`nullish values are not allowed here`);
+		}
+		return new TypedValue_(PrimitiveVariableType.CHAR, value);
+	},
+	BOOLEAN(value:VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>){
+		if(value == undefined){
+			value satisfies never;
+			crash(`nullish values are not allowed here`);
+		}
+		return new TypedValue_(PrimitiveVariableType.BOOLEAN, value);
+	},
+	DATE(value:VariableTypeMapping<PrimitiveVariableType<"DATE">>){
+		if(value == undefined){
+			value satisfies never;
+			crash(`nullish values are not allowed here`);
+		}
+		return new TypedValue_(PrimitiveVariableType.DATE, value);
+	},
+};
 export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
 	if(type == null || value == null) impossible();
 	return new TypedValue_(type, value) as TypedValue;
@@ -210,8 +252,8 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		if(this.lengthInformationExprs){
 			this.lengthInformation = new Array(this.lengthInformationExprs.length);
 			for(const [i, [low_, high_]] of this.lengthInformationExprs.entries()){
-				const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER)[1];
-				const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER)[1];
+				const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER).value;
+				const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER).value;
 				if(high < low)
 					fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
 				this.lengthInformation[i] = [low, high];

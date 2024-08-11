@@ -36,7 +36,7 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
 export class Files {
@@ -81,11 +81,11 @@ let Runtime = (() => {
             }
             finishEvaluation(value, from, to) {
                 if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
-                    return [from, this.coerceValue(value, from, to)];
+                    return typedValue(from, this.coerceValue(value, from, to));
                 else if (to)
-                    return [to, this.coerceValue(value, from, to)];
+                    return typedValue(to, this.coerceValue(value, from, to));
                 else
-                    return [from, value];
+                    return typedValue(from, value);
             }
             processArrayAccess(expr, outType) {
                 const _target = this.evaluateExpr(expr.target, "variable");
@@ -103,7 +103,7 @@ let Runtime = (() => {
                     fail(`Cannot evaluate expression starting with "array access": \
 ${targetType.lengthInformation.length}-dimensional array requires ${targetType.lengthInformation.length} indices, \
 but found ${expr.indices.length} indices`, expr.indices);
-                const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER)[1]]);
+                const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER).value]);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([_expr, value], index) => value > targetType.lengthInformation[index][1] ||
                     value < targetType.lengthInformation[index][0])) != -1)
@@ -151,7 +151,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     targetValue = target.value;
                 }
                 else {
-                    [targetType, targetValue] = this.evaluateExpr(expr.nodes[0]);
+                    ({ type: targetType, value: targetValue } = this.evaluateExpr(expr.nodes[0]));
                 }
                 if (targetType instanceof RecordVariableType) {
                     forceType(targetValue);
@@ -232,9 +232,9 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 const variable = this.evaluateExpr(target, "variable");
                 if (!variable.mutable)
                     fail(f.quote `Cannot assign to constant ${target}`, target);
-                const [valType, val] = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
-                variable.value = val;
-                variable.updateType?.(valType);
+                const { type, value } = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+                variable.value = value;
+                variable.updateType?.(type);
             }
             evaluateExpr(expr, type, _recursive = false) {
                 if (expr == undefined)
@@ -255,12 +255,12 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                     if ("clazz" in func) {
                         if (func.method.type == "class_procedure")
                             fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`, expr.functionName);
-                        const [outputType, output] = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
-                        return this.finishEvaluation(output, outputType, type);
+                        const output = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
+                        return this.finishEvaluation(output.value, output.type, type);
                     }
                     else if ("name" in func) {
                         const output = this.callBuiltinFunction(func, expr.args);
-                        return this.finishEvaluation(output[1], output[0], type);
+                        return this.finishEvaluation(output.value, output.type, type);
                     }
                     else {
                         if (func.type == "procedure")
@@ -288,15 +288,15 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                                 fail(f.quote `Expected result to be of type ${type}, but the reference operator will return a pointer`, expr);
                             const [variable, err] = tryRun(() => this.evaluateExpr(expr.nodes[0], "variable", true));
                             if (err) {
-                                const [targetType, targetValue] = this.evaluateExpr(expr.nodes[0], type?.target, true);
-                                const pointerType = this.getPointerTypeFor(targetType) ?? fail(f.quote `Cannot find a pointer type for ${targetType}`, expr.operatorToken, expr);
+                                const target = this.evaluateExpr(expr.nodes[0], type?.target, true);
+                                const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote `Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
                                 if (!configs.pointers.implicit_variable_creation.value)
                                     rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
                                 return this.finishEvaluation({
-                                    type: targetType,
+                                    type: target.type,
                                     declaration: "dynamic",
                                     mutable: true,
-                                    value: targetValue
+                                    value: target.value
                                 }, pointerType, type);
                             }
                             const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote `Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
@@ -305,21 +305,20 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                         case operators.pointer_dereference: {
                             if (type == "function")
                                 fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`, expr);
-                            const [pointerVariableType, variableValue] = this.evaluateExpr(expr.nodes[0], undefined, true);
-                            if (variableValue == null)
+                            const pointerVariable = this.evaluateExpr(expr.nodes[0], undefined, true);
+                            if (pointerVariable.value == null)
                                 fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
-                            if (!(pointerVariableType instanceof PointerVariableType))
-                                fail(f.quote `Cannot dereference value of type ${pointerVariableType} because it is not a pointer`, expr.nodes[0]);
-                            const pointerVariableData = variableValue;
+                            if (!(pointerVariable.typeIs(PointerVariableType)))
+                                fail(f.quote `Cannot dereference value of type ${pointerVariable.type} because it is not a pointer`, expr.nodes[0]);
                             if (type == "variable") {
-                                if (!pointerVariableData.mutable)
+                                if (!pointerVariable.value.mutable)
                                     fail(`Cannot assign to constant`, expr);
-                                return pointerVariableData;
+                                return pointerVariable.value;
                             }
                             else {
-                                if (pointerVariableData.value == null)
+                                if (pointerVariable.value.value == null)
                                     fail(f.quote `Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
-                                return this.finishEvaluation(pointerVariableData.value, pointerVariableType.target, type);
+                                return this.finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
                             }
                         }
                         default: impossible();
@@ -333,49 +332,47 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                     let guessedType = type ?? PrimitiveVariableType.REAL;
                     let value;
                     if (expr.operator.type == "unary_prefix") {
-                        const [_operandType, operand] = this.evaluateExpr(expr.nodes[0], guessedType, true);
+                        const operand = this.evaluateExpr(expr.nodes[0], guessedType, true);
                         switch (expr.operator) {
                             case operators.negate:
-                                return [PrimitiveVariableType.INTEGER, -operand];
+                                return TypedValue.INTEGER(-operand.value);
                             default: crash("impossible");
                         }
                     }
-                    let _leftType, left, _rightType, right;
+                    let left, right;
                     if (expr.operator == operators.add || expr.operator == operators.subtract) {
-                        [_leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
-                        [_rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
+                        left = this.evaluateExpr(expr.nodes[0], undefined, true);
+                        right = this.evaluateExpr(expr.nodes[1], undefined, true);
                     }
                     else {
-                        [_leftType, left] = this.evaluateExpr(expr.nodes[0], guessedType, true);
-                        [_rightType, right] = this.evaluateExpr(expr.nodes[1], guessedType, true);
+                        left = this.evaluateExpr(expr.nodes[0], guessedType, true);
+                        right = this.evaluateExpr(expr.nodes[1], guessedType, true);
                     }
-                    if (_leftType instanceof EnumeratedVariableType) {
-                        left = left;
+                    if (left.typeIs(EnumeratedVariableType)) {
                         if (type && !(type instanceof EnumeratedVariableType))
                             fail(f.quote `expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
-                        const other = this.coerceValue(right, _rightType, PrimitiveVariableType.INTEGER);
-                        const value = _leftType.values.indexOf(left);
+                        const other = this.coerceValue(right.value, right.type, PrimitiveVariableType.INTEGER);
+                        const value = left.type.values.indexOf(left.value);
                         if (value == -1)
                             crash(`enum fail`);
                         if (expr.operator == operators.add) {
-                            return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text `Cannot add ${other} to enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+                            return this.finishEvaluation(left.type.values[value + other] ?? fail(f.text `Cannot add ${other} to enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
                         }
                         else if (expr.operator == operators.subtract) {
-                            return this.finishEvaluation(_leftType.values[value + other] ?? fail(f.text `Cannot subtract ${other} from enum value "${left}": no corresponding value in ${_leftType}`, expr), _leftType, type);
+                            return this.finishEvaluation(left.type.values[value + other] ?? fail(f.text `Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
                         }
                         else
                             fail(f.quote `Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
                     }
-                    else if (_rightType instanceof EnumeratedVariableType) {
-                        right = right;
+                    else if (right.typeIs(EnumeratedVariableType)) {
                         if (type && !(type instanceof EnumeratedVariableType))
                             fail(f.quote `expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
-                        const other = this.coerceValue(left, _leftType, PrimitiveVariableType.INTEGER);
-                        const value = _rightType.values.indexOf(right);
+                        const other = this.coerceValue(left.value, left.type, PrimitiveVariableType.INTEGER);
+                        const value = right.type.values.indexOf(right.value);
                         if (value == -1)
                             crash(`enum fail`);
                         if (expr.operator == operators.add) {
-                            return this.finishEvaluation(_rightType.values[value + other] ?? fail(f.quote `Cannot add ${other} to ${value}: no corresponding value in ${_rightType}`, expr), _rightType, type);
+                            return this.finishEvaluation(right.type.values[value + other] ?? fail(f.quote `Cannot add ${other} to ${value}: no corresponding value in ${right.type}`, expr), right.type, type);
                         }
                         else if (expr.operator == operators.subtract) {
                             fail(`Cannot subtract an enum value from a number`, expr);
@@ -384,16 +381,8 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                             fail(f.quote `Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[1]);
                     }
                     else {
-                        if (_leftType != guessedType) {
-                            left = this.coerceValue(left, _leftType, guessedType, expr.nodes[0]);
-                            _leftType = guessedType;
-                        }
-                        if (_rightType != guessedType) {
-                            right = this.coerceValue(right, _rightType, guessedType, expr.nodes[1]);
-                            _rightType = guessedType;
-                        }
-                        forceType(left);
-                        forceType(right);
+                        left = this.coerceValue(left.value, left.type, guessedType, expr.nodes[0]);
+                        right = this.coerceValue(right.value, right.type, guessedType, expr.nodes[1]);
                     }
                     switch (expr.operator) {
                         case operators.add:
@@ -428,44 +417,62 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         default:
                             fail(f.quote `Expected this expression to evaluate to a value of type ${type ?? impossible()}, but the operator ${expr.operator} produces a result of another type`, expr);
                     }
-                    return [guessedType, value];
+                    return typedValue(guessedType, value);
                 }
                 if (type?.is("BOOLEAN") || expr.operator.category == "logical") {
                     if (type && !type.is("BOOLEAN"))
                         fail(f.quote `Expected this expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`, expr);
                     if (expr.operator.type == "unary_prefix") {
+                        const operand = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true);
                         switch (expr.operator) {
-                            case operators.not:
-                                return [PrimitiveVariableType.BOOLEAN, !this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1]];
+                            case operators.not: {
+                                return TypedValue.BOOLEAN(!operand.value);
+                            }
                             default: crash("impossible");
                         }
                     }
                     switch (expr.operator) {
-                        case operators.and:
-                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] && this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
-                        case operators.or:
-                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)[1] || this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)[1]];
                         case operators.equal_to:
                         case operators.not_equal_to: {
-                            const [leftType, left] = this.evaluateExpr(expr.nodes[0], undefined, true);
-                            const [rightType, right] = this.evaluateExpr(expr.nodes[1], undefined, true);
-                            const typesMatch = (leftType == rightType) ||
-                                (leftType.is("INTEGER") && rightType.is("REAL")) ||
-                                (leftType.is("REAL") && rightType.is("INTEGER"));
-                            const is_equal = typesMatch && (left == right);
-                            if (expr.operator == operators.equal_to)
-                                return [PrimitiveVariableType.BOOLEAN, is_equal];
-                            else
-                                return [PrimitiveVariableType.BOOLEAN, !is_equal];
+                            const left = this.evaluateExpr(expr.nodes[0], undefined, true);
+                            const right = this.evaluateExpr(expr.nodes[1], undefined, true);
+                            const typesMatch = (left.type == right.type) ||
+                                (left.typeIs("INTEGER") && right.typeIs("REAL")) ||
+                                (left.typeIs("REAL") && right.typeIs("INTEGER"));
+                            const is_equal = typesMatch && (left.value == right.value);
+                            return TypedValue.BOOLEAN((() => {
+                                switch (expr.operator) {
+                                    case operators.equal_to: return is_equal;
+                                    case operators.not_equal_to: return !is_equal;
+                                }
+                            })());
+                        }
+                        case operators.and:
+                        case operators.or: {
+                            const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true).value;
+                            const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true).value;
+                            return TypedValue.BOOLEAN((() => {
+                                switch (expr.operator) {
+                                    case operators.and: return left && right;
+                                    case operators.or: return left || right;
+                                }
+                            })());
                         }
                         case operators.greater_than:
-                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] > this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         case operators.greater_than_equal:
-                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] >= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
                         case operators.less_than:
-                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] < this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
-                        case operators.less_than_equal:
-                            return [PrimitiveVariableType.BOOLEAN, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)[1] <= this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)[1]];
+                        case operators.less_than_equal: {
+                            const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true).value;
+                            const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true).value;
+                            return TypedValue.BOOLEAN((() => {
+                                switch (expr.operator) {
+                                    case operators.greater_than: return left > right;
+                                    case operators.greater_than_equal: return left >= right;
+                                    case operators.less_than: return left < right;
+                                    case operators.less_than_equal: return left <= right;
+                                }
+                            })());
+                        }
                         default:
                             fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`, expr);
                     }
@@ -473,9 +480,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 if (type?.is("STRING") || expr.operator.category == "string") {
                     if (type && !type.is("STRING"))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`, expr);
+                    const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true).value;
+                    const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true).value;
                     switch (expr.operator) {
                         case operators.string_concatenate:
-                            return [PrimitiveVariableType.STRING, this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)[1] + this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)[1]];
+                            return TypedValue.STRING(left + right);
                         default:
                             fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns another type`, expr);
                     }
@@ -507,17 +516,17 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 switch (token.type) {
                     case "boolean.false":
                         if (!type || type.is("BOOLEAN"))
-                            return [PrimitiveVariableType.BOOLEAN, false];
+                            return TypedValue.BOOLEAN(false);
                         else if (type.is("STRING"))
-                            return [PrimitiveVariableType.STRING, "FALSE"];
+                            return TypedValue.STRING("FALSE");
                         else
                             fail(f.text `Cannot convert value FALSE to type ${type}`, token);
                         break;
                     case "boolean.true":
                         if (!type || type.is("BOOLEAN"))
-                            return [PrimitiveVariableType.BOOLEAN, true];
+                            return TypedValue.BOOLEAN(true);
                         else if (type.is("STRING"))
-                            return [PrimitiveVariableType.STRING, "TRUE"];
+                            return TypedValue.STRING("TRUE");
                         else
                             fail(f.text `Cannot convert value TRUE to type ${type}`, token);
                         break;
@@ -533,13 +542,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                                     fail(f.quote `Value ${token} cannot be converted to an integer`, token);
                                 if (!Number.isSafeInteger(val))
                                     fail(f.quote `Value ${token} cannot be converted to an integer: too large`, token);
-                                return [PrimitiveVariableType.INTEGER, val];
+                                return TypedValue.INTEGER(val);
                             }
                             else if (type?.is("STRING")) {
-                                return [PrimitiveVariableType.STRING, token.text];
+                                return TypedValue.STRING(token.text);
                             }
                             else {
-                                return [PrimitiveVariableType.REAL, val];
+                                return TypedValue.REAL(val);
                             }
                         }
                         else
@@ -547,13 +556,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         break;
                     case "string":
                         if (!type || type.is("STRING"))
-                            return [PrimitiveVariableType.STRING, token.text.slice(1, -1)];
+                            return TypedValue.STRING(token.text.slice(1, -1));
                         else
                             fail(f.quote `Cannot convert value ${token} to type ${type}`, token);
                         break;
                     case "char":
                         if (!type || type.is("CHAR") || type.is("STRING"))
-                            return [PrimitiveVariableType.CHAR, token.text.slice(1, -1)];
+                            return TypedValue.CHAR(token.text.slice(1, -1));
                         else
                             fail(f.quote `Cannot convert value ${token} to type ${type}`, token);
                         break;
@@ -841,7 +850,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         };
                     }
                     else {
-                        const [type, value] = this.evaluateExpr(args[i], rType);
+                        const { type, value } = this.evaluateExpr(args[i], rType);
                         if (type instanceof ArrayVariableType && !type.lengthInformation)
                             crash(f.quote `evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
                         scope.variables[name] = {
@@ -885,7 +894,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     return null;
                 }
                 else {
-                    return (output ? [this.resolveVariableType(func.returnType), output.value] : fail(f.quote `Function ${func.name} did not return a value`, undefined));
+                    if (!output)
+                        fail(f.quote `Function ${func.name} did not return a value`, undefined);
+                    return typedValue(this.resolveVariableType(func.returnType), output.value);
                 }
             }
             callBuiltinFunction(fn, args, returnType) {
@@ -899,7 +910,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     const errors = [];
                     for (const possibleType of type) {
                         if (tryRunOr(() => {
-                            evaluatedArgs.push([this.evaluateExpr(args[i], possibleType)[1], args[i].range]);
+                            evaluatedArgs.push([this.evaluateExpr(args[i], possibleType).value, args[i].range]);
                             i++;
                         }, err => errors.push(err)))
                             continue nextArg;
@@ -908,9 +919,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 const processedArgs = evaluatedArgs.map(([value, range]) => Object.assign(boxPrimitive(value), { range }));
                 if (returnType)
-                    return [returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType)];
+                    return typedValue(returnType, this.coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
                 else
-                    return [fn.returnType, fn.impl.apply(this, processedArgs)];
+                    return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
             }
             runBlock(code, ...scopes) {
                 this.scopes.push(...scopes);

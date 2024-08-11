@@ -14,8 +14,8 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
     propertyTypes: Record<string, VariableType>;
     type: ClassVariableType;
 } : never;
-export type TypedValue = VariableType extends infer T extends VariableType ? T extends unknown ? TypedValue_<T> : never : never;
-export declare class TypedValue_<T extends VariableType> {
+export type TypedValue<T extends VariableType = VariableType> = T extends unknown ? TypedValue_<T> : never;
+declare class TypedValue_<T extends VariableType> {
     type: T;
     value: VariableTypeMapping<T>;
     constructor(type: T, value: VariableTypeMapping<T>);
@@ -24,6 +24,14 @@ export declare class TypedValue_<T extends VariableType> {
     asHTML(recursive: boolean): string;
     asString(): string;
 }
+export declare const TypedValue: {
+    INTEGER(value: VariableTypeMapping<PrimitiveVariableType<"INTEGER">>): TypedValue_<PrimitiveVariableType<"INTEGER">>;
+    REAL(value: VariableTypeMapping<PrimitiveVariableType<"REAL">>): TypedValue_<PrimitiveVariableType<"REAL">>;
+    STRING(value: VariableTypeMapping<PrimitiveVariableType<"STRING">>): TypedValue_<PrimitiveVariableType<"STRING">>;
+    CHAR(value: VariableTypeMapping<PrimitiveVariableType<"CHAR">>): TypedValue_<PrimitiveVariableType<"CHAR">>;
+    BOOLEAN(value: VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>): TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
+    DATE(value: VariableTypeMapping<PrimitiveVariableType<"DATE">>): TypedValue_<PrimitiveVariableType<"DATE">>;
+};
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
@@ -253,3 +261,4 @@ export type VariableScope = {
     variables: Record<string, VariableData | ConstantData>;
     types: Record<string, VariableType>;
 };
+export {};

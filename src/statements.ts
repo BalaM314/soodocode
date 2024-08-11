@@ -300,7 +300,7 @@ export class ConstantStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`, this);
-		const [type, value] = Runtime.evaluateToken(this.expr);
+		const { type, value } = Runtime.evaluateToken(this.expr);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
 			get value(){ return value; },
@@ -330,7 +330,7 @@ export class DefineStatement extends Statement {
 			type,
 			declaration: this,
 			mutable: true,
-			value: this.values.map(t => Runtime.evaluateToken(t, type.baseType)[1] as VariableTypeMapping<PrimitiveVariableType>)
+			value: this.values.map(t => Runtime.evaluateToken(t, type.baseType as PrimitiveVariableType).value)
 		};
 	}
 }
@@ -410,7 +410,7 @@ export class AssignmentStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(this.target instanceof Token && !runtime.getVariable(this.target.text)){
-			const [type, value] = runtime.evaluateExpr(this.expr);
+			const {type, value} = runtime.evaluateExpr(this.expr);
 			if(type instanceof ClassVariableType){
 				if(configs.statements.auto_declare_classes.value){
 					runtime.getCurrentScope().variables[this.target.text] = {
@@ -435,9 +435,7 @@ export class OutputStatement extends Statement {
 		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
 	}
 	run(runtime:Runtime){
-		runtime._output(this.outMessage.map(expr =>
-			typedValue(...runtime.evaluateExpr(expr))
-		));
+		runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
 	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")
@@ -499,7 +497,7 @@ export class ReturnStatement extends Statement {
 		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type))[1]
+			value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type)).value
 		};
 	}
 }
@@ -535,7 +533,7 @@ export class IfStatement extends Statement {
 		this.condition = tokens[1];
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		if(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]){
+		if(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value){
 			return runtime.runBlock(node.nodeGroups[0]);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
 			return runtime.runBlock(node.nodeGroups[1]);
@@ -567,7 +565,7 @@ export class SwitchStatement extends Statement {
 		) fail(`OTHERWISE case branch must be the last case branch`, err);
 	}
 	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
-		const [switchType, switchValue] = runtime.evaluateExpr(this.expression);
+		const { type:switchType, value:switchValue } = runtime.evaluateExpr(this.expression);
 		for(const [i, statement] of controlStatements.entries()){
 			if(i == 0) continue;
 			//skip the first one as that is the switch statement
@@ -599,7 +597,7 @@ export class CaseBranchStatement extends Statement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Try to evaluate the case token with the same type as the switch target
-		const [_caseType, caseValue] = Runtime.evaluateToken(this.value, switchType);
+		const { value:caseValue } = Runtime.evaluateToken(this.value, switchType);
 		return switchValue == caseValue;
 	}
 }
@@ -619,8 +617,8 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Evaluate the case tokens with the same type as the switch target
-		const [_lType, lValue] = Runtime.evaluateToken(this.value, switchType);
-		const [_uType, uValue] = Runtime.evaluateToken(this.upperBound, switchType);
+		const { value:lValue } = Runtime.evaluateToken(this.value, switchType);
+		const { value:uValue } = Runtime.evaluateToken(this.upperBound, switchType);
 		return lValue <= switchValue && switchValue <= uValue;
 	}
 }
@@ -639,8 +637,8 @@ export class ForStatement extends Statement {
 		return 1;
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER)[1];
-		const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER)[1];
+		const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
+		const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
 		if(upper < lower) return;
 		const end = node.controlStatements[1] as ForEndStatement;
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
@@ -673,7 +671,7 @@ export class ForStepStatement extends ForStatement {
 		this.stepToken = tokens[7];
 	}
 	step(runtime:Runtime):number {
-		return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)[1];
+		return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER).value;
 	}
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
@@ -695,7 +693,7 @@ export class WhileStatement extends Statement {
 		this.condition = tokens[1];
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		while(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN)[1]){
+		while(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				opaque: false,
@@ -722,7 +720,7 @@ export class DoWhileStatement extends Statement {
 			if(result) return result;
 			if(++i > DoWhileStatement.maxLoops)
 				fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
-		} while(!runtime.evaluateExpr((node.controlStatements[1] as DoWhileEndStatement).condition, PrimitiveVariableType.BOOLEAN)[1]);
+		} while(!runtime.evaluateExpr((node.controlStatements[1] as DoWhileEndStatement).condition, PrimitiveVariableType.BOOLEAN).value);
 		//Inverted, the pseudocode statement is "until"
 	}
 }
@@ -793,7 +791,7 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 		[, this.filename, , this.mode] = tokens;
 	}
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
 		const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote`File ${name} does not exist.`, this);
 		if(mode == "READ"){
@@ -824,7 +822,7 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 		[, this.filename] = tokens;
 	}
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		if(runtime.openFiles[name]) runtime.openFiles[name] = undefined;
 		else if(name in runtime.openFiles) fail(f.quote`Cannot close file ${name}, because it has already been closed.`, this);
 		else fail(f.quote`Cannot close file ${name}, because it was never opened.`, this);
@@ -839,7 +837,7 @@ export class ReadFileStatement extends Statement implements IFileStatement {
 		[, this.filename, , this.output] = tokens;
 	}
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
 		if(data.lineNumber >= data.lines.length) fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
 		const output = runtime.evaluateExpr(this.output, "variable");
@@ -855,9 +853,9 @@ export class WriteFileStatement extends Statement implements IFileStatement {
 		[, this.filename, , this.data] = tokens;
 	}
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-		data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING)[1] + "\n";
+		data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING).value + "\n";
 	}
 }
 
@@ -870,9 +868,9 @@ export class SeekStatement extends Statement implements IFileStatement {
 		[, this.filename, , this.index] = tokens;
 	}
 	run(runtime:Runtime){
-		const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER)[1];
+		const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER).value;
 		if(index < 0) fail(`SEEK index must be positive`, this.index);
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
 		fail(`Not yet implemented`, this);
 	}
@@ -886,7 +884,7 @@ export class GetRecordStatement extends Statement implements IFileStatement {
 		[, this.filename, , this.variable] = tokens;
 	}
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
 		const variable = runtime.evaluateExpr(this.variable, "variable");
 		fail(`Not yet implemented`, this);
@@ -901,9 +899,9 @@ export class PutRecordStatement extends Statement implements IFileStatement {
 		[, this.filename, , this.variable] = tokens;
 	}
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING)[1];
+		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
 		const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
-		const [type, value] = runtime.evaluateExpr(this.variable);
+		const { type, value } = runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`, this);
 	}
 }

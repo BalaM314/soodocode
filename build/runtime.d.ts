@@ -34,24 +34,24 @@ export declare class Runtime {
     fs: Files;
     builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
     constructor(_input: (message: string, type: VariableType) => string, _output: (values: TypedValue[]) => void);
-    finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): [type: VariableType, value: VariableValue];
-    processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): [type: VariableType, value: VariableValue];
+    finishEvaluation(value: VariableValue, from: VariableType, to: VariableType | undefined): TypedValue;
+    processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): TypedValue;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType: "variable"): VariableData;
-    processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType | "variable"): [type: VariableType, value: VariableValue] | VariableData;
-    processRecordAccess(expr: ExpressionASTBranchNode, outType?: VariableType): [type: VariableType, value: VariableValue];
+    processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType | "variable"): TypedValue | VariableData;
+    processRecordAccess(expr: ExpressionASTBranchNode, outType?: VariableType): TypedValue;
     processRecordAccess(expr: ExpressionASTBranchNode, outType: "variable"): VariableData | ConstantData;
     processRecordAccess(expr: ExpressionASTBranchNode, outType: "function"): ClassMethodCallInformation;
-    processRecordAccess(expr: ExpressionASTBranchNode, outType?: VariableType | "variable" | "function"): [type: VariableType, value: VariableValue] | VariableData | ConstantData | ClassMethodCallInformation;
+    processRecordAccess(expr: ExpressionASTBranchNode, outType?: VariableType | "variable" | "function"): TypedValue | VariableData | ConstantData | ClassMethodCallInformation;
     assignExpr(target: ExpressionAST, src: ExpressionAST): void;
-    evaluateExpr(expr: ExpressionAST): [type: VariableType, value: VariableValue];
-    evaluateExpr(expr: ExpressionAST, undefined: undefined, recursive: boolean): [type: VariableType, value: VariableValue];
+    evaluateExpr(expr: ExpressionAST): TypedValue;
+    evaluateExpr(expr: ExpressionAST, undefined: undefined, recursive: boolean): TypedValue;
     evaluateExpr(expr: ExpressionAST, type: "variable", recursive?: boolean): VariableData | ConstantData;
     evaluateExpr(expr: ExpressionAST, type: "function", recursive?: boolean): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
-    evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T, recursive?: boolean): [type: T & {}, value: VariableTypeMapping<T>];
-    evaluateToken(token: Token): [type: VariableType, value: VariableValue];
+    evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T, recursive?: boolean): TypedValue<T extends undefined ? VariableType : T & {}>;
+    evaluateToken(token: Token): TypedValue;
     evaluateToken(token: Token, type: "variable"): VariableData | ConstantData;
     evaluateToken(token: Token, type: "function"): FunctionData | BuiltinFunctionData;
-    evaluateToken<T extends VariableType | undefined>(token: Token, type: T): [type: T & {}, value: VariableTypeMapping<T>];
+    evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
     static NotStaticError: {
         new (message?: string | undefined): {
             name: string;
@@ -69,7 +69,8 @@ export declare class Runtime {
         prepareStackTrace?: ((err: Error, stackTraces: NodeJS.CallSite[]) => any) | undefined;
         stackTraceLimit: number;
     };
-    static evaluateToken(token: Token, type?: VariableType): [type: VariableType, value: VariableValue];
+    static evaluateToken(token: Token): TypedValue;
+    static evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;
@@ -89,8 +90,8 @@ export declare class Runtime {
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: RangeArray<ExpressionAST>): VariableScope;
     callFunction<T extends boolean>(funcNode: FunctionData, args: RangeArray<ExpressionAST>, requireReturnValue?: T): VariableValue | (T extends false ? null : never);
-    callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: RangeArray<ExpressionAST>, requireReturnValue?: T): (T extends false ? null : T extends undefined ? [type: VariableType, value: VariableValue] | null : T extends true ? [type: VariableType, value: VariableValue] : never);
-    callBuiltinFunction(fn: BuiltinFunctionData, args: RangeArray<ExpressionAST>, returnType?: VariableType): [type: VariableType, value: VariableValue];
+    callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: RangeArray<ExpressionAST>, requireReturnValue?: T): (T extends false ? null : T extends undefined ? TypedValue | null : T extends true ? TypedValue : never);
+    callBuiltinFunction(fn: BuiltinFunctionData, args: RangeArray<ExpressionAST>, returnType?: VariableType): TypedValue;
     runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
         type: "function_return";
         value: VariableValue;
