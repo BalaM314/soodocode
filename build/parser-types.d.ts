@@ -55,8 +55,17 @@ export declare class ExpressionASTArrayTypeNode implements TextRanged, IFormatta
     fmtText(): string;
     fmtDebug(): string;
 }
-export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
-export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
+export declare class ExpressionASTRangeTypeNode implements TextRanged, IFormattable {
+    low: Token;
+    high: Token;
+    allTokens: RangeArray<Token>;
+    range: TextRange;
+    constructor(low: Token, high: Token, allTokens: RangeArray<Token>);
+    fmtText(): string;
+    fmtDebug(): string;
+}
+export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode;
+export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTTypeNode;
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";

@@ -10,8 +10,8 @@ which is the preferred representation of the program.
 
 import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
-import { ArrayVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
+import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
 import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
@@ -81,13 +81,27 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 export const processTypeData = errorBoundary()(function _processTypeData(typeNode:ExpressionASTTypeNode):UnresolvedVariableType {
 	if(typeNode instanceof Token){
 		return PrimitiveVariableType.resolve(typeNode);
-	} else return ArrayVariableType.from(typeNode);
+	} else if(typeNode instanceof ExpressionASTArrayTypeNode){
+		return ArrayVariableType.from(typeNode);
+	} else if(typeNode instanceof ExpressionASTRangeTypeNode){
+		return IntegerRangeVariableType.from(typeNode);
+	}
+	typeNode satisfies never;
+	impossible();
 });
 
 export const parseType = errorBoundary()(function _parseType(tokens:RangeArray<Token>):ExpressionASTTypeNode {
 	if(tokens.length == 0) crash(`Cannot parse empty type`);
+
 	//Builtin or reference to user defined type
 	if(checkTokens(tokens, ["name"])) return tokens[0];
+
+	//Range type
+	if(checkTokens(tokens, ["number.decimal", "operator.range", "number.decimal"]))
+		return new ExpressionASTRangeTypeNode(
+			tokens[0], tokens[2], tokens
+		);
+
 	//Array type
 	if(checkTokens(tokens, ["keyword.array", "keyword.of", "name"])) return new ExpressionASTArrayTypeNode(null, tokens.at(-1)!, tokens);
 	if(checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", "keyword.of", "name"]))

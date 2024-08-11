@@ -1,9 +1,9 @@
-import { ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
+import { ExpressionASTNode, ExpressionASTNodeExt, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError } from "./utils.js";
 type FlattenTreeOutput = [depth: number, statement: Statement];
 export declare function flattenTree(program: ProgramASTNode[]): FlattenTreeOutput[];
-export declare function displayExpressionHTML(node: ExpressionASTNode | ExpressionASTArrayTypeNode, expand?: boolean, format?: boolean): string;
+export declare function displayExpressionHTML(node: ExpressionASTNodeExt, expand?: boolean, format?: boolean): string;
 export declare function displayProgram(program: ProgramAST | ProgramASTNode[]): string;
 export declare function displayStatement(statement: Statement): string;
 export declare function generateConfigsDialog(): HTMLElement;

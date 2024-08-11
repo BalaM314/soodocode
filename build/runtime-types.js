@@ -138,6 +138,42 @@ PrimitiveVariableType.STRING = new PrimitiveVariableType("STRING");
 PrimitiveVariableType.CHAR = new PrimitiveVariableType("CHAR");
 PrimitiveVariableType.BOOLEAN = new PrimitiveVariableType("BOOLEAN");
 PrimitiveVariableType.DATE = new PrimitiveVariableType("DATE");
+export class IntegerRangeVariableType extends BaseVariableType {
+    constructor(low, high, range) {
+        super();
+        this.low = low;
+        this.high = high;
+        this.range = range;
+    }
+    init(runtime) { impossible(); }
+    possible() {
+        return this.high >= this.low;
+    }
+    getInitValue(runtime, requireInit) {
+        if (requireInit) {
+            if (!this.possible())
+                fail(f.quote `Cannot initialize variable of type ${this}`, this.range);
+            return this.low;
+        }
+        else
+            return null;
+    }
+    fmtText() {
+        return `${this.low}..${this.high}`;
+    }
+    fmtDebug() {
+        return `IntegerRangeVariableType { ${this.low} .. ${this.high} }`;
+    }
+    asString() {
+        return `${this.low}..${this.high}`;
+    }
+    asHTML() {
+        return `<span class="sth-range"><span class="sth-number">${this.low}</span>..<span class="sth-number">${this.high}</span></span>`;
+    }
+    static from(node) {
+        return new this(Number(node.low.text), Number(node.high.text), node.range);
+    }
+}
 export class ArrayVariableType extends BaseVariableType {
     constructor(lengthInformationExprs, lengthInformationRange, elementType, range) {
         super();
@@ -550,6 +586,8 @@ export function typesAssignable(base, ext) {
         }
         return true;
     }
+    if (base == PrimitiveVariableType.INTEGER && ext instanceof IntegerRangeVariableType)
+        return true;
     if (base instanceof PointerVariableType && ext instanceof PointerVariableType) {
         return typesEqual(base.target, ext.target) || f.quote `Types ${base.target} and ${ext.target} are not equal`;
     }

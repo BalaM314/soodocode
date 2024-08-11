@@ -9,7 +9,7 @@ This file contains the definitions for every statement type supported by Soodoco
 import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
@@ -85,7 +85,7 @@ export class Statement implements TextRanged, IFormattable {
 	 */
 	static invalidMessage: string | null = null;
 	range: TextRange;
-	constructor(public tokens:RangeArray<Token | ExpressionAST | ExpressionASTArrayTypeNode>){
+	constructor(public tokens:RangeArray<ExpressionASTNodeExt>){
 		this.type = this.constructor as typeof Statement;
 		this.stype = this.type.type;
 		this.category = this.type.category;

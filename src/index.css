@@ -209,6 +209,9 @@ td, th {
 .sth-invalid {
 	color: #ff4444;
 }
+.sth-range {
+	text-decoration: underline;
+}
 
 .error-range-inner {
 	text-decoration: underline wavy red;

@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -26,6 +26,7 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 		never
 	) :
 	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
+	T extends IntegerRangeVariableType ? number :
 	T extends RecordVariableType ? {
 		[index:string]: VariableTypeMapping<any> | null;
 	} :
@@ -205,6 +206,37 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 			DATE: new Date(configs.default_values.DATE.value),
 		}[this.name];
 		else return null;
+	}
+}
+export class IntegerRangeVariableType extends BaseVariableType {
+	constructor(
+		public low:number, public high:number,
+		public range:TextRange
+	){super();}
+	init(runtime:Runtime){ impossible(); }
+	possible(){
+		return this.high >= this.low;
+	}
+	getInitValue(runtime:Runtime, requireInit:boolean):number | null {
+		if(requireInit){
+			if(!this.possible()) fail(f.quote`Cannot initialize variable of type ${this}`, this.range);
+			return this.low;
+		} else return null;
+	}
+	fmtText(){
+		return `${this.low}..${this.high}`;
+	}
+	fmtDebug(){
+		return `IntegerRangeVariableType { ${this.low} .. ${this.high} }`;
+	}
+	asString(){
+		return `${this.low}..${this.high}`;
+	}
+	asHTML(){
+		return `<span class="sth-range"><span class="sth-number">${this.low}</span>..<span class="sth-number">${this.high}</span></span>`;
+	}
+	static from(node:ExpressionASTRangeTypeNode){
+		return new this(Number(node.low.text), Number(node.high.text), node.range);
 	}
 }
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
@@ -668,6 +700,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		}
 		return true;
 	}
+	if(base == PrimitiveVariableType.INTEGER && ext instanceof IntegerRangeVariableType) return true;
 	if(base instanceof PointerVariableType && ext instanceof PointerVariableType){
 		return typesEqual(base.target, ext.target) || f.quote`Types ${base.target} and ${ext.target} are not equal`;
 	}
@@ -714,6 +747,7 @@ export const checkClassMethodsCompatible = errorBoundary({
 
 export type UnresolvedVariableType =
 	| PrimitiveVariableType
+	| IntegerRangeVariableType
 	| ArrayVariableType<false>
 	| ["unresolved", name:string, range:TextRange]
 ;
@@ -725,6 +759,7 @@ export type VariableType<Init extends boolean = true> =
 	| PrimitiveVariableType<"BOOLEAN">
 	| PrimitiveVariableType<"DATE">
 	| PrimitiveVariableType
+	| IntegerRangeVariableType
 	| ArrayVariableType<Init>
 	| RecordVariableType<Init>
 	| PointerVariableType<Init>

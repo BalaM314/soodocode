@@ -10,7 +10,7 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
@@ -547,11 +547,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 						if(!Number.isSafeInteger(val))
 							fail(f.quote`Value ${token} cannot be converted to an integer: too large`, token);
 						return TypedValue.INTEGER(val);
-					} else if(type?.is("STRING")){
-						return TypedValue.STRING(token.text);
-					} else {
-						return TypedValue.REAL(val);
 					}
+					return this.finishEvaluation(val, PrimitiveVariableType.REAL, type);
 				} else fail(f.quote`Cannot convert number to type ${type}`, token);
 				break;
 			case "string":
@@ -581,6 +578,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}
 	resolveVariableType(type:UnresolvedVariableType):VariableType {
 		if(type instanceof PrimitiveVariableType) return type;
+		else if(type instanceof IntegerRangeVariableType) return type;
 		else if(type instanceof ArrayVariableType) {
 			type.init(this);
 			return type as never as ArrayVariableType<true>;
@@ -773,6 +771,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
 			if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
 			else disabledConfig = configs.coercion.enums_to_integer;
+		}
+		if(from.is("INTEGER") && to instanceof IntegerRangeVariableType){
+			const v = value as VariableTypeMapping<PrimitiveVariableType<"INTEGER">>;
+			if(to.low <= v && v <= to.high) return v as never;
+			else assignabilityError = f.quote`Value ${v} is not in range ${to}`;
 		}
 		fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (
 			assignabilityError ? `: ${assignabilityError}.` :

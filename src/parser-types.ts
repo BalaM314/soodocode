@@ -8,7 +8,7 @@ This file contains the types for the parser.
 import type { Token, TokenType } from "./lexer-types.js";
 import type { Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
-import { crash, f, getTotalRange, RangeArray } from "./utils.js";
+import { crash, f, getRange, getTotalRange, RangeArray } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -103,14 +103,12 @@ export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 }
 /** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
 export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
-	range: TextRange;
+	range: TextRange = this.allTokens.range;
 	constructor(
 		public lengthInformation: [low:ExpressionAST, high:ExpressionAST][] | null,
 		public elementType: Token,
 		public allTokens: RangeArray<Token>,
-	){
-		this.range = getTotalRange(allTokens);
-	}
+	){}
 	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => f.text`${l}:${h}`).join(", ")}]` : "";
 		return `ARRAY OF ${this.elementType.text}`;
@@ -120,14 +118,27 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 		return `ARRAY${rangeText} OF ${this.elementType.fmtDebug()}`;
 	}
 }
+/** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
+export class ExpressionASTRangeTypeNode implements TextRanged, IFormattable {
+	range: TextRange = this.allTokens.range;
+	constructor(
+		public low:Token,
+		public high:Token,
+		public allTokens: RangeArray<Token>,
+	){}
+	fmtText():string {
+		return `${this.low.text}..${this.high.text}`;
+	}
+	fmtDebug():string {
+		return f.debug`${this.low} .. ${this.high}`;
+	}
+}
 // export class ExpressionASTPointerTypeNode implements TextRanged {
-// 	range: TextRange;
+// 	range: TextRange = this.allTokens.range;
 // 	constructor(
 // 		public targetType: Token,
 // 		public allTokens: RangeArray<Token>,
-// 	){
-// 		this.range = getTotalRange(allTokens);
-// 	}
+// 	){}
 // 	toData(name:string):PointerVariableType {
 // 		return new PointerVariableType(
 // 			name,
@@ -136,13 +147,11 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 // 	}
 // }
 // export class ExpressionASTEnumTypeNode implements TextRanged {
-// 	range: TextRange;
+// 	range: TextRange = this.allTokens.range;
 // 	constructor(
 // 		public values: RangeArray<Token>,
 // 		public allTokens: RangeArray<Token>,
-// 	){
-// 		this.range = getTotalRange(allTokens);
-// 	}
+// 	){}
 // 	toData(name:string):EnumeratedVariableType {
 // 		return new EnumeratedVariableType(
 // 			name,
@@ -150,10 +159,10 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 // 		);
 // 	}
 // }
-/** Represents a node that represents a type, which can be either a single token or an array type node. */
-export type ExpressionASTTypeNode = Token | ExpressionASTArrayTypeNode;
+/** Represents a node that represents a type, for example, a single token, or an array type node. */
+export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode;
 /** Represents an "extended" expression AST node, which may also be an array type node */
-export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTArrayTypeNode;
+export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTTypeNode;
 
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";

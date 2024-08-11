@@ -36,7 +36,7 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
 export class Files {
@@ -544,12 +544,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                                     fail(f.quote `Value ${token} cannot be converted to an integer: too large`, token);
                                 return TypedValue.INTEGER(val);
                             }
-                            else if (type?.is("STRING")) {
-                                return TypedValue.STRING(token.text);
-                            }
-                            else {
-                                return TypedValue.REAL(val);
-                            }
+                            return this.finishEvaluation(val, PrimitiveVariableType.REAL, type);
                         }
                         else
                             fail(f.quote `Cannot convert number to type ${type}`, token);
@@ -584,6 +579,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             resolveVariableType(type) {
                 if (type instanceof PrimitiveVariableType)
+                    return type;
+                else if (type instanceof IntegerRangeVariableType)
                     return type;
                 else if (type instanceof ArrayVariableType) {
                     type.init(this);
@@ -795,6 +792,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         return from.values.indexOf(value);
                     else
                         disabledConfig = configs.coercion.enums_to_integer;
+                }
+                if (from.is("INTEGER") && to instanceof IntegerRangeVariableType) {
+                    const v = value;
+                    if (to.low <= v && v <= to.high)
+                        return v;
+                    else
+                        assignabilityError = f.quote `Value ${v} is not in range ${to}`;
                 }
                 fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` :
                     disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""), range);

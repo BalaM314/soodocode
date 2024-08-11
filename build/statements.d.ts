@@ -1,5 +1,5 @@
 import { Token } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { ClassVariableType, FunctionData, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
@@ -36,7 +36,7 @@ export type StatementExecutionResult = {
     value: VariableValue;
 };
 export declare class Statement implements TextRanged, IFormattable {
-    tokens: RangeArray<Token | ExpressionAST | ExpressionASTArrayTypeNode>;
+    tokens: RangeArray<ExpressionASTNodeExt>;
     type: typeof Statement;
     stype: StatementType;
     static type: StatementType;
@@ -49,7 +49,7 @@ export declare class Statement implements TextRanged, IFormattable {
     static allowOnly: Set<StatementType> | null;
     static invalidMessage: string | null;
     range: TextRange;
-    constructor(tokens: RangeArray<Token | ExpressionAST | ExpressionASTArrayTypeNode>);
+    constructor(tokens: RangeArray<ExpressionASTNodeExt>);
     fmtText(): string;
     fmtDebug(): string;
     static blockEndStatement<TOut extends typeof Statement | Function = typeof Statement>(): typeof Statement extends TOut ? TOut : unknown;

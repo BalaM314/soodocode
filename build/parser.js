@@ -1,7 +1,7 @@
 import { Token } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
-import { ArrayVariableType, PrimitiveVariableType } from "./runtime-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
+import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
 import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens) {
@@ -62,14 +62,22 @@ export const processTypeData = errorBoundary()(function _processTypeData(typeNod
     if (typeNode instanceof Token) {
         return PrimitiveVariableType.resolve(typeNode);
     }
-    else
+    else if (typeNode instanceof ExpressionASTArrayTypeNode) {
         return ArrayVariableType.from(typeNode);
+    }
+    else if (typeNode instanceof ExpressionASTRangeTypeNode) {
+        return IntegerRangeVariableType.from(typeNode);
+    }
+    typeNode;
+    impossible();
 });
 export const parseType = errorBoundary()(function _parseType(tokens) {
     if (tokens.length == 0)
         crash(`Cannot parse empty type`);
     if (checkTokens(tokens, ["name"]))
         return tokens[0];
+    if (checkTokens(tokens, ["number.decimal", "operator.range", "number.decimal"]))
+        return new ExpressionASTRangeTypeNode(tokens[0], tokens[2], tokens);
     if (checkTokens(tokens, ["keyword.array", "keyword.of", "name"]))
         return new ExpressionASTArrayTypeNode(null, tokens.at(-1), tokens);
     if (checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", "keyword.of", "name"]))

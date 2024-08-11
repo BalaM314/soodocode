@@ -7,7 +7,7 @@ import * as runtimeTypes from "./runtime-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
@@ -30,7 +30,7 @@ export function flattenTree(program) {
     }).flat(1);
 }
 export function displayExpressionHTML(node, expand = false, format = true) {
-    if (node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
+    if (node instanceof Token || node instanceof ExpressionASTArrayTypeNode || node instanceof ExpressionASTRangeTypeNode)
         return escapeHTML(node.fmtText());
     if (node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode) {
         const text = escapeHTML(node.fmtText());

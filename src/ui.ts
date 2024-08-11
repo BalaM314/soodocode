@@ -14,7 +14,7 @@ import * as runtimeTypes from "./runtime-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
@@ -36,8 +36,8 @@ export function flattenTree(program:ProgramASTNode[]):FlattenTreeOutput[]{
 }
 
 
-export function displayExpressionHTML(node:ExpressionASTNode | ExpressionASTArrayTypeNode, expand = false, format = true):string {
-	if(node instanceof Token || node instanceof ExpressionASTArrayTypeNode)
+export function displayExpressionHTML(node:ExpressionASTNodeExt, expand = false, format = true):string {
+	if(node instanceof Token || node instanceof ExpressionASTArrayTypeNode || node instanceof ExpressionASTRangeTypeNode)
 		return escapeHTML(node.fmtText());
 	if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode) {
 		const text = escapeHTML(node.fmtText());

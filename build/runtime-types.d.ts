@@ -1,11 +1,11 @@
 import { Token } from "./lexer-types.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
 import type { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
 import { RangeArray } from "./utils.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends RecordVariableType ? {
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends IntegerRangeVariableType ? number : T extends RecordVariableType ? {
     [index: string]: VariableTypeMapping<any> | null;
 } : T extends PointerVariableType ? VariableData<VariableType> | ConstantData<VariableType> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
     properties: {
@@ -65,6 +65,20 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     static get(type: string): PrimitiveVariableType | undefined;
     static resolve(token: Token): Exclude<UnresolvedVariableType, ArrayVariableType>;
     getInitValue(runtime: Runtime, requireInit: boolean): number | string | boolean | Date | null;
+}
+export declare class IntegerRangeVariableType extends BaseVariableType {
+    low: number;
+    high: number;
+    range: TextRange;
+    constructor(low: number, high: number, range: TextRange);
+    init(runtime: Runtime): void;
+    possible(): boolean;
+    getInitValue(runtime: Runtime, requireInit: boolean): number | null;
+    fmtText(): string;
+    fmtDebug(): string;
+    asString(): string;
+    asHTML(): string;
+    static from(node: ExpressionASTRangeTypeNode): IntegerRangeVariableType;
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
     lengthInformationExprs: [low: ExpressionAST, high: ExpressionAST][] | null;
@@ -188,8 +202,8 @@ export declare function typesEqual(a: VariableType | UnresolvedVariableType, b: 
 export declare function typesAssignable(base: VariableType, ext: VariableType): true | string;
 export declare function typesAssignable(base: UnresolvedVariableType, ext: UnresolvedVariableType): true | string;
 export declare const checkClassMethodsCompatible: (runtime: Runtime, base: ClassMethodStatement, derived: ClassMethodStatement) => void;
-export type UnresolvedVariableType = PrimitiveVariableType | ArrayVariableType<false> | ["unresolved", name: string, range: TextRange];
-export type VariableType<Init extends boolean = true> = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | ArrayVariableType<Init> | RecordVariableType<Init> | PointerVariableType<Init> | EnumeratedVariableType | SetVariableType<Init> | ClassVariableType<Init>;
+export type UnresolvedVariableType = PrimitiveVariableType | IntegerRangeVariableType | ArrayVariableType<false> | ["unresolved", name: string, range: TextRange];
+export type VariableType<Init extends boolean = true> = PrimitiveVariableType<"INTEGER"> | PrimitiveVariableType<"REAL"> | PrimitiveVariableType<"STRING"> | PrimitiveVariableType<"CHAR"> | PrimitiveVariableType<"BOOLEAN"> | PrimitiveVariableType<"DATE"> | PrimitiveVariableType | IntegerRangeVariableType | ArrayVariableType<Init> | RecordVariableType<Init> | PointerVariableType<Init> | EnumeratedVariableType | SetVariableType<Init> | ClassVariableType<Init>;
 export type ArrayElementVariableType = PrimitiveVariableType | RecordVariableType | PointerVariableType | EnumeratedVariableType | ClassVariableType;
 export type VariableValue = VariableTypeMapping<any>;
 export declare const fileModes: readonly ["READ", "WRITE", "APPEND", "RANDOM"];

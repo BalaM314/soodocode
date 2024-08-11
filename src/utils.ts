@@ -376,7 +376,7 @@ export function tagProcessor<T>(
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export type Formattable = IFormattable | IFormattable[] | string | UnresolvedVariableType | String | Number | Boolean | number | boolean;
+export type Formattable = IFormattable | IFormattable[] | string | Exclude<UnresolvedVariableType, IFormattable> | String | Number | Boolean | number | boolean;
 function formatText(input:Formattable):string {
 	if(
 		input instanceof String || input instanceof Number || input instanceof Boolean ||

@@ -81,7 +81,7 @@ export class ExpressionASTArrayTypeNode {
         this.lengthInformation = lengthInformation;
         this.elementType = elementType;
         this.allTokens = allTokens;
-        this.range = getTotalRange(allTokens);
+        this.range = this.allTokens.range;
     }
     fmtText() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => f.text `${l}:${h}`).join(", ")}]` : "";
@@ -90,6 +90,20 @@ export class ExpressionASTArrayTypeNode {
     fmtDebug() {
         const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l.fmtDebug()} : ${h.fmtDebug()}`).join(", ")}]` : "";
         return `ARRAY${rangeText} OF ${this.elementType.fmtDebug()}`;
+    }
+}
+export class ExpressionASTRangeTypeNode {
+    constructor(low, high, allTokens) {
+        this.low = low;
+        this.high = high;
+        this.allTokens = allTokens;
+        this.range = this.allTokens.range;
+    }
+    fmtText() {
+        return `${this.low.text}..${this.high.text}`;
+    }
+    fmtDebug() {
+        return f.debug `${this.low} .. ${this.high}`;
     }
 }
 export class Operator {
