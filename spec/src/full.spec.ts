@@ -155,15 +155,20 @@ x <- 9
 x <- 10`,
 []
 ],
-run_int_range_fail1: [
+run_int_range_fail_low: [
 `DECLARE x: 1..10
 x <- 0`,
 `not in range`
 ],
-run_int_range_fail2: [
+run_int_range_fail_high: [
 `DECLARE x: 1..10
 x <- 11`,
 `not in range`
+],
+run_int_range_fail_not_int: [
+`DECLARE x: 1..10
+x <- 5.5`,
+`not an integer`
 ],
 //#endregion
 //#region arrays
@@ -1455,7 +1460,7 @@ ENDCLASS
 
 DECLARE b: b
 b <- NEW b()
-OUTPUT 5 & b.Sus()`,
+OUTPUT 5 + b.Sus()`,
 `member access on SUPER`
 ],
 //#endregion

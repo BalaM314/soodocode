@@ -1,6 +1,6 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { tokenTextMapping } from "../../build/lexer.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
@@ -23,7 +23,9 @@ export type _ExpressionASTBranchNode = [
 ];
 export type _ExpressionASTOperatorBranchNode = _ExpressionASTBranchNode & [unknown, _Operator, _ExpressionASTNode[]];
 export type _ExpressionASTArrayTypeNode = [lengthInformation:[low:_ExpressionAST, high:_ExpressionAST][] | null, type:_Token];
-export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode;
+export type _ExpressionASTRangeTypeNode = [number, number];
+export type _ExpressionASTExt = _ExpressionAST | _ExpressionASTArrayTypeNode | _ExpressionAST | _ExpressionASTRangeTypeNode;
+export type _ExpressionASTTypeNode = _Token | _ExpressionASTRangeTypeNode | _ExpressionASTArrayTypeNode;
 
 export type _VariableType = Exclude<VariableType, PrimitiveVariableType> | PrimitiveVariableTypeName;
 export type _UnresolvedVariableType = string;
@@ -49,6 +51,7 @@ export type Processed<T> =
 	T extends _ExpressionASTOperatorBranchNode ? ExpressionASTBranchNode :
 	T extends _ExpressionASTBranchNode ? ExpressionASTBranchNode | ExpressionASTArrayAccessNode | ExpressionASTFunctionCallNode | ExpressionASTClassInstantiationNode :
 	T extends _ExpressionASTArrayTypeNode ? ExpressionASTArrayTypeNode :
+	T extends _ExpressionASTRangeTypeNode ? ExpressionASTRangeTypeNode :
 	T extends _ExpressionASTExt ? ExpressionAST | ExpressionASTArrayTypeNode :
 	T extends _VariableType ? VariableType :
 	T extends _UnresolvedVariableType ? UnresolvedVariableType :
@@ -100,8 +103,12 @@ export function process_Token(input:_Token):Token {
 //\[("operator\.and"|"keyword\.file_mode\.append"|"keyword\.array"|"keyword\.pass_mode\.by_reference"|"keyword\.pass_mode\.by_value"|"keyword\.call"|"keyword\.case"|"keyword\.class"|"keyword\.close_file"|"keyword\.constant"|"keyword\.declare"|"keyword\.define"|"operator\.integer_divide"|"keyword\.else"|"keyword\.case_end"|"keyword\.class_end"|"keyword\.function_end"|"keyword\.if_end"|"keyword\.procedure_end"|"keyword\.type_end"|"keyword\.while_end"|"boolean\.false"|"keyword\.for"|"keyword\.function"|"keyword\.get_record"|"keyword\.if"|"keyword\.inherits"|"keyword\.input"|"operator\.mod"|"keyword\.new"|"keyword\.for_end"|"operator\.not"|"keyword\.of"|"keyword\.open_file"|"operator\.or"|"keyword\.otherwise"|"keyword\.output"|"keyword\.class_modifier\.private"|"keyword\.procedure"|"keyword\.class_modifier\.public"|"keyword\.put_record"|"keyword\.file_mode\.random"|"keyword\.file_mode\.read"|"keyword\.read_file"|"keyword\.dowhile"|"keyword\.return"|"keyword\.returns"|"keyword\.seek"|"keyword\.set"|"keyword\.step"|"keyword\.super"|"keyword\.then"|"keyword\.to"|"boolean\.true"|"keyword\.type"|"keyword\.dowhile_end"|"keyword\.while"|"keyword\.file_mode\.write"|"keyword\.write_file"|"operator\.assignment"|"operator\.greater_than_equal"|"operator\.less_than_equal"|"operator\.not_equal_to"|"operator\.equal_to"|"operator\.greater_than"|"operator\.less_than"|"operator\.add"|"operator\.minus"|"operator\.multiply"|"operator\.divide"|"operator\.pointer"|"operator\.string_concatenate"|"parentheses\.open"|"parentheses\.close"|"bracket\.open"|"bracket\.close"|"brace\.open"|"brace\.close"|"punctuation\.colon"|"punctuation\.semicolon"|"punctuation\.comma"|"punctuation\.period"|"newline"),( ?)".+?"\]
 
 
-export function is_ExpressionASTArrayTypeNode(input:_ExpressionAST | _ExpressionASTArrayTypeNode):input is _ExpressionASTArrayTypeNode {
-	return Array.isArray(input) && (input[0] === null || Array.isArray(input[0]));
+export function is_ExpressionASTArrayTypeNode(input:_ExpressionASTExt):input is _ExpressionASTArrayTypeNode {
+	return Array.isArray(input) && input.length == 2 && (input[0] === null || Array.isArray(input[0]));
+}
+
+export function is_ExpressionASTRangeTypeNode(input:_ExpressionASTExt):input is _ExpressionASTRangeTypeNode {
+	return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
 }
 
 export function process_Statement(input:_Statement):Statement {
@@ -117,11 +124,17 @@ export function process_ExpressionASTArrayTypeNode(input:_ExpressionASTArrayType
 	);
 }
 
-export function process_ExpressionASTExt<TIn extends _ExpressionASTLeafNode | _ExpressionASTArrayTypeNode | _ExpressionASTBranchNode>(input:TIn):
-	TIn extends (_ExpressionASTArrayTypeNode | _ExpressionASTLeafNode)
-		? (ExpressionASTArrayTypeNode | ExpressionASTLeafNode)
-		: (ExpressionASTNodeExt) {
-	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
+export function process_ExpressionASTRangeTypeNode(input:_ExpressionASTRangeTypeNode):ExpressionASTRangeTypeNode {
+	return new ExpressionASTRangeTypeNode(
+		process_Token(input[0]), process_Token(input[1]),
+		new RangeArray<Token>([], [-1, -1]) //SPECNULL
+	);
+}
+
+export function process_ExpressionASTExt<TIn extends _ExpressionASTExt>(input:TIn):
+	TIn extends _ExpressionASTTypeNode ? ExpressionASTTypeNode : ExpressionASTNodeExt {
+	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input) as never;
+	if(is_ExpressionASTRangeTypeNode(input)) return process_ExpressionASTRangeTypeNode(input) as never;
 	else return (process_ExpressionAST(input) satisfies ExpressionASTNodeExt) as never;
 }
 
@@ -202,7 +215,7 @@ function assignUnsafeChecked<T extends Record<K, unknown>, K extends PropertyKey
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)] as never as jasmine.AsymmetricMatcher<TextRange>;
 /** Mutates input unsafely */
 export function applyAnyRange<TIn extends
-	ExpressionAST | ExpressionASTArrayTypeNode | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<TextRanged2>
+	ExpressionASTNodeExt | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<TextRanged2>
 >(input:TIn):jasmine.Expected<TIn> {
 	if(input instanceof RangeArray){
 		assignUnsafeChecked(input, "range", anyRange);
@@ -237,6 +250,11 @@ export function applyAnyRange<TIn extends
 		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
 		input.lengthInformation?.flat().forEach(applyAnyRange);
 		applyAnyRange(input.elementType);
+	} else if(input instanceof ExpressionASTRangeTypeNode){
+		assignUnsafeChecked(input, "range", anyRange);
+		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));
+		assignUnsafeChecked(input.low, "range", anyRange);
+		assignUnsafeChecked(input.high, "range", anyRange);
 	} else if(input instanceof ProgramASTBranchNode){
 		input.controlStatements.forEach(applyAnyRange);
 		input.nodeGroups.forEach(block => block.forEach(applyAnyRange));

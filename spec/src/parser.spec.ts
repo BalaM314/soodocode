@@ -8,13 +8,13 @@ This file contains unit tests for the parser.
 
 import "jasmine";
 import { Token, TokenizedProgram } from "../../build/lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, PassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
 import { impossible, RangeArray, SoodocodeError } from "../../build/utils.js";
-import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
+import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ExpressionASTTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
 //copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 
@@ -3105,7 +3105,7 @@ const functionArgumentTests = ((data:Record<string,
 });
 
 
-const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _ExpressionASTArrayTypeNode | "error"]>({
+const parseTypeTests = Object.entries<[input:_Token[], output:_ExpressionASTTypeNode | "error"]>({
 	simpleType1: [
 		[
 			"INTEGER",
@@ -3348,7 +3348,12 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_Token | _Expressi
 		"keyword.of",
 		"INTEGER",
 	], "error"],
-}).map<{name:string; input:RangeArray<Token>; output:jasmine.Expected<Token | ExpressionASTArrayTypeNode> | "error";}>(([name, [input, output]]) => ({
+	simpleRange: [[
+		1,
+		"operator.range",
+		10
+	],[1, 10]]
+}).map<{name:string; input:RangeArray<Token>; output:jasmine.Expected<ExpressionASTTypeNode> | "error";}>(([name, [input, output]]) => ({
 	name,
 	input: new RangeArray<Token>(input.map(process_Token)),
 	output: output == "error" ? (output as "error") : applyAnyRange(process_ExpressionASTExt(output))
