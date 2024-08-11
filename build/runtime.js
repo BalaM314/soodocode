@@ -583,6 +583,18 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 else
                     return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
             }
+            handleNonexistentClass(name, range) {
+                const allClasses = [...this.activeScopes()].flatMap(s => Object.entries(s.types)
+                    .filter((x) => x[1] instanceof ClassVariableType));
+                if (this.currentlyResolvingTypeName == name)
+                    fail(f.quote `Class ${name} does not exist yet, it is currently being initialized`, range);
+                let found;
+                if ((found =
+                    min(allClasses, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
+                    fail(f.quote `Class ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
+                }
+                fail(f.quote `Class ${name} does not exist`, range);
+            }
             handleNonexistentType(name, range) {
                 const allTypes = [
                     ...[...this.activeScopes()].flatMap(s => Object.entries(s.types)),
@@ -686,13 +698,15 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             getClass(name, range) {
                 for (const scope of this.activeScopes()) {
-                    if (scope.types[name]) {
-                        if (!(scope.types[name] instanceof ClassVariableType))
+                    const type = scope.types[name];
+                    if (type) {
+                        if (type instanceof ClassVariableType)
+                            return type;
+                        else
                             fail(f.quote `Type ${name} is not a class, it is ${scope.types[name]}`, range);
-                        return scope.types[name];
                     }
                 }
-                fail(f.quote `Class ${name} has not been defined.`, range);
+                this.handleNonexistentClass(name, range);
             }
             getCurrentFunction() {
                 const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement || s.statement instanceof ClassFunctionStatement || s.statement instanceof ClassProcedureStatement);

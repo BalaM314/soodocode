@@ -457,7 +457,7 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
 	name:string = this.statement.name.text;
-	baseClass:ClassVariableType<Init> | null = null;
+	baseClass:ClassVariableType<Init extends true ? true : boolean> | null = null;
 	constructor(
 		public initialized: Init,
 		public statement: ClassStatement,
@@ -465,7 +465,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = {},
 		/** Does not store inherited methods. */
 		public ownMethods: Record<string, ClassMethodData> = {},
-		public allMethods: Record<string, [source:ClassVariableType<Init>, data:ClassMethodData]> = {},
+		public allMethods: Record<string, [source:ClassVariableType<Init extends true ? true : boolean>, data:ClassMethodData]> = {},
 		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
 	init(runtime:Runtime){

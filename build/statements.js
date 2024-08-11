@@ -250,6 +250,9 @@ function statement(type, example, ...args) {
         return input;
     };
 }
+function finishStatements() {
+    statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
+}
 export class TypeStatement extends Statement {
     createType(runtime) {
         crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
@@ -1483,6 +1486,8 @@ let ClassInheritsStatement = (() => {
             this.superClassName = tokens[3];
         }
         initializeClass(runtime, branchNode) {
+            if (this.superClassName.text == this.name.text)
+                fail(`A class cannot inherit from itself`, this.superClassName);
             const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range);
             const extensions = super.initializeClass(runtime, branchNode);
             extensions.baseClass = baseClass;
@@ -1647,3 +1652,4 @@ let ClassFunctionEndStatement = (() => {
     return ClassFunctionEndStatement = _classThis;
 })();
 export { ClassFunctionEndStatement };
+finishStatements();

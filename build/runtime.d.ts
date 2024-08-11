@@ -71,6 +71,7 @@ export declare class Runtime {
     };
     static evaluateToken(token: Token, type?: VariableType): [type: VariableType, value: VariableValue];
     resolveVariableType(type: UnresolvedVariableType): VariableType;
+    handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;
     handleNonexistentFunction(name: string, range: TextRangeLike): never;
     handleNonexistentVariable(name: string, range: TextRangeLike): never;
@@ -82,7 +83,7 @@ export declare class Runtime {
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
-    getClass<T extends boolean = boolean>(name: string, range: TextRange): ClassVariableType<T>;
+    getClass(name: string, range: TextRange): ClassVariableType<boolean>;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
     coerceValue<T extends VariableType, S extends VariableType>(value: VariableTypeMapping<T>, from: T, to: S, range?: TextRangeLike): VariableTypeMapping<S>;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;

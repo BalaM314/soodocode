@@ -248,6 +248,9 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		return input;
 	};
 }
+function finishStatements(){
+	statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
+}
 
 export class TypeStatement extends Statement {
 	createType(runtime:Runtime):[name:string, type:VariableType<false>] {
@@ -419,7 +422,7 @@ export class AssignmentStatement extends Statement {
 		runtime.assignExpr(this.target, this.expr);
 	}
 }
-@statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+") //TODO move to end of list
+@statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")
 export class AssignmentBadStatement extends Statement {
 	static invalidMessage = "Use the assignment operator (<-) to assign a value to a variable. The = sign is used to test for equality.";
 	static suppressErrors = true;
@@ -965,7 +968,8 @@ export class ClassInheritsStatement extends ClassStatement {
 		this.superClassName = tokens[3];
 	}
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
-		const baseClass = runtime.getClass<false>(this.superClassName.text, this.superClassName.range);
+		if(this.superClassName.text == this.name.text) fail(`A class cannot inherit from itself`, this.superClassName);
+		const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range);
 		const extensions = super.initializeClass(runtime, branchNode);
 
 		//Apply the base class's properties and functions
@@ -1043,3 +1047,5 @@ export class ClassFunctionStatement extends FunctionStatement implements IClassM
 }
 @statement("class_function.end", "ENDFUNCTION", "block_end", "keyword.function_end")
 export class ClassFunctionEndStatement extends Statement {}
+
+finishStatements();

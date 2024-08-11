@@ -288,7 +288,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
 			if(type == "variable" || type == "function") fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`, expr);
-			const clazz = this.getClass<true>(expr.className.text, expr.className.range);
+			const clazz = this.getClass(expr.className.text, expr.className.range) as ClassVariableType<true>;
 			const output = clazz.construct(this, expr.args);
 			return this.finishEvaluation(output, clazz, type);
 		}
@@ -575,6 +575,26 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		} else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
 	}
 	/**
+	 * Called when a class doesn't exist, used to check for capitalization and typos.
+	 */
+	handleNonexistentClass(name:string, range:TextRangeLike):never {
+		const allClasses:(readonly [string, ClassVariableType])[] =
+			[...this.activeScopes()].flatMap(s =>
+				Object.entries(s.types)
+					.filter((x):x is [string, ClassVariableType] => x[1] instanceof ClassVariableType)
+			);
+
+		if(this.currentlyResolvingTypeName == name)
+			fail(f.quote`Class ${name} does not exist yet, it is currently being initialized`, range);
+		let found;
+		if((found =
+			min(allClasses, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)
+		) != undefined){
+			fail(f.quote`Class ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
+		}
+		fail(f.quote`Class ${name} does not exist`, range);
+	}
+	/**
 	 * Called when a type doesn't exist, used to check for capitalization and typos.
 	 */
 	handleNonexistentType(name:string, range:TextRangeLike):never {
@@ -678,15 +698,15 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return { clazz, method, instance: this.classData.instance };
 		} else return this.functions[text] ?? this.builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}
-	getClass<T extends boolean = boolean>(name:string, range:TextRange):ClassVariableType<T> {
+	getClass(name:string, range:TextRange):ClassVariableType<boolean> {
 		for(const scope of this.activeScopes()){
-			if(scope.types[name]){
-				if(!(scope.types[name] instanceof ClassVariableType))
-					fail(f.quote`Type ${name} is not a class, it is ${scope.types[name]}`, range);
-				return scope.types[name] as ClassVariableType<T>;
+			const type = scope.types[name];
+			if(type){
+				if(type instanceof ClassVariableType) return type;
+				else fail(f.quote`Type ${name} is not a class, it is ${scope.types[name]}`, range);
 			}
 		}
-		fail(f.quote`Class ${name} has not been defined.`, range);
+		this.handleNonexistentClass(name, range);
 	}
 	getCurrentFunction():FunctionData | ClassMethodStatement | null {
 		const scope = this.scopes.findLast(
