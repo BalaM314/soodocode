@@ -890,6 +890,40 @@ CLASS mogus INHERITS amogus
 ENDCLASS`,
 `"amogus" is not assignable to "mogus"`
 ],
+parse_class_inherits_return_type_covariant_3: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION name() RETURNS INTEGER
+		RETURN NEW mogus(2)
+	ENDFUNCTION
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC FUNCTION name() RETURNS 1..10
+		RETURN NEW amogus(2)
+	ENDFUNCTION
+ENDCLASS`,
+[]
+],
+parse_class_inherits_return_type_covariant_4: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC FUNCTION name() RETURNS 1..10
+		RETURN NEW mogus(2)
+	ENDFUNCTION
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC FUNCTION name() RETURNS INTEGER
+		RETURN NEW amogus(2)
+	ENDFUNCTION
+ENDCLASS`,
+`"INTEGER" is not assignable to "1..10"`
+],
 parse_class_inherits_parameter_type_count: [
 `CLASS amogus
 	PUBLIC x: INTEGER
@@ -957,6 +991,23 @@ CLASS mogus INHERITS amogus
 	ENDPROCEDURE
 ENDCLASS`,
 `"amogus" is not assignable to type "mogus"`
+],
+parse_class_inherits_parameter_type_contravariant_3: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC PROCEDURE name(arg:INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name(arg:1..10)
+		
+	ENDPROCEDURE
+ENDCLASS`,
+`"INTEGER" is not assignable to type "1..10"`
 ],
 parse_class_inherits_recursive_illegal: [
 `CLASS amogus INHERITS mogus
