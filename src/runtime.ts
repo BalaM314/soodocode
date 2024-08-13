@@ -44,6 +44,36 @@ export type ClassMethodCallInformation = {
 	method: ClassMethodData;
 };
 
+/**
+ * Compares two types to see if they are suitable for equality checking.
+ * Returns true if they are equal, false if they are not equal but the config to allow comparions is set,
+ * and throws an error otherwise.
+ **/
+function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean {
+	if(typesEqual(a, b)) return true;
+	if((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))){
+		if(configs.equality_checks.coerce_int_real.value) return true;
+		else if(!configs.equality_checks.allow_different_types.value)
+			fail(f.short`Cannot test for equality between types ${a} and ${b}\nhelp: to allow this, enable the config "${configs.equality_checks.coerce_int_real.name}"`, range);
+	}
+	if((a.is("STRING") && b.is("CHAR")) || (b.is("CHAR") && a.is("STRING"))){
+		if(configs.equality_checks.coerce_string_char.value) return true;
+		else if(!configs.equality_checks.allow_different_types.value)
+			fail(f.short`Cannot test for equality between types ${a} and ${b}\nhelp: to allow this, enable the config "${configs.equality_checks.coerce_string_char.name}"`, range);
+	}
+	if(
+		a instanceof ArrayVariableType && b instanceof ArrayVariableType &&
+		checkTypeMatch(a.elementType!, b.elementType!, range)
+	){
+		if(configs.equality_checks.coerce_arrays.value) return true;
+		else if(!configs.equality_checks.allow_different_types.value)
+			fail(f.short`Cannot test for equality between types ${a} and ${b}\n${configs.equality_checks.coerce_arrays.errorHelp}`, range);
+	}
+	if(!configs.equality_checks.allow_different_types.value)
+		fail(f.short`Cannot test for equality between types ${a} and ${b}\n${configs.equality_checks.allow_different_types.errorHelp}`, range);
+	return false;
+}
+
 function coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
 	//typescript really hates this function, beware
 	let assignabilityError;
@@ -500,10 +530,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 					//Type is unknown
 					const left = this.evaluateExpr(expr.nodes[0], undefined, true);
 					const right = this.evaluateExpr(expr.nodes[1], undefined, true);
-					const typesMatch =
-						(left.type == right.type) ||
-						(left.typeIs("INTEGER") && right.typeIs("REAL")) ||
-						(left.typeIs("REAL") && right.typeIs("INTEGER"));
+					const typesMatch = checkTypeMatch(left.type, right.type, expr.operatorToken.range);
 					const is_equal = typesMatch && (left.value == right.value);
 					return TypedValue.BOOLEAN((() => {
 						switch(expr.operator){

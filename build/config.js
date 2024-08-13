@@ -67,6 +67,30 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             value: false,
         },
     },
+    equality_checks: {
+        coerce_string_char: {
+            name: "Allow testing equality between CHAR and STRING",
+            description: `If this is enabled, 'a' = "a" will return TRUE.`,
+            value: true,
+        },
+        coerce_int_real: {
+            name: "Allow testing equality between INTEGER and REAL",
+            description: `If this is enabled, comparisons between INTs and REALs with the same value will return TRUE.`,
+            value: true,
+        },
+        coerce_arrays: {
+            name: "Allow testing equality between array types",
+            description: `If this is enabled, testing for equality between array types will be allowed if their lengths are different`,
+            errorHelp: `Make this comparison always return FALSE`,
+            value: true,
+        },
+        allow_different_types: {
+            name: "Allow testing equality between different types",
+            description: `If this is disabled, testing for equality between two different types will throw an error instead of returning FALSE.`,
+            errorHelp: `Make this comparison always return FALSE`,
+            value: false,
+        },
+    },
     arrays: {
         unspecified_length: {
             name: "Unspecified length arrays",

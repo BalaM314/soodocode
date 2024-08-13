@@ -19,6 +19,22 @@ export declare const configs: {
         date_to_string: Config<boolean, true>;
         arrays_to_string: Config<boolean, true>;
     };
+    equality_checks: {
+        coerce_string_char: {
+            name: string;
+            description: string | null;
+            value: boolean;
+            defaultValue: boolean;
+        };
+        coerce_int_real: {
+            name: string;
+            description: string | null;
+            value: boolean;
+            defaultValue: boolean;
+        };
+        coerce_arrays: Config<boolean, true>;
+        allow_different_types: Config<boolean, true>;
+    };
     arrays: {
         unspecified_length: Config<boolean, true>;
     };
