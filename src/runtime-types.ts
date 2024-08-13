@@ -64,6 +64,7 @@ class TypedValue_<T extends VariableType> {
 		public value:VariableTypeMapping<T>,
 	){}
 	typeIs<Type extends
+		| typeof PrimitiveVariableType
 		| typeof ArrayVariableType
 		| typeof RecordVariableType
 		| typeof PointerVariableType

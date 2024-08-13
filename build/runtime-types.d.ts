@@ -21,7 +21,7 @@ declare class TypedValue_<T extends VariableType> {
     type: T;
     value: VariableTypeMapping<T>;
     constructor(type: T, value: VariableTypeMapping<T>);
-    typeIs<Type extends typeof ArrayVariableType | typeof RecordVariableType | typeof PointerVariableType | typeof EnumeratedVariableType | typeof SetVariableType | typeof ClassVariableType>(clazz: Type): this is TypedValue_<Type["prototype"]>;
+    typeIs<Type extends typeof PrimitiveVariableType | typeof ArrayVariableType | typeof RecordVariableType | typeof PointerVariableType | typeof EnumeratedVariableType | typeof SetVariableType | typeof ClassVariableType>(clazz: Type): this is TypedValue_<Type["prototype"]>;
     typeIs<Type extends PrimitiveVariableTypeName>(type: Type): this is TypedValue_<PrimitiveVariableType<Type>>;
     asHTML(recursive: boolean): string;
     asString(): string;

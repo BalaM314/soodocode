@@ -36,9 +36,9 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr, zip } from "./utils.js";
 export class Files {
     constructor() {
         this.files = {};
@@ -63,6 +63,8 @@ export class Files {
 function checkTypeMatch(a, b, range) {
     if (typesEqual(a, b))
         return true;
+    if ((a.is("INTEGER") && b instanceof IntegerRangeVariableType) || (a instanceof IntegerRangeVariableType && b.is("INTEGER")))
+        return true;
     if ((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))) {
         if (configs.equality_checks.coerce_int_real.value)
             return true;
@@ -84,6 +86,38 @@ function checkTypeMatch(a, b, range) {
     }
     if (!configs.equality_checks.allow_different_types.value)
         fail(f.short `Cannot test for equality between types ${a} and ${b}\n${configs.equality_checks.allow_different_types.errorHelp}`, range);
+    return false;
+}
+function checkValueEquality(type, a, b, aPath, bPath, range) {
+    if (a === null && b === null)
+        return true;
+    if (a === null || b === null)
+        return false;
+    if (type instanceof PrimitiveVariableType || type instanceof IntegerRangeVariableType)
+        return a == b;
+    if (type instanceof ClassVariableType)
+        return a == b;
+    if (type instanceof PointerVariableType)
+        return a == b;
+    if (type instanceof EnumeratedVariableType)
+        return a == b;
+    if (type instanceof SetVariableType) {
+        forceType(a);
+        forceType(b);
+        return a.length == b.length &&
+            [...zip(a.values(), b.values())].every(([aElement, bElement], i) => checkValueEquality(type.baseType, aElement, bElement, `${aPath}[${i}]`, `${bPath}[${i}]`, range));
+    }
+    if (type instanceof ArrayVariableType) {
+        forceType(a);
+        forceType(b);
+        return a.length == b.length &&
+            [...zip(a.values(), b.values())].every(([aElement, bElement], i) => checkValueEquality(type.elementType, aElement, bElement, `${aPath}[${i}]`, `${bPath}[${i}]`, range));
+    }
+    if (type instanceof RecordVariableType) {
+        forceType(a);
+        forceType(b);
+        return Object.entries(type.fields).every(([name, [type, range]]) => checkValueEquality(type, a[name], b[name], `${aPath}.${name}`, `${bPath}.${name}`, range));
+    }
     return false;
 }
 function coerceValue(value, from, to, range) {
@@ -547,7 +581,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                             const left = this.evaluateExpr(expr.nodes[0], undefined, true);
                             const right = this.evaluateExpr(expr.nodes[1], undefined, true);
                             const typesMatch = checkTypeMatch(left.type, right.type, expr.operatorToken.range);
-                            const is_equal = typesMatch && (left.value == right.value);
+                            const is_equal = typesMatch && checkValueEquality(left.type, left.value, right.value, expr.nodes[0].fmtText(), expr.nodes[1].fmtText(), expr.operatorToken.range);
                             return TypedValue.BOOLEAN((() => {
                                 switch (expr.operator) {
                                     case operators.equal_to: return is_equal;

@@ -10,10 +10,10 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr } from "./utils.js";
+import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 
@@ -51,6 +51,8 @@ export type ClassMethodCallInformation = {
  **/
 function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean {
 	if(typesEqual(a, b)) return true;
+	if((a.is("INTEGER") && b instanceof IntegerRangeVariableType) || (a instanceof IntegerRangeVariableType && b.is("INTEGER")))
+		return true;
 	if((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))){
 		if(configs.equality_checks.coerce_int_real.value) return true;
 		else if(!configs.equality_checks.allow_different_types.value)
@@ -71,6 +73,46 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 	}
 	if(!configs.equality_checks.allow_different_types.value)
 		fail(f.short`Cannot test for equality between types ${a} and ${b}\n${configs.equality_checks.allow_different_types.errorHelp}`, range);
+	return false;
+}
+
+/**
+ * Compares two values to see if they are equal. May throw an error depending on configs. Assumes the types are compatible.
+ **/
+function checkValueEquality<T extends VariableType>(type:T, a:VariableTypeMapping<T> | null, b:VariableTypeMapping<T> | null, aPath:string, bPath:string, range:TextRange):boolean {
+	if(a === null && b === null) return true;
+	if(a === null || b === null) return false;
+	if(type instanceof PrimitiveVariableType || type instanceof IntegerRangeVariableType)
+		return a == b;
+	if(type instanceof ClassVariableType)
+		return a == b;
+	if(type instanceof PointerVariableType)
+		return a == b;
+	if(type instanceof EnumeratedVariableType)
+		return a == b;
+	if(type instanceof SetVariableType){
+		forceType<VariableTypeMapping<SetVariableType>>(a);
+		forceType<VariableTypeMapping<SetVariableType>>(b);
+		return a.length == b.length &&
+			[...zip(a.values(), b.values())].every(
+				([aElement, bElement], i) => checkValueEquality(type.baseType, aElement, bElement, `${aPath}[${i}]`, `${bPath}[${i}]`, range)
+			);
+	}
+	if(type instanceof ArrayVariableType){
+		forceType<VariableTypeMapping<ArrayVariableType>>(a);
+		forceType<VariableTypeMapping<ArrayVariableType>>(b);
+		return a.length == b.length &&
+			[...zip(a.values(), b.values())].every(
+				([aElement, bElement], i) => checkValueEquality(type.elementType!, aElement, bElement, `${aPath}[${i}]`, `${bPath}[${i}]`, range)
+			);
+	}
+	if(type instanceof RecordVariableType){
+		forceType<VariableTypeMapping<RecordVariableType>>(a);
+		forceType<VariableTypeMapping<RecordVariableType>>(b);
+		return Object.entries(type.fields).every(([name, [type, range]]) =>
+			checkValueEquality(type, a[name], b[name], `${aPath}.${name}`, `${bPath}.${name}`, range)
+		);
+	}
 	return false;
 }
 
@@ -531,7 +573,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 					const left = this.evaluateExpr(expr.nodes[0], undefined, true);
 					const right = this.evaluateExpr(expr.nodes[1], undefined, true);
 					const typesMatch = checkTypeMatch(left.type, right.type, expr.operatorToken.range);
-					const is_equal = typesMatch && (left.value == right.value);
+					const is_equal = typesMatch && checkValueEquality(
+						left.type,
+						left.value, right.value,
+						expr.nodes[0].fmtText(), expr.nodes[1].fmtText(),
+						expr.operatorToken.range
+					);
 					return TypedValue.BOOLEAN((() => {
 						switch(expr.operator){
 							case operators.equal_to: return is_equal;
