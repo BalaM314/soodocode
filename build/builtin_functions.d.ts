@@ -14,6 +14,7 @@ type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TRetur
     args: TArgs;
     returnType: TReturn;
     impl(this: Runtime, ...args: FunctionArgs<TArgs>): PrimitiveVariableTypeMapping<TReturn>;
+    aliases?: string[];
 };
 export declare const getBuiltinFunctions: () => Record<keyof typeof preprocessedBuiltinFunctions, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
 export declare const preprocessedBuiltinFunctions: {

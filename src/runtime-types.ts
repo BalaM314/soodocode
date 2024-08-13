@@ -830,6 +830,7 @@ export type BuiltinFunctionData = {
 	returnType:VariableType | null;
 	name:string;
 	impl: (this:Runtime, ...args:(RangeAttached<BoxPrimitive<VariableValue>>)[]) => VariableValue;
+	aliases: string[];
 };
 export type ClassMethodStatement = ClassFunctionStatement | ClassProcedureStatement;
 export type ClassMethodData = ProgramASTBranchNode & {

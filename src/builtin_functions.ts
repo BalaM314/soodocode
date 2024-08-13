@@ -67,6 +67,7 @@ type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TRetur
 	args: TArgs;
 	returnType: TReturn;
 	impl(this:Runtime, ...args:FunctionArgs<TArgs>):PrimitiveVariableTypeMapping<TReturn>;
+	aliases?: string[];
 };
 /** Wrapper function used to get the correct type definitions */
 function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName>(data:PreprocesssedBuiltinFunctionData<T, S>){
@@ -75,8 +76,8 @@ function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVaria
 
 let builtinFunctions; //cache
 export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFunctions, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> => builtinFunctions ??= ( // eslint-disable-line @typescript-eslint/no-unsafe-return
-	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>):Record<T, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> =>
-		Object.fromEntries(Object.entries(d).map(([name, data]) =>
+	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>) => {
+		const obj:Record<string, BuiltinFunctionData> = Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
 				args: new Map((data.args as BuiltinFunctionArg[]).map(([name, type]) => [name, {
 					passMode: "reference",
@@ -84,14 +85,20 @@ export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFun
 						Array.isArray(t)
 							? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
 							: PrimitiveVariableType.get(t)
-					)
-				}])),
+					),
+				}] as const)),
+				aliases: data.aliases ?? [],
 				name,
 				//Unsound cast
 				impl: data.impl as never as ((this:Runtime, ...args:RangeAttached<BoxPrimitive<VariableValue>>[]) => VariableTypeMapping<PrimitiveVariableType>),
 				returnType: PrimitiveVariableType.get(data.returnType as PrimitiveVariableTypeName)
 			}]
-		))
+		));
+		Object.values(obj).filter(v => v.aliases && v.aliases.length > 0).forEach(v => {
+			v.aliases.forEach(alias => obj[alias] = v);
+		});
+		return obj;
+	}
 )(preprocessedBuiltinFunctions);
 export const preprocessedBuiltinFunctions = ({
 	//Source: s23 P22 insert
@@ -138,6 +145,7 @@ export const preprocessedBuiltinFunctions = ({
 			if(length + start - 1 > chars.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${chars.length})`, str);
 			return chars.slice(start - 1, start + length - 1).join("");
 		},
+		aliases: ["SUBSTRING"]
 	}),
 	//source: spec 5.5
 	LENGTH: fn({

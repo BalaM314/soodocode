@@ -4,17 +4,24 @@ function fn(data) {
     return data;
 }
 let builtinFunctions;
-export const getBuiltinFunctions = () => builtinFunctions ?? (builtinFunctions = ((d) => Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
-        args: new Map(data.args.map(([name, type]) => [name, {
-                passMode: "reference",
-                type: (Array.isArray(type) ? type : [type]).map(t => Array.isArray(t)
-                    ? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
-                    : PrimitiveVariableType.get(t))
-            }])),
-        name,
-        impl: data.impl,
-        returnType: PrimitiveVariableType.get(data.returnType)
-    }])))(preprocessedBuiltinFunctions));
+export const getBuiltinFunctions = () => builtinFunctions ?? (builtinFunctions = ((d) => {
+    const obj = Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
+            args: new Map(data.args.map(([name, type]) => [name, {
+                    passMode: "reference",
+                    type: (Array.isArray(type) ? type : [type]).map(t => Array.isArray(t)
+                        ? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
+                        : PrimitiveVariableType.get(t)),
+                }])),
+            aliases: data.aliases ?? [],
+            name,
+            impl: data.impl,
+            returnType: PrimitiveVariableType.get(data.returnType)
+        }]));
+    Object.values(obj).filter(v => v.aliases && v.aliases.length > 0).forEach(v => {
+        v.aliases.forEach(alias => obj[alias] = v);
+    });
+    return obj;
+})(preprocessedBuiltinFunctions));
 export const preprocessedBuiltinFunctions = ({
     LEFT: fn({
         args: [
@@ -63,6 +70,7 @@ export const preprocessedBuiltinFunctions = ({
                 fail(`End of slice (${length} + ${start}) is greater than the length of the string (${chars.length})`, str);
             return chars.slice(start - 1, start + length - 1).join("");
         },
+        aliases: ["SUBSTRING"]
     }),
     LENGTH: fn({
         args: [
