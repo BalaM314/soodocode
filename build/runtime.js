@@ -69,7 +69,7 @@ function checkTypeMatch(a, b, range) {
         if (a.overlaps(b))
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
-            fail(f.short `Cannot test for equality between types ${a} and ${b} because they do not overlap\nhelp: to make this comparison always return FALSE, enable the config "${configs.equality_checks.coerce_int_real.name}"`, range);
+            fail(f.short `Cannot test for equality between types ${a} and ${b} because they do not overlap\nhelp: to make this comparison always return FALSE, enable the config "${configs.equality_checks.allow_different_types.name}"`, range);
     }
     if ((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))) {
         if (configs.equality_checks.coerce_int_real.value)
