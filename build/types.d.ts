@@ -33,6 +33,7 @@ declare global {
         reverse<TThis extends Array<T>, U>(this: TThis): TThis extends [infer A, infer B] ? [B, A] : T[];
         slice<TThis extends Array<T>>(this: TThis): TThis;
         includes(searchElement: unknown, searchIndex?: number): searchElement is T;
+        filter(boolean: BooleanConstructor): Array<T extends (false | null | undefined) ? never : T>;
     }
     interface ReadonlyArray<T> {
         map<TThis extends Array<T>, U>(this: TThis, fn: (v: T, i: number, a: TThis) => U): number extends TThis["length"] ? readonly U[] : {

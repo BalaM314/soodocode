@@ -327,7 +327,7 @@ interface IClassMemberStatement {
     accessModifier: "public" | "private";
 }
 export declare class ClassStatement extends TypeStatement {
-    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "input" | "output" | "type" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     name: Token;
     constructor(tokens: RangeArray<Token>);
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;

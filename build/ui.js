@@ -10,7 +10,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f } from "./utils.js";
 import { configs } from "./config.js";
 function getElement(id, type) {
     const element = document.getElementById(id);
@@ -292,36 +292,29 @@ export function showRange(text, error) {
                 error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
         }
     }
-    if ((!error.rangeGeneral || !error.rangeSpecific || (error.rangeGeneral[0] <= error.rangeSpecific[0] && error.rangeGeneral[1] >= error.rangeSpecific[1]))) {
-        const range = error.rangeGeneral ?? error.rangeSpecific ?? impossible();
-        const beforeText = text.slice(0, range[0]);
-        const rangeText = text.slice(...range);
-        const beforeLines = beforeText.split("\n");
-        const lineNumber = beforeLines.length;
-        const formattedPreviousLine = beforeLines.at(-2)
-            ? `${" ".repeat(lineNumber.toString().length)} | ${escapeHTML(beforeLines.at(-2))}\n`
-            : "";
-        const startOfLine = beforeLines.at(-1);
-        const restOfLine = text.slice(range[1]).split("\n")[0];
-        const formattedRangeText = error.rangeSpecific ?
-            applyRangeTransformers(rangeText, [[
-                    error.rangeSpecific.map(n => n - range[0]),
-                    `<span class="error-range-inner">`, "</span>", escapeHTML
-                ]])
-            : escapeHTML(rangeText);
-        return `
+    const outerRange = utils.getTotalRange([error.rangeGeneral, error.rangeSpecific].filter(Boolean));
+    const beforeText = text.slice(0, outerRange[0]);
+    const rangeText = text.slice(...outerRange);
+    const beforeLines = beforeText.split("\n");
+    const lineNumber = beforeLines.length.toString();
+    const formattedPreviousLine = beforeLines.at(-2)
+        ? `${" ".repeat(lineNumber.length)} | ${escapeHTML(beforeLines.at(-2))}\n`
+        : "";
+    const startOfLine = beforeLines.at(-1);
+    const restOfLine = text.slice(outerRange[1]).split("\n")[0];
+    const formattedRangeText = applyRangeTransformers(rangeText, [
+        error.rangeGeneral && [
+            error.rangeGeneral.map(n => n - outerRange[0]),
+            `<span class="error-range-outer">`, "</span>", escapeHTML
+        ],
+        error.rangeSpecific && [
+            error.rangeSpecific.map(n => n - outerRange[0]),
+            `<span class="error-range-inner">`, "</span>", escapeHTML
+        ],
+    ].filter(Boolean));
+    return `
 ${formattedPreviousLine}\
-${lineNumber} | ${escapeHTML(startOfLine)}<span class="error-range-outer">${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
-    }
-    else {
-        const trimEnd = text.slice(error.rangeSpecific[1]).indexOf("\n");
-        text = text.slice(0, trimEnd);
-        const fullText = applyRangeTransformers(text, [
-            [error.rangeSpecific, `<span class="error-range-inner">`, "</span>", escapeHTML]
-        ]);
-        const trimStart = fullText.slice(0, error.rangeSpecific[0]).lastIndexOf("\n");
-        return fullText.slice(trimStart);
-    }
+${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
 }
 function printPrefixed(value) {
     console.log(`%c[Runtime]`, `color: lime;`, value);

@@ -17,7 +17,7 @@ export interface TagFunction<Tin = string, Tout = string> {
 // eslint-disable-next-line @typescript-eslint/ban-types
 export type BoxPrimitive<T> = T extends number ? Number : T extends string ? String : T extends boolean ? Boolean : T;
 
-export type TextRange = [start:number, end:number];
+export type TextRange = [start:number, end:number]; //TODO convert to class
 export type TextRanged = {
 	range: TextRange | (() => TextRange);
 }
@@ -55,6 +55,7 @@ declare global {
 		reverse<TThis extends Array<T>, U>(this:TThis): TThis extends [infer A, infer B] ? [B, A] : T[];
 		slice<TThis extends Array<T>>(this:TThis): TThis;
 		includes(searchElement:unknown, searchIndex?:number):searchElement is T;
+		filter(boolean:BooleanConstructor): Array<T extends (false | null | undefined) ? never : T>;
 	}
 	interface ReadonlyArray<T> {
 		map<TThis extends Array<T>, U>(this:TThis, fn:(v:T, i:number, a:TThis) => U): number extends TThis["length"] ? readonly U[] : { [K in keyof TThis]: U };

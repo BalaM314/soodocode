@@ -72,12 +72,20 @@ export function displayTokenMatcher(input) {
         }[input];
 }
 export function applyRangeTransformers(text, ranges) {
-    let offset = 0;
-    for (const [range, start, end, transformer_] of ranges) {
-        const transformer = transformer_ ?? (x => x);
-        const newRange = range.map(n => n + offset);
-        text = text.slice(0, newRange[0]) + start + transformer(text.slice(...newRange)) + end + text.slice(newRange[1]);
-        offset += start.length;
+    for (const [[range, start, end, transformer = (x) => x], remaining] of withRemaining(ranges)) {
+        text = text.slice(0, range[0]) + start + transformer(text.slice(...range)) + end + text.slice(range[1]);
+        remaining.forEach(([next]) => {
+            next[0] =
+                next[0] >= range[1] ? next[0] + start.length + end.length :
+                    next[0] > range[0] ? next[0] + start.length :
+                        (next[0] >= range[0] && next[1] <= range[1]) ? next[0] + start.length :
+                            next[0];
+            next[1] =
+                next[1] > range[1] ? next[1] + start.length + end.length :
+                    (next[1] >= range[1] && next[0] < range[0]) ? next[1] + start.length + end.length :
+                        next[1] > range[0] ? next[1] + start.length :
+                            next[1];
+        });
     }
     return text;
 }
@@ -197,10 +205,10 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
     }
     return new RangeArray(names);
 }
-export function getTotalRange(tokens) {
-    if (tokens.length == 0)
+export function getTotalRange(things) {
+    if (things.length == 0)
         crash(`Cannot get range from an empty list of tokens`);
-    return tokens.map(t => Array.isArray(t) ? t : (typeof t.range == "function" ? t.range() : t.range)).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [Infinity, -Infinity]);
+    return things.map(t => Array.isArray(t) ? t : (typeof t.range == "function" ? t.range() : t.range)).reduce((acc, t) => [Math.min(acc[0], t[0]), Math.max(acc[1], t[1])], [Infinity, -Infinity]);
 }
 export function isRange(input) {
     return Array.isArray(input) && input.length == 2 && typeof input[0] == "number" && typeof input[1] == "number";
@@ -328,6 +336,11 @@ export function* zip(...iters) {
         if (values.some(v => v.done))
             break;
         yield values.map(v => v.value);
+    }
+}
+export function* withRemaining(items) {
+    for (let i = 0; i < items.length; i++) {
+        yield [items[i], items.slice(i + 1)];
     }
 }
 export function tagProcessor(transformer) {

@@ -87,14 +87,35 @@ export function displayTokenMatcher(input:TokenMatcher):string {
 	}[input];
 }
 
-/** Ranges must telescope inwards */
-export function applyRangeTransformers(text:string, ranges:[range:TextRange, start:string, end:string, transformer?:(rangeText:string) => string][]){
-	let offset = 0;
-	for(const [range, start, end, transformer_] of ranges){
-		const transformer = transformer_ ?? (x => x);
-		const newRange = range.map(n => n + offset);
-		text = text.slice(0, newRange[0]) + start + transformer(text.slice(...newRange)) + end + text.slice(newRange[1]);
-		offset += start.length;
+export function applyRangeTransformers(
+	text:string, ranges:Array<readonly [
+		range:TextRange,
+		start:string, end:string,
+		transformer?:(rangeText:string) => string
+	]>
+){
+	for(const [[range, start, end, transformer = (x:string) => x], remaining] of withRemaining(ranges)){
+		text = text.slice(0, range[0]) + start + transformer(text.slice(...range)) + end + text.slice(range[1]);
+		remaining.forEach(([next]) => {
+			/*
+				0123456789qwertyuiop9876543210
+				[3, 5]
+				012(34)56789qwertyuiop9876543210
+				<= 2: no change
+				> 2: + start
+				>= 4: + start + end
+			*/
+			next[0] =
+				next[0] >= range[1] ? next[0] + start.length + end.length :
+				next[0] > range[0] ? next[0] + start.length :
+				(next[0] >= range[0] && next[1] <= range[1]) ? next[0] + start.length :
+				next[0];
+			next[1] =
+				next[1] > range[1] ? next[1] + start.length + end.length :
+				(next[1] >= range[1] && next[0] < range[0]) ? next[1] + start.length + end.length :
+				next[1] > range[0] ? next[1] + start.length :
+				next[1];
+		});
 	}
 	return text;
 }
@@ -217,9 +238,9 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens:RangeArray<Toke
 	return new RangeArray<Token>(names);
 }
 
-export function getTotalRange(tokens:(TextRanged | TextRange)[]):TextRange {
-	if(tokens.length == 0) crash(`Cannot get range from an empty list of tokens`);
-	return tokens.map(t => Array.isArray(t) ? t : (typeof t.range == "function" ? t.range() : t.range)).reduce((acc, t) =>
+export function getTotalRange(things:(TextRanged | TextRange)[]):TextRange {
+	if(things.length == 0) crash(`Cannot get range from an empty list of tokens`);
+	return things.map(t => Array.isArray(t) ? t : (typeof t.range == "function" ? t.range() : t.range)).reduce((acc, t) =>
 		[Math.min(acc[0], t[0]), Math.max(acc[1], t[1])]
 	, [Infinity, -Infinity]);
 }
@@ -363,6 +384,12 @@ export function* zip<T extends unknown[]>(...iters:Iterators<T>):IterableIterato
 		if(values.some(v => v.done)) break;
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-return
 		yield values.map(v => v.value) as T;
+	}
+}
+
+export function* withRemaining<T>(items:T[]):IterableIterator<[T, T[]]> {
+	for(let i = 0; i < items.length; i ++){
+		yield [items[i], items.slice(i + 1)];
 	}
 }
 

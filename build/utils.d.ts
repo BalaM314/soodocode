@@ -10,7 +10,12 @@ export declare function manageNestLevel(reversed?: boolean, validate?: boolean):
     done(input: Token[] | TextRange): void;
 };
 export declare function displayTokenMatcher(input: TokenMatcher): string;
-export declare function applyRangeTransformers(text: string, ranges: [range: TextRange, start: string, end: string, transformer?: (rangeText: string) => string][]): string;
+export declare function applyRangeTransformers(text: string, ranges: Array<readonly [
+    range: TextRange,
+    start: string,
+    end: string,
+    transformer?: (rangeText: string) => string
+]>): string;
 export declare function separateArray<T, S extends T>(arr: T[], predicate: (item: T) => item is S): [true: S[], false: T[]];
 export declare function separateArray<T>(arr: T[], predicate: (item: T) => boolean): [true: T[], false: T[]];
 export declare function groupArray<T, const S extends PropertyKey>(arr: T[], predicate: (item: T) => S): Partial<Record<S, T[]>>;
@@ -24,7 +29,7 @@ export declare function splitTokensWithSplitter(arr: RangeArray<Token>, split: T
 export declare function splitTokensOnComma(arr: RangeArray<Token>): RangeArray<Token>[];
 export declare function findLastNotInGroup(arr: RangeArray<Token>, target: TokenType): number | null;
 export declare function getUniqueNamesFromCommaSeparatedTokenList(tokens: RangeArray<Token>, nextToken?: Token, validNames?: TokenType[]): RangeArray<Token>;
-export declare function getTotalRange(tokens: (TextRanged | TextRange)[]): TextRange;
+export declare function getTotalRange(things: (TextRanged | TextRange)[]): TextRange;
 export declare function isRange(input: unknown): input is TextRange;
 export declare function getRange(input: TextRangeLike): TextRange;
 export declare function getRange(input?: TextRangeLike): TextRange | undefined;
@@ -53,6 +58,7 @@ type Iterators<T extends unknown[]> = {
     [P in keyof T]: Iterator<T[P]>;
 };
 export declare function zip<T extends unknown[]>(...iters: Iterators<T>): IterableIterator<T>;
+export declare function withRemaining<T>(items: T[]): IterableIterator<[T, T[]]>;
 export declare function tagProcessor<T>(transformer: (chunk: T, index: number, allStringChunks: readonly string[], allVarChunks: readonly T[]) => string): TagFunction<T, string>;
 export type Formattable = IFormattable | IFormattable[] | string | Exclude<UnresolvedVariableType, IFormattable> | String | Number | Boolean | number | boolean;
 export declare const f: {
