@@ -236,6 +236,9 @@ export class IntegerRangeVariableType extends BaseVariableType {
 	asHTML(value:VariableTypeMapping<this>){
 		return `<span class="sth-number" title="Type: ${this.fmtText()}">${value satisfies number}</span>`;
 	}
+	overlaps(other:IntegerRangeVariableType){
+		return this.high >= other.low;
+	}
 	static from(node:ExpressionASTRangeTypeNode){
 		return new this(Number(node.low.text), Number(node.high.text), node.range);
 	}

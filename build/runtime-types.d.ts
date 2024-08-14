@@ -71,6 +71,7 @@ export declare class IntegerRangeVariableType extends BaseVariableType {
     fmtDebug(): string;
     asString(value: VariableTypeMapping<this>): string;
     asHTML(value: VariableTypeMapping<this>): string;
+    overlaps(other: IntegerRangeVariableType): boolean;
     static from(node: ExpressionASTRangeTypeNode): IntegerRangeVariableType;
 }
 export declare class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {

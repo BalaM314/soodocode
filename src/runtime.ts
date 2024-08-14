@@ -53,6 +53,11 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 	if(typesEqual(a, b)) return true;
 	if((a.is("INTEGER") && b instanceof IntegerRangeVariableType) || (a instanceof IntegerRangeVariableType && b.is("INTEGER")))
 		return true;
+	if(a instanceof IntegerRangeVariableType && b instanceof IntegerRangeVariableType){
+		if(a.overlaps(b)) return true;
+		else if(!configs.equality_checks.allow_different_types.value)
+			fail(f.short`Cannot test for equality between types ${a} and ${b} because they do not overlap\nhelp: to make this comparison always return FALSE, enable the config "${configs.equality_checks.coerce_int_real.name}"`, range);
+	}
 	if((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))){
 		if(configs.equality_checks.coerce_int_real.value) return true;
 		else if(!configs.equality_checks.allow_different_types.value)
