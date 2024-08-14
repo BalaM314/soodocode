@@ -31,11 +31,11 @@ export declare function getRange(input?: TextRangeLike): TextRange | undefined;
 export declare function getRange(input?: TextRangeLike | null): TextRange | undefined | null;
 export declare function findRange(args: unknown[]): TextRange | undefined;
 export declare class SoodocodeError extends Error {
-    rangeSpecific?: TextRange | null | undefined;
-    rangeGeneral?: TextRange | null | undefined;
+    rangeSpecific?: (TextRange | null) | undefined;
+    rangeGeneral?: (TextRange | null) | undefined;
     rangeOther?: TextRange | undefined;
     modified: boolean;
-    constructor(message: string, rangeSpecific?: TextRange | null | undefined, rangeGeneral?: TextRange | null | undefined, rangeOther?: TextRange | undefined);
+    constructor(message: string, rangeSpecific?: (TextRange | null) | undefined, rangeGeneral?: (TextRange | null) | undefined, rangeOther?: TextRange | undefined);
     formatMessage(text: string): string;
 }
 export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;

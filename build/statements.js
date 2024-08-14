@@ -39,6 +39,7 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
 import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
+import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
@@ -204,7 +205,7 @@ function statement(type, example, ...args) {
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(StatementType(type + ".end"), "[unknown]", "block_end", TokenType(args[0] + "_end"))((_h = class __endStatement extends Statement {
+            statement(StatementType(type + ".end"), tokenTextMapping[TokenType(args[0] + "_end")] ?? "[unknown]", "block_end", TokenType(args[0] + "_end"))((_h = class __endStatement extends Statement {
                 },
                 _h.blockType = ProgramASTBranchNodeType(type),
                 _h));

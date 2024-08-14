@@ -9,6 +9,7 @@ This file contains the definitions for every statement type supported by Soodoco
 import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
+import { tokenTextMapping } from "./lexer.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
@@ -207,7 +208,12 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		}
 		if(args[0] == "auto" && input.category == "block"){
 			args.shift();
-			statement(StatementType(type + ".end"), "[unknown]", "block_end", TokenType(args[0] + "_end"))( //REFACTOR CHECK
+			statement(
+				StatementType(type + ".end"),
+				tokenTextMapping[TokenType(args[0] + "_end") as keyof typeof tokenTextMapping] ?? "[unknown]",
+				"block_end",
+				TokenType(args[0] + "_end")
+			)( //REFACTOR CHECK
 				class __endStatement extends Statement {
 					static blockType = ProgramASTBranchNodeType(type);
 				}
