@@ -417,6 +417,13 @@ export function showRange(text:string, error:SoodocodeError):string {
 				error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
 		}
 	}
+	if(error.rangeGeneral && error.rangeSpecific){
+		//If the specific range is one character after the end of the general range, expand the general range
+		if(
+			error.rangeSpecific[1] - error.rangeSpecific[0] == 1 &&
+			error.rangeGeneral[1] == error.rangeSpecific[0]
+		) error.rangeGeneral[1] ++;
+	}
 
 	const outerRange = utils.getTotalRange([error.rangeGeneral, error.rangeSpecific].filter(Boolean));
 	const beforeText = text.slice(0, outerRange[0]);
