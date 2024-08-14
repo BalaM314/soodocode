@@ -240,7 +240,14 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
 		if(Array.isArray(result)){
-			if(possibleStatement.invalidMessage) fail(possibleStatement.invalidMessage, tokens);
+			if(possibleStatement.invalidMessage){
+				if(typeof possibleStatement.invalidMessage == "function"){
+					const [message, range] = possibleStatement.invalidMessage(result, context);
+					fail(message, range ?? tokens);
+				} else {
+					fail(possibleStatement.invalidMessage, tokens);
+				}
+			}
 			const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(x =>
 				x instanceof Token
 					? x
@@ -288,7 +295,7 @@ export function isLiteral(type:TokenType){
 }
 
 /** start and end are inclusive */
-type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
+export type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
 type StatementCheckFailResult = { message: string; priority: number; range: TextRange | null; };
 /**
  * Checks if a RangeArray<Token> is valid for a statement type. If it is, it returns the information needed to construct the statement.

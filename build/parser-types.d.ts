@@ -90,7 +90,7 @@ export type PreprocessedOperator = {
     type?: OperatorMode;
 };
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Record<"add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "string_concatenate", Operator>;
+export declare const operators: Record<"negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "or" | "and" | "add" | "multiply" | "divide" | "mod" | "not" | "integer_divide" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "string_concatenate", Operator>;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;

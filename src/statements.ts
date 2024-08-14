@@ -10,7 +10,7 @@ import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
-import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
@@ -34,7 +34,7 @@ export const statementTypes = [
 	"class_property",
 	"class_procedure", "class_procedure.end",
 	"class_function", "class_function.end",
-	"illegal.assignment",
+	"illegal.assignment", "illegal.end", "illegal.for.end"
 ] as const;
 export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never
 export type LegalStatementType<T extends StatementType = StatementType> = T extends `illegal.${string}` ? never : T;
@@ -83,7 +83,7 @@ export class Statement implements TextRanged, IFormattable {
 	/**
 	 * If set, this statement is invalid and will fail with the below error message if it parses successfully.
 	 */
-	static invalidMessage: string | null = null;
+	static invalidMessage: string | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:string, range?:TextRange]) = null;
 	range: TextRange;
 	constructor(public tokens:RangeArray<ExpressionASTNodeExt>){
 		this.type = this.constructor as typeof Statement;
@@ -525,6 +525,12 @@ export class CallStatement extends Statement {
 }
 
 
+@statement("illegal.end", "END", "block_end", "keyword.end", ".*")
+export class EndBadStatement extends Statement {
+	static invalidMessage:typeof Statement.invalidMessage = (result, context) =>
+		[f.quote`Expected a block end statement, like ${context?.controlStatements[0].type.blockEndStatement().example ?? "ENDIF"}`];
+}
+
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
 	condition:ExpressionAST;
@@ -685,6 +691,13 @@ export class ForEndStatement extends Statement {
 		this.name = tokens[1].text;
 	}
 }
+@statement("illegal.for.end", "NEXT", "block_end", "keyword.for_end")
+export class ForEndBadStatement extends Statement {
+	static blockType: ProgramASTBranchNodeType = "for";
+	static invalidMessage:typeof Statement.invalidMessage = (result, context) =>
+		[`Expected ${(context!.controlStatements[0] as ForStatement).name}, got end of line`, (result[0] as Token).rangeAfter()];
+}
+
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
 	condition:ExpressionAST;

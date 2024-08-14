@@ -15,7 +15,7 @@ export declare function getPossibleStatements(tokens: RangeArray<Token>, context
 ];
 export declare const parseStatement: (tokens: RangeArray<Token>, context: ProgramASTBranchNode | null, allowRecursiveCall: boolean) => Statement;
 export declare function isLiteral(type: TokenType): boolean;
-type StatementCheckTokenRange = (Token | {
+export type StatementCheckTokenRange = (Token | {
     type: "expression" | "type";
     start: number;
     end: number;

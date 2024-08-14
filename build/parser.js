@@ -212,8 +212,15 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens, c
     for (const possibleStatement of possibleStatements) {
         const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
         if (Array.isArray(result)) {
-            if (possibleStatement.invalidMessage)
-                fail(possibleStatement.invalidMessage, tokens);
+            if (possibleStatement.invalidMessage) {
+                if (typeof possibleStatement.invalidMessage == "function") {
+                    const [message, range] = possibleStatement.invalidMessage(result, context);
+                    fail(message, range ?? tokens);
+                }
+                else {
+                    fail(possibleStatement.invalidMessage, tokens);
+                }
+            }
             const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(x => x instanceof Token
                 ? x
                 : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))))));

@@ -88,6 +88,7 @@ export const tokenTypes = [
 	"keyword.class", "keyword.class_end", "keyword.new", "keyword.super", "keyword.inherits",
 	"keyword.class_modifier.private", "keyword.class_modifier.public",
 	"keyword.array", "keyword.set",
+	"keyword.end",
 	"newline",
 	"operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range"
 ] as const;

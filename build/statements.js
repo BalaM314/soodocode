@@ -60,7 +60,7 @@ export const statementTypes = [
     "class_property",
     "class_procedure", "class_procedure.end",
     "class_function", "class_function.end",
-    "illegal.assignment",
+    "illegal.assignment", "illegal.end", "illegal.for.end"
 ];
 export function StatementType(input) {
     if (statementTypes.includes(input))
@@ -726,6 +726,28 @@ let CallStatement = (() => {
     return CallStatement = _classThis;
 })();
 export { CallStatement };
+let EndBadStatement = (() => {
+    let _classDecorators = [statement("illegal.end", "END", "block_end", "keyword.end", ".*")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var EndBadStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "EndBadStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        EndBadStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.invalidMessage = (result, context) => [f.quote `Expected a block end statement, like ${context?.controlStatements[0].type.blockEndStatement().example ?? "ENDIF"}`];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return EndBadStatement = _classThis;
+})();
+export { EndBadStatement };
 let IfStatement = (() => {
     let _classDecorators = [statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")];
     let _classDescriptor;
@@ -1015,6 +1037,29 @@ let ForEndStatement = (() => {
     return ForEndStatement = _classThis;
 })();
 export { ForEndStatement };
+let ForEndBadStatement = (() => {
+    let _classDecorators = [statement("illegal.for.end", "NEXT", "block_end", "keyword.for_end")];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = Statement;
+    var ForEndBadStatement = _classThis = class extends _classSuper {
+    };
+    __setFunctionName(_classThis, "ForEndBadStatement");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        ForEndBadStatement = _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.blockType = "for";
+    _classThis.invalidMessage = (result, context) => [`Expected ${context.controlStatements[0].name}, got end of line`, result[0].rangeAfter()];
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return ForEndBadStatement = _classThis;
+})();
+export { ForEndBadStatement };
 let WhileStatement = (() => {
     let _classDecorators = [statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")];
     let _classDescriptor;

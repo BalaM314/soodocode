@@ -69,6 +69,7 @@ export const tokenNameTypeData = {
 	"DEFINE": "keyword.define",
 	"DIV": "operator.integer_divide",
 	"ELSE": "keyword.else",
+	"END": "keyword.end",
 	"ENDCASE": "keyword.case_end",
 	"ENDCLASS": "keyword.class_end",
 	"ENDFUNCTION": "keyword.function_end",
