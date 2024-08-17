@@ -474,21 +474,33 @@ ${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHT
 function printPrefixed(value:unknown){
 	console.log(`%c[Runtime]`, `color: lime;`, value);
 }
+function flashOutputDiv(){
+	outputDiv.style.animationName = "";
+	void outputDiv.offsetHeight; //reflow
+	outputDiv.style.animationName = "highlight-output-div";
+}
 
 let shouldDump = false;
 executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 let lastOutputText:string = "";
 function executeSoodocode(){
+	const noOutput = `<span style="color: lightgray;">&lt;no output&gt;</span>`;
 	const output:string[] = [];
 	const runtime = new Runtime(
 		(msg) => prompt(msg) ?? fail("User did not input a value", undefined),
 		m => {
 			const str = m.map(x => x.asHTML(false)).join("");
 			output.push(str);
+			if(configs.runtime.display_output_immediately.value){
+				outputDiv.innerHTML += str + "\n";
+				//Does not work, TODO asyncify
+				console.log("now");
+			}
 			printPrefixed(str);
 		}
 	);
 	try {
+		if(configs.runtime.display_output_immediately.value) outputDiv.innerHTML = "";
 		console.time("parsing");
 		const symbols = lexer.symbolize(soodocodeInput.value);
 		const tokens = lexer.tokenize(symbols);
@@ -503,15 +515,17 @@ function executeSoodocode(){
 		console.time("execution");
 		runtime.runProgram(program.nodes);
 		console.timeEnd("execution");
-		const outputText = output.join("\n") || "<no output>";
-		outputDiv.innerHTML = outputText;
-		if(lastOutputText == outputText){
-			//flash
-			outputDiv.style.animationName = "";
-			void outputDiv.offsetHeight; //reflow
-			outputDiv.style.animationName = "highlight-output-div";
+
+		if(configs.runtime.display_output_immediately.value){
+			if(outputDiv.innerText.trim().length == 0) outputDiv.innerHTML = noOutput;
+			if(outputDiv.innerHTML == lastOutputText) flashOutputDiv();
+			lastOutputText = outputDiv.innerHTML;
+		} else {
+			const outputText = output.join("\n") || noOutput;
+			outputDiv.innerHTML = outputText;
+			if(lastOutputText == outputText) flashOutputDiv();
+			lastOutputText = outputText;
 		}
-		lastOutputText = outputText;
 	} catch(err){
 		runtime.fs.loadBackup();
 		if(err instanceof SoodocodeError){
