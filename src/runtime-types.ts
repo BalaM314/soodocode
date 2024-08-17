@@ -25,7 +25,11 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 		U extends "DATE" ? Date :
 		never
 	) :
-	T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> :
+	T extends ArrayVariableType ? (
+		| Array<VariableTypeMapping<ArrayElementVariableType> | null>
+		| Int32Array
+		| Float64Array
+	) :
 	T extends IntegerRangeVariableType ? number :
 	T extends RecordVariableType ? {
 		[index:string]: VariableTypeMapping<any> | null;
@@ -299,14 +303,25 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, undefined);
 		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
-		if(type instanceof PrimitiveVariableType && !type.is("DATE")) {
-			if(this.totalLength! > configs.arrays.max_size.value)
-				fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size.errorHelp}`, this.range);
+		if(type.is("REAL")){
+			if(this.totalLength! * 8 > configs.arrays.max_size_bytes.value)
+				fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_bytes.errorHelp}`, this.range);
+		} else if(type.is("INTEGER") && configs.arrays.use_32bit_integers.value){
+			if(this.totalLength! * 4 > configs.arrays.max_size_bytes.value)
+				fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_bytes.errorHelp}`, this.range);
 		} else {
 			if(this.totalLength! > configs.arrays.max_size_composite.value)
 				fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_composite.errorHelp}`, this.range);
 		}
-		return Array.from({length: this.totalLength!}, () => type.getInitValue(runtime, configs.initialization.arrays_default.value) as VariableTypeMapping<ArrayElementVariableType> | null);
+		if(type.is("INTEGER") && configs.arrays.use_32bit_integers.value && this.totalLength! > 1000)
+			return new Int32Array(this.totalLength!).fill(configs.default_values.INTEGER.value);
+		else if(type.is("REAL"))
+			return new Float64Array(this.totalLength!).fill(configs.default_values.REAL.value);
+		else
+			return Array.from({length: this.totalLength!},
+				() => type.getInitValue(runtime, configs.initialization.arrays_default.value) as
+					VariableTypeMapping<ArrayElementVariableType> | null
+			);
 	}
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType<false>(
@@ -317,8 +332,11 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		);
 	}
 	mapValues<T>(value:VariableTypeMapping<ArrayVariableType>, callback:(tval:TypedValue | null) => T):T[] {
-		return value.map(v =>
+		if(Array.isArray(value)) return value.map(v =>
 			callback(v != null ? typedValue((this as ArrayVariableType<true>).elementType!, v) : null)
+		);
+		else return Array.from(value, (v) =>
+			callback(typedValue((this as ArrayVariableType<true>).elementType!, v))
 		);
 	}
 	asHTML(value:VariableTypeMapping<ArrayVariableType>, recursive:boolean):string {

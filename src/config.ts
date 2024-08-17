@@ -137,11 +137,11 @@ export const configs = (<T extends Record<string, Record<string, ConfigData<unkn
 			fullDescription: `This isn't fully variable length arrays, like in Python and Javascript: all arrays will still have a length, but functions can be more flexible.\nNot mentioned in any official pseudocode guides.`,
 			value: true
 		},
-		max_size: {
+		max_size_bytes: {
 			name: "Max size (primitives)",
-			description: `Maximum size allowed for arrays of primitive values.`,
+			description: `Maximum size in bytes allowed for arrays of integers and reals. This is separate from arrays of other types because we can use a native array, which is more memory efficient.`,
 			errorHelp: `Increase the limit by increasing the config "Arrays: Max size (primitives)"`,
-			value: 64_000_100,
+			value: 256_000_100,
 		},
 		max_size_composite: {
 			name: "Max size (composite)",
@@ -149,6 +149,12 @@ export const configs = (<T extends Record<string, Record<string, ConfigData<unkn
 			errorHelp: `Increase the limit by increasing the config "Arrays: Max size (composite)"`,
 			value: 1_000_100,
 		},
+		use_32bit_integers: {
+			name: "Use 32-bit integers",
+			description: `Use 32-bit integers to store large "ARRAY OF INTEGER"s. Improves performance.`,
+			value: true,
+		},
+		//Float arrays are always enabled as they have the same precision, no drawbacks
 	},
 	initialization: {
 		normal_variables_default: {

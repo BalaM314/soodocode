@@ -37,8 +37,14 @@ export declare const configs: {
     };
     arrays: {
         unspecified_length: Config<boolean, true>;
-        max_size: Config<number, true>;
+        max_size_bytes: Config<number, true>;
         max_size_composite: Config<number, true>;
+        use_32bit_integers: {
+            name: string;
+            description: string | null;
+            value: boolean;
+            defaultValue: boolean;
+        };
     };
     initialization: {
         normal_variables_default: Config<boolean, true>;

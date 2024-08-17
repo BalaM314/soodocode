@@ -237,21 +237,33 @@ export class ArrayVariableType extends BaseVariableType {
         const type = this.elementType;
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
-        if (type instanceof PrimitiveVariableType && !type.is("DATE")) {
-            if (this.totalLength > configs.arrays.max_size.value)
-                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size.errorHelp}`, this.range);
+        if (type.is("REAL")) {
+            if (this.totalLength * 8 > configs.arrays.max_size_bytes.value)
+                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_bytes.errorHelp}`, this.range);
+        }
+        else if (type.is("INTEGER") && configs.arrays.use_32bit_integers.value) {
+            if (this.totalLength * 4 > configs.arrays.max_size_bytes.value)
+                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_bytes.errorHelp}`, this.range);
         }
         else {
             if (this.totalLength > configs.arrays.max_size_composite.value)
                 fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_composite.errorHelp}`, this.range);
         }
-        return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, configs.initialization.arrays_default.value));
+        if (type.is("INTEGER") && configs.arrays.use_32bit_integers.value && this.totalLength > 1000)
+            return new Int32Array(this.totalLength).fill(configs.default_values.INTEGER.value);
+        else if (type.is("REAL"))
+            return new Float64Array(this.totalLength).fill(configs.default_values.REAL.value);
+        else
+            return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, configs.initialization.arrays_default.value));
     }
     static from(node) {
         return new ArrayVariableType(node.lengthInformation, node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null, PrimitiveVariableType.resolve(node.elementType), node.range);
     }
     mapValues(value, callback) {
-        return value.map(v => callback(v != null ? typedValue(this.elementType, v) : null));
+        if (Array.isArray(value))
+            return value.map(v => callback(v != null ? typedValue(this.elementType, v) : null));
+        else
+            return Array.from(value, (v) => callback(typedValue(this.elementType, v)));
     }
     asHTML(value, recursive) {
         return `<span class="sth-bracket">[</span>${this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)<span>`).join(", ")}<span class="sth-bracket">]</span>`;

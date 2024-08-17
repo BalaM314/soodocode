@@ -5,7 +5,7 @@ import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatem
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
 import { RangeArray } from "./utils.js";
-export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? Array<VariableTypeMapping<ArrayElementVariableType> | null> : T extends IntegerRangeVariableType ? number : T extends RecordVariableType ? {
+export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? (Array<VariableTypeMapping<ArrayElementVariableType> | null> | Int32Array | Float64Array) : T extends IntegerRangeVariableType ? number : T extends RecordVariableType ? {
     [index: string]: VariableTypeMapping<any> | null;
 } : T extends PointerVariableType ? VariableData<VariableType> | ConstantData<VariableType> : T extends EnumeratedVariableType ? string : T extends SetVariableType ? Array<VariableTypeMapping<PrimitiveVariableType>> : T extends ClassVariableType ? {
     properties: {
@@ -29,9 +29,9 @@ declare class TypedValue_<T extends VariableType> {
 export declare const TypedValue: {
     INTEGER: (value: number) => TypedValue_<PrimitiveVariableType<"INTEGER">>;
     REAL: (value: number) => TypedValue_<PrimitiveVariableType<"REAL">>;
+    BOOLEAN: (value: boolean) => TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
     STRING: (value: string) => TypedValue_<PrimitiveVariableType<"STRING">>;
     CHAR: (value: string) => TypedValue_<PrimitiveVariableType<"CHAR">>;
-    BOOLEAN: (value: boolean) => TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
     DATE: (value: Date) => TypedValue_<PrimitiveVariableType<"DATE">>;
 };
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
@@ -186,9 +186,9 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
     construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
         properties: {
             [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
             } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
         };
         propertyTypes: Record<string, VariableType<true>>;
