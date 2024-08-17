@@ -37,18 +37,8 @@ export declare const configs: {
     };
     arrays: {
         unspecified_length: Config<boolean, true>;
-        max_size: {
-            name: string;
-            description: string | null;
-            value: number;
-            defaultValue: number;
-        };
-        max_size_composite: {
-            name: string;
-            description: string | null;
-            value: number;
-            defaultValue: number;
-        };
+        max_size: Config<number, true>;
+        max_size_composite: Config<number, true>;
     };
     initialization: {
         normal_variables_default: Config<boolean, true>;
@@ -107,5 +97,13 @@ export declare const configs: {
     };
     pointers: {
         implicit_variable_creation: Config<boolean, true>;
+    };
+    runtime: {
+        display_output_immediately: {
+            name: string;
+            description: string | null;
+            value: boolean;
+            defaultValue: boolean;
+        };
     };
 };

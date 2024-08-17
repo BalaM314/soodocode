@@ -237,6 +237,14 @@ export class ArrayVariableType extends BaseVariableType {
         const type = this.elementType;
         if (type instanceof ArrayVariableType)
             crash(`Attempted to initialize array of arrays`);
+        if (type instanceof PrimitiveVariableType && !type.is("DATE")) {
+            if (this.totalLength > configs.arrays.max_size.value)
+                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size.errorHelp}`, this.range);
+        }
+        else {
+            if (this.totalLength > configs.arrays.max_size_composite.value)
+                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_composite.errorHelp}`, this.range);
+        }
         return Array.from({ length: this.totalLength }, () => type.getInitValue(runtime, configs.initialization.arrays_default.value));
     }
     static from(node) {

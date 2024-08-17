@@ -101,11 +101,13 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
         max_size: {
             name: "Max size (primitives)",
             description: `Maximum size allowed for arrays of primitive values.`,
+            errorHelp: `Increase the limit by increasing the config "Arrays: Max size (primitives)"`,
             value: 64000100,
         },
         max_size_composite: {
-            name: "Max size",
-            description: `Maximum size allowed for arrays of non-primitive valus.`,
+            name: "Max size (composite)",
+            description: `Maximum size allowed for arrays of non-primitive values.`,
+            errorHelp: `Increase the limit by increasing the config "Arrays: Max size (composite)"`,
             value: 1000100,
         },
     },
@@ -183,5 +185,12 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             errorHelp: `Allow implicit variable creation`,
             value: true
         },
+    },
+    runtime: {
+        display_output_immediately: {
+            name: "Display output immediately",
+            description: `Display output as each output statement is executed, rather than all at once after the program terminates. May cause lag.`,
+            value: false,
+        }
     }
 });
