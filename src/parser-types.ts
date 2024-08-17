@@ -6,9 +6,9 @@ This file contains the types for the parser.
 */
 
 import type { Token, TokenType } from "./lexer-types.js";
-import type { Statement } from "./statements.js";
+import type { DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
-import { crash, f, getRange, getTotalRange, RangeArray } from "./utils.js";
+import { crash, f, getTotalRange, RangeArray } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -366,16 +366,20 @@ export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
 /** Represents a leaf node (node with no child nodes) in a program AST. */
 export type ProgramASTLeafNode = Statement;
 /** Represents a branch node (node with children) in a program AST. */
-export class ProgramASTBranchNode implements TextRanged {
+export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramASTBranchNodeType> implements TextRanged {
 	constructor(
-		public type: ProgramASTBranchNodeType,
+		public type: T,
 		/**
 		 * Contains the control statements for this block.
 		 * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
 		 */
-		public controlStatements: Statement[],
+		public controlStatements: ProgramASTBranchNodeTypeMapping<T>,
 		public nodeGroups: ProgramASTNode[][],
 	){}
+	/** Unsafe due to array invariance */
+	controlStatements_(){
+		return this.controlStatements satisfies Statement[] as Statement[];
+	}
 	range():TextRange {
 		return getTotalRange([
 			...this.controlStatements,
@@ -410,3 +414,7 @@ export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType 
 	if(programASTBranchNodeTypes.includes(input)) return input;
 	crash(`"${input}" is not a valid program AST branch node type`);
 }
+export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> =
+	T extends "for" ? [ForStatement, ForEndStatement] :
+	T extends "dowhile" ? [DoWhileStatement, DoWhileEndStatement] :
+	Statement[];

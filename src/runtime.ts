@@ -1028,7 +1028,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			if(node instanceof Statement){
 				result = node.run(this);
 			} else {
-				result = node.controlStatements[0].runBlock(this, node);
+				result = node.controlStatements[0].runBlock(this, node satisfies ProgramASTBranchNode as never);
 			}
 			if(result){
 				if(result.type == "function_return"){

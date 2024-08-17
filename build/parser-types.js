@@ -248,6 +248,9 @@ export class ProgramASTBranchNode {
         this.controlStatements = controlStatements;
         this.nodeGroups = nodeGroups;
     }
+    controlStatements_() {
+        return this.controlStatements;
+    }
     range() {
         return getTotalRange([
             ...this.controlStatements,

@@ -170,7 +170,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 			const lastNode = blockStack.at(-1);
 			if(!lastNode) fail(`Unexpected statement: no open blocks`, statement);
 			else if(statement instanceof lastNode.controlStatements[0].type.blockEndStatement<Function>()){
-				lastNode.controlStatements.push(statement);
+				lastNode.controlStatements_().push(statement);
 				lastNode.controlStatements[0].type.checkBlock(lastNode);
 				blockStack.pop();
 			} else fail(f.quote`Unexpected statement: current block is of type ${lastNode.typeName()}`, statement, null);
@@ -180,7 +180,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 			let errorMessage:true | string;
 			if((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
 				fail(`Unexpected statement: ${errorMessage}`, statement, null);
-			lastNode.controlStatements.push(statement);
+			lastNode.controlStatements_().push(statement);
 			lastNode.nodeGroups.push([]);
 		} else statement.category satisfies never;
 	}

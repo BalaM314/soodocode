@@ -1,5 +1,5 @@
 import type { Token, TokenType } from "./lexer-types.js";
-import type { Statement } from "./statements.js";
+import type { DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 import { RangeArray } from "./utils.js";
 export type ExpressionAST = ExpressionASTNode;
@@ -98,11 +98,12 @@ export type ProgramAST = {
 };
 export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
 export type ProgramASTLeafNode = Statement;
-export declare class ProgramASTBranchNode implements TextRanged {
-    type: ProgramASTBranchNodeType;
-    controlStatements: Statement[];
+export declare class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramASTBranchNodeType> implements TextRanged {
+    type: T;
+    controlStatements: ProgramASTBranchNodeTypeMapping<T>;
     nodeGroups: ProgramASTNode[][];
-    constructor(type: ProgramASTBranchNodeType, controlStatements: Statement[], nodeGroups: ProgramASTNode[][]);
+    constructor(type: T, controlStatements: ProgramASTBranchNodeTypeMapping<T>, nodeGroups: ProgramASTNode[][]);
+    controlStatements_(): Statement[];
     range(): TextRange;
     static typeName(type: ProgramASTBranchNodeType): string;
     typeName(): string;
@@ -110,3 +111,4 @@ export declare class ProgramASTBranchNode implements TextRanged {
 export declare const programASTBranchNodeTypes: readonly ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 export declare function ProgramASTBranchNodeType(input: string): ProgramASTBranchNodeType;
+export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> = T extends "for" ? [ForStatement, ForEndStatement] : T extends "dowhile" ? [DoWhileStatement, DoWhileEndStatement] : Statement[];

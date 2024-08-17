@@ -144,7 +144,7 @@ export function parse({ program, tokens }) {
             if (!lastNode)
                 fail(`Unexpected statement: no open blocks`, statement);
             else if (statement instanceof lastNode.controlStatements[0].type.blockEndStatement()) {
-                lastNode.controlStatements.push(statement);
+                lastNode.controlStatements_().push(statement);
                 lastNode.controlStatements[0].type.checkBlock(lastNode);
                 blockStack.pop();
             }
@@ -158,7 +158,7 @@ export function parse({ program, tokens }) {
             let errorMessage;
             if ((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
                 fail(`Unexpected statement: ${errorMessage}`, statement, null);
-            lastNode.controlStatements.push(statement);
+            lastNode.controlStatements_().push(statement);
             lastNode.nodeGroups.push([]);
         }
         else

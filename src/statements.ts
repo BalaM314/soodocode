@@ -648,11 +648,11 @@ export class ForStatement extends Statement {
 	step(_runtime:Runtime):number {
 		return 1;
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
 		const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
 		const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
 		if(upper < lower) return;
-		const end = node.controlStatements[1] as ForEndStatement;
+		const end = node.controlStatements[1];
 		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
 		const step = this.step(runtime);
 		for(let i = lower; i <= upper; i += step){
@@ -727,7 +727,7 @@ export class WhileStatement extends Statement {
 export class DoWhileStatement extends Statement {
 	static maxLoops = 10_000; //CONFIG
 	//TODO automatically fail if no state changes
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
 		let i = 0;
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
@@ -739,7 +739,7 @@ export class DoWhileStatement extends Statement {
 			if(result) return result;
 			if(++i > DoWhileStatement.maxLoops)
 				fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
-		} while(!runtime.evaluateExpr((node.controlStatements[1] as DoWhileEndStatement).condition, PrimitiveVariableType.BOOLEAN).value);
+		} while(!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN).value);
 		//Inverted, the pseudocode statement is "until"
 	}
 }
