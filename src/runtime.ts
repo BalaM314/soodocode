@@ -201,6 +201,7 @@ export class Runtime {
 	currentlyResolvingPointerTypeName: string | null = null;
 	fs = new Files();
 	builtinFunctions = getBuiltinFunctions();
+	statementsExecuted = 0;
 	constructor(
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
@@ -1020,6 +1021,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		//Fifth pass: everything else
 		for(const node of others){
+			if(++this.statementsExecuted > configs.statements.max_statements.value){
+				fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, node);
+			}
 			let result;
 			if(node instanceof Statement){
 				result = node.run(this);

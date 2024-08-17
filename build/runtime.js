@@ -236,6 +236,7 @@ let Runtime = (() => {
                 this.currentlyResolvingPointerTypeName = null;
                 this.fs = new Files();
                 this.builtinFunctions = getBuiltinFunctions();
+                this.statementsExecuted = 0;
             }
             processArrayAccess(expr, outType) {
                 const _target = this.evaluateExpr(expr.target, "variable");
@@ -1007,6 +1008,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     type.validate(this);
                 }
                 for (const node of others) {
+                    if (++this.statementsExecuted > configs.statements.max_statements.value) {
+                        fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, node);
+                    }
                     let result;
                     if (node instanceof Statement) {
                         result = node.run(this);

@@ -37,6 +37,18 @@ export declare const configs: {
     };
     arrays: {
         unspecified_length: Config<boolean, true>;
+        max_size: {
+            name: string;
+            description: string | null;
+            value: number;
+            defaultValue: number;
+        };
+        max_size_composite: {
+            name: string;
+            description: string | null;
+            value: number;
+            defaultValue: number;
+        };
     };
     initialization: {
         normal_variables_default: Config<boolean, true>;
@@ -83,6 +95,7 @@ export declare const configs: {
     statements: {
         call_functions: Config<boolean, true>;
         auto_declare_classes: Config<boolean, true>;
+        max_statements: Config<number, true>;
     };
     classes: {
         delegate_access_privileges: {

@@ -3,7 +3,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             description: "description" in v ? v.description : "shortDescription" in v ? v.shortDescription + (v.fullDescription ? "\n" + v.fullDescription : "") : null,
             defaultValue: v.value,
             value: v.value,
-            errorHelp: "errorHelp" in v ? `help: ${v.errorHelp} by enabling the config "${v.name}"` : "shortDescription" in v ? `help: ${v.shortDescription.replace(/\.$/, "")} by enabling the config "${v.name}"` : null,
+            errorHelp: typeof v.value == "boolean" ? ("errorHelp" in v ? `help: ${v.errorHelp} by enabling the config "${v.name}"` : "shortDescription" in v ? `help: ${v.shortDescription.replace(/\.$/, "")} by enabling the config "${v.name}"` : null) : ("errorHelp" in v ? `help: ${v.errorHelp}` : null)
         }]))])))({
     coercion: {
         arrays_same_length: {
@@ -97,7 +97,17 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             shortDescription: `Allow arrays without a length in function arguments and class properties.`,
             fullDescription: `This isn't fully variable length arrays, like in Python and Javascript: all arrays will still have a length, but functions can be more flexible.\nNot mentioned in any official pseudocode guides.`,
             value: true
-        }
+        },
+        max_size: {
+            name: "Max size (primitives)",
+            description: `Maximum size allowed for arrays of primitive values.`,
+            value: 64000100,
+        },
+        max_size_composite: {
+            name: "Max size",
+            description: `Maximum size allowed for arrays of non-primitive valus.`,
+            value: 1000100,
+        },
     },
     initialization: {
         normal_variables_default: {
@@ -152,6 +162,12 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             fullDescription: `If a variable has already been declared, that variable is used instead.`,
             value: false
         },
+        max_statements: {
+            name: "Maximum statement count",
+            description: `Maximum number of statements that can be executed by the runtime. If this is exceeded, the program terminates. Useful to prevent infinite loops.`,
+            errorHelp: `Increase the statement limit by changing the config "Maximum statement count"`,
+            value: 100000
+        }
     },
     classes: {
         delegate_access_privileges: {
