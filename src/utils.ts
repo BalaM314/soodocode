@@ -562,6 +562,17 @@ export function unicodeSetsSupported(){
 	}
 }
 
+export function capitalizeWord(word:string):string {
+	return word[0].toUpperCase() + word.slice(1).toLowerCase();
+}
+
+export function capitalizeText(input:string):string {
+	return input
+		.split(/[^a-z0-9]+/i)
+		.map((w, i) => i == 0 ? capitalizeWord(w) : w.toLowerCase())
+		.join(" ");
+}
+
 export class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
 	range:TextRange;
 	// constructor(length:number);

@@ -17,7 +17,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f, capitalizeText } from "./utils.js";
 import { Config, configs } from "./config.js";
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
@@ -110,10 +110,9 @@ export function generateConfigsDialog():HTMLElement {
 	wrapper.id = "settings-dialog-inner";
 
 	for(const [sectionName, section] of Object.entries(configs)){
-		if(sectionName == "default_values") continue; //TODO
 		const header = document.createElement("span");
 		header.classList.add("settings-section-header");
-		header.innerText = sectionName;
+		header.innerText = capitalizeText(sectionName);
 		wrapper.append(header);
 		const settingsGrid = document.createElement("div");
 		settingsGrid.classList.add("settings-grid");
@@ -121,22 +120,43 @@ export function generateConfigsDialog():HTMLElement {
 			const gridItem = document.createElement("div");
 			gridItem.classList.add("settings-grid-item");
 			const label = document.createElement("label");
+			//TODO save configs
 			const input = document.createElement("input");
-			input.type = "checkbox";
 			input.name = id;
-			input.checked = Boolean(config.value);
+			if(typeof config.value == "boolean"){
+				input.type = "checkbox";
+				input.checked = Boolean(config.value);
+				input.addEventListener("change", () => {
+					config.value = input.checked;
+				});
+			} else if(typeof config.value == "number"){
+				input.type = "number";
+				input.value = Number(config.value).toString();
+				input.addEventListener("change", () => {
+					config.value = Number(input.value);
+				});
+			} else if(typeof config.value == "string"){
+				input.type = "text";
+				input.value = config.value;
+				input.addEventListener("change", () => {
+					config.value = input.value;
+				});
+			} else if(config.value instanceof Date){
+				input.type = "date";
+				input.value = config.value.toLocaleDateString().replaceAll("/", "-");
+				input.addEventListener("change", () => {
+					const date = new Date(input.value);
+					if(!isNaN(date.getTime())) config.value = date;
+				});
+			} else crash(`Unknown config type ${typeof config.value}`);
+			label.append(input); //this is valid and removes the need for the 'for' attribute
+			label.append(config.name);
+			gridItem.append(label);
 			const description = document.createElement("div");
 			if(config.description){
 				description.classList.add("settings-description");
 				description.innerText = config.description;
 			}
-			input.addEventListener("change", () => {
-				config.value = input.checked; //TODO corrupts non-boolean sttings
-				//saveConfigs(); TODO save configs
-			});
-			label.append(input); //this is valid and removes the need for the 'for' attribute
-			label.append(config.name);
-			gridItem.append(label);
 			gridItem.append(description);
 			settingsGrid.append(gridItem);
 		}

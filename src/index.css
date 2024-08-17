@@ -105,7 +105,7 @@ html {
 	background-color: #0004; /* This actually sets the scrollbar color to whatever the browser wants for dark theme */
 }
 
-#soodocode-input, input[type="text"] {
+#soodocode-input {
 	font-size: larger;
 	padding: 10px;
 	background-color: var(--text-input-background-color);

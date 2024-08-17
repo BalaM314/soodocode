@@ -512,6 +512,15 @@ export function unicodeSetsSupported() {
         return false;
     }
 }
+export function capitalizeWord(word) {
+    return word[0].toUpperCase() + word.slice(1).toLowerCase();
+}
+export function capitalizeText(input) {
+    return input
+        .split(/[^a-z0-9]+/i)
+        .map((w, i) => i == 0 ? capitalizeWord(w) : w.toLowerCase())
+        .join(" ");
+}
 export class RangeArray extends Array {
     constructor(arg0, range) {
         if (typeof arg0 == "number") {
