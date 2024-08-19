@@ -442,3 +442,7 @@ export function arrayType(
 	}));
 	return type;
 }
+
+export function typeExtends<A extends B, B>(){
+	crash(`Do not call this function`);
+}

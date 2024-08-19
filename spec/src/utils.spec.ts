@@ -1,5 +1,5 @@
 import "jasmine";
-import { applyRangeTransformers, manageNestLevel } from "../../build/utils.js";
+import { applyRangeTransformers, combineClasses, manageNestLevel, MergeClassConstructors, MixClasses } from "../../build/utils.js";
 import { token } from "./spec_utils.js";
 
 describe("manageNestLevel", () => {
@@ -116,5 +116,27 @@ describe("applyRangeTranformers", () => {
 			[[3, 8], "<", ">"],
 			[[5, 8], "(", ")"],
 		])).toEqual(`012<34(567)>89`);
+	});
+});
+
+describe("mixClasses", () => {
+	it("should compile", () => {
+		class Foo {
+			constructor(input:{ foo: string; }){}
+			foo = "foo" as const;
+		}
+		class Bar {
+			constructor(input:{ bar: string; }, next:number){}
+			bar = "bar" as const;
+		}
+		type __ = MergeClassConstructors<typeof Foo | typeof Bar, 5>;
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+		class FooBar extends combineClasses(Foo, Bar) {
+			constructor(input:{ foo: string; bar: string; }){
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+				super(input);
+			}
+		}
+		//TODO more tests
 	});
 });

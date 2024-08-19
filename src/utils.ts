@@ -613,3 +613,59 @@ export class RangeArray<T extends TextRanged2> extends Array<T> implements TextR
 		return [...this].map(fn);
 	}
 }
+
+export type MergeClassConstructors<Ctors extends new (...args:any[]) => unknown, Instance> =
+	//what the heck?
+	(Ctors extends unknown ? (..._:ConstructorParameters<Ctors>) => 0 : never) extends (..._:infer S extends unknown[]) => 0 ? new (...args:S) => Instance : never;
+
+export type MixClasses<A extends new (...args:any[]) => unknown, B extends new (...args:any[]) => unknown> =
+	//Statics
+	{
+		[K in Exclude<keyof A, keyof B | "prototype">]: A[K];
+	} & {
+		[K in Exclude<keyof B, "prototype">]: B[K];
+	} &
+	//Constructor
+	MergeClassConstructors<A | B, {
+		[K in Exclude<keyof InstanceType<A>, keyof InstanceType<B>>]: InstanceType<A>[K];
+	} & {
+		[K in keyof InstanceType<B>]: InstanceType<B>[K];
+	}>;
+
+export type MixClassesTuple<Classes extends (new (...args:any[]) => unknown)[]> =
+	Classes["length"] extends 1 ? Classes[0] :
+	Classes extends [
+		...left:(infer Left extends (new (...args:any[]) => unknown)[]),
+		right:infer Last extends (new (...args:any[]) => unknown)
+	] ? MixClasses<MixClassesTuple<Left>, Last> : never;
+
+/** Except Object.prototype */
+export function getAllPropertyDescriptors(object:Record<PropertyKey, unknown>):PropertyDescriptorMap {
+	const proto = Object.getPrototypeOf(object) as Record<PropertyKey, unknown>;
+	if(proto == Object.prototype || proto == null)
+		return Object.getOwnPropertyDescriptors(object);
+	else return {
+		...getAllPropertyDescriptors(proto),
+		...Object.getOwnPropertyDescriptors(object),
+	};
+}
+export function combineClasses<const Classes extends (new (...args:any[]) => unknown)[]>(...classes:Classes):MixClassesTuple<Classes> {
+	function ctor(this:any, ...args:any[]){
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+		Object.assign(this, ...classes.map(c =>
+			//Using new means throwing away the object, but there's no other way
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+			new c(...args)
+		));
+	}
+	Object.assign(ctor, ...classes);
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+	ctor.prototype = Object.defineProperties(
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+		Object.create(classes[0].prototype), Object.assign({},
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+			...classes.map(c => getAllPropertyDescriptors(c.prototype))
+		)
+	);
+	return ctor as never as MixClassesTuple<Classes>;
+}

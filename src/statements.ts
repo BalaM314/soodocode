@@ -15,7 +15,7 @@ import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArgum
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
-import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
 
 
 //TODO snake case
@@ -762,8 +762,9 @@ export class FunctionStatement extends Statement {
 	returnTypeToken:ExpressionASTTypeNode;
 	name:string;
 	nameToken:Token;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
+	constructor(tokens:RangeArray<Token>, offset = 0){
+		super(tokens); //for subclasses
+		tokens = tokens.slice(offset);
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
 		this.returnType = processTypeData(tokens.at(-1)!);
@@ -785,8 +786,9 @@ export class ProcedureStatement extends Statement {
 	args:FunctionArguments;
 	argsRange:TextRange;
 	name:string;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
+	constructor(tokens:RangeArray<Token>, offset = 0){
+		super(tokens); //for subclasses
+		tokens = tokens.slice(offset);
 		this.args = parseFunctionArguments(tokens.slice(3, -1));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
 		this.name = tokens[1].text;
@@ -925,9 +927,19 @@ export class PutRecordStatement extends Statement implements IFileStatement {
 	}
 }
 
-interface IClassMemberStatement {
+class ClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
+	constructor(tokens:RangeArray<Token>){
+		this.accessModifierToken = tokens[0];
+		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
+	}
+	run(){
+		crash(`Class sub-statements cannot be run normally`);
+	}
+	runBlock(){
+		crash(`Class sub-statements cannot be run normally`);
+	}
 }
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
@@ -1010,56 +1022,30 @@ export class ClassInheritsStatement extends ClassStatement {
 
 
 @statement("class_property", "PUBLIC variable: TYPE", "class_modifier", ".+", "punctuation.colon", "type+")
-export class ClassPropertyStatement extends DeclareStatement implements IClassMemberStatement {
-	accessModifierToken: Token;
-	accessModifier: "public" | "private";
+export class ClassPropertyStatement extends combineClasses(DeclareStatement, ClassMemberStatement) {
 	static blockType: ProgramASTBranchNodeType = "class";
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.accessModifierToken = tokens[0];
-		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
-	}
-	run(runtime:Runtime){
-		crash(`Class sub-statements cannot be run normally`);
-	}
 }
 @statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "block", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
-export class ClassProcedureStatement extends ProcedureStatement implements IClassMemberStatement {
-	accessModifierToken: Token;
-	accessModifier: "public" | "private";
+export class ClassProcedureStatement extends combineClasses(ProcedureStatement, ClassMemberStatement) {
 	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:RangeArray<Token>){
-		super(tokens.slice(1));
-		this.tokens.unshift(tokens[0]);
-		this.accessModifierToken = tokens[0];
+		super(tokens, 1);
 		this.methodKeywordToken = tokens[1];
-		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
 		//TODO can they actually be run from subclasses?
-	}
-	runBlock(){
-		crash(`Class sub-statements cannot be run normally`);
 	}
 }
 @statement("class_procedure.end", "ENDPROCEDURE", "block_end", "keyword.procedure_end")
 export class ClassProcedureEndStatement extends Statement {}
 @statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")
-export class ClassFunctionStatement extends FunctionStatement implements IClassMemberStatement {
-	accessModifierToken: Token;
-	accessModifier: "public" | "private";
+export class ClassFunctionStatement extends combineClasses(FunctionStatement, ClassMemberStatement) {
 	methodKeywordToken: Token;
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:RangeArray<Token>){
-		super(tokens.slice(1));
-		this.tokens.unshift(tokens[0]);
-		this.accessModifierToken = tokens[0];
+		super(tokens, 1);
 		this.methodKeywordToken = tokens[1];
-		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
-	}
-	runBlock(){
-		crash(`Class sub-statements cannot be run normally`);
 	}
 }
 @statement("class_function.end", "ENDFUNCTION", "block_end", "keyword.function_end")
