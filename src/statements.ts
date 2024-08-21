@@ -87,7 +87,7 @@ export class Statement implements TextRanged, IFormattable {
 	static invalidMessage: string | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:string, range?:TextRange]) = null;
 	range: TextRange;
 	constructor(public tokens:RangeArray<ExpressionASTNodeExt>){
-		this.type = this.constructor as typeof Statement;
+		this.type = new.target;
 		this.stype = this.type.type;
 		this.category = this.type.category;
 		this.range = getTotalRange(tokens);

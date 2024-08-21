@@ -9,7 +9,7 @@ import { Token, TokenType } from "./lexer-types.js";
 import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
+import type { BoxPrimitive, IFormattable, MergeTuples, TagFunction, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
 
 
 export function getText(tokens:RangeArray<Token>){
@@ -306,7 +306,7 @@ export function Abstract<TClass extends new (...args:any[]) => {}>(input:TClass,
 		constructor(...args:any[]){
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 			super(...args);
-			if(this.constructor === __temp) throw new Error(`Cannot construct abstract class ${input.name}`);
+			if(new.target === __temp) throw new Error(`Cannot construct abstract class ${input.name}`);
 		}
 	};
 }
@@ -614,9 +614,12 @@ export class RangeArray<T extends TextRanged2> extends Array<T> implements TextR
 	}
 }
 
+export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
 export type MergeClassConstructors<Ctors extends new (...args:any[]) => unknown, Instance> =
 	//what the heck?
-	(Ctors extends unknown ? (..._:ConstructorParameters<Ctors>) => 0 : never) extends (..._:infer S extends unknown[]) => 0 ? new (...args:S) => Instance : never;
+	new (...args:MergeTuples<
+		Ctors extends unknown ? ConstructorParameters<Ctors> : never
+	>) => Instance;
 
 export type MixClasses<A extends new (...args:any[]) => unknown, B extends new (...args:any[]) => unknown> =
 	//Statics
@@ -651,21 +654,32 @@ export function getAllPropertyDescriptors(object:Record<PropertyKey, unknown>):P
 }
 export function combineClasses<const Classes extends (new (...args:any[]) => unknown)[]>(...classes:Classes):MixClassesTuple<Classes> {
 	function ctor(this:any, ...args:any[]){
+		if(!new.target) crash(`Cannot call class constructor without new`);
+		//Copy the own properties only
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 		Object.assign(this, ...classes.map(c =>
-			//Using new means throwing away the object, but there's no other way
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-			new c(...args)
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+			Reflect.construct(c, args, new.target)
 		));
 	}
-	Object.assign(ctor, ...classes);
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-	ctor.prototype = Object.defineProperties(
+	Object.setPrototypeOf(ctor, classes[0]);
+	const statics = Object.defineProperties({}, Object.assign({},
+		...classes.slice(1).map(c => getAllPropertyDescriptors(
+			c as Class
+		))
+	) as PropertyDescriptorMap) as Record<string, unknown>;
+	const ctorPrototype = Object.defineProperties(
+		//Copy all properties from the prototype chain
 		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 		Object.create(classes[0].prototype), Object.assign({},
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-			...classes.map(c => getAllPropertyDescriptors(c.prototype))
+			...classes.slice(1).map(c => getAllPropertyDescriptors(c.prototype))
 		)
-	);
-	return ctor as never as MixClassesTuple<Classes>;
+	) as Record<string, unknown>;
+	return Object.assign(ctor,
+		statics,
+		{
+			prototype: ctorPrototype
+		}
+	) as never as MixClassesTuple<Classes>;
 }

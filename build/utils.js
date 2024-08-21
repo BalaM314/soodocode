@@ -270,7 +270,7 @@ export function Abstract(input, context) {
     return class __temp extends input {
         constructor(...args) {
             super(...args);
-            if (this.constructor === __temp)
+            if (new.target === __temp)
                 throw new Error(`Cannot construct abstract class ${input.name}`);
         }
     };
@@ -552,4 +552,27 @@ export class RangeArray extends Array {
     map(fn) {
         return [...this].map(fn);
     }
+}
+export function getAllPropertyDescriptors(object) {
+    const proto = Object.getPrototypeOf(object);
+    if (proto == Object.prototype || proto == null)
+        return Object.getOwnPropertyDescriptors(object);
+    else
+        return {
+            ...getAllPropertyDescriptors(proto),
+            ...Object.getOwnPropertyDescriptors(object),
+        };
+}
+export function combineClasses(...classes) {
+    function ctor(...args) {
+        if (!new.target)
+            crash(`Cannot call class constructor without new`);
+        Object.assign(this, ...classes.map(c => Reflect.construct(c, args, new.target)));
+    }
+    Object.setPrototypeOf(ctor, classes[0]);
+    const statics = Object.defineProperties({}, Object.assign({}, ...classes.slice(1).map(c => getAllPropertyDescriptors(c))));
+    const ctorPrototype = Object.defineProperties(Object.create(classes[0].prototype), Object.assign({}, ...classes.slice(1).map(c => getAllPropertyDescriptors(c.prototype))));
+    return Object.assign(ctor, statics, {
+        prototype: ctorPrototype
+    });
 }

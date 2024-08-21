@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import "jasmine";
 import { applyRangeTransformers, combineClasses, manageNestLevel, MergeClassConstructors, MixClasses } from "../../build/utils.js";
 import { token } from "./spec_utils.js";
@@ -119,7 +122,7 @@ describe("applyRangeTranformers", () => {
 	});
 });
 
-describe("mixClasses", () => {
+describe("combineClasses", () => {
 	it("should compile", () => {
 		class Foo {
 			constructor(input:{ foo: string; }){}
@@ -130,13 +133,58 @@ describe("mixClasses", () => {
 			bar = "bar" as const;
 		}
 		type __ = MergeClassConstructors<typeof Foo | typeof Bar, 5>;
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 		class FooBar extends combineClasses(Foo, Bar) {
 			constructor(input:{ foo: string; bar: string; }){
-				// eslint-disable-next-line @typescript-eslint/no-unsafe-call
-				super(input);
+				super(input, 55);
 			}
 		}
 		//TODO more tests
+	});
+	it("should mix normal classes", () => {
+		const messages:unknown[][] = [];
+		class Foo {
+			static staticFoo = "staticFoo";
+			fooProp: number;
+			constructor(input:{ foo: number; }){
+				this.fooProp = input.foo;
+				messages.push(["foo constructor called", input.foo]);
+				this.f_foo();
+			}
+			fooConst = "foo" as const;
+			f_foo(){
+				messages.push(["foo function called", this.fooProp]);
+				return "foo" as const;
+			}
+		}
+		class Bar {
+			static staticBar = "staticBar";
+			barProp: string;
+			constructor(input:{ bar: string; }){
+				this.barProp = input.bar;
+				messages.push(["bar constructor called", input.bar]);
+				this.f_bar();
+			}
+			barConst = "bar" as const;
+			f_bar(){
+				messages.push(["bar function called", this.barProp]);
+				return "bar" as const;
+			}
+		}
+		const Foobar = combineClasses(Foo, Bar);
+		const foobar = new Foobar({foo: 1234, bar: "bar prop value"});
+		expect(messages).toEqual([
+			["foo constructor called", 1234],
+			["foo function called", 1234],
+			["bar constructor called", "bar prop value"],
+			["bar function called", "bar prop value"],
+		]);
+		expect(foobar.fooConst).toEqual("foo");
+		expect(foobar.barConst).toEqual("bar");
+		expect(foobar.fooProp).toEqual(1234);
+		expect(foobar.barProp).toEqual("bar prop value");
+		expect(foobar.f_foo()).toEqual("foo");
+		expect(foobar.f_bar()).toEqual("bar");
+		expect(Foobar.staticFoo).toEqual("staticFoo");
+		expect(Foobar.staticBar).toEqual("staticBar");
 	});
 });

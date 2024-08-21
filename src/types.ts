@@ -29,6 +29,40 @@ export type RangeAttached<T> = T & {
 	range: TextRange;
 };
 
+export type U2I<U> = (
+  U extends U ? (u: U) => 0 : never
+) extends (i: infer I) => 0 ? Extract<I, U> : never
+
+/**
+Converts an object like
+```
+{
+	"0": "zero",
+	"1": "one",
+}
+```
+to a tuple like `["zero", "one"]`
+*/
+export type Tuplify<
+	TupleLike extends Record<string, unknown>,
+	/** Used to count upwards, as there is no addition operator */
+	Counter extends 0[] = [0],
+	/** The current key that is being added to the tuple */
+	CurrentKey = "0",
+
+	NextCounter extends 0[] = [...Counter, 0],
+	NextKey = Exclude<keyof NextCounter, keyof Counter>,
+> =
+	CurrentKey extends keyof TupleLike
+		? [TupleLike[CurrentKey], ...Tuplify<TupleLike, NextCounter, NextKey>]
+		// If the current key isn't in the object, done
+		: [];
+export type MergeTuples<T extends unknown[]> = Tuplify<
+	U2I<T extends unknown ?
+		Omit<T, keyof any[]>
+	: never>
+>;
+
 export interface IFormattable {
 	fmtDebug():string;
 	/** If not implemented, defaults to `"${fmtText()}"` */

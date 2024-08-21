@@ -44,7 +44,7 @@ import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNo
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { Abstract, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 export const statementTypes = [
     "declare", "define", "constant", "assignment", "output", "input", "return", "call",
     "type", "type.pointer", "type.enum", "type.set", "type.end",
@@ -81,7 +81,7 @@ let Statement = (() => {
     var Statement = _classThis = class {
         constructor(tokens) {
             this.tokens = tokens;
-            this.type = this.constructor;
+            this.type = new.target;
             this.stype = this.type.type;
             this.category = this.type.category;
             this.range = getTotalRange(tokens);
@@ -1166,8 +1166,9 @@ let FunctionStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var FunctionStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
+        constructor(tokens, offset = 0) {
             super(tokens);
+            tokens = tokens.slice(offset);
             this.args = parseFunctionArguments(tokens.slice(3, -3));
             this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
             this.returnType = processTypeData(tokens.at(-1));
@@ -1201,8 +1202,9 @@ let ProcedureStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ProcedureStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
+        constructor(tokens, offset = 0) {
             super(tokens);
+            tokens = tokens.slice(offset);
             this.args = parseFunctionArguments(tokens.slice(3, -1));
             this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
             this.name = tokens[1].text;
@@ -1451,6 +1453,18 @@ let PutRecordStatement = (() => {
     return PutRecordStatement = _classThis;
 })();
 export { PutRecordStatement };
+class ClassMemberStatement {
+    constructor(tokens) {
+        this.accessModifierToken = tokens[0];
+        this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
+    }
+    run() {
+        crash(`Class sub-statements cannot be run normally`);
+    }
+    runBlock() {
+        crash(`Class sub-statements cannot be run normally`);
+    }
+}
 let ClassStatement = (() => {
     let _classDecorators = [statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")];
     let _classDescriptor;
@@ -1569,16 +1583,8 @@ let ClassPropertyStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = DeclareStatement;
+    let _classSuper = combineClasses(DeclareStatement, ClassMemberStatement);
     var ClassPropertyStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.accessModifierToken = tokens[0];
-            this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
-        }
-        run(runtime) {
-            crash(`Class sub-statements cannot be run normally`);
-        }
     };
     __setFunctionName(_classThis, "ClassPropertyStatement");
     (() => {
@@ -1599,19 +1605,13 @@ let ClassProcedureStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = ProcedureStatement;
+    let _classSuper = combineClasses(ProcedureStatement, ClassMemberStatement);
     var ClassProcedureStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
-            super(tokens.slice(1));
-            this.tokens.unshift(tokens[0]);
-            this.accessModifierToken = tokens[0];
+            super(tokens, 1);
             this.methodKeywordToken = tokens[1];
-            this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
             if (this.name == "NEW" && this.accessModifier == "private")
                 fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
-        }
-        runBlock() {
-            crash(`Class sub-statements cannot be run normally`);
         }
     };
     __setFunctionName(_classThis, "ClassProcedureStatement");
@@ -1652,17 +1652,11 @@ let ClassFunctionStatement = (() => {
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
-    let _classSuper = FunctionStatement;
+    let _classSuper = combineClasses(FunctionStatement, ClassMemberStatement);
     var ClassFunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
-            super(tokens.slice(1));
-            this.tokens.unshift(tokens[0]);
-            this.accessModifierToken = tokens[0];
+            super(tokens, 1);
             this.methodKeywordToken = tokens[1];
-            this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1];
-        }
-        runBlock() {
-            crash(`Class sub-statements cannot be run normally`);
         }
     };
     __setFunctionName(_classThis, "ClassFunctionStatement");

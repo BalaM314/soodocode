@@ -1,7 +1,7 @@
 import { Token, TokenType } from "./lexer-types.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
-import type { BoxPrimitive, IFormattable, TagFunction, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
+import type { BoxPrimitive, IFormattable, MergeTuples, TagFunction, TextRange, TextRangeLike, TextRanged, TextRanged2 } from "./types.js";
 export declare function getText(tokens: RangeArray<Token>): string;
 export declare function manageNestLevel(reversed?: boolean, validate?: boolean): {
     update(token: Token): void;
@@ -86,4 +86,21 @@ export declare class RangeArray<T extends TextRanged2> extends Array<T> implemen
     slice(start?: number, end?: number): RangeArray<T>;
     map<U>(fn: (v: T, i: number, a: T[]) => U): U[];
 }
+export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
+export type MergeClassConstructors<Ctors extends new (...args: any[]) => unknown, Instance> = new (...args: MergeTuples<Ctors extends unknown ? ConstructorParameters<Ctors> : never>) => Instance;
+export type MixClasses<A extends new (...args: any[]) => unknown, B extends new (...args: any[]) => unknown> = {
+    [K in Exclude<keyof A, keyof B | "prototype">]: A[K];
+} & {
+    [K in Exclude<keyof B, "prototype">]: B[K];
+} & MergeClassConstructors<A | B, {
+    [K in Exclude<keyof InstanceType<A>, keyof InstanceType<B>>]: InstanceType<A>[K];
+} & {
+    [K in keyof InstanceType<B>]: InstanceType<B>[K];
+}>;
+export type MixClassesTuple<Classes extends (new (...args: any[]) => unknown)[]> = Classes["length"] extends 1 ? Classes[0] : Classes extends [
+    ...left: (infer Left extends (new (...args: any[]) => unknown)[]),
+    right: infer Last extends (new (...args: any[]) => unknown)
+] ? MixClasses<MixClassesTuple<Left>, Last> : never;
+export declare function getAllPropertyDescriptors(object: Record<PropertyKey, unknown>): PropertyDescriptorMap;
+export declare function combineClasses<const Classes extends (new (...args: any[]) => unknown)[]>(...classes: Classes): MixClassesTuple<Classes>;
 export {};

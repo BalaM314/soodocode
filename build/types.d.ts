@@ -14,6 +14,9 @@ export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
 export type RangeAttached<T> = T & {
     range: TextRange;
 };
+export type U2I<U> = (U extends U ? (u: U) => 0 : never) extends (i: infer I) => 0 ? Extract<I, U> : never;
+export type Tuplify<TupleLike extends Record<string, unknown>, Counter extends 0[] = [0], CurrentKey = "0", NextCounter extends 0[] = [...Counter, 0], NextKey = Exclude<keyof NextCounter, keyof Counter>> = CurrentKey extends keyof TupleLike ? [TupleLike[CurrentKey], ...Tuplify<TupleLike, NextCounter, NextKey>] : [];
+export type MergeTuples<T extends unknown[]> = Tuplify<U2I<T extends unknown ? Omit<T, keyof any[]> : never>>;
 export interface IFormattable {
     fmtDebug(): string;
     fmtQuoted?: () => string;
