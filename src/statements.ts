@@ -10,13 +10,20 @@ import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
-import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, typedValue, UnresolvedVariableType, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, NodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, combineClasses, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
 
+if(!Symbol.metadata)
+	Object.defineProperty(Symbol, "metadata", {
+		writable: false,
+		enumerable: false,
+		configurable: false,
+		value: Symbol("Symbol.metadata")
+	});
 
 //TODO snake case
 export const statementTypes = [
@@ -75,6 +82,9 @@ export class Statement implements TextRanged, IFormattable {
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
 	static suppressErrors = false;
+	static [Symbol.metadata] = {
+		evaluatableFields: [] as string[],
+	};
 	/**
 	 * If set, this statement class will only be checked for in blocks of the specified type.
 	 **/
@@ -92,6 +102,17 @@ export class Statement implements TextRanged, IFormattable {
 		this.stype = this.type.type;
 		this.category = this.type.category;
 		this.range = getTotalRange(tokens);
+	}
+	token(ind:number):Token {
+		if(this.tokens[ind] instanceof Token) return this.tokens[ind] as Token;
+		else crash(`Assertion failed: node at index ${ind} was not a token`);
+	}
+	expr(ind:number):ExpressionAST {
+		if([
+			Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
+		].some(c => this.tokens[ind] instanceof c))
+			return this.tokens[ind] as ExpressionAST;
+		else crash(`Assertion failed: node at index ${ind} was not an expression`);
 	}
 	fmtText(){
 		return this.tokens.map(t => t.fmtText()).join(" ");
@@ -185,9 +206,16 @@ export class Statement implements TextRanged, IFormattable {
 		else
 			crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
 	}
-	cacheValues(node?:ProgramASTBranchNode){}
+	doPreRun(node?:ProgramASTBranchNode){
+		for(const field of this.type[Symbol.metadata].evaluatableFields){
+			//Safety: checked in the decorator
+			const nodeValue = (this as never as Record<typeof field, NodeValue>)[field];
+			if(!(nodeValue instanceof NodeValue)) crash(`Decorated invalid field ${field}`);
+			nodeValue.init();
+		}
+	}
 	preRun(node?:ProgramASTBranchNode){
-		if(!this.preRunDone) this.cacheValues(node);
+		if(!this.preRunDone) this.doPreRun(node);
 		this.preRunDone = true;
 	}
 }
@@ -265,6 +293,12 @@ function finishStatements(){
 	statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
 }
 
+function evaluate<This extends Statement & {[_ in K]: NodeValue<ExpressionAST, VariableType>}, K extends string, Value>(
+	_:undefined, context:ClassFieldDecoratorContext<This, Value> & { name: K; static: false; }
+){
+	((context.metadata.evaluatableFields ??= []) as (typeof Statement)[(typeof Symbol)["metadata"]]["evaluatableFields"]).push(context.name);
+}
+
 export class TypeStatement extends Statement {
 	createType(runtime:Runtime):[name:string, type:VariableType<false>] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
@@ -304,16 +338,16 @@ export class DeclareStatement extends Statement {
 @statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "literal") //the equal_to operator is used in this statement, idk why
 export class ConstantStatement extends Statement {
 	name: string;
-	expr: Token;
+	expression: Token;
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
 		const [_constant, name, _equals, expr] = tokens;
 		this.name = name.text;
-		this.expr = expr;
+		this.expression = expr;
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`, this);
-		const { type, value } = Runtime.evaluateToken(this.expr);
+		const { type, value } = Runtime.evaluateToken(this.expression);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
 			get value(){ return value; },
@@ -414,16 +448,16 @@ export class TypeRecordStatement extends TypeStatement {
 export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
 	target: ExpressionAST;
-	expr: ExpressionAST;
+	expression: ExpressionAST;
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
-		[this.target, , this.expr] = tokens;
+		[this.target, , this.expression] = tokens;
 		if(this.target instanceof Token && isLiteral(this.target.type))
 			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
 	run(runtime:Runtime){
 		if(this.target instanceof Token && !runtime.getVariable(this.target.text)){
-			const {type, value} = runtime.evaluateExpr(this.expr);
+			const {type, value} = runtime.evaluateExpr(this.expression);
 			if(type instanceof ClassVariableType){
 				if(configs.statements.auto_declare_classes.value){
 					runtime.getCurrentScope().variables[this.target.text] = {
@@ -432,7 +466,7 @@ export class AssignmentStatement extends Statement {
 				} else fail(f.quote`Variable ${this.target.text} does not exist\n` + configs.statements.auto_declare_classes.errorHelp, this.target);
 			} else runtime.handleNonexistentVariable(this.target.text, this.target);
 		}
-		runtime.assignExpr(this.target, this.expr);
+		runtime.assignExpr(this.target, this.expression);
 	}
 }
 @statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")
@@ -491,10 +525,10 @@ export class InputStatement extends Statement {
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
-	expr:ExpressionAST;
+	expression:ExpressionAST;
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
-		this.expr = tokens[1];
+		this.expression = tokens[1];
 	}
 	run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
@@ -510,7 +544,7 @@ export class ReturnStatement extends Statement {
 		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type)).value
+			value: runtime.evaluateExpr(this.expression, runtime.resolveVariableType(type)).value
 		};
 	}
 }
@@ -643,21 +677,12 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 }
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
 export class ForStatement extends Statement {
-	name:string;
-	fromExpr:ExpressionAST;
-	toExpr:ExpressionAST;
-	from?:number;
-	to?:number;
+	name = (this.tokens[1] as Token).text;
+	@evaluate from = new NodeValue(this.tokens[3] as ExpressionAST, "INTEGER");
+	@evaluate to = new NodeValue(this.tokens[5] as ExpressionAST, "INTEGER");
 	empty?:boolean;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1].text;
-		this.fromExpr = tokens[3];
-		this.toExpr = tokens[5];
-	}
-	cacheValues(node:ProgramASTBranchNode<"for">){
-		this.from = Runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER)?.value;
-		this.to = Runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER)?.value;
+	doPreRun(node:ProgramASTBranchNode<"for">){
+		super.doPreRun();
 		this.empty = node.nodeGroups[0].length == 0;
 		const endStatement = node.controlStatements[1];
 		if(endStatement.name !== this.name)
@@ -668,8 +693,8 @@ export class ForStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
 
-		const from = this.from ?? runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER).value;
-		const to = this.to ?? runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER).value;
+		const from = this.from.getValue(runtime);
+		const to = this.to.getValue(runtime);
 		const step = this.getStep(runtime);
 		const direction = Math.sign(step);
 		if(direction == 0)
@@ -715,7 +740,7 @@ export class ForStepStatement extends ForStatement {
 		super(tokens);
 		this.stepToken = tokens[7];
 	}
-	cacheValues(){
+	doPreRun(){
 		this.step = Runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)?.value;
 	}
 	getStep(runtime:Runtime):number {
