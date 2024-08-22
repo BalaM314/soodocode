@@ -55,8 +55,8 @@ export declare class Runtime {
     static NotStatic: symbol;
     static evaluateToken(token: Token): TypedValue;
     static evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
-    static evaluateExpr(expr: ExpressionAST): TypedValue;
-    static evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
+    static evaluateExpr(expr: ExpressionAST): TypedValue | null;
+    static evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T): TypedValue<T extends undefined ? VariableType : T & {}> | null;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;

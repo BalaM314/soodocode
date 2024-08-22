@@ -713,7 +713,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 catch (err) {
                     if (err === _a.NotStatic)
-                        fail(f.quote `Cannot evaluate expression ${expr} in a static context`, expr);
+                        return null;
                     else
                         throw err;
                 }
