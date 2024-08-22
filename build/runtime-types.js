@@ -75,7 +75,7 @@ export function typedValue(type, value) {
     if (type == null || value == null)
         impossible();
     if (!(type instanceof BaseVariableType)) {
-        (type);
+        type;
         crash(`Type was not a valid type`, type);
     }
     return new TypedValue_(type, value);

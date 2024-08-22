@@ -4,7 +4,8 @@
 	"description": "Runtime and checker for Cambridge Computer Science pseudocode",
 	"main": "index.js",
 	"scripts": {
-		"test": "tsc -b spec && jasmine"
+		"test": "tsc -b spec && jasmine",
+		"profile": "node ./scripts/profiler.js 100000 5"
 	},
 	"repository": {
 		"type": "git",

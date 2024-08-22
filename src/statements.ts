@@ -67,8 +67,10 @@ export type StatementExecutionResult = {
 export class Statement implements TextRanged, IFormattable {
 	type:typeof Statement;
 	stype:StatementType;
-	static type:StatementType;
 	category:StatementCategory;
+	range: TextRange;
+	preRunDone = false;
+	static type:StatementType;
 	static category:StatementCategory = null!; //Assigned in the decorator
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
@@ -85,7 +87,6 @@ export class Statement implements TextRanged, IFormattable {
 	 * If set, this statement is invalid and will fail with the below error message if it parses successfully.
 	 */
 	static invalidMessage: string | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:string, range?:TextRange]) = null;
-	range: TextRange;
 	constructor(public tokens:RangeArray<ExpressionASTNodeExt>){
 		this.type = new.target;
 		this.stype = this.type.type;
@@ -172,6 +173,7 @@ export class Statement implements TextRanged, IFormattable {
 	}
 	/** Higher scores are given lower priority. */
 	static tokensSortScore({tokens}:typeof Statement = this):number {
+		//TODO move usage to end of statement definitions
 		return tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
@@ -182,6 +184,11 @@ export class Statement implements TextRanged, IFormattable {
 			crash(`Missing runtime implementation for block statement ${this.stype}`);
 		else
 			crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
+	}
+	cacheValues(node?:ProgramASTBranchNode){}
+	preRun(node?:ProgramASTBranchNode){
+		if(!this.preRunDone) this.cacheValues(node);
+		this.preRunDone = true;
 	}
 }
 
@@ -637,52 +644,81 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
 export class ForStatement extends Statement {
 	name:string;
-	lowerBound:ExpressionAST;
-	upperBound:ExpressionAST;
+	fromExpr:ExpressionAST;
+	toExpr:ExpressionAST;
+	from?:number;
+	to?:number;
+	empty?:boolean;
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
 		this.name = tokens[1].text;
-		this.lowerBound = tokens[3];
-		this.upperBound = tokens[5];
+		this.fromExpr = tokens[3];
+		this.toExpr = tokens[5];
 	}
-	step(_runtime:Runtime):number {
+	cacheValues(node:ProgramASTBranchNode<"for">){
+		this.from = Runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER)?.value;
+		this.to = Runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER)?.value;
+		this.empty = node.nodeGroups[0].length == 0;
+		const endStatement = node.controlStatements[1];
+		if(endStatement.name !== this.name)
+			fail(f.quote`Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name}`, endStatement.varToken);
+	}
+	getStep(runtime:Runtime):number {
 		return 1;
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
-		const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
-		const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
-		if(upper < lower) return;
-		const end = node.controlStatements[1];
-		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
-		const step = this.step(runtime);
-		for(let i = lower; i <= upper; i += step){
-			const result = runtime.runBlock(node.nodeGroups[0], {
-				statement: this,
-				opaque: false,
-				variables: {
-					//Set the loop variable in the loop scope
-					[this.name]: {
-						declaration: this,
-						mutable: false,
-						type: PrimitiveVariableType.INTEGER,
-						get value(){ return i; },
-						set value(value){ crash(`Attempted assignment to constant`); },
-					}
-				},
-				types: {}
-			});
-			if(result) return result;
+
+		const from = this.from ?? runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER).value;
+		const to = this.to ?? runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER).value;
+		const step = this.getStep(runtime);
+		const direction = Math.sign(step);
+		if(direction == 0)
+			fail(`Invalid FOR statement: step cannot be zero`, (this as never as ForStepStatement).stepToken);
+
+		if(
+			direction == 1 && to < from ||
+			direction == -1 && from < to
+		) return;
+		for(
+			let i = from;
+			direction == 1 ? i <= to : i >= to;
+			i += step
+		){
+			if(this.empty){
+				const result = runtime.runBlock(node.nodeGroups[0], {
+					statement: this,
+					opaque: false,
+					variables: {
+						//Set the loop variable in the loop scope
+						[this.name]: {
+							declaration: this,
+							mutable: false,
+							type: PrimitiveVariableType.INTEGER,
+							get value(){ return i; },
+							set value(value){ crash(`Attempted assignment to constant`); },
+						}
+					},
+					types: {}
+				});
+				if(result) return result;
+			} else {
+				runtime.statementExecuted(this);
+			}
 		}
 	}
 }
 @statement("for.step", "FOR x <- 1 TO 20 STEP 2", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+", "keyword.step", "expr+")
 export class ForStepStatement extends ForStatement {
 	stepToken: ExpressionAST;
+	step?: number;
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
 		this.stepToken = tokens[7];
 	}
-	step(runtime:Runtime):number {
+	cacheValues(){
+		this.step = Runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)?.value;
+	}
+	getStep(runtime:Runtime):number {
 		return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER).value;
 	}
 }

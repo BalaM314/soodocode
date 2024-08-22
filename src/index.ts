@@ -9,4 +9,5 @@ export * from "./runtime.js";
 export * from "./runtime-types.js";
 export * from "./statements.js";
 export * from "./builtin_functions.js";
+export * from "./config.js";
 
