@@ -700,9 +700,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			else throw err;
 		}
 	}
-	static evaluateExpr(expr:ExpressionAST):TypedValue;
-	static evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
-	static evaluateExpr(expr:ExpressionAST, type?:VariableType):TypedValue {
+	static evaluateExpr(expr:ExpressionAST):TypedValue | null;
+	static evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
+	static evaluateExpr(expr:ExpressionAST, type?:VariableType):TypedValue | null {
 		try {
 			return this.prototype.evaluateExpr.call(new Proxy({
 				evaluateToken: this.evaluateToken,
@@ -711,7 +711,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				get(){ throw Runtime.NotStatic; },
 			}), expr, type);
 		} catch(err){
-			if(err === Runtime.NotStatic) fail(f.quote`Cannot evaluate expression ${expr} in a static context`, expr);
+			if(err === Runtime.NotStatic) return null;
 			else throw err;
 		}
 	}
