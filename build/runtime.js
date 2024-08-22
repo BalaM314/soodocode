@@ -692,12 +692,28 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             static evaluateToken(token, type) {
                 try {
                     return this.prototype.evaluateToken.call(new Proxy({}, {
-                        get() { throw new _a.NotStaticError(); },
+                        get() { throw _a.NotStatic; },
                     }), token, type);
                 }
                 catch (err) {
-                    if (err instanceof _a.NotStaticError)
+                    if (err === _a.NotStatic)
                         fail(f.quote `Cannot evaluate token ${token} in a static context`, token);
+                    else
+                        throw err;
+                }
+            }
+            static evaluateExpr(expr, type) {
+                try {
+                    return this.prototype.evaluateExpr.call(new Proxy({
+                        evaluateToken: this.evaluateToken,
+                        evaluateExpr: this.evaluateExpr,
+                    }, {
+                        get() { throw _a.NotStatic; },
+                    }), expr, type);
+                }
+                catch (err) {
+                    if (err === _a.NotStatic)
+                        fail(f.quote `Cannot evaluate expression ${expr} in a static context`, expr);
                     else
                         throw err;
                 }
@@ -1008,9 +1024,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     type.validate(this);
                 }
                 for (const node of others) {
-                    if (++this.statementsExecuted > configs.statements.max_statements.value) {
-                        fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, node);
-                    }
+                    this.statementExecuted(node);
                     let result;
                     if (node instanceof Statement) {
                         result = node.run(this);
@@ -1032,6 +1046,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         type: "function_return",
                         value: returned
                     };
+                }
+            }
+            statementExecuted(range) {
+                if (++this.statementsExecuted > configs.statements.max_statements.value) {
+                    fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
                 }
             }
             runProgram(code) {
@@ -1068,8 +1087,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             __esDecorate(_a, null, _evaluateExpr_decorators, { kind: "method", name: "evaluateExpr", static: false, private: false, access: { has: obj => "evaluateExpr" in obj, get: obj => obj.evaluateExpr }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(_a, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
         })(),
-        _a.NotStaticError = class extends Error {
-        },
+        _a.NotStatic = Symbol("not static"),
         _a;
 })();
 export { Runtime };

@@ -539,7 +539,7 @@ CALL x()`,
 `"xvar" does not exist`
 ],
 //#endregion
-//#region enum
+//#region enums
 parse_enum: [
 `TYPE enum = (a, b, ccccccc)`,
 []
@@ -684,6 +684,68 @@ ENDCLASS
 CLASS Bmogus
 PUBLIC amogus: ARRAY[1:10] OF Amogus
 ENDCLASS`,
+[]
+],
+//#endregion
+//#region statements
+for_normal: [
+`FOR i <- 1 TO 3
+	OUTPUT i
+NEXT i`,
+["1", "2", "3"]
+],
+for_evaluated: [
+`FOR i <- 1 + 1 TO 6 - 1
+	OUTPUT i
+NEXT i`,
+["2", "3", "4", "5"]
+],
+for_invalid_next_statement: [
+`FOR i <- 1 TO 3
+	OUTPUT i
+NEXT j`,
+`NEXT`
+],
+for_one: [
+`FOR i <- 3 TO 3
+	OUTPUT i
+NEXT i`,
+["3"]
+],
+for_none: [
+`FOR i <- 4 TO 3
+	OUTPUT i
+NEXT i`,
+[]
+],
+for_step_inclusive: [
+`FOR i <- 0 TO 10 STEP 2
+	OUTPUT i
+NEXT i`,
+["0", "2", "4", "6", "8", "10"]
+],
+for_step_exclusive: [
+`FOR i <- 0 TO 10 STEP 3
+	OUTPUT i
+NEXT i`,
+["0", "3", "6", "9"]
+],
+for_step_negative: [
+`FOR i <- 5 TO 1 STEP -1
+	OUTPUT i
+NEXT i`,
+["5", "4", "3", "2", "1"]
+],
+for_step_negative_multi: [
+`FOR i <- 5 TO 1 STEP -2
+	OUTPUT i
+NEXT i`,
+["5", "3", "1"]
+],
+for_step_negative_none: [
+`FOR i <- 1 TO 5 STEP -1
+	OUTPUT i
+NEXT i`,
 []
 ],
 //#endregion

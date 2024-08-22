@@ -645,33 +645,51 @@ export class ForStatement extends Statement {
 		this.lowerBound = tokens[3];
 		this.upperBound = tokens[5];
 	}
-	step(_runtime:Runtime):number {
+	step(runtime:Runtime):number {
 		return 1;
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
-		const lower = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
-		const upper = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
-		if(upper < lower) return;
 		const end = node.controlStatements[1];
-		if(end.name !== this.name) fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
+		if(end.name !== this.name)
+			fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
+		const empty = node.nodeGroups[0].length == 0;
+
+		const from = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
+		const to = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
 		const step = this.step(runtime);
-		for(let i = lower; i <= upper; i += step){
-			const result = runtime.runBlock(node.nodeGroups[0], {
-				statement: this,
-				opaque: false,
-				variables: {
-					//Set the loop variable in the loop scope
-					[this.name]: {
-						declaration: this,
-						mutable: false,
-						type: PrimitiveVariableType.INTEGER,
-						get value(){ return i; },
-						set value(value){ crash(`Attempted assignment to constant`); },
-					}
-				},
-				types: {}
-			});
-			if(result) return result;
+		const direction = Math.sign(step);
+		if(direction == 0)
+			fail(`Invalid FOR statement: step cannot be zero`, (this as never as ForStepStatement).stepToken);
+
+		if(
+			direction == 1 && to < from ||
+			direction == -1 && from < to
+		) return;
+		for(
+			let i = from;
+			direction == 1 ? i <= to : i >= to;
+			i += step
+		){
+			if(empty){
+				const result = runtime.runBlock(node.nodeGroups[0], {
+					statement: this,
+					opaque: false,
+					variables: {
+						//Set the loop variable in the loop scope
+						[this.name]: {
+							declaration: this,
+							mutable: false,
+							type: PrimitiveVariableType.INTEGER,
+							get value(){ return i; },
+							set value(value){ crash(`Attempted assignment to constant`); },
+						}
+					},
+					types: {}
+				});
+				if(result) return result;
+			} else {
+				runtime.statementExecuted(this);
+			}
 		}
 	}
 }

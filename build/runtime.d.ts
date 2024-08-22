@@ -52,25 +52,11 @@ export declare class Runtime {
     evaluateToken(token: Token, type: "variable"): VariableData | ConstantData;
     evaluateToken(token: Token, type: "function"): FunctionData | BuiltinFunctionData;
     evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
-    static NotStaticError: {
-        new (message?: string): {
-            name: string;
-            message: string;
-            stack?: string;
-            cause?: unknown;
-        };
-        new (message?: string, options?: ErrorOptions): {
-            name: string;
-            message: string;
-            stack?: string;
-            cause?: unknown;
-        };
-        captureStackTrace(targetObject: object, constructorOpt?: Function): void;
-        prepareStackTrace?: ((err: Error, stackTraces: NodeJS.CallSite[]) => any) | undefined;
-        stackTraceLimit: number;
-    };
+    static NotStatic: symbol;
     static evaluateToken(token: Token): TypedValue;
     static evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
+    static evaluateExpr(expr: ExpressionAST): TypedValue;
+    static evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;
@@ -95,6 +81,7 @@ export declare class Runtime {
         type: "function_return";
         value: VariableValue;
     };
+    statementExecuted(range: TextRangeLike): void;
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;
     getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;

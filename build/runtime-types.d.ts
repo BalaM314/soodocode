@@ -26,7 +26,14 @@ declare class TypedValue_<T extends VariableType> {
     asHTML(recursive: boolean): string;
     asString(): string;
 }
-export declare const TypedValue: { [N in PrimitiveVariableTypeName]: (value: VariableTypeMapping<PrimitiveVariableType<N>>) => TypedValue_<PrimitiveVariableType<N>>; };
+export declare const TypedValue: {
+    INTEGER: (value: number) => TypedValue_<PrimitiveVariableType<"INTEGER">>;
+    REAL: (value: number) => TypedValue_<PrimitiveVariableType<"REAL">>;
+    BOOLEAN: (value: boolean) => TypedValue_<PrimitiveVariableType<"BOOLEAN">>;
+    STRING: (value: string) => TypedValue_<PrimitiveVariableType<"STRING">>;
+    CHAR: (value: string) => TypedValue_<PrimitiveVariableType<"CHAR">>;
+    DATE: (value: Date) => TypedValue_<PrimitiveVariableType<"DATE">>;
+};
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
@@ -178,10 +185,14 @@ export declare class ClassVariableType<Init extends boolean = true> extends Base
     inherits(other: ClassVariableType): boolean;
     construct(runtime: Runtime, args: RangeArray<ExpressionASTNode>): {
         properties: {
-            [index: string]: VariableTypeMapping<any> | null;
+            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
+                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+            } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
         };
-        propertyTypes: Record<string, VariableType>;
-        type: ClassVariableType;
+        propertyTypes: Record<string, VariableType<true>>;
+        type: ClassVariableType<true>;
     };
     getScope(runtime: Runtime, instance: VariableTypeMapping<ClassVariableType>): VariableScope;
     iterateProperties<T>(value: VariableTypeMapping<ClassVariableType>, callback: (tval: TypedValue | null, name: string, statement: ClassPropertyStatement) => T): T[];

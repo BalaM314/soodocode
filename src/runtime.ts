@@ -686,17 +686,32 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			default: fail(f.quote`Cannot evaluate token ${token}`, token);
 		}
 	}
-	static NotStaticError = class extends Error {};
+	static NotStatic = Symbol("not static");
 	static evaluateToken(token:Token):TypedValue;
 	static evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
 	static evaluateToken(token:Token, type?:VariableType):TypedValue {
 		//major shenanigans
 		try {
 			return this.prototype.evaluateToken.call(new Proxy({}, {
-				get(){ throw new Runtime.NotStaticError(); },
+				get(){ throw Runtime.NotStatic; },
 			}), token, type);
 		} catch(err){
-			if(err instanceof Runtime.NotStaticError) fail(f.quote`Cannot evaluate token ${token} in a static context`, token);
+			if(err === Runtime.NotStatic) fail(f.quote`Cannot evaluate token ${token} in a static context`, token);
+			else throw err;
+		}
+	}
+	static evaluateExpr(expr:ExpressionAST):TypedValue;
+	static evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
+	static evaluateExpr(expr:ExpressionAST, type?:VariableType):TypedValue {
+		try {
+			return this.prototype.evaluateExpr.call(new Proxy({
+				evaluateToken: this.evaluateToken,
+				evaluateExpr: this.evaluateExpr,
+			}, {
+				get(){ throw Runtime.NotStatic; },
+			}), expr, type);
+		} catch(err){
+			if(err === Runtime.NotStatic) fail(f.quote`Cannot evaluate expression ${expr} in a static context`, expr);
 			else throw err;
 		}
 	}
@@ -1021,9 +1036,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		//Fifth pass: everything else
 		for(const node of others){
-			if(++this.statementsExecuted > configs.statements.max_statements.value){
-				fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, node);
-			}
+			this.statementExecuted(node);
 			let result;
 			if(node instanceof Statement){
 				result = node.run(this);
@@ -1043,6 +1056,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				type: "function_return",
 				value: returned
 			};
+		}
+	}
+	statementExecuted(range:TextRangeLike) {
+		if(++this.statementsExecuted > configs.statements.max_statements.value){
+			fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
 		}
 	}
 	/** Creates a scope. */
