@@ -10,7 +10,7 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, NodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr, zip } from "./utils.js";
@@ -296,8 +296,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		let targetValue:VariableValue | null;
 		if(outType == "variable"){
 			target = this.evaluateExpr(expr.nodes[0], "variable");
-			targetType = target.type;
-			targetValue = target.value;
+			({ type:targetType, value:targetValue } = target);
 		} else {
 			({ type:targetType, value:targetValue } = this.evaluateExpr(expr.nodes[0]));
 		}
@@ -386,6 +385,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 	evaluateExpr(expr:ExpressionAST, type:"variable", recursive?:boolean):VariableData | ConstantData;
 	evaluateExpr(expr:ExpressionAST, type:"function", recursive?:boolean):FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):TypedValue<T extends undefined ? VariableType : T & {}>
+	evaluateExpr<T extends VariableType | undefined | "variable">(expr:ExpressionAST, type:T, recursive?:boolean):VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>
 	@errorBoundary({
 		predicate: (_expr, _type, recursive) => !recursive,
 		message: () => `Cannot evaluate expression "$rc": `
@@ -701,8 +701,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 	}
 	static evaluateExpr(expr:ExpressionAST):TypedValue | null;
+	static evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):TypedValue<T> | null;
 	static evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
-	static evaluateExpr(expr:ExpressionAST, type?:VariableType):TypedValue | null {
+	static evaluateExpr<T extends VariableType | undefined | "variable">(expr:ExpressionAST, type:T, recursive?:boolean):VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>
+	static evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):VariableData | ConstantData | TypedValue | null {
 		try {
 			return this.prototype.evaluateExpr.call(new Proxy({
 				evaluateToken: this.evaluateToken,
@@ -1058,6 +1060,19 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			};
 		}
 	}
+	doPreRun(block:ProgramASTNode[]){
+		for(const node of block){
+			if(node instanceof Statement) node.preRun();
+			else {
+				for(const statement of node.controlStatements){
+					statement.preRun(node as never); //UNSOUND
+				}
+				for(const block of node.nodeGroups){
+					this.doPreRun(block);
+				}
+			}
+		}
+	}
 	statementExecuted(range:TextRangeLike) {
 		if(++this.statementsExecuted > configs.statements.max_statements.value){
 			fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
@@ -1065,6 +1080,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}
 	/** Creates a scope. */
 	runProgram(code:ProgramASTNode[]){
+		this.doPreRun(code);
 		this.runBlock(code, {
 			statement: "global",
 			opaque: true,
