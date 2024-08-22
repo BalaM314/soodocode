@@ -40,8 +40,10 @@ export declare class Statement implements TextRanged, IFormattable {
     tokens: RangeArray<ExpressionASTNodeExt>;
     type: typeof Statement;
     stype: StatementType;
-    static type: StatementType;
     category: StatementCategory;
+    range: TextRange;
+    preRunDone: boolean;
+    static type: StatementType;
     static category: StatementCategory;
     static example: string;
     static tokens: (TokenMatcher | "#")[];
@@ -49,7 +51,6 @@ export declare class Statement implements TextRanged, IFormattable {
     static blockType: ProgramASTBranchNodeType | null;
     static allowOnly: Set<StatementType> | null;
     static invalidMessage: string | null | ((parseOutput: StatementCheckTokenRange[], context: ProgramASTBranchNode | null) => [message: string, range?: TextRange]);
-    range: TextRange;
     constructor(tokens: RangeArray<ExpressionASTNodeExt>);
     fmtText(): string;
     fmtDebug(): string;
@@ -61,6 +62,8 @@ export declare class Statement implements TextRanged, IFormattable {
     static tokensSortScore({ tokens }?: typeof Statement): number;
     run(runtime: Runtime): void | StatementExecutionResult;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | StatementExecutionResult;
+    cacheValues(node?: ProgramASTBranchNode): void;
+    preRun(node?: ProgramASTBranchNode): void;
 }
 export declare class TypeStatement extends Statement {
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
@@ -217,10 +220,14 @@ export declare class CaseBranchRangeStatement extends CaseBranchStatement {
 }
 export declare class ForStatement extends Statement {
     name: string;
-    lowerBound: ExpressionAST;
-    upperBound: ExpressionAST;
+    fromExpr: ExpressionAST;
+    toExpr: ExpressionAST;
+    from?: number;
+    to?: number;
+    empty?: boolean;
     constructor(tokens: RangeArray<Token>);
-    step(runtime: Runtime): number;
+    cacheValues(node: ProgramASTBranchNode<"for">): void;
+    getStep(runtime: Runtime): number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode<"for">): {
         type: "function_return";
         value: VariableValue;
@@ -228,8 +235,10 @@ export declare class ForStatement extends Statement {
 }
 export declare class ForStepStatement extends ForStatement {
     stepToken: ExpressionAST;
+    step?: number;
     constructor(tokens: RangeArray<Token>);
-    step(runtime: Runtime): number;
+    cacheValues(): void;
+    getStep(runtime: Runtime): number;
 }
 export declare class ForEndStatement extends Statement {
     name: string;
@@ -250,7 +259,6 @@ export declare class WhileStatement extends Statement {
     } | undefined;
 }
 export declare class DoWhileStatement extends Statement {
-    static maxLoops: number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode<"dowhile">): {
         type: "function_return";
         value: VariableValue;
@@ -330,7 +338,7 @@ declare class ClassMemberStatement {
     runBlock(): void;
 }
 export declare class ClassStatement extends TypeStatement {
-    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     name: Token;
     constructor(tokens: RangeArray<Token>);
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;

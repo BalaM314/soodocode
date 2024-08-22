@@ -81,6 +81,7 @@ let Statement = (() => {
     var Statement = _classThis = class {
         constructor(tokens) {
             this.tokens = tokens;
+            this.preRunDone = false;
             this.type = new.target;
             this.stype = this.type.type;
             this.category = this.type.category;
@@ -168,6 +169,12 @@ let Statement = (() => {
                 crash(`Missing runtime implementation for block statement ${this.stype}`);
             else
                 crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
+        }
+        cacheValues(node) { }
+        preRun(node) {
+            if (!this.preRunDone)
+                this.cacheValues(node);
+            this.preRunDone = true;
         }
     };
     __setFunctionName(_classThis, "Statement");
@@ -939,20 +946,24 @@ let ForStatement = (() => {
         constructor(tokens) {
             super(tokens);
             this.name = tokens[1].text;
-            this.lowerBound = tokens[3];
-            this.upperBound = tokens[5];
+            this.fromExpr = tokens[3];
+            this.toExpr = tokens[5];
         }
-        step(runtime) {
+        cacheValues(node) {
+            this.from = Runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER)?.value;
+            this.to = Runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER)?.value;
+            this.empty = node.nodeGroups[0].length == 0;
+            const endStatement = node.controlStatements[1];
+            if (endStatement.name !== this.name)
+                fail(f.quote `Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name}`, endStatement.varToken);
+        }
+        getStep(runtime) {
             return 1;
         }
         runBlock(runtime, node) {
-            const end = node.controlStatements[1];
-            if (end.name !== this.name)
-                fail(`Incorrect NEXT statement: expected variable "${this.name}" from for loop, got variable "${end.name}"`, end.varToken);
-            const empty = node.nodeGroups[0].length == 0;
-            const from = runtime.evaluateExpr(this.lowerBound, PrimitiveVariableType.INTEGER).value;
-            const to = runtime.evaluateExpr(this.upperBound, PrimitiveVariableType.INTEGER).value;
-            const step = this.step(runtime);
+            const from = this.from ?? runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER).value;
+            const to = this.to ?? runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER).value;
+            const step = this.getStep(runtime);
             const direction = Math.sign(step);
             if (direction == 0)
                 fail(`Invalid FOR statement: step cannot be zero`, this.stepToken);
@@ -960,7 +971,7 @@ let ForStatement = (() => {
                 direction == -1 && from < to)
                 return;
             for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
-                if (empty) {
+                if (this.empty) {
                     const result = runtime.runBlock(node.nodeGroups[0], {
                         statement: this,
                         opaque: false,
@@ -1006,7 +1017,10 @@ let ForStepStatement = (() => {
             super(tokens);
             this.stepToken = tokens[7];
         }
-        step(runtime) {
+        cacheValues() {
+            this.step = Runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)?.value;
+        }
+        getStep(runtime) {
             return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER).value;
         }
     };
@@ -1114,7 +1128,6 @@ let DoWhileStatement = (() => {
     let _classSuper = Statement;
     var DoWhileStatement = _classThis = class extends _classSuper {
         runBlock(runtime, node) {
-            let i = 0;
             do {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
@@ -1124,8 +1137,6 @@ let DoWhileStatement = (() => {
                 });
                 if (result)
                     return result;
-                if (++i > DoWhileStatement.maxLoops)
-                    fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
             } while (!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN).value);
         }
     };
@@ -1135,9 +1146,6 @@ let DoWhileStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         DoWhileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    _classThis.maxLoops = 10000;
-    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return DoWhileStatement = _classThis;
