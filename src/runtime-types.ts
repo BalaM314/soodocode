@@ -8,7 +8,7 @@ This file contains the types for the runtime, such as the variable types and ass
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
-import type { Runtime } from "./runtime.js";
+import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
@@ -143,6 +143,27 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 		crash(`Type was not a valid type`, type);
 	}
 	return new TypedValue_(type, value) as TypedValue;
+}
+
+export class NodeValue<
+	T extends ExpressionASTNode = ExpressionASTNode,
+	InputType extends PrimitiveVariableTypeName | VariableType = VariableType,
+	Type extends VariableType = InputType extends PrimitiveVariableTypeName ? PrimitiveVariableType<InputType> : InputType
+>{
+	type: Type;
+	constructor(
+		public node: T,
+		inputType: InputType,
+		public value: VariableTypeMapping<Type> | null | undefined = undefined
+	){
+		this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType) as Type;
+	}
+	init(){
+		this.value = (Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
+	}
+	getValue(runtime:Runtime):VariableTypeMapping<Type> {
+		return this.value ?? (runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type>).value;
+	}
 }
 
 export abstract class BaseVariableType implements IFormattable {
