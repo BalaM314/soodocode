@@ -725,10 +725,8 @@ export class WhileStatement extends Statement {
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
-	static maxLoops = 10_000; //CONFIG
 	//TODO automatically fail if no state changes
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
-		let i = 0;
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
@@ -737,8 +735,6 @@ export class DoWhileStatement extends Statement {
 				types: {},
 			});
 			if(result) return result;
-			if(++i > DoWhileStatement.maxLoops)
-				fail(`Too many loop iterations`, node.controlStatements[0], node.controlStatements);
 		} while(!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN).value);
 		//Inverted, the pseudocode statement is "until"
 	}
