@@ -62,6 +62,7 @@ export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extend
 export type TypedValue<T extends VariableType = VariableType> =
 	//Trigger DCT
 	T extends unknown ? TypedValue_<T> : never;
+export type { TypedValue_ };
 class TypedValue_<T extends VariableType> {
 	constructor(
 		public type:T,
@@ -151,6 +152,7 @@ export class NodeValue<
 	Type extends VariableType = InputType extends PrimitiveVariableTypeName ? PrimitiveVariableType<InputType> : InputType
 >{
 	type: Type;
+	range = this.node.range;
 	constructor(
 		public node: T,
 		inputType: InputType,
@@ -160,9 +162,6 @@ export class NodeValue<
 	}
 	init(){
 		this.value = (Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
-	}
-	getValue(runtime:Runtime):VariableTypeMapping<Type> {
-		return this.value ?? (runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type>).value;
 	}
 }
 
