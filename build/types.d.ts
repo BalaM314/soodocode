@@ -51,4 +51,7 @@ declare global {
     interface Function {
         displayName?: string;
     }
+    interface SymbolConstructor {
+        readonly metadata: unique symbol;
+    }
 }

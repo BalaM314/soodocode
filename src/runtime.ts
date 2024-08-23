@@ -687,16 +687,16 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 	}
 	static NotStatic = Symbol("not static");
-	static evaluateToken(token:Token):TypedValue;
-	static evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
-	static evaluateToken(token:Token, type?:VariableType):TypedValue {
+	static evaluateToken(token:Token):TypedValue | null;
+	static evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
+	static evaluateToken(token:Token, type?:VariableType):TypedValue | null {
 		//major shenanigans
 		try {
 			return this.prototype.evaluateToken.call(new Proxy({}, {
 				get(){ throw Runtime.NotStatic; },
 			}), token, type);
 		} catch(err){
-			if(err === Runtime.NotStatic) fail(f.quote`Cannot evaluate token ${token} in a static context`, token);
+			if(err === Runtime.NotStatic) return null;
 			else throw err;
 		}
 	}
@@ -706,12 +706,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	static evaluateExpr<T extends VariableType | undefined | "variable">(expr:ExpressionAST, type:T, recursive?:boolean):VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>
 	static evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):VariableData | ConstantData | TypedValue | null {
 		try {
-			return this.prototype.evaluateExpr.call(new Proxy({
+			return this.prototype.evaluateExpr.call(Object.setPrototypeOf({
 				evaluateToken: this.evaluateToken,
 				evaluateExpr: this.evaluateExpr,
-			}, {
+			}, new Proxy({}, {
 				get(){ throw Runtime.NotStatic; },
-			}), expr, type);
+			})), expr, type);
 		} catch(err){
 			if(err === Runtime.NotStatic) return null;
 			else throw err;

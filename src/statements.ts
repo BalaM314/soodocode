@@ -82,9 +82,7 @@ export class Statement implements TextRanged, IFormattable {
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
 	static suppressErrors = false;
-	static [Symbol.metadata] = {
-		evaluatableFields: [] as string[],
-	};
+	static evaluatableFields: string[];
 	/**
 	 * If set, this statement class will only be checked for in blocks of the specified type.
 	 **/
@@ -207,7 +205,7 @@ export class Statement implements TextRanged, IFormattable {
 			crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
 	}
 	doPreRun(node?:ProgramASTBranchNode){
-		for(const field of this.type[Symbol.metadata].evaluatableFields){
+		for(const field of this.type.evaluatableFields){
 			//Safety: checked in the decorator
 			const nodeValue = (this as never as Record<typeof field, NodeValue>)[field];
 			if(!(nodeValue instanceof NodeValue)) crash(`Decorated invalid field ${field}`);
@@ -220,21 +218,26 @@ export class Statement implements TextRanged, IFormattable {
 	}
 }
 
+type StatementDecoratorMetadata = {
+	evaluatableFields: (typeof Statement)["evaluatableFields"];
+};
+
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):
-	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):
-	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", ...tokens:TokenMatcher[]):
-	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", irregular:"#", ...tokens:TokenMatcher[]):
-	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", endType:"auto", ...tokens:TokenMatcher[]):
-	(input:TClass, context?:ClassDecoratorContext<TClass>) => TClass;
+	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...args:string[]){
-	return function (input:TClass):TClass {
+	return function (input:TClass, context:ClassDecoratorContext<TClass>):TClass {
 		input.type = type;
 		input.example = example;
+		input.evaluatableFields = (context.metadata as StatementDecoratorMetadata)?.evaluatableFields ?? [];
 		if(args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split"){
 			input.category = args[0];
 			args.shift();
@@ -243,16 +246,16 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		}
 		if(args[0] == "auto" && input.category == "block"){
 			args.shift();
-			statement(
+			//REFACTOR CHECK
+			@statement(
 				StatementType(type + ".end"),
 				tokenTextMapping[TokenType(args[0] + "_end") as keyof typeof tokenTextMapping] ?? "[unknown]",
 				"block_end",
 				TokenType(args[0] + "_end")
-			)( //REFACTOR CHECK
-				class __endStatement extends Statement {
-					static blockType = ProgramASTBranchNodeType(type);
-				}
-			);
+			)
+			class __endStatement extends Statement {
+				static blockType = ProgramASTBranchNodeType(type);
+			}
 		}
 		//validate args
 		if(args.length < 1) crash(`Invalid statement definitions! All statements must contain at least one token`);
@@ -296,7 +299,7 @@ function finishStatements(){
 function evaluate<This extends Statement & {[_ in K]: NodeValue<ExpressionAST, VariableType>}, K extends string, Value>(
 	_:undefined, context:ClassFieldDecoratorContext<This, Value> & { name: K; static: false; }
 ){
-	((context.metadata.evaluatableFields ??= []) as (typeof Statement)[(typeof Symbol)["metadata"]]["evaluatableFields"]).push(context.name);
+	((context.metadata.evaluatableFields ??= []) as (typeof Statement)["evaluatableFields"]).push(context.name);
 }
 
 export class TypeStatement extends Statement {
@@ -347,7 +350,8 @@ export class ConstantStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`, this);
-		const { type, value } = Runtime.evaluateToken(this.expression);
+		const { type, value } = Runtime.evaluateToken(this.expression)
+			?? fail(f.quote`Cannot evaluate expression ${this.expression} in a static context`, this.expression);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
 			get value(){ return value; },
@@ -377,7 +381,10 @@ export class DefineStatement extends Statement {
 			type,
 			declaration: this,
 			mutable: true,
-			value: this.values.map(t => Runtime.evaluateToken(t, type.baseType as PrimitiveVariableType).value)
+			value: this.values.map(t => (
+				Runtime.evaluateToken(t, type.baseType as PrimitiveVariableType)
+					?? fail(f.quote`Cannot evaluate token ${t} in a static context`, t)
+			).value)
 		};
 	}
 }
@@ -650,7 +657,7 @@ export class CaseBranchStatement extends Statement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Try to evaluate the case token with the same type as the switch target
-		const { value:caseValue } = Runtime.evaluateToken(this.value, switchType);
+		const { value:caseValue } = Runtime.evaluateToken(this.value, switchType)!;
 		return switchValue == caseValue;
 	}
 }
@@ -670,8 +677,8 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Evaluate the case tokens with the same type as the switch target
-		const { value:lValue } = Runtime.evaluateToken(this.value, switchType);
-		const { value:uValue } = Runtime.evaluateToken(this.upperBound, switchType);
+		const { value:lValue } = Runtime.evaluateToken(this.value, switchType)!;
+		const { value:uValue } = Runtime.evaluateToken(this.upperBound, switchType)!;
 		return lValue <= switchValue && switchValue <= uValue;
 	}
 }
@@ -713,22 +720,22 @@ export class ForStatement extends Statement {
 			direction == 1 ? i <= to : i >= to;
 			i += step
 		){
-				const result = runtime.runBlock(node.nodeGroups[0], {
-					statement: this,
-					opaque: false,
-					variables: {
-						//Set the loop variable in the loop scope
-						[this.name]: {
-							declaration: this,
-							mutable: false,
-							type: PrimitiveVariableType.INTEGER,
+			const result = runtime.runBlock(node.nodeGroups[0], {
+				statement: this,
+				opaque: false,
+				variables: {
+					//Set the loop variable in the loop scope
+					[this.name]: {
+						declaration: this,
+						mutable: false,
+						type: PrimitiveVariableType.INTEGER,
 						get value(){ return Number(i); },
-							set value(value){ crash(`Attempted assignment to constant`); },
-						}
-					},
-					types: {}
-				});
-				if(result) return result;
+						set value(value){ crash(`Attempted assignment to constant`); },
+					}
+				},
+				types: {}
+			});
+			if(result) return result;
 		}
 	}
 }
