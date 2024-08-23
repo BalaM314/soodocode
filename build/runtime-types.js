@@ -1,4 +1,5 @@
 import { configs } from "./config.js";
+import { Runtime } from "./runtime.js";
 import { ClassFunctionStatement } from "./statements.js";
 import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, zip } from "./utils.js";
 export const primitiveVariableTypeNames = [
@@ -79,6 +80,19 @@ export function typedValue(type, value) {
         crash(`Type was not a valid type`, type);
     }
     return new TypedValue_(type, value);
+}
+export class NodeValue {
+    constructor(node, inputType, value = undefined) {
+        this.node = node;
+        this.value = value;
+        this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType);
+    }
+    init() {
+        this.value = Runtime.evaluateExpr(this.node, this.type)?.value ?? null;
+    }
+    getValue(runtime) {
+        return this.value ?? runtime.evaluateExpr(this.node, this.type).value;
+    }
 }
 export class BaseVariableType {
     validate(runtime) { }
