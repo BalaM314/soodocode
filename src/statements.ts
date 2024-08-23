@@ -693,10 +693,10 @@ export class ForStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
 
-		const from = this.from.getValue(runtime);
-		const to = this.to.getValue(runtime);
-		const step = this.getStep(runtime);
-		const direction = Math.sign(step);
+		const from = BigInt(this.from.getValue(runtime));
+		const to = BigInt(this.to.getValue(runtime));
+		const _step = this.getStep(runtime), step = BigInt(_step);
+		const direction = Math.sign(_step);
 		if(direction == 0)
 			fail(`Invalid FOR statement: step cannot be zero`, (this as never as ForStepStatement).stepToken);
 
@@ -704,12 +704,15 @@ export class ForStatement extends Statement {
 			direction == 1 && to < from ||
 			direction == -1 && from < to
 		) return;
+		if(this.empty){
+			for(let i = from; direction == 1 ? i <= to : i >= to; i += step)
+				runtime.statementExecuted(this);
+		}
 		for(
 			let i = from;
 			direction == 1 ? i <= to : i >= to;
 			i += step
 		){
-			if(this.empty){
 				const result = runtime.runBlock(node.nodeGroups[0], {
 					statement: this,
 					opaque: false,
@@ -719,16 +722,13 @@ export class ForStatement extends Statement {
 							declaration: this,
 							mutable: false,
 							type: PrimitiveVariableType.INTEGER,
-							get value(){ return i; },
+						get value(){ return Number(i); },
 							set value(value){ crash(`Attempted assignment to constant`); },
 						}
 					},
 					types: {}
 				});
 				if(result) return result;
-			} else {
-				runtime.statementExecuted(this);
-			}
 		}
 	}
 }
