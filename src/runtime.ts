@@ -10,7 +10,7 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, NodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, NodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr, zip } from "./utils.js";
@@ -717,6 +717,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			else throw err;
 		}
 	}
+	evaluate<
+		T extends ExpressionASTNode,
+		InputType extends PrimitiveVariableTypeName | VariableType,
+		Type extends VariableType
+	>(value:NodeValue<T, InputType, Type>):VariableTypeMapping<Type> {
+		return value.value ?? (this.evaluateExpr(value.node, value.type) as TypedValue_<Type>).value;
+	}
 	resolveVariableType(type:UnresolvedVariableType):VariableType {
 		if(type instanceof PrimitiveVariableType) return type;
 		else if(type instanceof IntegerRangeVariableType) return type;
@@ -842,6 +849,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			//Ignore classmethodstatement because it always has a ClassStatement just above it
 		}
 		return false;
+	}
+	defineFunction(name:string, data:FunctionData, range:TextRange){
+		//TODO scope?
+		if(name in this.functions) fail(f.quote`Function or procedure ${name} has already been defined`, range);
+		else if(name in this.builtinFunctions) fail(f.quote`Function or procedure ${name} has already been defined as a builtin function`, range);
+		this.functions[name] = data;
 	}
 	getFunction({text, range}:Token):FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(this.classData && this.classData.clazz.allMethods[text]){
@@ -1073,8 +1086,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			}
 		}
 	}
-	statementExecuted(range:TextRangeLike) {
-		if(++this.statementsExecuted > configs.statements.max_statements.value){
+	statementExecuted(range:TextRangeLike, increment = 1){
+		if((this.statementsExecuted += increment) > configs.statements.max_statements.value){
 			fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
 		}
 	}

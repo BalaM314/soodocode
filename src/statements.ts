@@ -12,10 +12,10 @@ import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
-import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, NodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, NodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
-import { Abstract, combineClasses, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
 
 if(!Symbol.metadata)
 	Object.defineProperty(Symbol, "metadata", {
@@ -102,15 +102,28 @@ export class Statement implements TextRanged, IFormattable {
 		this.range = getTotalRange(tokens);
 	}
 	token(ind:number):Token {
-		if(this.tokens[ind] instanceof Token) return this.tokens[ind] as Token;
+		if(this.tokens.at(ind) instanceof Token) return this.tokens.at(ind) as Token;
 		else crash(`Assertion failed: node at index ${ind} was not a token`);
+	}
+	tokenRange(from:number, to:number):RangeArray<Token> {
+		const tokens = this.tokens.slice(from, to);
+		tokens.forEach((t, i) =>
+			t instanceof Token || crash(`Assertion failed: node at index ${i} was not a token`)
+		);
+		return tokens as RangeArray<Token>;
+	}
+	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):NodeValue<Token, InputType> {
+		return new NodeValue(this.token(ind), type);
 	}
 	expr(ind:number):ExpressionAST {
 		if([
 			Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
-		].some(c => this.tokens[ind] instanceof c))
-			return this.tokens[ind] as ExpressionAST;
+		].some(c => this.tokens.at(ind) instanceof c))
+			return this.tokens.at(ind) as ExpressionAST;
 		else crash(`Assertion failed: node at index ${ind} was not an expression`);
+	}
+	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):NodeValue<ExpressionAST, InputType> {
+		return new NodeValue(this.expr(ind), type);
 	}
 	fmtText(){
 		return this.tokens.map(t => t.fmtText()).join(" ");
@@ -219,7 +232,8 @@ export class Statement implements TextRanged, IFormattable {
 }
 
 type StatementDecoratorMetadata = {
-	evaluatableFields: (typeof Statement)["evaluatableFields"];
+	evaluatableFields?: (typeof Statement)["evaluatableFields"];
+	done?: boolean;
 };
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):
@@ -237,7 +251,11 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 	return function (input:TClass, context:ClassDecoratorContext<TClass>):TClass {
 		input.type = type;
 		input.example = example;
-		input.evaluatableFields = (context.metadata as StatementDecoratorMetadata)?.evaluatableFields ?? [];
+
+		forceType<StatementDecoratorMetadata>(context.metadata);
+		input.evaluatableFields = (context.metadata.evaluatableFields ?? []);
+		context.metadata.done = true;
+
 		if(args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split"){
 			input.category = args[0];
 			args.shift();
@@ -299,10 +317,18 @@ function finishStatements(){
 function evaluate<This extends Statement & {[_ in K]: NodeValue<ExpressionAST, VariableType>}, K extends string, Value>(
 	_:undefined, context:ClassFieldDecoratorContext<This, Value> & { name: K; static: false; }
 ){
-	((context.metadata.evaluatableFields ??= []) as (typeof Statement)["evaluatableFields"]).push(context.name);
+	forceType<StatementDecoratorMetadata>(context.metadata);
+	if(context.metadata.done){
+		//The metadata object is prototype linked to the superclass's metadata object
+		//Copy over the array and unlink it
+		const evaluatableFields = context.metadata.evaluatableFields ?? [];
+		Object.setPrototypeOf(context.metadata, null);
+		context.metadata.evaluatableFields = evaluatableFields.slice();
+	}
+	(context.metadata.evaluatableFields ??= []).push(context.name);
 }
 
-export class TypeStatement extends Statement {
+export abstract class TypeStatement extends Statement {
 	createType(runtime:Runtime):[name:string, type:VariableType<false>] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
@@ -313,17 +339,10 @@ export class TypeStatement extends Statement {
 
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
-	variables:[string, Token][] = [];
-	varType:UnresolvedVariableType;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-
-		//parse the variable list
-		this.variables = getUniqueNamesFromCommaSeparatedTokenList(
-			tokens.slice(1, -2), tokens.at(-2) as Token
-		).map(t => [t.text, t] as [string, Token]);
-		this.varType = processTypeData(tokens.at(-1)!);
-	}
+	varType = processTypeData(this.token(-1));
+	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
+		this.tokenRange(1, -2), this.token(-2)
+	).map(t => [t.text, t] as [string, Token]);
 	run(runtime:Runtime){
 		const varType = runtime.resolveVariableType(this.varType);
 		if(varType instanceof SetVariableType) fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.tokens.at(-1));
@@ -340,14 +359,8 @@ export class DeclareStatement extends Statement {
 }
 @statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "literal") //the equal_to operator is used in this statement, idk why
 export class ConstantStatement extends Statement {
-	name: string;
-	expression: Token;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		const [_constant, name, _equals, expr] = tokens;
-		this.name = name.text;
-		this.expression = expr;
-	}
+	name = this.token(1).text;
+	expression = this.token(3);
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`, this);
 		const { type, value } = Runtime.evaluateToken(this.expression)
@@ -363,17 +376,11 @@ export class ConstantStatement extends Statement {
 }
 @statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".*", "parentheses.close", "punctuation.colon", "name")
 export class DefineStatement extends Statement {
-	name: Token;
-	variableType: Token;
-	values: RangeArray<Token>;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1];
-		this.variableType = tokens.at(-1)!;
-		this.values = getUniqueNamesFromCommaSeparatedTokenList(
-			tokens.slice(3, -3), tokens.at(-3), expressionLeafNodeTypes
-		);
-	}
+	name = this.token(1);
+	variableType = this.token(-1);
+	values = getUniqueNamesFromCommaSeparatedTokenList(
+		this.tokenRange(3, -3), this.token(-3), expressionLeafNodeTypes
+	);
 	run(runtime:Runtime){
 		const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
 		if(!(type instanceof SetVariableType)) fail(`DEFINE can only be used on set types, please use a declare statement instead`, this.variableType);
@@ -391,14 +398,8 @@ export class DefineStatement extends Statement {
 
 @statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")
 export class TypePointerStatement extends TypeStatement {
-	name: string;
-	targetType: UnresolvedVariableType;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		let targetType;
-		[, {text: this.name},,, targetType] = tokens;
-		this.targetType = processTypeData(targetType);
-	}
+	name = this.token(1).text;
+	targetType = processTypeData(this.token(4));
 	createType(runtime:Runtime){
 		return [this.name, new PointerVariableType(
 			false, this.name, this.targetType
@@ -407,13 +408,8 @@ export class TypePointerStatement extends TypeStatement {
 }
 @statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".*", "parentheses.close")
 export class TypeEnumStatement extends TypeStatement {
-	name: Token;
-	values: RangeArray<Token>;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1];
-		this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
-	}
+	name = this.token(1);
+	values = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(4, -1), this.token(-1));
 	createType(runtime:Runtime){
 		return [this.name.text, new EnumeratedVariableType(
 			this.name.text, this.values.map(t => t.text)
@@ -422,13 +418,9 @@ export class TypeEnumStatement extends TypeStatement {
 }
 @statement("type.set", "TYPE myIntegerSet = SET OF INTEGER", "keyword.type", "name", "operator.equal_to", "keyword.set", "keyword.of", "name")
 export class TypeSetStatement extends TypeStatement {
-	name: Token;
-	setType: PrimitiveVariableType;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1];
-		this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`, tokens[5]);
-	}
+	name = this.token(1);
+	setType = PrimitiveVariableType.get(this.token(5).text)
+		?? fail(`Sets of non-primitive types are not supported.`, this.token(5));
 	createType(runtime:Runtime){
 		return [this.name.text, new SetVariableType(
 			false, this.name.text, this.setType
@@ -437,11 +429,7 @@ export class TypeSetStatement extends TypeStatement {
 }
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
 export class TypeRecordStatement extends TypeStatement {
-	name: Token;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1];
-	}
+	name = this.token(1);
 	createTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const fields:Record<string, [UnresolvedVariableType, TextRange]> = {};
 		for(const statement of node.nodeGroups[0]){
@@ -454,11 +442,9 @@ export class TypeRecordStatement extends TypeStatement {
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
-	target: ExpressionAST;
-	expression: ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[this.target, , this.expression] = tokens;
+	target = this.expr(0);
+	expression = this.expr(2);
+	doPreRun(){
 		if(this.target instanceof Token && isLiteral(this.target.type))
 			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
@@ -483,22 +469,14 @@ export class AssignmentBadStatement extends Statement {
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
-	outMessage: (Token | ExpressionAST)[];
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
-	}
+	outMessage = splitTokensOnComma(this.tokens.slice(1) as RangeArray<Token>).map(parseExpression);
 	run(runtime:Runtime){
 		runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
 	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")
 export class InputStatement extends Statement {
-	name:string;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1].text;
-	}
+	name = this.token(1).text;
 	run(runtime:Runtime){
 		const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.tokens[1].range);
 		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`, this.tokens[1]);
@@ -532,11 +510,7 @@ export class InputStatement extends Statement {
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
-	expression:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.expression = tokens[1];
-	}
+	expression = this.token(1);
 	run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
 		if(!fn) fail(`RETURN is only valid within a function.`, this);
@@ -557,7 +531,8 @@ export class ReturnStatement extends Statement {
 }
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
 export class CallStatement extends Statement {
-	func:ExpressionASTFunctionCallNode;
+	func: ExpressionASTFunctionCallNode;
+	//func = this.exprOr(1, [ExpressionASTFunctionCallNode], `CALL can only be used to call functions or procedures`);
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
 		if(tokens[1] instanceof ExpressionASTFunctionCallNode){
@@ -587,13 +562,9 @@ export class EndBadStatement extends Statement {
 
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
-	condition:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.condition = tokens[1];
-	}
+	@evaluate condition = this.exprT(1, "BOOLEAN");
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		if(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value){
+		if(runtime.evaluate(this.condition)){
 			return runtime.runBlock(node.nodeGroups[0]);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
 			return runtime.runBlock(node.nodeGroups[1]);
@@ -606,12 +577,8 @@ export class ElseStatement extends Statement {
 }
 @statement("switch", "CASE OF x", "block", "auto", "keyword.case", "keyword.of", "expr+")
 export class SwitchStatement extends Statement {
-	//First node group is blank, because a blank node group is created and then the block is split by the first case branch
-	expression:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[,, this.expression] = tokens;
-	}
+	//First node group is blank, because it is between the CASE OF and the first case
+	expression:ExpressionAST = this.expr(2);
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
 		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty. (Fallthrough is not supported.)`;
 		return true;
@@ -648,12 +615,8 @@ export class SwitchStatement extends Statement {
 }
 @statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")
 export class CaseBranchStatement extends Statement {
-	value:Token;
+	value = this.token(0);
 	static blockType:ProgramASTBranchNodeType = "switch";
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[this.value] = tokens;
-	}
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Try to evaluate the case token with the same type as the switch target
@@ -684,9 +647,9 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 }
 @statement("for", "FOR i <- 1 TO 10", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+")
 export class ForStatement extends Statement {
-	name = (this.tokens[1] as Token).text;
-	@evaluate from = new NodeValue(this.tokens[3] as ExpressionAST, "INTEGER");
-	@evaluate to = new NodeValue(this.tokens[5] as ExpressionAST, "INTEGER");
+	name = this.token(1).text;
+	@evaluate from = this.exprT(3, "INTEGER");
+	@evaluate to = this.exprT(5, "INTEGER");
 	empty?:boolean;
 	doPreRun(node:ProgramASTBranchNode<"for">){
 		super.doPreRun();
@@ -700,12 +663,12 @@ export class ForStatement extends Statement {
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
 
-		const from = BigInt(this.from.getValue(runtime));
-		const to = BigInt(this.to.getValue(runtime));
+		const from = BigInt(runtime.evaluate(this.from));
+		const to = BigInt(runtime.evaluate(this.to));
 		const _step = this.getStep(runtime), step = BigInt(_step);
 		const direction = Math.sign(_step);
 		if(direction == 0)
-			fail(`Invalid FOR statement: step cannot be zero`, (this as never as ForStepStatement).stepToken);
+			fail(`Invalid FOR statement: step cannot be zero`, (this as never as ForStepStatement).step);
 
 		if(
 			direction == 1 && to < from ||
@@ -741,29 +704,16 @@ export class ForStatement extends Statement {
 }
 @statement("for.step", "FOR x <- 1 TO 20 STEP 2", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+", "keyword.step", "expr+")
 export class ForStepStatement extends ForStatement {
-	stepToken: ExpressionAST;
-	step?: number;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.stepToken = tokens[7];
-	}
-	doPreRun(){
-		this.step = Runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)?.value;
-	}
+	@evaluate step = this.exprT(7, "INTEGER");
 	getStep(runtime:Runtime):number {
-		return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER).value;
+		return runtime.evaluate(this.step);
 	}
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
 export class ForEndStatement extends Statement {
-	name:string;
-	varToken:Token;
 	static blockType: ProgramASTBranchNodeType = "for";
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.varToken = tokens[1];
-		this.name = tokens[1].text;
-	}
+	varToken = this.token(1);
+	name = this.varToken.text;
 }
 @statement("illegal.for.end", "NEXT", "block_end", "keyword.for_end")
 export class ForEndBadStatement extends Statement {
@@ -774,13 +724,14 @@ export class ForEndBadStatement extends Statement {
 
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
-	condition:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.condition = tokens[1];
-	}
+	@evaluate condition = this.exprT(1, "BOOLEAN");
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		while(runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value){
+		
+		//Register the execution of an infinite amount of statements if the condition is constant true
+		if(node.nodeGroups[0].length == 0 && this.condition.value === true)
+			runtime.statementExecuted(this, Infinity);
+
+		while(runtime.evaluate(this.condition)){
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,
 				opaque: false,
@@ -803,18 +754,14 @@ export class DoWhileStatement extends Statement {
 				types: {},
 			});
 			if(result) return result;
-		} while(!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN).value);
+		} while(!runtime.evaluate(node.controlStatements[1].condition));
 		//Inverted, the pseudocode statement is "until"
 	}
 }
 @statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
 export class DoWhileEndStatement extends Statement {
-	condition:ExpressionAST;
+	@evaluate condition = this.exprT(1, "BOOLEAN");
 	static blockType: ProgramASTBranchNodeType = "dowhile";
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.condition = tokens[1];
-	}
 }
 
 @statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")
@@ -837,10 +784,7 @@ export class FunctionStatement extends Statement {
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
-		if(this.name in runtime.functions) fail(`Duplicate function definition for ${this.name}`, this.nameToken);
-		else if(this.name in preprocessedBuiltinFunctions) fail(`Function ${this.name} is already defined as a builtin function`, this.nameToken);
-		//Don't actually run the block
-		runtime.functions[this.name] = node;
+		runtime.defineFunction(this.name, node, this.nameToken.range);
 	}
 }
 
@@ -850,33 +794,30 @@ export class ProcedureStatement extends Statement {
 	args:FunctionArguments;
 	argsRange:TextRange;
 	name:string;
+	nameToken:Token;
 	constructor(tokens:RangeArray<Token>, offset = 0){
 		super(tokens); //for subclasses
 		tokens = tokens.slice(offset);
 		this.args = parseFunctionArguments(tokens.slice(3, -1));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
+		this.nameToken = tokens[1];
 		this.name = tokens[1].text;
 	}
 	runBlock(runtime:Runtime, node:FunctionData){
-		//Don't actually run the block
-		runtime.functions[this.name] = node;
+		runtime.defineFunction(this.name, node, this.nameToken.range);
 	}
 }
 
 interface IFileStatement {
-	filename: ExpressionAST;
+	filename: NodeValue<ExpressionAST, "STRING">;
 }
 
 @statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
 export class OpenFileStatement extends Statement implements IFileStatement {
-	mode:Token;
-	filename:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename, , this.mode] = tokens;
-	}
+	mode = this.token(3);
+	@evaluate filename = this.exprT(1, "STRING");
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
 		const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote`File ${name} does not exist.`, this);
 		if(mode == "READ"){
@@ -901,13 +842,9 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 }
 @statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
 export class CloseFileStatement extends Statement implements IFileStatement {
-	filename:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename] = tokens;
-	}
+	@evaluate filename = this.exprT(1, "STRING");
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		if(runtime.openFiles[name]) runtime.openFiles[name] = undefined;
 		else if(name in runtime.openFiles) fail(f.quote`Cannot close file ${name}, because it has already been closed.`, this);
 		else fail(f.quote`Cannot close file ${name}, because it was never opened.`, this);
@@ -915,14 +852,10 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 }
 @statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
 export class ReadFileStatement extends Statement implements IFileStatement {
-	filename:ExpressionAST;
-	output:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename, , this.output] = tokens;
-	}
+	@evaluate filename = this.exprT(1, "STRING");
+	output = this.expr(3);
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
 		if(data.lineNumber >= data.lines.length) fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
 		const output = runtime.evaluateExpr(this.output, "variable");
@@ -931,45 +864,33 @@ export class ReadFileStatement extends Statement implements IFileStatement {
 }
 @statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")
 export class WriteFileStatement extends Statement implements IFileStatement {
-	filename:ExpressionAST;
-	data:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename, , this.data] = tokens;
-	}
+	@evaluate filename = this.exprT(1, "STRING");
+	@evaluate data = this.exprT(3, "STRING");
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-		data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING).value + "\n";
+		data.file.text += runtime.evaluate(this.data) + "\n";
 	}
 }
 
 @statement("seek", `SEEK "file.txt", 5`, "keyword.seek", "expr+", "punctuation.comma", "expr+")
 export class SeekStatement extends Statement implements IFileStatement {
-	filename:ExpressionAST;
-	index:ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename, , this.index] = tokens;
-	}
+	@evaluate filename = this.exprT(1, "STRING");
+	@evaluate index = this.exprT(3, "INTEGER");
 	run(runtime:Runtime){
-		const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER).value;
+		const index = runtime.evaluate(this.index);
 		if(index < 0) fail(`SEEK index must be positive`, this.index);
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
 		fail(`Not yet implemented`, this);
 	}
 }
 @statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")
 export class GetRecordStatement extends Statement implements IFileStatement {
-	filename: ExpressionAST;
-	variable: ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename, , this.variable] = tokens;
-	}
+	@evaluate filename = this.exprT(1, "STRING");
+	variable = this.expr(3);
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
 		const variable = runtime.evaluateExpr(this.variable, "variable");
 		fail(`Not yet implemented`, this);
@@ -977,14 +898,10 @@ export class GetRecordStatement extends Statement implements IFileStatement {
 }
 @statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")
 export class PutRecordStatement extends Statement implements IFileStatement {
-	filename: ExpressionAST;
-	variable: ExpressionAST;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		[, this.filename, , this.variable] = tokens;
-	}
+	@evaluate filename = this.exprT(1, "STRING");
+	variable = this.expr(3);
 	run(runtime:Runtime){
-		const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+		const name = runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
 		const { type, value } = runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`, this);
@@ -994,8 +911,8 @@ export class PutRecordStatement extends Statement implements IFileStatement {
 class ClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
-	constructor(tokens:RangeArray<Token>){
-		this.accessModifierToken = tokens[0];
+	constructor(tokens:RangeArray<ExpressionASTNodeExt>){
+		this.accessModifierToken = tokens[0] as Token;
 		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
 	}
 	run(){
@@ -1009,11 +926,7 @@ class ClassMemberStatement {
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
 export class ClassStatement extends TypeStatement {
 	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
-	name: Token;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.name = tokens[1];
-	}
+	name = this.token(1);
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		const classData = new ClassVariableType(false, this);
 		for(const node of branchNode.nodeGroups[0]){
@@ -1055,11 +968,7 @@ export class ClassStatement extends TypeStatement {
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
 export class ClassInheritsStatement extends ClassStatement {
-	superClassName:Token;
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		this.superClassName = tokens[3];
-	}
+	superClassName = this.token(3);
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		if(this.superClassName.text == this.name.text) fail(`A class cannot inherit from itself`, this.superClassName);
 		const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range);
@@ -1091,11 +1000,13 @@ export class ClassPropertyStatement extends combineClasses(DeclareStatement, Cla
 }
 @statement("class_procedure", "PUBLIC PROCEDURE func(arg1: INTEGER, arg2: pDATE)", "block", "class_modifier", "keyword.procedure", "name", "parentheses.open", ".*", "parentheses.close")
 export class ClassProcedureStatement extends combineClasses(ProcedureStatement, ClassMemberStatement) {
-	methodKeywordToken: Token;
+	methodKeywordToken = this.token(1);
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:RangeArray<Token>){
 		super(tokens, 1);
-		this.methodKeywordToken = tokens[1];
+	}
+	//@ts-expect-error TODO ditch multiple inheritance, just use mixins like a normal person
+	doPreRun(node:ProgramASTBranchNode<"class_procedure">){
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
 		//TODO can they actually be run from subclasses?
@@ -1105,11 +1016,10 @@ export class ClassProcedureStatement extends combineClasses(ProcedureStatement, 
 export class ClassProcedureEndStatement extends Statement {}
 @statement("class_function", "PUBLIC FUNCTION func(arg1: INTEGER, arg2: pDATE) RETURNS INTEGER", "block", "class_modifier", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")
 export class ClassFunctionStatement extends combineClasses(FunctionStatement, ClassMemberStatement) {
-	methodKeywordToken: Token;
+	methodKeywordToken = this.token(1);
 	static blockType: ProgramASTBranchNodeType = "class";
 	constructor(tokens:RangeArray<Token>){
 		super(tokens, 1);
-		this.methodKeywordToken = tokens[1];
 	}
 }
 @statement("class_function.end", "ENDFUNCTION", "block_end", "keyword.function_end")
