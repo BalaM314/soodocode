@@ -40,11 +40,18 @@ import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, FileMode, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, FileMode, NodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, combineClasses, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+if (!Symbol.metadata)
+    Object.defineProperty(Symbol, "metadata", {
+        writable: false,
+        enumerable: false,
+        configurable: false,
+        value: Symbol("Symbol.metadata")
+    });
 export const statementTypes = [
     "declare", "define", "constant", "assignment", "output", "input", "return", "call",
     "type", "type.pointer", "type.enum", "type.set", "type.end",
@@ -86,6 +93,20 @@ let Statement = (() => {
             this.stype = this.type.type;
             this.category = this.type.category;
             this.range = getTotalRange(tokens);
+        }
+        token(ind) {
+            if (this.tokens[ind] instanceof Token)
+                return this.tokens[ind];
+            else
+                crash(`Assertion failed: node at index ${ind} was not a token`);
+        }
+        expr(ind) {
+            if ([
+                Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
+            ].some(c => this.tokens[ind] instanceof c))
+                return this.tokens[ind];
+            else
+                crash(`Assertion failed: node at index ${ind} was not an expression`);
         }
         fmtText() {
             return this.tokens.map(t => t.fmtText()).join(" ");
@@ -170,10 +191,17 @@ let Statement = (() => {
             else
                 crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
         }
-        cacheValues(node) { }
+        doPreRun(node) {
+            for (const field of this.type.evaluatableFields) {
+                const nodeValue = this[field];
+                if (!(nodeValue instanceof NodeValue))
+                    crash(`Decorated invalid field ${field}`);
+                nodeValue.init();
+            }
+        }
         preRun(node) {
             if (!this.preRunDone)
-                this.cacheValues(node);
+                this.doPreRun(node);
             this.preRunDone = true;
         }
     };
@@ -198,11 +226,11 @@ let Statement = (() => {
 })();
 export { Statement };
 function statement(type, example, ...args) {
-    return function (input) {
+    return function (input, context) {
         var _a, _b, _c, _d, _e, _f, _g;
-        var _h;
         input.type = type;
         input.example = example;
+        input.evaluatableFields = context.metadata?.evaluatableFields ?? [];
         if (args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split") {
             input.category = args[0];
             args.shift();
@@ -212,10 +240,27 @@ function statement(type, example, ...args) {
         }
         if (args[0] == "auto" && input.category == "block") {
             args.shift();
-            statement(StatementType(type + ".end"), tokenTextMapping[TokenType(args[0] + "_end")] ?? "[unknown]", "block_end", TokenType(args[0] + "_end"))((_h = class __endStatement extends Statement {
-                },
-                _h.blockType = ProgramASTBranchNodeType(type),
-                _h));
+            let __endStatement = (() => {
+                let _classDecorators = [statement(StatementType(type + ".end"), tokenTextMapping[TokenType(args[0] + "_end")] ?? "[unknown]", "block_end", TokenType(args[0] + "_end"))];
+                let _classDescriptor;
+                let _classExtraInitializers = [];
+                let _classThis;
+                let _classSuper = Statement;
+                var __endStatement = _classThis = class extends _classSuper {
+                };
+                __setFunctionName(_classThis, "__endStatement");
+                (() => {
+                    const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+                    __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+                    __endStatement = _classThis = _classDescriptor.value;
+                    if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+                })();
+                _classThis.blockType = ProgramASTBranchNodeType(type);
+                (() => {
+                    __runInitializers(_classThis, _classExtraInitializers);
+                })();
+                return __endStatement = _classThis;
+            })();
         }
         if (args.length < 1)
             crash(`Invalid statement definitions! All statements must contain at least one token`);
@@ -260,6 +305,10 @@ function statement(type, example, ...args) {
 }
 function finishStatements() {
     statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
+}
+function evaluate(_, context) {
+    var _a;
+    ((_a = context.metadata).evaluatableFields ?? (_a.evaluatableFields = [])).push(context.name);
 }
 export class TypeStatement extends Statement {
     createType(runtime) {
@@ -320,12 +369,13 @@ let ConstantStatement = (() => {
             super(tokens);
             const [_constant, name, _equals, expr] = tokens;
             this.name = name.text;
-            this.expr = expr;
+            this.expression = expr;
         }
         run(runtime) {
             if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`, this);
-            const { type, value } = Runtime.evaluateToken(this.expr);
+            const { type, value } = Runtime.evaluateToken(this.expression)
+                ?? fail(f.quote `Cannot evaluate expression ${this.expression} in a static context`, this.expression);
             runtime.getCurrentScope().variables[this.name] = {
                 type,
                 get value() { return value; },
@@ -367,7 +417,8 @@ let DefineStatement = (() => {
                 type,
                 declaration: this,
                 mutable: true,
-                value: this.values.map(t => Runtime.evaluateToken(t, type.baseType).value)
+                value: this.values.map(t => (Runtime.evaluateToken(t, type.baseType)
+                    ?? fail(f.quote `Cannot evaluate token ${t} in a static context`, t)).value)
             };
         }
     };
@@ -505,13 +556,13 @@ let AssignmentStatement = (() => {
     var AssignmentStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            [this.target, , this.expr] = tokens;
+            [this.target, , this.expression] = tokens;
             if (this.target instanceof Token && isLiteral(this.target.type))
                 fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
         run(runtime) {
             if (this.target instanceof Token && !runtime.getVariable(this.target.text)) {
-                const { type, value } = runtime.evaluateExpr(this.expr);
+                const { type, value } = runtime.evaluateExpr(this.expression);
                 if (type instanceof ClassVariableType) {
                     if (configs.statements.auto_declare_classes.value) {
                         runtime.getCurrentScope().variables[this.target.text] = {
@@ -524,7 +575,7 @@ let AssignmentStatement = (() => {
                 else
                     runtime.handleNonexistentVariable(this.target.text, this.target);
             }
-            runtime.assignExpr(this.target, this.expr);
+            runtime.assignExpr(this.target, this.expression);
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
@@ -659,7 +710,7 @@ let ReturnStatement = (() => {
     var ReturnStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            this.expr = tokens[1];
+            this.expression = tokens[1];
         }
         run(runtime) {
             const fn = runtime.getCurrentFunction();
@@ -679,7 +730,7 @@ let ReturnStatement = (() => {
             }
             return {
                 type: "function_return",
-                value: runtime.evaluateExpr(this.expr, runtime.resolveVariableType(type)).value
+                value: runtime.evaluateExpr(this.expression, runtime.resolveVariableType(type)).value
             };
         }
     };
@@ -942,16 +993,22 @@ let ForStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _from_decorators;
+    let _from_initializers = [];
+    let _from_extraInitializers = [];
+    let _to_decorators;
+    let _to_initializers = [];
+    let _to_extraInitializers = [];
     var ForStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1].text;
-            this.fromExpr = tokens[3];
-            this.toExpr = tokens[5];
+        constructor() {
+            super(...arguments);
+            this.name = this.tokens[1].text;
+            this.from = __runInitializers(this, _from_initializers, new NodeValue(this.tokens[3], "INTEGER"));
+            this.to = (__runInitializers(this, _from_extraInitializers), __runInitializers(this, _to_initializers, new NodeValue(this.tokens[5], "INTEGER")));
+            this.empty = __runInitializers(this, _to_extraInitializers);
         }
-        cacheValues(node) {
-            this.from = Runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER)?.value;
-            this.to = Runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER)?.value;
+        doPreRun(node) {
+            super.doPreRun();
             this.empty = node.nodeGroups[0].length == 0;
             const endStatement = node.controlStatements[1];
             if (endStatement.name !== this.name)
@@ -961,43 +1018,46 @@ let ForStatement = (() => {
             return 1;
         }
         runBlock(runtime, node) {
-            const from = this.from ?? runtime.evaluateExpr(this.fromExpr, PrimitiveVariableType.INTEGER).value;
-            const to = this.to ?? runtime.evaluateExpr(this.toExpr, PrimitiveVariableType.INTEGER).value;
-            const step = this.getStep(runtime);
-            const direction = Math.sign(step);
+            const from = BigInt(this.from.getValue(runtime));
+            const to = BigInt(this.to.getValue(runtime));
+            const _step = this.getStep(runtime), step = BigInt(_step);
+            const direction = Math.sign(_step);
             if (direction == 0)
                 fail(`Invalid FOR statement: step cannot be zero`, this.stepToken);
             if (direction == 1 && to < from ||
                 direction == -1 && from < to)
                 return;
-            for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
-                if (this.empty) {
-                    const result = runtime.runBlock(node.nodeGroups[0], {
-                        statement: this,
-                        opaque: false,
-                        variables: {
-                            [this.name]: {
-                                declaration: this,
-                                mutable: false,
-                                type: PrimitiveVariableType.INTEGER,
-                                get value() { return i; },
-                                set value(value) { crash(`Attempted assignment to constant`); },
-                            }
-                        },
-                        types: {}
-                    });
-                    if (result)
-                        return result;
-                }
-                else {
+            if (this.empty) {
+                for (let i = from; direction == 1 ? i <= to : i >= to; i += step)
                     runtime.statementExecuted(this);
-                }
+            }
+            for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
+                const result = runtime.runBlock(node.nodeGroups[0], {
+                    statement: this,
+                    opaque: false,
+                    variables: {
+                        [this.name]: {
+                            declaration: this,
+                            mutable: false,
+                            type: PrimitiveVariableType.INTEGER,
+                            get value() { return Number(i); },
+                            set value(value) { crash(`Attempted assignment to constant`); },
+                        }
+                    },
+                    types: {}
+                });
+                if (result)
+                    return result;
             }
         }
     };
     __setFunctionName(_classThis, "ForStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _from_decorators = [evaluate];
+        _to_decorators = [evaluate];
+        __esDecorate(null, null, _from_decorators, { kind: "field", name: "from", static: false, private: false, access: { has: obj => "from" in obj, get: obj => obj.from, set: (obj, value) => { obj.from = value; } }, metadata: _metadata }, _from_initializers, _from_extraInitializers);
+        __esDecorate(null, null, _to_decorators, { kind: "field", name: "to", static: false, private: false, access: { has: obj => "to" in obj, get: obj => obj.to, set: (obj, value) => { obj.to = value; } }, metadata: _metadata }, _to_initializers, _to_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ForStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1017,7 +1077,7 @@ let ForStepStatement = (() => {
             super(tokens);
             this.stepToken = tokens[7];
         }
-        cacheValues() {
+        doPreRun() {
             this.step = Runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)?.value;
         }
         getStep(runtime) {

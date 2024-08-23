@@ -48,15 +48,18 @@ export declare class Runtime {
     evaluateExpr(expr: ExpressionAST, type: "variable", recursive?: boolean): VariableData | ConstantData;
     evaluateExpr(expr: ExpressionAST, type: "function", recursive?: boolean): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T, recursive?: boolean): TypedValue<T extends undefined ? VariableType : T & {}>;
+    evaluateExpr<T extends VariableType | undefined | "variable">(expr: ExpressionAST, type: T, recursive?: boolean): VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>;
     evaluateToken(token: Token): TypedValue;
     evaluateToken(token: Token, type: "variable"): VariableData | ConstantData;
     evaluateToken(token: Token, type: "function"): FunctionData | BuiltinFunctionData;
     evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
     static NotStatic: symbol;
-    static evaluateToken(token: Token): TypedValue;
-    static evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}>;
+    static evaluateToken(token: Token): TypedValue | null;
+    static evaluateToken<T extends VariableType | undefined>(token: Token, type: T): TypedValue<T extends undefined ? VariableType : T & {}> | null;
     static evaluateExpr(expr: ExpressionAST): TypedValue | null;
+    static evaluateExpr<T extends VariableType>(expr: ExpressionAST, type: T): TypedValue<T> | null;
     static evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T): TypedValue<T extends undefined ? VariableType : T & {}> | null;
+    static evaluateExpr<T extends VariableType | undefined | "variable">(expr: ExpressionAST, type: T, recursive?: boolean): VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;
@@ -81,6 +84,7 @@ export declare class Runtime {
         type: "function_return";
         value: VariableValue;
     };
+    doPreRun(block: ProgramASTNode[]): void;
     statementExecuted(range: TextRangeLike): void;
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;

@@ -298,8 +298,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 let targetValue;
                 if (outType == "variable") {
                     target = this.evaluateExpr(expr.nodes[0], "variable");
-                    targetType = target.type;
-                    targetValue = target.value;
+                    ({ type: targetType, value: targetValue } = target);
                 }
                 else {
                     ({ type: targetType, value: targetValue } = this.evaluateExpr(expr.nodes[0]));
@@ -697,19 +696,19 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 catch (err) {
                     if (err === _a.NotStatic)
-                        fail(f.quote `Cannot evaluate token ${token} in a static context`, token);
+                        return null;
                     else
                         throw err;
                 }
             }
             static evaluateExpr(expr, type) {
                 try {
-                    return this.prototype.evaluateExpr.call(new Proxy({
+                    return this.prototype.evaluateExpr.call(Object.setPrototypeOf({
                         evaluateToken: this.evaluateToken,
                         evaluateExpr: this.evaluateExpr,
-                    }, {
+                    }, new Proxy({}, {
                         get() { throw _a.NotStatic; },
-                    }), expr, type);
+                    })), expr, type);
                 }
                 catch (err) {
                     if (err === _a.NotStatic)
@@ -1048,12 +1047,27 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     };
                 }
             }
+            doPreRun(block) {
+                for (const node of block) {
+                    if (node instanceof Statement)
+                        node.preRun();
+                    else {
+                        for (const statement of node.controlStatements) {
+                            statement.preRun(node);
+                        }
+                        for (const block of node.nodeGroups) {
+                            this.doPreRun(block);
+                        }
+                    }
+                }
+            }
             statementExecuted(range) {
                 if (++this.statementsExecuted > configs.statements.max_statements.value) {
                     fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
                 }
             }
             runProgram(code) {
+                this.doPreRun(code);
                 this.runBlock(code, {
                     statement: "global",
                     opaque: true,
