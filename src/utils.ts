@@ -629,11 +629,11 @@ export type MixClasses<A extends new (...args:any[]) => unknown, B extends new (
 		[K in Exclude<keyof B, "prototype">]: B[K];
 	} &
 	//Constructor
-	MergeClassConstructors<A | B, {
-		[K in Exclude<keyof InstanceType<A>, keyof InstanceType<B>>]: InstanceType<A>[K];
-	} & {
-		[K in keyof InstanceType<B>]: InstanceType<B>[K];
-	}>;
+	MergeClassConstructors<A | B,
+		(keyof InstanceType<A>) & (keyof InstanceType<B>) extends never
+			? InstanceType<A> & InstanceType<B> //No common keys, just & them
+			: Omit<InstanceType<A>, keyof InstanceType<B>> & InstanceType<B>
+		>;
 
 export type MixClassesTuple<Classes extends (new (...args:any[]) => unknown)[]> =
 	Classes["length"] extends 1 ? Classes[0] :
