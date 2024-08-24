@@ -707,8 +707,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	static evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):VariableData | ConstantData | TypedValue | null {
 		try {
 			return this.prototype.evaluateExpr.call(Object.setPrototypeOf({
-				evaluateToken: this.evaluateToken,
-				evaluateExpr: this.evaluateExpr,
+				...Runtime.prototype
 			}, new Proxy({}, {
 				get(){ throw Runtime.NotStatic; },
 			})), expr, type);
