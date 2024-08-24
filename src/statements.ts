@@ -1005,7 +1005,6 @@ export class ClassProcedureStatement extends combineClasses(ProcedureStatement, 
 	constructor(tokens:RangeArray<Token>){
 		super(tokens, 1);
 	}
-	//@ts-expect-error TODO ditch multiple inheritance, just use mixins like a normal person
 	doPreRun(node:ProgramASTBranchNode<"class_procedure">){
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);

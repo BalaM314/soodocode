@@ -615,6 +615,11 @@ export class RangeArray<T extends TextRanged2> extends Array<T> implements TextR
 }
 
 export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
+export type MergeInstances<A, B> = A & B extends never ? 
+	// Merging them with & hasn't worked because one or more of the properties are incompatible
+	// Remove keyof B from A before intersecting
+	Omit<A, keyof B> & B
+: A & B;
 export type MergeClassConstructors<Ctors extends new (...args:any[]) => unknown, Instance> =
 	//what the heck?
 	new (...args:MergeTuples<
@@ -629,11 +634,7 @@ export type MixClasses<A extends new (...args:any[]) => unknown, B extends new (
 		[K in Exclude<keyof B, "prototype">]: B[K];
 	} &
 	//Constructor
-	MergeClassConstructors<A | B,
-		(keyof InstanceType<A>) & (keyof InstanceType<B>) extends never
-			? InstanceType<A> & InstanceType<B> //No common keys, just & them
-			: Omit<InstanceType<A>, keyof InstanceType<B>> & InstanceType<B>
-		>;
+	MergeClassConstructors<A | B, MergeInstances<InstanceType<A>, InstanceType<B>>>;
 
 export type MixClassesTuple<Classes extends (new (...args:any[]) => unknown)[]> =
 	Classes["length"] extends 1 ? Classes[0] :
