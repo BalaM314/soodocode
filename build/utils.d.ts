@@ -87,16 +87,13 @@ export declare class RangeArray<T extends TextRanged2> extends Array<T> implemen
     map<U>(fn: (v: T, i: number, a: T[]) => U): U[];
 }
 export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
+export type MergeInstances<A, B> = A & B extends never ? Omit<A, keyof B> & B : A & B;
 export type MergeClassConstructors<Ctors extends new (...args: any[]) => unknown, Instance> = new (...args: MergeTuples<Ctors extends unknown ? ConstructorParameters<Ctors> : never>) => Instance;
 export type MixClasses<A extends new (...args: any[]) => unknown, B extends new (...args: any[]) => unknown> = {
     [K in Exclude<keyof A, keyof B | "prototype">]: A[K];
 } & {
     [K in Exclude<keyof B, "prototype">]: B[K];
-} & MergeClassConstructors<A | B, {
-    [K in Exclude<keyof InstanceType<A>, keyof InstanceType<B>>]: InstanceType<A>[K];
-} & {
-    [K in keyof InstanceType<B>]: InstanceType<B>[K];
-}>;
+} & MergeClassConstructors<A | B, MergeInstances<InstanceType<A>, InstanceType<B>>>;
 export type MixClassesTuple<Classes extends (new (...args: any[]) => unknown)[]> = Classes["length"] extends 1 ? Classes[0] : Classes extends [
     ...left: (infer Left extends (new (...args: any[]) => unknown)[]),
     right: infer Last extends (new (...args: any[]) => unknown)
