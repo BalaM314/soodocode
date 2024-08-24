@@ -233,8 +233,8 @@ export function applyAnyRange<TIn extends
 		assignUnsafeChecked(input, "range", anyRange);
 	} else if(input instanceof Statement){
 		assignUnsafeChecked(input, "range", anyRange);
-		applyAnyRange(input.tokens);
-		input.tokens.forEach(applyAnyRange);
+		applyAnyRange(input.nodes);
+		input.nodes.forEach(applyAnyRange);
 		forceType<Record<PropertyKey, unknown>>(input);
 		for(const k in input){
 			if(input[k] instanceof NodeValue){

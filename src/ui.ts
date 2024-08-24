@@ -99,7 +99,7 @@ displayStatement(statement)
 export function displayStatement(statement:Statement){
 	return (
 `<div class="program-display-statement">\
-${statement.tokens.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpressionHTML(t, false)}</span>`).join(" ")}\
+${statement.nodes.map(t => t instanceof Token ? escapeHTML(t.text) : `<span class="expression-container">${displayExpressionHTML(t, false)}</span>`).join(" ")}\
 </div>`
 	);
 }
