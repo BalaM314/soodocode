@@ -1,3 +1,4 @@
+import { Token } from "./lexer-types.js";
 import { crash, f, getTotalRange } from "./utils.js";
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
@@ -106,6 +107,12 @@ export class ExpressionASTRangeTypeNode {
         return f.debug `${this.low} .. ${this.high}`;
     }
 }
+export const ExpressionASTTypeNodes = [
+    Token, ExpressionASTArrayTypeNode, ExpressionASTRangeTypeNode
+];
+export const ExpressionASTNodes = [
+    Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
+];
 export class Operator {
     constructor(args) {
         Object.assign(this, args);

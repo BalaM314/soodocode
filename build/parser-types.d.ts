@@ -1,4 +1,4 @@
-import type { Token, TokenType } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import type { DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 import { RangeArray } from "./utils.js";
@@ -66,6 +66,8 @@ export declare class ExpressionASTRangeTypeNode implements TextRanged, IFormatta
 }
 export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode;
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTTypeNode;
+export declare const ExpressionASTTypeNodes: readonly [typeof Token, typeof ExpressionASTArrayTypeNode, typeof ExpressionASTRangeTypeNode];
+export declare const ExpressionASTNodes: readonly [typeof Token, typeof ExpressionASTBranchNode, typeof ExpressionASTFunctionCallNode, typeof ExpressionASTArrayAccessNode, typeof ExpressionASTClassInstantiationNode];
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";

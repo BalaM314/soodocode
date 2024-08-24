@@ -6,11 +6,10 @@ This file contains the definitions for every statement type supported by Soodoco
 */
 
 
-import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, NodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
@@ -115,11 +114,20 @@ export class Statement implements TextRanged, IFormattable {
 	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):NodeValue<Token, InputType> {
 		return new NodeValue(this.token(ind), type);
 	}
-	expr(ind:number):ExpressionAST {
-		if([
-			Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
-		].some(c => this.tokens.at(ind) instanceof c))
+	expr(ind:number):ExpressionAST;
+	expr<T extends "expr" | "type">(ind:number, allowed:T, error?:string):{
+		expr: ExpressionAST;
+		type: ExpressionASTTypeNode;
+	}[T];
+	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string):InstanceType<Type>;
+	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string):ExpressionAST {
+		if(allowed === "type") allowed = ExpressionASTTypeNodes;
+		if(allowed === "expr") allowed = ExpressionASTNodes;
+
+		if(allowed.some(c => this.tokens.at(ind) instanceof c))
 			return this.tokens.at(ind) as ExpressionAST;
+
+		if(error != undefined) fail(error, this.tokens.at(ind));
 		else crash(`Assertion failed: node at index ${ind} was not an expression`);
 	}
 	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):NodeValue<ExpressionAST, InputType> {
@@ -339,7 +347,7 @@ export abstract class TypeStatement extends Statement {
 
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
-	varType = processTypeData(this.token(-1));
+	varType = processTypeData(this.expr(-1, "type"));
 	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokenRange(1, -2), this.token(-2)
 	).map(t => [t.text, t] as [string, Token]);
@@ -399,7 +407,7 @@ export class DefineStatement extends Statement {
 @statement("type.pointer", "TYPE IntPointer = ^INTEGER", "keyword.type", "name", "operator.equal_to", "operator.pointer", "type+")
 export class TypePointerStatement extends TypeStatement {
 	name = this.token(1).text;
-	targetType = processTypeData(this.token(4));
+	targetType = processTypeData(this.expr(4, "type"));
 	createType(runtime:Runtime){
 		return [this.name, new PointerVariableType(
 			false, this.name, this.targetType
@@ -444,7 +452,8 @@ export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
 	target = this.expr(0);
 	expression = this.expr(2);
-	doPreRun(){
+	constructor(tokens:RangeArray<ExpressionAST>){
+		super(tokens);
 		if(this.target instanceof Token && isLiteral(this.target.type))
 			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
@@ -510,7 +519,7 @@ export class InputStatement extends Statement {
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
-	expression = this.token(1);
+	expression = this.expr(1); //TODO the type is known at pre-run and can be cached
 	run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
 		if(!fn) fail(`RETURN is only valid within a function.`, this);
@@ -531,14 +540,7 @@ export class ReturnStatement extends Statement {
 }
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
 export class CallStatement extends Statement {
-	func: ExpressionASTFunctionCallNode;
-	//func = this.exprOr(1, [ExpressionASTFunctionCallNode], `CALL can only be used to call functions or procedures`);
-	constructor(tokens:RangeArray<Token>){
-		super(tokens);
-		if(tokens[1] instanceof ExpressionASTFunctionCallNode){
-			this.func = tokens[1];
-		} else fail(`CALL can only be used to call functions or procedures`, tokens[1]);
-	}
+	func = this.expr(1, [ExpressionASTFunctionCallNode], `CALL can only be used to call functions or procedures`);
 	run(runtime:Runtime){
 		const func = runtime.evaluateExpr(this.func.functionName, "function");
 		if("clazz" in func){
@@ -626,16 +628,16 @@ export class CaseBranchStatement extends Statement {
 }
 @statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal", "keyword.to", "literal", "punctuation.colon")
 export class CaseBranchRangeStatement extends CaseBranchStatement {
-	upperBound:Token;
+	lowerBound = this.token(0);
+	upperBound = this.token(2);
 	static blockType:ProgramASTBranchNodeType = "switch";
 	static allowedTypes = ["number.decimal", "char"] satisfies TokenType[];
 	constructor(tokens:RangeArray<Token>){
 		super(tokens);
-		if(!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
-			fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number or character`, tokens[0]);
-		if(tokens[2].type != tokens[0].type)
-			fail(`Token of type ${tokens[2].type} does not match the other range bound: expected a ${tokens[0].type}`, tokens[2]);
-		this.upperBound = tokens[2];
+		if(!CaseBranchRangeStatement.allowedTypes.includes(this.lowerBound.type))
+			fail(f.quote`Token of type ${this.lowerBound.type} is not valid in range cases: expected a number or character`, this.lowerBound);
+		if(this.lowerBound.type != this.upperBound.type)
+			fail(f.quote`Token of type ${this.upperBound.type} does not match the other range bound: expected a ${this.lowerBound.type}`, this.upperBound);
 	}
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
@@ -655,8 +657,8 @@ export class ForStatement extends Statement {
 		super.doPreRun();
 		this.empty = node.nodeGroups[0].length == 0;
 		const endStatement = node.controlStatements[1];
-		if(endStatement.name !== this.name)
-			fail(f.quote`Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name}`, endStatement.varToken);
+		if(endStatement.name.text !== this.name)
+			fail(f.quote`Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name.text}`, endStatement.name);
 	}
 	getStep(runtime:Runtime):number {
 		return 1;
@@ -674,31 +676,29 @@ export class ForStatement extends Statement {
 			direction == 1 && to < from ||
 			direction == -1 && from < to
 		) return;
+
 		if(this.empty){
 			for(let i = from; direction == 1 ? i <= to : i >= to; i += step)
 				runtime.statementExecuted(this);
-		}
-		for(
-			let i = from;
-			direction == 1 ? i <= to : i >= to;
-			i += step
-		){
-			const result = runtime.runBlock(node.nodeGroups[0], {
-				statement: this,
-				opaque: false,
-				variables: {
-					//Set the loop variable in the loop scope
-					[this.name]: {
-						declaration: this,
-						mutable: false,
-						type: PrimitiveVariableType.INTEGER,
-						get value(){ return Number(i); },
-						set value(value){ crash(`Attempted assignment to constant`); },
-					}
-				},
-				types: {}
-			});
-			if(result) return result;
+		} else {
+			for(let i = from; direction == 1 ? i <= to : i >= to; i += step){
+				const result = runtime.runBlock(node.nodeGroups[0], {
+					statement: this,
+					opaque: false,
+					variables: {
+						//Set the loop variable in the loop scope
+						[this.name]: {
+							declaration: this,
+							mutable: false,
+							type: PrimitiveVariableType.INTEGER,
+							get value(){ return Number(i); },
+							set value(value){ crash(`Attempted assignment to constant`); },
+						}
+					},
+					types: {}
+				});
+				if(result) return result;
+			}
 		}
 	}
 }
@@ -712,8 +712,7 @@ export class ForStepStatement extends ForStatement {
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
 export class ForEndStatement extends Statement {
 	static blockType: ProgramASTBranchNodeType = "for";
-	varToken = this.token(1);
-	name = this.varToken.text;
+	name = this.token(1);
 }
 @statement("illegal.for.end", "NEXT", "block_end", "keyword.for_end")
 export class ForEndBadStatement extends Statement {
@@ -746,6 +745,10 @@ export class WhileStatement extends Statement {
 export class DoWhileStatement extends Statement {
 	//TODO automatically fail if no state changes
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
+		//Register the execution of an infinite amount of statements if the condition is constant true
+		if(node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === true)
+			runtime.statementExecuted(this, Infinity);
+
 		do {
 			const result = runtime.runBlock(node.nodeGroups[0], {
 				statement: this,

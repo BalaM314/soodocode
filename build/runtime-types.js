@@ -76,7 +76,7 @@ export function typedValue(type, value) {
     if (type == null || value == null)
         impossible();
     if (!(type instanceof BaseVariableType)) {
-        type;
+        (type);
         crash(`Type was not a valid type`, type);
     }
     return new TypedValue_(type, value);
@@ -85,13 +85,11 @@ export class NodeValue {
     constructor(node, inputType, value = undefined) {
         this.node = node;
         this.value = value;
+        this.range = this.node.range;
         this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType);
     }
     init() {
         this.value = Runtime.evaluateExpr(this.node, this.type)?.value ?? null;
-    }
-    getValue(runtime) {
-        return this.value ?? runtime.evaluateExpr(this.node, this.type).value;
     }
 }
 export class BaseVariableType {

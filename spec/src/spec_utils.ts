@@ -1,12 +1,21 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { tokenTextMapping } from "../../build/lexer.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
-import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, NodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
 import type { TextRange, TextRanged2 } from "../../build/types.js";
-import { RangeArray, crash, fakeObject, impossible } from "../../build/utils.js";
+import { RangeArray, crash, fakeObject, forceType, impossible } from "../../build/utils.js";
 
+
+if(typeof jasmine === "undefined"){
+	//Helper if this is being imported from the REPL
+	globalThis["jasmine"] = {
+		any: () => ({
+			asymmetricMatch: () => true
+		})
+	} as never;
+}
 
 //Types prefixed with a underscore indicate simplified versions that contain the data required to construct the normal type with minimal boilerplate.
 
@@ -112,7 +121,8 @@ export function is_ExpressionASTRangeTypeNode(input:_ExpressionASTExt):input is 
 }
 
 export function process_Statement(input:_Statement):Statement {
-	if(typeof input[0] == "string") return statement(...(input as never as [any]));
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+	if(typeof input[0] == "string") return statement(...(input as [statementType:keyof typeof statementCreators, ...rest:any[]]));
 	else return new input[0](new RangeArray(input[1].map(process_ExpressionASTExt), [-1, -1]));
 }
 
@@ -225,6 +235,12 @@ export function applyAnyRange<TIn extends
 		assignUnsafeChecked(input, "range", anyRange);
 		applyAnyRange(input.tokens);
 		input.tokens.forEach(applyAnyRange);
+		forceType<Record<PropertyKey, unknown>>(input);
+		for(const k in input){
+			if(input[k] instanceof NodeValue){
+				assignUnsafeChecked(input[k] as NodeValue, "range", anyRange);
+			}
+		}
 	} else if(input instanceof ExpressionASTBranchNode){
 		assignUnsafeChecked(input, "range", anyRange);
 		assignUnsafeChecked(input, "allTokens", jasmine.any(Array));

@@ -5,7 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the types for the parser.
 */
 
-import type { Token, TokenType } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import type { DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, Statement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 import { crash, f, getTotalRange, RangeArray } from "./utils.js";
@@ -14,7 +14,12 @@ import { crash, f, getTotalRange, RangeArray } from "./utils.js";
 /** Represents an expression tree. */
 export type ExpressionAST = ExpressionASTNode;
 /** Represents a single node in an expression AST. */
-export type ExpressionASTNode = ExpressionASTLeafNode | ExpressionASTBranchNode | ExpressionASTFunctionCallNode | ExpressionASTArrayAccessNode | ExpressionASTClassInstantiationNode;
+export type ExpressionASTNode =
+| ExpressionASTLeafNode
+| ExpressionASTBranchNode
+| ExpressionASTFunctionCallNode
+| ExpressionASTArrayAccessNode
+| ExpressionASTClassInstantiationNode; //UPDATE: Statement.expr
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
 /** Represents a branch node (node with child nodes) in an expression AST. */
@@ -160,9 +165,16 @@ export class ExpressionASTRangeTypeNode implements TextRanged, IFormattable {
 // 	}
 // }
 /** Represents a node that represents a type, for example, a single token, or an array type node. */
-export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode;
+export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode; //UPDATE: ExpressionASTTypeNodes
 /** Represents an "extended" expression AST node, which may also be an array type node */
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTTypeNode;
+
+export const ExpressionASTTypeNodes = [
+	Token, ExpressionASTArrayTypeNode, ExpressionASTRangeTypeNode
+] as const;
+export const ExpressionASTNodes = [
+	Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
+] as const;
 
 export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
