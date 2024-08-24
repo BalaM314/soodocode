@@ -17,6 +17,7 @@ export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? 
 export declare const primitiveVariableTypeNames: readonly ["INTEGER", "REAL", "STRING", "CHAR", "BOOLEAN", "DATE"];
 export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extends ReadonlyArray<infer T> ? T : never;
 export type TypedValue<T extends VariableType = VariableType> = T extends unknown ? TypedValue_<T> : never;
+export type { TypedValue_ };
 declare class TypedValue_<T extends VariableType> {
     type: T;
     value: VariableTypeMapping<T>;
@@ -39,9 +40,9 @@ export declare class NodeValue<T extends ExpressionASTNode = ExpressionASTNode, 
     node: T;
     value: VariableTypeMapping<Type> | null | undefined;
     type: Type;
+    range: TextRange;
     constructor(node: T, inputType: InputType, value?: VariableTypeMapping<Type> | null | undefined);
     init(): void;
-    getValue(runtime: Runtime): VariableTypeMapping<Type>;
 }
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;
@@ -286,4 +287,3 @@ export type VariableScope = {
     variables: Record<string, VariableData | ConstantData>;
     types: Record<string, VariableType>;
 };
-export {};
