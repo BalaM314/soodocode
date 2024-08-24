@@ -36,15 +36,14 @@ var __setFunctionName = (this && this.__setFunctionName) || function (f, name, p
     if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
     return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
 };
-import { preprocessedBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
+import { ExpressionASTFunctionCallNode, ExpressionASTNodes, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, NodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { Abstract, combineClasses, crash, f, fail, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 if (!Symbol.metadata)
     Object.defineProperty(Symbol, "metadata", {
         writable: false,
@@ -95,18 +94,33 @@ let Statement = (() => {
             this.range = getTotalRange(tokens);
         }
         token(ind) {
-            if (this.tokens[ind] instanceof Token)
-                return this.tokens[ind];
+            if (this.tokens.at(ind) instanceof Token)
+                return this.tokens.at(ind);
             else
                 crash(`Assertion failed: node at index ${ind} was not a token`);
         }
-        expr(ind) {
-            if ([
-                Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
-            ].some(c => this.tokens[ind] instanceof c))
-                return this.tokens[ind];
+        tokenRange(from, to) {
+            const tokens = this.tokens.slice(from, to);
+            tokens.forEach((t, i) => t instanceof Token || crash(`Assertion failed: node at index ${i} was not a token`));
+            return tokens;
+        }
+        tokenT(ind, type) {
+            return new NodeValue(this.token(ind), type);
+        }
+        expr(ind, allowed = "expr", error) {
+            if (allowed === "type")
+                allowed = ExpressionASTTypeNodes;
+            if (allowed === "expr")
+                allowed = ExpressionASTNodes;
+            if (allowed.some(c => this.tokens.at(ind) instanceof c))
+                return this.tokens.at(ind);
+            if (error != undefined)
+                fail(error, this.tokens.at(ind));
             else
                 crash(`Assertion failed: node at index ${ind} was not an expression`);
+        }
+        exprT(ind, type) {
+            return new NodeValue(this.expr(ind), type);
         }
         fmtText() {
             return this.tokens.map(t => t.fmtText()).join(" ");
@@ -230,7 +244,9 @@ function statement(type, example, ...args) {
         var _a, _b, _c, _d, _e, _f, _g;
         input.type = type;
         input.example = example;
-        input.evaluatableFields = context.metadata?.evaluatableFields ?? [];
+        forceType(context.metadata);
+        input.evaluatableFields = (context.metadata.evaluatableFields ?? []);
+        context.metadata.done = true;
         if (args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split") {
             input.category = args[0];
             args.shift();
@@ -308,6 +324,12 @@ function finishStatements() {
 }
 function evaluate(_, context) {
     var _a;
+    forceType(context.metadata);
+    if (context.metadata.done) {
+        const evaluatableFields = context.metadata.evaluatableFields ?? [];
+        Object.setPrototypeOf(context.metadata, null);
+        context.metadata.evaluatableFields = evaluatableFields.slice();
+    }
     ((_a = context.metadata).evaluatableFields ?? (_a.evaluatableFields = [])).push(context.name);
 }
 export class TypeStatement extends Statement {
@@ -325,11 +347,10 @@ let DeclareStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var DeclareStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.variables = [];
-            this.variables = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(1, -2), tokens.at(-2)).map(t => [t.text, t]);
-            this.varType = processTypeData(tokens.at(-1));
+        constructor() {
+            super(...arguments);
+            this.varType = processTypeData(this.expr(-1, "type"));
+            this.variables = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(1, -2), this.token(-2)).map(t => [t.text, t]);
         }
         run(runtime) {
             const varType = runtime.resolveVariableType(this.varType);
@@ -365,11 +386,10 @@ let ConstantStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ConstantStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            const [_constant, name, _equals, expr] = tokens;
-            this.name = name.text;
-            this.expression = expr;
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1).text;
+            this.expression = this.token(3);
         }
         run(runtime) {
             if (runtime.getVariable(this.name))
@@ -403,11 +423,11 @@ let DefineStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var DefineStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1];
-            this.variableType = tokens.at(-1);
-            this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(3, -3), tokens.at(-3), expressionLeafNodeTypes);
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1);
+            this.variableType = this.token(-1);
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(3, -3), this.token(-3), expressionLeafNodeTypes);
         }
         run(runtime) {
             const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
@@ -440,11 +460,10 @@ let TypePointerStatement = (() => {
     let _classThis;
     let _classSuper = TypeStatement;
     var TypePointerStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            let targetType;
-            [, { text: this.name }, , , targetType] = tokens;
-            this.targetType = processTypeData(targetType);
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1).text;
+            this.targetType = processTypeData(this.expr(4, "type"));
         }
         createType(runtime) {
             return [this.name, new PointerVariableType(false, this.name, this.targetType)];
@@ -468,10 +487,10 @@ let TypeEnumStatement = (() => {
     let _classThis;
     let _classSuper = TypeStatement;
     var TypeEnumStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1];
-            this.values = getUniqueNamesFromCommaSeparatedTokenList(tokens.slice(4, -1), tokens.at(-1));
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1);
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(4, -1), this.token(-1));
         }
         createType(runtime) {
             return [this.name.text, new EnumeratedVariableType(this.name.text, this.values.map(t => t.text))];
@@ -495,10 +514,11 @@ let TypeSetStatement = (() => {
     let _classThis;
     let _classSuper = TypeStatement;
     var TypeSetStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1];
-            this.setType = PrimitiveVariableType.get(tokens[5].text) ?? fail(`Sets of non-primitive types are not supported.`, tokens[5]);
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1);
+            this.setType = PrimitiveVariableType.get(this.token(5).text)
+                ?? fail(`Sets of non-primitive types are not supported.`, this.token(5));
         }
         createType(runtime) {
             return [this.name.text, new SetVariableType(false, this.name.text, this.setType)];
@@ -522,9 +542,9 @@ let TypeRecordStatement = (() => {
     let _classThis;
     let _classSuper = TypeStatement;
     var TypeRecordStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1];
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1);
         }
         createTypeBlock(runtime, node) {
             const fields = {};
@@ -556,7 +576,8 @@ let AssignmentStatement = (() => {
     var AssignmentStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            [this.target, , this.expression] = tokens;
+            this.target = this.expr(0);
+            this.expression = this.expr(2);
             if (this.target instanceof Token && isLiteral(this.target.type))
                 fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
@@ -619,9 +640,9 @@ let OutputStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var OutputStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.outMessage = splitTokensOnComma(tokens.slice(1)).map(parseExpression);
+        constructor() {
+            super(...arguments);
+            this.outMessage = splitTokensOnComma(this.tokens.slice(1)).map(parseExpression);
         }
         run(runtime) {
             runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
@@ -645,9 +666,9 @@ let InputStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var InputStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1].text;
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1).text;
         }
         run(runtime) {
             const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.tokens[1].range);
@@ -708,9 +729,9 @@ let ReturnStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ReturnStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.expression = tokens[1];
+        constructor() {
+            super(...arguments);
+            this.expression = this.expr(1);
         }
         run(runtime) {
             const fn = runtime.getCurrentFunction();
@@ -752,13 +773,9 @@ let CallStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var CallStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            if (tokens[1] instanceof ExpressionASTFunctionCallNode) {
-                this.func = tokens[1];
-            }
-            else
-                fail(`CALL can only be used to call functions or procedures`, tokens[1]);
+        constructor() {
+            super(...arguments);
+            this.func = this.expr(1, [ExpressionASTFunctionCallNode], `CALL can only be used to call functions or procedures`);
         }
         run(runtime) {
             const func = runtime.evaluateExpr(this.func.functionName, "function");
@@ -813,23 +830,29 @@ let IfStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _condition_decorators;
+    let _condition_initializers = [];
+    let _condition_extraInitializers = [];
     var IfStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.condition = tokens[1];
-        }
         runBlock(runtime, node) {
-            if (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value) {
+            if (runtime.evaluate(this.condition)) {
                 return runtime.runBlock(node.nodeGroups[0]);
             }
             else if (node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]) {
                 return runtime.runBlock(node.nodeGroups[1]);
             }
         }
+        constructor() {
+            super(...arguments);
+            this.condition = __runInitializers(this, _condition_initializers, this.exprT(1, "BOOLEAN"));
+            __runInitializers(this, _condition_extraInitializers);
+        }
     };
     __setFunctionName(_classThis, "IfStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _condition_decorators = [evaluate];
+        __esDecorate(null, null, _condition_decorators, { kind: "field", name: "condition", static: false, private: false, access: { has: obj => "condition" in obj, get: obj => obj.condition, set: (obj, value) => { obj.condition = value; } }, metadata: _metadata }, _condition_initializers, _condition_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         IfStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -867,9 +890,9 @@ let SwitchStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var SwitchStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, , this.expression] = tokens;
+        constructor() {
+            super(...arguments);
+            this.expression = this.expr(2);
         }
         static supportsSplit(block, statement) {
             if (block.nodeGroups.at(-1).length == 0 && block.nodeGroups.length != 1)
@@ -924,9 +947,9 @@ let CaseBranchStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var CaseBranchStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [this.value] = tokens;
+        constructor() {
+            super(...arguments);
+            this.value = this.token(0);
         }
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
@@ -958,11 +981,12 @@ let CaseBranchRangeStatement = (() => {
     var CaseBranchRangeStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
-            if (!CaseBranchRangeStatement.allowedTypes.includes(tokens[0].type))
-                fail(`Token of type ${tokens[0].type} is not valid in range cases: expected a number or character`, tokens[0]);
-            if (tokens[2].type != tokens[0].type)
-                fail(`Token of type ${tokens[2].type} does not match the other range bound: expected a ${tokens[0].type}`, tokens[2]);
-            this.upperBound = tokens[2];
+            this.lowerBound = this.token(0);
+            this.upperBound = this.token(2);
+            if (!CaseBranchRangeStatement.allowedTypes.includes(this.lowerBound.type))
+                fail(f.quote `Token of type ${this.lowerBound.type} is not valid in range cases: expected a number or character`, this.lowerBound);
+            if (this.lowerBound.type != this.upperBound.type)
+                fail(f.quote `Token of type ${this.upperBound.type} does not match the other range bound: expected a ${this.lowerBound.type}`, this.upperBound);
         }
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
@@ -1002,28 +1026,28 @@ let ForStatement = (() => {
     var ForStatement = _classThis = class extends _classSuper {
         constructor() {
             super(...arguments);
-            this.name = this.tokens[1].text;
-            this.from = __runInitializers(this, _from_initializers, new NodeValue(this.tokens[3], "INTEGER"));
-            this.to = (__runInitializers(this, _from_extraInitializers), __runInitializers(this, _to_initializers, new NodeValue(this.tokens[5], "INTEGER")));
+            this.name = this.token(1).text;
+            this.from = __runInitializers(this, _from_initializers, this.exprT(3, "INTEGER"));
+            this.to = (__runInitializers(this, _from_extraInitializers), __runInitializers(this, _to_initializers, this.exprT(5, "INTEGER")));
             this.empty = __runInitializers(this, _to_extraInitializers);
         }
         doPreRun(node) {
             super.doPreRun();
             this.empty = node.nodeGroups[0].length == 0;
             const endStatement = node.controlStatements[1];
-            if (endStatement.name !== this.name)
-                fail(f.quote `Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name}`, endStatement.varToken);
+            if (endStatement.name.text !== this.name)
+                fail(f.quote `Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name.text}`, endStatement.name);
         }
         getStep(runtime) {
             return 1;
         }
         runBlock(runtime, node) {
-            const from = BigInt(this.from.getValue(runtime));
-            const to = BigInt(this.to.getValue(runtime));
+            const from = BigInt(runtime.evaluate(this.from));
+            const to = BigInt(runtime.evaluate(this.to));
             const _step = this.getStep(runtime), step = BigInt(_step);
             const direction = Math.sign(_step);
             if (direction == 0)
-                fail(`Invalid FOR statement: step cannot be zero`, this.stepToken);
+                fail(`Invalid FOR statement: step cannot be zero`, this.step);
             if (direction == 1 && to < from ||
                 direction == -1 && from < to)
                 return;
@@ -1031,23 +1055,25 @@ let ForStatement = (() => {
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step)
                     runtime.statementExecuted(this);
             }
-            for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
-                const result = runtime.runBlock(node.nodeGroups[0], {
-                    statement: this,
-                    opaque: false,
-                    variables: {
-                        [this.name]: {
-                            declaration: this,
-                            mutable: false,
-                            type: PrimitiveVariableType.INTEGER,
-                            get value() { return Number(i); },
-                            set value(value) { crash(`Attempted assignment to constant`); },
-                        }
-                    },
-                    types: {}
-                });
-                if (result)
-                    return result;
+            else {
+                for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
+                    const result = runtime.runBlock(node.nodeGroups[0], {
+                        statement: this,
+                        opaque: false,
+                        variables: {
+                            [this.name]: {
+                                declaration: this,
+                                mutable: false,
+                                type: PrimitiveVariableType.INTEGER,
+                                get value() { return Number(i); },
+                                set value(value) { crash(`Attempted assignment to constant`); },
+                            }
+                        },
+                        types: {}
+                    });
+                    if (result)
+                        return result;
+                }
             }
         }
     };
@@ -1072,21 +1098,24 @@ let ForStepStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = ForStatement;
+    let _step_decorators;
+    let _step_initializers = [];
+    let _step_extraInitializers = [];
     var ForStepStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.stepToken = tokens[7];
-        }
-        doPreRun() {
-            this.step = Runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER)?.value;
-        }
         getStep(runtime) {
-            return runtime.evaluateExpr(this.stepToken, PrimitiveVariableType.INTEGER).value;
+            return runtime.evaluate(this.step);
+        }
+        constructor() {
+            super(...arguments);
+            this.step = __runInitializers(this, _step_initializers, this.exprT(7, "INTEGER"));
+            __runInitializers(this, _step_extraInitializers);
         }
     };
     __setFunctionName(_classThis, "ForStepStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _step_decorators = [evaluate];
+        __esDecorate(null, null, _step_decorators, { kind: "field", name: "step", static: false, private: false, access: { has: obj => "step" in obj, get: obj => obj.step, set: (obj, value) => { obj.step = value; } }, metadata: _metadata }, _step_initializers, _step_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ForStepStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1102,10 +1131,9 @@ let ForEndStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var ForEndStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.varToken = tokens[1];
-            this.name = tokens[1].text;
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1);
         }
     };
     __setFunctionName(_classThis, "ForEndStatement");
@@ -1151,13 +1179,14 @@ let WhileStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _condition_decorators;
+    let _condition_initializers = [];
+    let _condition_extraInitializers = [];
     var WhileStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.condition = tokens[1];
-        }
         runBlock(runtime, node) {
-            while (runtime.evaluateExpr(this.condition, PrimitiveVariableType.BOOLEAN).value) {
+            if (node.nodeGroups[0].length == 0 && this.condition.value === true)
+                runtime.statementExecuted(this, Infinity);
+            while (runtime.evaluate(this.condition)) {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
                     opaque: false,
@@ -1168,10 +1197,17 @@ let WhileStatement = (() => {
                     return result;
             }
         }
+        constructor() {
+            super(...arguments);
+            this.condition = __runInitializers(this, _condition_initializers, this.exprT(1, "BOOLEAN"));
+            __runInitializers(this, _condition_extraInitializers);
+        }
     };
     __setFunctionName(_classThis, "WhileStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _condition_decorators = [evaluate];
+        __esDecorate(null, null, _condition_decorators, { kind: "field", name: "condition", static: false, private: false, access: { has: obj => "condition" in obj, get: obj => obj.condition, set: (obj, value) => { obj.condition = value; } }, metadata: _metadata }, _condition_initializers, _condition_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         WhileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1188,6 +1224,8 @@ let DoWhileStatement = (() => {
     let _classSuper = Statement;
     var DoWhileStatement = _classThis = class extends _classSuper {
         runBlock(runtime, node) {
+            if (node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === true)
+                runtime.statementExecuted(this, Infinity);
             do {
                 const result = runtime.runBlock(node.nodeGroups[0], {
                     statement: this,
@@ -1197,7 +1235,7 @@ let DoWhileStatement = (() => {
                 });
                 if (result)
                     return result;
-            } while (!runtime.evaluateExpr(node.controlStatements[1].condition, PrimitiveVariableType.BOOLEAN).value);
+            } while (!runtime.evaluate(node.controlStatements[1].condition));
         }
     };
     __setFunctionName(_classThis, "DoWhileStatement");
@@ -1217,15 +1255,21 @@ let DoWhileEndStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _condition_decorators;
+    let _condition_initializers = [];
+    let _condition_extraInitializers = [];
     var DoWhileEndStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.condition = tokens[1];
+        constructor() {
+            super(...arguments);
+            this.condition = __runInitializers(this, _condition_initializers, this.exprT(1, "BOOLEAN"));
+            __runInitializers(this, _condition_extraInitializers);
         }
     };
     __setFunctionName(_classThis, "DoWhileEndStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _condition_decorators = [evaluate];
+        __esDecorate(null, null, _condition_decorators, { kind: "field", name: "condition", static: false, private: false, access: { has: obj => "condition" in obj, get: obj => obj.condition, set: (obj, value) => { obj.condition = value; } }, metadata: _metadata }, _condition_initializers, _condition_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         DoWhileEndStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1255,11 +1299,7 @@ let FunctionStatement = (() => {
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
-            if (this.name in runtime.functions)
-                fail(`Duplicate function definition for ${this.name}`, this.nameToken);
-            else if (this.name in preprocessedBuiltinFunctions)
-                fail(`Function ${this.name} is already defined as a builtin function`, this.nameToken);
-            runtime.functions[this.name] = node;
+            runtime.defineFunction(this.name, node, this.nameToken.range);
         }
     };
     __setFunctionName(_classThis, "FunctionStatement");
@@ -1285,10 +1325,11 @@ let ProcedureStatement = (() => {
             tokens = tokens.slice(offset);
             this.args = parseFunctionArguments(tokens.slice(3, -1));
             this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -1)) : tokens[2].rangeAfter();
+            this.nameToken = tokens[1];
             this.name = tokens[1].text;
         }
         runBlock(runtime, node) {
-            runtime.functions[this.name] = node;
+            runtime.defineFunction(this.name, node, this.nameToken.range);
         }
     };
     __setFunctionName(_classThis, "ProcedureStatement");
@@ -1308,13 +1349,12 @@ let OpenFileStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
     var OpenFileStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename, , this.mode] = tokens;
-        }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
             const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this);
             if (mode == "READ") {
@@ -1339,10 +1379,18 @@ let OpenFileStatement = (() => {
                 };
             }
         }
+        constructor() {
+            super(...arguments);
+            this.mode = this.token(3);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            __runInitializers(this, _filename_extraInitializers);
+        }
     };
     __setFunctionName(_classThis, "OpenFileStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         OpenFileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1357,13 +1405,12 @@ let CloseFileStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
     var CloseFileStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename] = tokens;
-        }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             if (runtime.openFiles[name])
                 runtime.openFiles[name] = undefined;
             else if (name in runtime.openFiles)
@@ -1371,10 +1418,17 @@ let CloseFileStatement = (() => {
             else
                 fail(f.quote `Cannot close file ${name}, because it was never opened.`, this);
         }
+        constructor() {
+            super(...arguments);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            __runInitializers(this, _filename_extraInitializers);
+        }
     };
     __setFunctionName(_classThis, "CloseFileStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         CloseFileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1389,13 +1443,17 @@ let ReadFileStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
     var ReadFileStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename, , this.output] = tokens;
+        constructor() {
+            super(...arguments);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            this.output = (__runInitializers(this, _filename_extraInitializers), this.expr(3));
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
             if (data.lineNumber >= data.lines.length)
                 fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
@@ -1406,6 +1464,8 @@ let ReadFileStatement = (() => {
     __setFunctionName(_classThis, "ReadFileStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ReadFileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1420,20 +1480,32 @@ let WriteFileStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
+    let _data_decorators;
+    let _data_initializers = [];
+    let _data_extraInitializers = [];
     var WriteFileStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename, , this.data] = tokens;
-        }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-            data.file.text += runtime.evaluateExpr(this.data, PrimitiveVariableType.STRING).value + "\n";
+            data.file.text += runtime.evaluate(this.data) + "\n";
+        }
+        constructor() {
+            super(...arguments);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            this.data = (__runInitializers(this, _filename_extraInitializers), __runInitializers(this, _data_initializers, this.exprT(3, "STRING")));
+            __runInitializers(this, _data_extraInitializers);
         }
     };
     __setFunctionName(_classThis, "WriteFileStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        _data_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
+        __esDecorate(null, null, _data_decorators, { kind: "field", name: "data", static: false, private: false, access: { has: obj => "data" in obj, get: obj => obj.data, set: (obj, value) => { obj.data = value; } }, metadata: _metadata }, _data_initializers, _data_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         WriteFileStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1448,23 +1520,35 @@ let SeekStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
+    let _index_decorators;
+    let _index_initializers = [];
+    let _index_extraInitializers = [];
     var SeekStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename, , this.index] = tokens;
-        }
         run(runtime) {
-            const index = runtime.evaluateExpr(this.index, PrimitiveVariableType.INTEGER).value;
+            const index = runtime.evaluate(this.index);
             if (index < 0)
                 fail(`SEEK index must be positive`, this.index);
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
             fail(`Not yet implemented`, this);
+        }
+        constructor() {
+            super(...arguments);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            this.index = (__runInitializers(this, _filename_extraInitializers), __runInitializers(this, _index_initializers, this.exprT(3, "INTEGER")));
+            __runInitializers(this, _index_extraInitializers);
         }
     };
     __setFunctionName(_classThis, "SeekStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        _index_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
+        __esDecorate(null, null, _index_decorators, { kind: "field", name: "index", static: false, private: false, access: { has: obj => "index" in obj, get: obj => obj.index, set: (obj, value) => { obj.index = value; } }, metadata: _metadata }, _index_initializers, _index_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         SeekStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1479,13 +1563,17 @@ let GetRecordStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
     var GetRecordStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename, , this.variable] = tokens;
+        constructor() {
+            super(...arguments);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            this.variable = (__runInitializers(this, _filename_extraInitializers), this.expr(3));
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
             const variable = runtime.evaluateExpr(this.variable, "variable");
             fail(`Not yet implemented`, this);
@@ -1494,6 +1582,8 @@ let GetRecordStatement = (() => {
     __setFunctionName(_classThis, "GetRecordStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         GetRecordStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1508,13 +1598,17 @@ let PutRecordStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _filename_decorators;
+    let _filename_initializers = [];
+    let _filename_extraInitializers = [];
     var PutRecordStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            [, this.filename, , this.variable] = tokens;
+        constructor() {
+            super(...arguments);
+            this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
+            this.variable = (__runInitializers(this, _filename_extraInitializers), this.expr(3));
         }
         run(runtime) {
-            const name = runtime.evaluateExpr(this.filename, PrimitiveVariableType.STRING).value;
+            const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
             const { type, value } = runtime.evaluateExpr(this.variable);
             fail(`Not yet implemented`, this);
@@ -1523,6 +1617,8 @@ let PutRecordStatement = (() => {
     __setFunctionName(_classThis, "PutRecordStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _filename_decorators = [evaluate];
+        __esDecorate(null, null, _filename_decorators, { kind: "field", name: "filename", static: false, private: false, access: { has: obj => "filename" in obj, get: obj => obj.filename, set: (obj, value) => { obj.filename = value; } }, metadata: _metadata }, _filename_initializers, _filename_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         PutRecordStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -1550,9 +1646,9 @@ let ClassStatement = (() => {
     let _classThis;
     let _classSuper = TypeStatement;
     var ClassStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.name = tokens[1];
+        constructor() {
+            super(...arguments);
+            this.name = this.token(1);
         }
         initializeClass(runtime, branchNode) {
             const classData = new ClassVariableType(false, this);
@@ -1619,9 +1715,9 @@ let ClassInheritsStatement = (() => {
     let _classThis;
     let _classSuper = ClassStatement;
     var ClassInheritsStatement = _classThis = class extends _classSuper {
-        constructor(tokens) {
-            super(tokens);
-            this.superClassName = tokens[3];
+        constructor() {
+            super(...arguments);
+            this.superClassName = this.token(3);
         }
         initializeClass(runtime, branchNode) {
             if (this.superClassName.text == this.name.text)
@@ -1687,7 +1783,9 @@ let ClassProcedureStatement = (() => {
     var ClassProcedureStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens, 1);
-            this.methodKeywordToken = tokens[1];
+            this.methodKeywordToken = this.token(1);
+        }
+        doPreRun(node) {
             if (this.name == "NEW" && this.accessModifier == "private")
                 fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
         }
@@ -1734,7 +1832,7 @@ let ClassFunctionStatement = (() => {
     var ClassFunctionStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens, 1);
-            this.methodKeywordToken = tokens[1];
+            this.methodKeywordToken = this.token(1);
         }
     };
     __setFunctionName(_classThis, "ClassFunctionStatement");

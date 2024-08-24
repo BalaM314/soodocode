@@ -151,6 +151,10 @@ describe("combineClasses", () => {
 				this.f_foo();
 			}
 			fooConst = "foo" as const;
+			shared = "foo" as const;
+			sharedFn(){
+				return "foo" as const;
+			}
 			f_foo(){
 				messages.push(["foo function called", this.fooProp]);
 				return "foo" as const;
@@ -165,6 +169,10 @@ describe("combineClasses", () => {
 				this.f_bar();
 			}
 			barConst = "bar" as const;
+			shared = "bar" as const;
+			sharedFn(){
+				return "bar" as const;
+			}
 			f_bar(){
 				messages.push(["bar function called", this.barProp]);
 				return "bar" as const;
@@ -184,6 +192,8 @@ describe("combineClasses", () => {
 		expect(foobar.barProp).toEqual("bar prop value");
 		expect(foobar.f_foo()).toEqual("foo");
 		expect(foobar.f_bar()).toEqual("bar");
+		expect(foobar.shared).toEqual("bar");
+		expect(foobar.sharedFn()).toEqual("bar");
 		expect(Foobar.staticFoo).toEqual("staticFoo");
 		expect(Foobar.staticBar).toEqual("staticBar");
 	});

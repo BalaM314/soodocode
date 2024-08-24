@@ -1,7 +1,7 @@
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { StatementCheckTokenRange } from "./parser.js";
-import { ClassVariableType, FunctionData, NodeValue, PrimitiveVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
+import { ClassVariableType, FunctionData, NodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { RangeArray } from "./utils.js";
@@ -54,7 +54,15 @@ export declare class Statement implements TextRanged, IFormattable {
     static invalidMessage: string | null | ((parseOutput: StatementCheckTokenRange[], context: ProgramASTBranchNode | null) => [message: string, range?: TextRange]);
     constructor(tokens: RangeArray<ExpressionASTNodeExt>);
     token(ind: number): Token;
+    tokenRange(from: number, to: number): RangeArray<Token>;
+    tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind: number, type: InputType): NodeValue<Token, InputType>;
     expr(ind: number): ExpressionAST;
+    expr<T extends "expr" | "type">(ind: number, allowed: T, error?: string): {
+        expr: ExpressionAST;
+        type: ExpressionASTTypeNode;
+    }[T];
+    expr<Type extends new (...args: any[]) => {}>(ind: number, allowed: Type[], error?: string): InstanceType<Type>;
+    exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind: number, type: InputType): NodeValue<ExpressionAST, InputType>;
     fmtText(): string;
     fmtDebug(): string;
     static blockEndStatement<TOut extends typeof Statement | Function = typeof Statement>(): typeof Statement extends TOut ? TOut : unknown;
@@ -68,56 +76,49 @@ export declare class Statement implements TextRanged, IFormattable {
     doPreRun(node?: ProgramASTBranchNode): void;
     preRun(node?: ProgramASTBranchNode): void;
 }
-export declare class TypeStatement extends Statement {
+export declare abstract class TypeStatement extends Statement {
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
     createTypeBlock(runtime: Runtime, block: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
 export declare class DeclareStatement extends Statement {
-    variables: [string, Token][];
     varType: UnresolvedVariableType;
-    constructor(tokens: RangeArray<Token>);
+    variables: [string, Token][];
     run(runtime: Runtime): void;
 }
 export declare class ConstantStatement extends Statement {
     name: string;
     expression: Token;
-    constructor(tokens: RangeArray<Token>);
     run(runtime: Runtime): void;
 }
 export declare class DefineStatement extends Statement {
     name: Token;
     variableType: Token;
     values: RangeArray<Token>;
-    constructor(tokens: RangeArray<Token>);
     run(runtime: Runtime): void;
 }
 export declare class TypePointerStatement extends TypeStatement {
     name: string;
     targetType: UnresolvedVariableType;
-    constructor(tokens: RangeArray<Token>);
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
 }
 export declare class TypeEnumStatement extends TypeStatement {
     name: Token;
     values: RangeArray<Token>;
-    constructor(tokens: RangeArray<Token>);
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
 }
 export declare class TypeSetStatement extends TypeStatement {
     name: Token;
-    setType: PrimitiveVariableType;
-    constructor(tokens: RangeArray<Token>);
+    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "BOOLEAN" | "STRING" | "CHAR" | "DATE">;
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
 }
 export declare class TypeRecordStatement extends TypeStatement {
     name: Token;
-    constructor(tokens: RangeArray<Token>);
     createTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
 export declare class AssignmentStatement extends Statement {
-    target: ExpressionAST;
-    expression: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    target: import("./parser-types.js").ExpressionASTNode;
+    expression: import("./parser-types.js").ExpressionASTNode;
+    constructor(tokens: RangeArray<ExpressionAST>);
     run(runtime: Runtime): void;
 }
 export declare class AssignmentBadStatement extends Statement {
@@ -125,18 +126,15 @@ export declare class AssignmentBadStatement extends Statement {
     static suppressErrors: boolean;
 }
 export declare class OutputStatement extends Statement {
-    outMessage: (Token | ExpressionAST)[];
-    constructor(tokens: RangeArray<Token>);
+    outMessage: import("./parser-types.js").ExpressionASTNode[];
     run(runtime: Runtime): void;
 }
 export declare class InputStatement extends Statement {
     name: string;
-    constructor(tokens: RangeArray<Token>);
     run(runtime: Runtime): void;
 }
 export declare class ReturnStatement extends Statement {
-    expression: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    expression: import("./parser-types.js").ExpressionASTNode;
     run(runtime: Runtime): {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | {
@@ -192,15 +190,13 @@ export declare class ReturnStatement extends Statement {
 }
 export declare class CallStatement extends Statement {
     func: ExpressionASTFunctionCallNode;
-    constructor(tokens: RangeArray<Token>);
     run(runtime: Runtime): void;
 }
 export declare class EndBadStatement extends Statement {
     static invalidMessage: typeof Statement.invalidMessage;
 }
 export declare class IfStatement extends Statement {
-    condition: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    condition: NodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | {
@@ -259,7 +255,6 @@ export declare class ElseStatement extends Statement {
 }
 export declare class SwitchStatement extends Statement {
     expression: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
     static supportsSplit(block: ProgramASTBranchNode, statement: Statement): true | string;
     static checkBlock({ nodeGroups, controlStatements }: ProgramASTBranchNode): void;
     runBlock(runtime: Runtime, { controlStatements, nodeGroups }: ProgramASTBranchNode): void | StatementExecutionResult;
@@ -267,10 +262,10 @@ export declare class SwitchStatement extends Statement {
 export declare class CaseBranchStatement extends Statement {
     value: Token;
     static blockType: ProgramASTBranchNodeType;
-    constructor(tokens: RangeArray<Token>);
     branchMatches(switchType: VariableType, switchValue: VariableValue): boolean;
 }
 export declare class CaseBranchRangeStatement extends CaseBranchStatement {
+    lowerBound: Token;
     upperBound: Token;
     static blockType: ProgramASTBranchNodeType;
     static allowedTypes: ("number.decimal" | "char")[];
@@ -338,25 +333,19 @@ export declare class ForStatement extends Statement {
     } | undefined;
 }
 export declare class ForStepStatement extends ForStatement {
-    stepToken: ExpressionAST;
-    step?: number;
-    constructor(tokens: RangeArray<Token>);
-    doPreRun(): void;
+    step: NodeValue<import("./parser-types.js").ExpressionASTNode, "INTEGER", PrimitiveVariableType<"INTEGER">>;
     getStep(runtime: Runtime): number;
 }
 export declare class ForEndStatement extends Statement {
-    name: string;
-    varToken: Token;
     static blockType: ProgramASTBranchNodeType;
-    constructor(tokens: RangeArray<Token>);
+    name: Token;
 }
 export declare class ForEndBadStatement extends Statement {
     static blockType: ProgramASTBranchNodeType;
     static invalidMessage: typeof Statement.invalidMessage;
 }
 export declare class WhileStatement extends Statement {
-    condition: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    condition: NodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | {
@@ -465,9 +454,8 @@ export declare class DoWhileStatement extends Statement {
     } | undefined;
 }
 export declare class DoWhileEndStatement extends Statement {
-    condition: ExpressionAST;
+    condition: NodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
     static blockType: ProgramASTBranchNodeType;
-    constructor(tokens: RangeArray<Token>);
 }
 export declare class FunctionStatement extends Statement {
     args: FunctionArguments;
@@ -483,70 +471,62 @@ export declare class ProcedureStatement extends Statement {
     args: FunctionArguments;
     argsRange: TextRange;
     name: string;
+    nameToken: Token;
     constructor(tokens: RangeArray<Token>, offset?: number);
     runBlock(runtime: Runtime, node: FunctionData): void;
 }
 interface IFileStatement {
-    filename: ExpressionAST;
+    filename: NodeValue<ExpressionAST, "STRING">;
 }
 export declare class OpenFileStatement extends Statement implements IFileStatement {
     mode: Token;
-    filename: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
     run(runtime: Runtime): void;
 }
 export declare class CloseFileStatement extends Statement implements IFileStatement {
-    filename: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
     run(runtime: Runtime): void;
 }
 export declare class ReadFileStatement extends Statement implements IFileStatement {
-    filename: ExpressionAST;
-    output: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
+    output: import("./parser-types.js").ExpressionASTNode;
     run(runtime: Runtime): void;
 }
 export declare class WriteFileStatement extends Statement implements IFileStatement {
-    filename: ExpressionAST;
-    data: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
+    data: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
     run(runtime: Runtime): void;
 }
 export declare class SeekStatement extends Statement implements IFileStatement {
-    filename: ExpressionAST;
-    index: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
+    index: NodeValue<import("./parser-types.js").ExpressionASTNode, "INTEGER", PrimitiveVariableType<"INTEGER">>;
     run(runtime: Runtime): void;
 }
 export declare class GetRecordStatement extends Statement implements IFileStatement {
-    filename: ExpressionAST;
-    variable: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
+    variable: import("./parser-types.js").ExpressionASTNode;
     run(runtime: Runtime): void;
 }
 export declare class PutRecordStatement extends Statement implements IFileStatement {
-    filename: ExpressionAST;
-    variable: ExpressionAST;
-    constructor(tokens: RangeArray<Token>);
+    filename: NodeValue<import("./parser-types.js").ExpressionASTNode, "STRING", PrimitiveVariableType<"STRING">>;
+    variable: import("./parser-types.js").ExpressionASTNode;
     run(runtime: Runtime): void;
 }
 declare class ClassMemberStatement {
     accessModifierToken: Token;
     accessModifier: "public" | "private";
-    constructor(tokens: RangeArray<Token>);
+    constructor(tokens: RangeArray<ExpressionASTNodeExt>);
     run(): void;
     runBlock(): void;
 }
 export declare class ClassStatement extends TypeStatement {
     static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     name: Token;
-    constructor(tokens: RangeArray<Token>);
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
 export declare class ClassInheritsStatement extends ClassStatement {
     superClassName: Token;
-    constructor(tokens: RangeArray<Token>);
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
 }
 declare const ClassPropertyStatement_base: import("./utils.js").MixClasses<typeof DeclareStatement, typeof ClassMemberStatement>;
@@ -558,6 +538,7 @@ export declare class ClassProcedureStatement extends ClassProcedureStatement_bas
     methodKeywordToken: Token;
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: RangeArray<Token>);
+    doPreRun(node: ProgramASTBranchNode<"class_procedure">): void;
 }
 export declare class ClassProcedureEndStatement extends Statement {
 }
