@@ -309,7 +309,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     if (outType == "variable") {
                         return {
                             type: outputType,
-                            declaration: target.declaration,
+                            declaration: (target).declaration,
                             mutable: true,
                             get value() { return targetValue[property]; },
                             set value(val) { targetValue[property] = val; }
@@ -704,8 +704,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             static evaluateExpr(expr, type) {
                 try {
                     return this.prototype.evaluateExpr.call(Object.setPrototypeOf({
-                        evaluateToken: this.evaluateToken,
-                        evaluateExpr: this.evaluateExpr,
+                        ..._a.prototype
                     }, new Proxy({}, {
                         get() { throw _a.NotStatic; },
                     })), expr, type);
@@ -716,6 +715,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     else
                         throw err;
                 }
+            }
+            evaluate(value) {
+                return value.value ?? this.evaluateExpr(value.node, value.type).value;
             }
             resolveVariableType(type) {
                 if (type instanceof PrimitiveVariableType)
@@ -833,6 +835,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         return false;
                 }
                 return false;
+            }
+            defineFunction(name, data, range) {
+                if (name in this.functions)
+                    fail(f.quote `Function or procedure ${name} has already been defined`, range);
+                else if (name in this.builtinFunctions)
+                    fail(f.quote `Function or procedure ${name} has already been defined as a builtin function`, range);
+                this.functions[name] = data;
             }
             getFunction({ text, range }) {
                 if (this.classData && this.classData.clazz.allMethods[text]) {
@@ -1061,8 +1070,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     }
                 }
             }
-            statementExecuted(range) {
-                if (++this.statementsExecuted > configs.statements.max_statements.value) {
+            statementExecuted(range, increment = 1) {
+                if ((this.statementsExecuted += increment) > configs.statements.max_statements.value) {
                     fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
                 }
             }

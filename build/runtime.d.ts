@@ -1,6 +1,6 @@
 import { Token } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ProgramASTNode } from "./parser-types.js";
-import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, OpenedFile, OpenedFileOfType, PointerVariableType, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
+import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, NodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableTypeName, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
 import { RangeArray } from "./utils.js";
@@ -60,6 +60,7 @@ export declare class Runtime {
     static evaluateExpr<T extends VariableType>(expr: ExpressionAST, type: T): TypedValue<T> | null;
     static evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T): TypedValue<T extends undefined ? VariableType : T & {}> | null;
     static evaluateExpr<T extends VariableType | undefined | "variable">(expr: ExpressionAST, type: T, recursive?: boolean): VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>;
+    evaluate<T extends ExpressionASTNode, InputType extends PrimitiveVariableTypeName | VariableType, Type extends VariableType>(value: NodeValue<T, InputType, Type>): VariableTypeMapping<Type>;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;
@@ -72,6 +73,7 @@ export declare class Runtime {
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
+    defineFunction(name: string, data: FunctionData, range: TextRange): void;
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     getClass(name: string, range: TextRange): ClassVariableType<boolean>;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
@@ -85,7 +87,7 @@ export declare class Runtime {
         value: VariableValue;
     };
     doPreRun(block: ProgramASTNode[]): void;
-    statementExecuted(range: TextRangeLike): void;
+    statementExecuted(range: TextRangeLike, increment?: number): void;
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;
     getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;
