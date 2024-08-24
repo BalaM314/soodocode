@@ -85,22 +85,22 @@ let Statement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     var Statement = _classThis = class {
-        constructor(tokens) {
-            this.tokens = tokens;
+        constructor(nodes) {
+            this.nodes = nodes;
             this.preRunDone = false;
             this.type = new.target;
             this.stype = this.type.type;
             this.category = this.type.category;
-            this.range = getTotalRange(tokens);
+            this.range = getTotalRange(nodes);
         }
         token(ind) {
-            if (this.tokens.at(ind) instanceof Token)
-                return this.tokens.at(ind);
+            if (this.nodes.at(ind) instanceof Token)
+                return this.nodes.at(ind);
             else
                 crash(`Assertion failed: node at index ${ind} was not a token`);
         }
-        tokenRange(from, to) {
-            const tokens = this.tokens.slice(from, to);
+        tokens(from, to) {
+            const tokens = this.nodes.slice(from, to);
             tokens.forEach((t, i) => t instanceof Token || crash(`Assertion failed: node at index ${i} was not a token`));
             return tokens;
         }
@@ -112,10 +112,10 @@ let Statement = (() => {
                 allowed = ExpressionASTTypeNodes;
             if (allowed === "expr")
                 allowed = ExpressionASTNodes;
-            if (allowed.some(c => this.tokens.at(ind) instanceof c))
-                return this.tokens.at(ind);
+            if (allowed.some(c => this.nodes.at(ind) instanceof c))
+                return this.nodes.at(ind);
             if (error != undefined)
-                fail(error, this.tokens.at(ind));
+                fail(error, this.nodes.at(ind));
             else
                 crash(`Assertion failed: node at index ${ind} was not an expression`);
         }
@@ -123,10 +123,10 @@ let Statement = (() => {
             return new NodeValue(this.expr(ind), type);
         }
         fmtText() {
-            return this.tokens.map(t => t.fmtText()).join(" ");
+            return this.nodes.map(t => t.fmtText()).join(" ");
         }
         fmtDebug() {
-            return this.tokens.map(t => t.fmtDebug()).join(" ");
+            return this.nodes.map(t => t.fmtDebug()).join(" ");
         }
         static blockEndStatement() {
             if (this.category != "block")
@@ -350,12 +350,12 @@ let DeclareStatement = (() => {
         constructor() {
             super(...arguments);
             this.varType = processTypeData(this.expr(-1, "type"));
-            this.variables = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(1, -2), this.token(-2)).map(t => [t.text, t]);
+            this.variables = getUniqueNamesFromCommaSeparatedTokenList(this.tokens(1, -2), this.token(-2)).map(t => [t.text, t]);
         }
         run(runtime) {
             const varType = runtime.resolveVariableType(this.varType);
             if (varType instanceof SetVariableType)
-                fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.tokens.at(-1));
+                fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.nodes.at(-1));
             for (const [variable, token] of this.variables) {
                 if (runtime.getCurrentScope().variables[variable])
                     fail(`Variable ${variable} was already declared`, token);
@@ -427,7 +427,7 @@ let DefineStatement = (() => {
             super(...arguments);
             this.name = this.token(1);
             this.variableType = this.token(-1);
-            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(3, -3), this.token(-3), expressionLeafNodeTypes);
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokens(3, -3), this.token(-3), expressionLeafNodeTypes);
         }
         run(runtime) {
             const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
@@ -490,7 +490,7 @@ let TypeEnumStatement = (() => {
         constructor() {
             super(...arguments);
             this.name = this.token(1);
-            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokenRange(4, -1), this.token(-1));
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokens(4, -1), this.token(-1));
         }
         createType(runtime) {
             return [this.name.text, new EnumeratedVariableType(this.name.text, this.values.map(t => t.text))];
@@ -642,7 +642,7 @@ let OutputStatement = (() => {
     var OutputStatement = _classThis = class extends _classSuper {
         constructor() {
             super(...arguments);
-            this.outMessage = splitTokensOnComma(this.tokens.slice(1)).map(parseExpression);
+            this.outMessage = splitTokensOnComma(this.nodes.slice(1)).map(parseExpression);
         }
         run(runtime) {
             runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
@@ -671,9 +671,9 @@ let InputStatement = (() => {
             this.name = this.token(1).text;
         }
         run(runtime) {
-            const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.tokens[1].range);
+            const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.nodes[1].range);
             if (!variable.mutable)
-                fail(`Cannot INPUT ${this.name} because it is a constant`, this.tokens[1]);
+                fail(`Cannot INPUT ${this.name} because it is a constant`, this.nodes[1]);
             const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
             switch (variable.type) {
                 case PrimitiveVariableType.BOOLEAN:
