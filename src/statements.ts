@@ -1037,7 +1037,7 @@ export class ClassProcedureStatement extends combineClasses(ProcedureStatement, 
 	constructor(tokens:RangeArray<Token>){
 		super(tokens, 1);
 	}
-	doPreRun(node:ProgramASTBranchNode<"class_procedure">){
+	preRun(node:ProgramASTBranchNode<"class_procedure">){
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
 		//TODO can they actually be run from subclasses?
