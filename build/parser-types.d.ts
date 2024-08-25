@@ -91,7 +91,7 @@ export type PreprocessedOperator = {
     token: OperatorType & TokenType;
 });
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Record<OperatorName, Operator>;
+export declare const operators: Record<OperatorType, Operator>;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;

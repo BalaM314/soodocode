@@ -647,13 +647,16 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(token.type == "name"){
 			if(type == "function") return this.getFunction(token);
 
-			const enumType = this.getEnumFromValue(token.text);
-			if(enumType){
-				if(type == "variable") fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`, token);
-				return finishEvaluation(token.text, enumType, type);
+			if(type == "variable"){
+				const variable = this.getVariable(token.text);
+				if(variable) return variable;
+				const enumType = this.getEnumFromValue(token.text);
+				if(enumType) fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`, token);
+				this.handleNonexistentVariable(token.text, token.range);
 			} else {
+				const enumType = this.getEnumFromValue(token.text);
+				if(enumType) return finishEvaluation(token.text, enumType, type);
 				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
-				if(type == "variable") return variable;
 				if(variable.value == null) fail(f.quote`Variable ${token.text} has not been initialized`, token);
 				return finishEvaluation(variable.value, variable.type, type);
 			}
@@ -1035,7 +1038,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			constants: ConstantStatement[],
 			others: ProgramASTNode[]
 		};
-		//First types: run constants
+		//First pass: run constants
 		for(const node of constants){
 			node.run(this);
 		}
