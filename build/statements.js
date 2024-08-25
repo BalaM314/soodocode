@@ -1809,7 +1809,7 @@ let ClassProcedureStatement = (() => {
             super(tokens, 1);
             this.methodKeywordToken = this.token(1);
         }
-        doPreRun(node) {
+        preRun(node) {
             if (this.name == "NEW" && this.accessModifier == "private")
                 fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
         }

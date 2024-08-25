@@ -1088,7 +1088,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			};
 		}
 	}
-	doPreRun(block:ProgramASTNode[]){
+	preRun(block:ProgramASTNode[]){
 		for(const node of block){
 			if(node instanceof Statement) node.triggerPreRun();
 			else {
@@ -1096,7 +1096,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 					statement.triggerPreRun(node as never); //UNSOUND
 				}
 				for(const block of node.nodeGroups){
-					this.doPreRun(block);
+					this.preRun(block);
 				}
 			}
 		}
@@ -1108,7 +1108,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}
 	/** Creates a scope. */
 	runProgram(code:ProgramASTNode[]){
-		this.doPreRun(code);
+		this.preRun(code);
 		this.runBlock(code, {
 			statement: "global",
 			opaque: true,
