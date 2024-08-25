@@ -12,7 +12,7 @@ import { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTTypeNode, Progr
 import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
 import { PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, PassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, FunctionArgumentPassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
 import { impossible, RangeArray, SoodocodeError } from "../../build/utils.js";
 import { _ExpressionAST, _ExpressionASTArrayTypeNode, _ExpressionASTTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
@@ -2837,10 +2837,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 });
 
 const functionArgumentTests = ((data:Record<string,
-	[input:_Token[], output:[string, type:_UnresolvedVariableType, passMode?:PassMode][]
+	[input:_Token[], output:[string, type:_UnresolvedVariableType, passMode?:FunctionArgumentPassMode][]
 | "error"]>) => Object.entries(data).map<
 	{name:string; input:RangeArray<Token>; output:[string,
-		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<PassMode>}
+		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<FunctionArgumentPassMode>}
 	][] | "error"}
 >(([name, [input, output]]) => ({
 	name,
