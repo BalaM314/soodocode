@@ -1090,10 +1090,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	}
 	doPreRun(block:ProgramASTNode[]){
 		for(const node of block){
-			if(node instanceof Statement) node.preRun();
+			if(node instanceof Statement) node.triggerPreRun();
 			else {
 				for(const statement of node.controlStatements){
-					statement.preRun(node as never); //UNSOUND
+					statement.triggerPreRun(node as never); //UNSOUND
 				}
 				for(const block of node.nodeGroups){
 					this.doPreRun(block);

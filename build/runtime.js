@@ -309,7 +309,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     if (outType == "variable") {
                         return {
                             type: outputType,
-                            declaration: (target).declaration,
+                            declaration: target.declaration,
                             mutable: true,
                             get value() { return targetValue[property]; },
                             set value(val) { targetValue[property] = val; }
@@ -1065,10 +1065,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             doPreRun(block) {
                 for (const node of block) {
                     if (node instanceof Statement)
-                        node.preRun();
+                        node.triggerPreRun();
                     else {
                         for (const statement of node.controlStatements) {
-                            statement.preRun(node);
+                            statement.triggerPreRun(node);
                         }
                         for (const block of node.nodeGroups) {
                             this.doPreRun(block);

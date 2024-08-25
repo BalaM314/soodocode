@@ -1,4 +1,4 @@
-import { Token } from "./lexer-types.js";
+import { Token, TokenType } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { StatementCheckTokenRange } from "./parser.js";
 import { ClassVariableType, FunctionData, TypedNodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue } from "./runtime-types.js";
@@ -11,26 +11,26 @@ export type LegalStatementType<T extends StatementType = StatementType> = T exte
 export declare function StatementType(input: string): StatementType;
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 export declare const statements: {
-    byStartKeyword: Partial<Record<"string" | "name" | "brace.open" | "brace.close" | "bracket.open" | "bracket.close" | "parentheses.open" | "parentheses.close" | "punctuation.colon" | "punctuation.semicolon" | "punctuation.comma" | "punctuation.period" | "newline" | "operator.add" | "operator.minus" | "operator.multiply" | "operator.divide" | "operator.mod" | "operator.integer_divide" | "operator.and" | "operator.or" | "operator.not" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.greater_than" | "operator.less_than_equal" | "operator.greater_than_equal" | "operator.assignment" | "operator.pointer" | "operator.string_concatenate" | "operator.range" | "number.decimal" | "char" | "boolean.true" | "boolean.false" | "keyword.declare" | "keyword.define" | "keyword.constant" | "keyword.output" | "keyword.input" | "keyword.call" | "keyword.if" | "keyword.then" | "keyword.else" | "keyword.if_end" | "keyword.for" | "keyword.to" | "keyword.for_end" | "keyword.step" | "keyword.while" | "keyword.while_end" | "keyword.dowhile" | "keyword.dowhile_end" | "keyword.function" | "keyword.function_end" | "keyword.procedure" | "keyword.procedure_end" | "keyword.return" | "keyword.returns" | "keyword.pass_mode.by_reference" | "keyword.pass_mode.by_value" | "keyword.type" | "keyword.type_end" | "keyword.open_file" | "keyword.read_file" | "keyword.write_file" | "keyword.close_file" | "keyword.get_record" | "keyword.put_record" | "keyword.seek" | "keyword.file_mode.read" | "keyword.file_mode.write" | "keyword.file_mode.append" | "keyword.file_mode.random" | "keyword.case" | "keyword.of" | "keyword.case_end" | "keyword.otherwise" | "keyword.class" | "keyword.class_end" | "keyword.new" | "keyword.super" | "keyword.inherits" | "keyword.class_modifier.private" | "keyword.class_modifier.public" | "keyword.array" | "keyword.set" | "keyword.end", (typeof Statement)[]>>;
-    byType: Record<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end", typeof Statement>;
+    byStartKeyword: Partial<Record<TokenType, (typeof Statement)[]>>;
+    byType: Record<StatementType, typeof Statement>;
     irregular: (typeof Statement)[];
 };
-export type PassMode = "value" | "reference";
+export type FunctionArgumentPassMode = "value" | "reference";
 export type FunctionArguments = Map<string, {
     type: UnresolvedVariableType;
-    passMode: PassMode;
+    passMode: FunctionArgumentPassMode;
 }>;
 export type BuiltinFunctionArguments = Map<string, {
     type: VariableType[];
-    passMode: PassMode;
+    passMode: FunctionArgumentPassMode;
 }>;
 export type FunctionArgumentData = [name: string, {
     type: UnresolvedVariableType;
-    passMode: PassMode;
+    passMode: FunctionArgumentPassMode;
 }];
 export type FunctionArgumentDataPartial = [nameToken: Token, {
     type: UnresolvedVariableType | null;
-    passMode: PassMode | null;
+    passMode: FunctionArgumentPassMode | null;
 }];
 export type StatementExecutionResult = {
     type: "function_return";
@@ -47,8 +47,8 @@ export declare class Statement implements TextRanged, IFormattable {
     static category: StatementCategory;
     static example: string;
     static tokens: (TokenMatcher | "#")[];
-    static suppressErrors: boolean;
     static evaluatableFields: string[];
+    static suppressErrors: boolean;
     static blockType: ProgramASTBranchNodeType | null;
     static allowOnly: Set<StatementType> | null;
     static invalidMessage: string | null | ((parseOutput: StatementCheckTokenRange[], context: ProgramASTBranchNode | null) => [message: string, range?: TextRange]);
@@ -57,10 +57,8 @@ export declare class Statement implements TextRanged, IFormattable {
     tokens(from: number, to: number): RangeArray<Token>;
     tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind: number, type: InputType): TypedNodeValue<Token, InputType>;
     expr(ind: number): ExpressionAST;
-    expr<T extends "expr" | "type">(ind: number, allowed: T, error?: string): {
-        expr: ExpressionAST;
-        type: ExpressionASTTypeNode;
-    }[T];
+    expr(ind: number, allowed: "expr", error?: string): ExpressionAST;
+    expr(ind: number, allowed: "type", error?: string): ExpressionASTTypeNode;
     expr<Type extends new (...args: any[]) => {}>(ind: number, allowed: Type[], error?: string): InstanceType<Type>;
     exprT(ind: number): UntypedNodeValue<ExpressionAST>;
     exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind: number, type: InputType): TypedNodeValue<ExpressionAST, InputType>;
@@ -74,8 +72,8 @@ export declare class Statement implements TextRanged, IFormattable {
     static tokensSortScore({ tokens }?: typeof Statement): number;
     run(runtime: Runtime): void | StatementExecutionResult;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | StatementExecutionResult;
-    doPreRun(node?: ProgramASTBranchNode): void;
     preRun(node?: ProgramASTBranchNode): void;
+    triggerPreRun(node?: ProgramASTBranchNode): void;
 }
 export declare abstract class TypeStatement extends Statement {
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
@@ -109,7 +107,7 @@ export declare class TypeEnumStatement extends TypeStatement {
 }
 export declare class TypeSetStatement extends TypeStatement {
     name: Token;
-    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "BOOLEAN" | "STRING" | "CHAR" | "DATE">;
+    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
 }
 export declare class TypeRecordStatement extends TypeStatement {
@@ -141,51 +139,43 @@ export declare class ReturnStatement extends Statement {
         value: string | number | boolean | Date | (string | number | boolean | Date | {
             [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
                 properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                    [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
+                propertyTypes: Record<string, VariableType>;
+                type: ClassVariableType;
             } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
                 properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                    [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
+                propertyTypes: Record<string, VariableType>;
+                type: ClassVariableType;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
             properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
             };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
+            propertyTypes: Record<string, VariableType>;
+            type: ClassVariableType;
         } | null)[] | Int32Array | Float64Array | {
             [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
                 properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                    [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
+                propertyTypes: Record<string, VariableType>;
+                type: ClassVariableType;
             } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
                 properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                    [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
+                propertyTypes: Record<string, VariableType>;
+                type: ClassVariableType;
             } | null;
         } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
             properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
+                [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
             };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
+            propertyTypes: Record<string, VariableType>;
+            type: ClassVariableType;
         };
     };
 }
@@ -200,55 +190,7 @@ export declare class IfStatement extends Statement {
     condition: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        } | null)[] | Int32Array | Float64Array | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        };
+        value: VariableValue;
     };
 }
 export declare class ElseStatement extends Statement {
@@ -278,59 +220,11 @@ export declare class ForStatement extends Statement {
     from: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "INTEGER", PrimitiveVariableType<"INTEGER">>;
     to: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "INTEGER", PrimitiveVariableType<"INTEGER">>;
     empty?: boolean;
-    doPreRun(node: ProgramASTBranchNode<"for">): void;
+    preRun(node: ProgramASTBranchNode<"for">): void;
     getStep(runtime: Runtime): number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode<"for">): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        } | null)[] | Int32Array | Float64Array | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        };
+        value: VariableValue;
     } | undefined;
 }
 export declare class ForStepStatement extends ForStatement {
@@ -349,109 +243,13 @@ export declare class WhileStatement extends Statement {
     condition: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        } | null)[] | Int32Array | Float64Array | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        };
+        value: VariableValue;
     } | undefined;
 }
 export declare class DoWhileStatement extends Statement {
     runBlock(runtime: Runtime, node: ProgramASTBranchNode<"dowhile">): {
         type: "function_return";
-        value: string | number | boolean | Date | (string | number | boolean | Date | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        } | null)[] | Int32Array | Float64Array | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-                properties: {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                };
-                propertyTypes: Record<string, VariableType<true>>;
-                type: ClassVariableType<true>;
-            } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
-            properties: {
-                [index: string]: string | number | boolean | Date | (string | number | boolean | Date | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | {
-                    [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | any | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-                } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | any | null;
-            };
-            propertyTypes: Record<string, VariableType<true>>;
-            type: ClassVariableType<true>;
-        };
+        value: VariableValue;
     } | undefined;
 }
 export declare class DoWhileEndStatement extends Statement {
@@ -521,7 +319,7 @@ declare class ClassMemberStatement {
     runBlock(): void;
 }
 export declare class ClassStatement extends TypeStatement {
-    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     name: Token;
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];

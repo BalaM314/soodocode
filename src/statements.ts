@@ -16,6 +16,7 @@ import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
 
+//Enable decorator metadata
 if(!Symbol.metadata)
 	Object.defineProperty(Symbol, "metadata", {
 		writable: false,
@@ -43,7 +44,8 @@ export const statementTypes = [
 	"class_function", "class_function.end",
 	"illegal.assignment", "illegal.end", "illegal.for.end"
 ] as const;
-export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never
+export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never;
+/** Statement types that don't start with "illegal." */
 export type LegalStatementType<T extends StatementType = StatementType> = T extends `illegal.${string}` ? never : T;
 export function StatementType(input:string):StatementType {
 	if(statementTypes.includes(input)) return input;
@@ -52,17 +54,18 @@ export function StatementType(input:string):StatementType {
 
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
 
+/** Stores all statement constructors. */
 export const statements = {
 	byStartKeyword: {} as Partial<Record<TokenType, (typeof Statement)[]>>,
 	byType: {} as Record<StatementType, typeof Statement>,
 	irregular: [] as (typeof Statement)[],
 };
 
-export type PassMode = "value" | "reference";
-export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:PassMode}>;
-export type BuiltinFunctionArguments = Map<string, {type:VariableType[], passMode:PassMode}>;
-export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:PassMode}];
-export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:PassMode | null}];
+export type FunctionArgumentPassMode = "value" | "reference";
+export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:FunctionArgumentPassMode}>;
+export type BuiltinFunctionArguments = Map<string, {type:VariableType[], passMode:FunctionArgumentPassMode}>;
+export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:FunctionArgumentPassMode}];
+export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:FunctionArgumentPassMode | null}];
 
 export type StatementExecutionResult = {
 	type: "function_return";
@@ -71,39 +74,39 @@ export type StatementExecutionResult = {
 
 @Abstract
 export class Statement implements TextRanged, IFormattable {
+	/** A reference to the constructor and its static properties. */
 	type:typeof Statement;
 	stype:StatementType;
 	category:StatementCategory;
-	range: TextRange;
+	range:TextRange = getTotalRange(this.nodes);
+	/** Prevents preRun() from being called twice */
 	preRunDone = false;
-	static type:StatementType;
+
+	static type:StatementType = null!; //Assigned in the decorator
 	static category:StatementCategory = null!; //Assigned in the decorator
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
+	/** A list of field names storing NodeValue objects that might be evaluatable before running. Set by the `@evaluate` decorator. */
+	static evaluatableFields: string[]; //Assigned in the decorator
 	static suppressErrors = false;
-	static evaluatableFields: string[];
-	/**
-	 * If set, this statement class will only be checked for in blocks of the specified type.
-	 **/
+	/** If set, this statement class will only be checked for in blocks of the specified type. */
 	static blockType:ProgramASTBranchNodeType | null = null;
-	/**
-	 * If set, only the specified statement classes will only be checked for in blocks of this statement. Make sure to add the end statement.
-	 **/
+	/** If set, only the specified statement classes will only be checked for in blocks of this statement. Make sure to add the end statement. */
 	static allowOnly:Set<StatementType> | null = null;
-	/**
-	 * If set, this statement is invalid and will fail with the below error message if it parses successfully.
-	 */
+	/** If set, this statement is invalid and will fail with the below error message if it parses successfully. */
 	static invalidMessage: string | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:string, range?:TextRange]) = null;
 	constructor(public nodes:RangeArray<ExpressionASTNodeExt>){
 		this.type = new.target;
 		this.stype = this.type.type;
 		this.category = this.type.category;
-		this.range = getTotalRange(nodes);
 	}
+	/** Returns the node at `ind` and asserts that it is a token. */
 	token(ind:number):Token {
-		if(this.nodes.at(ind) instanceof Token) return this.nodes.at(ind) as Token;
+		const node = this.nodes.at(ind);
+		if(node instanceof Token) return node;
 		else crash(`Assertion failed: node at index ${ind} was not a token`);
 	}
+	/** Returns the nodes from `from` to `to` (exclusive) and asserts that they are all tokens. */
 	tokens(from:number, to:number):RangeArray<Token> {
 		const tokens = this.nodes.slice(from, to);
 		tokens.forEach((t, i) =>
@@ -111,16 +114,19 @@ export class Statement implements TextRanged, IFormattable {
 		);
 		return tokens as RangeArray<Token>;
 	}
+	/** Returns the node at `ind` as a TypedNodeValue. */
 	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):TypedNodeValue<Token, InputType> {
 		return new TypedNodeValue(this.token(ind), type);
 	}
+	/** Returns the node at `ind` and asserts that it is an expression. */
 	expr(ind:number):ExpressionAST;
-	expr<T extends "expr" | "type">(ind:number, allowed:T, error?:string):{
-		expr: ExpressionAST;
-		type: ExpressionASTTypeNode;
-	}[T];
+	/** Returns the node at `ind` and asserts that it is an expression. */
+	expr(ind:number, allowed:"expr", error?:string):ExpressionAST;
+	/** Returns the node at `ind` and asserts that it is a type. */
+	expr(ind:number, allowed:"type", error?:string):ExpressionASTTypeNode;
+	/** Returns the node at `ind` and asserts that it is one of the given types. */
 	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string):InstanceType<Type>;
-	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string):ExpressionAST {
+	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string):ExpressionASTNodeExt {
 		if(allowed === "type") allowed = ExpressionASTTypeNodes;
 		if(allowed === "expr") allowed = ExpressionASTNodes;
 
@@ -130,7 +136,9 @@ export class Statement implements TextRanged, IFormattable {
 		if(error != undefined) fail(error, this.nodes.at(ind));
 		else crash(`Assertion failed: node at index ${ind} was not an expression`);
 	}
+	/** Returns the node at `ind` as an untyped node value. */
 	exprT(ind:number):UntypedNodeValue<ExpressionAST>;
+	/** Returns the node at `ind` as a typed node value. */
 	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):TypedNodeValue<ExpressionAST, InputType>;
 	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type?:InputType):TypedNodeValue<ExpressionAST, InputType> | UntypedNodeValue<ExpressionAST> {
 		if(type) return new TypedNodeValue(this.expr(ind), type);
@@ -142,6 +150,7 @@ export class Statement implements TextRanged, IFormattable {
 	fmtDebug(){
 		return this.nodes.map(t => t.fmtDebug()).join(" ");
 	}
+	/** Returns the block end statement for a given statement type */
 	static blockEndStatement<
 		/** use Function to prevent narrowing, leave blank otherwise */
 		TOut extends typeof Statement | Function = typeof Statement
@@ -228,7 +237,8 @@ export class Statement implements TextRanged, IFormattable {
 		else
 			crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
 	}
-	doPreRun(node?:ProgramASTBranchNode){
+	/** This function is called once before execution starts, and is passed the closest branch node if it exists. The default implementation tries to evaluate evaluatable fields. */
+	preRun(node?:ProgramASTBranchNode){
 		for(const field of this.type.evaluatableFields){
 			//Safety: checked in the decorator
 			const nodeValue = (this as never as Record<typeof field, NodeValue>)[field];
@@ -236,8 +246,8 @@ export class Statement implements TextRanged, IFormattable {
 			nodeValue.init();
 		}
 	}
-	preRun(node?:ProgramASTBranchNode){
-		if(!this.preRunDone) this.doPreRun(node);
+	triggerPreRun(node?:ProgramASTBranchNode){
+		if(!this.preRunDone) this.preRun(node);
 		this.preRunDone = true;
 	}
 }
@@ -247,15 +257,20 @@ type StatementDecoratorMetadata = {
 	done?: boolean;
 };
 
+/** Decorator that registers a statement type. */
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...tokens:TokenMatcher[]):
 	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
+/** Decorator that registers a statement type with matchers that do not need a keyword as the first matcher. */
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, irregular:"#", ...tokens:TokenMatcher[]):
 	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
+/** Decorator that registers a block or block_end or block_multi_split statement type. */
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", ...tokens:TokenMatcher[]):
 	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
+/** Decorator that registers a block or block_end or block_multi_split statement type with matchers that do not need a keyword as the first matcher. */
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", irregular:"#", ...tokens:TokenMatcher[]):
 	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
-function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block" | "block_end" | "block_multi_split", endType:"auto", ...tokens:TokenMatcher[]):
+/** Decorator that registers a block statement type, and automatically creates a corresponding end statement type. */
+function statement<TClass extends typeof Statement>(type:StatementType, example:string, category:"block", endType:"auto", ...tokens:TokenMatcher[]):
 	(input:TClass, context:ClassDecoratorContext<TClass>) => TClass;
 
 function statement<TClass extends typeof Statement>(type:StatementType, example:string, ...args:string[]){
@@ -321,10 +336,19 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 		return input;
 	};
 }
+/** Called after all statement types have been defined and registered. May be called multiple times if necessary. */
 function finishStatements(){
 	statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
 }
 
+/**
+ * Decorator that marks a NodeValue field as possibly evaluatable during pre-run.
+ * Example: `@evaluate condition = this.exprT(1, "BOOLEAN")`
+ * During prerun, an attempt will be made to evaluate the condition statically.
+ * If the condition requires a variable or can change at runtime, nothing will happen,
+ * but if it can be evaluated statically (for example, if the condition is `5 < 6`),
+ * its value will be cached and will not be recomputed at runtime.
+ **/
 function evaluate<This extends Statement & {[_ in K]: NodeValue}, K extends string, Value>(
 	_:undefined, context:ClassFieldDecoratorContext<This, Value> & { name: K; static: false; }
 ){
@@ -659,8 +683,8 @@ export class ForStatement extends Statement {
 	@evaluate from = this.exprT(3, "INTEGER");
 	@evaluate to = this.exprT(5, "INTEGER");
 	empty?:boolean;
-	doPreRun(node:ProgramASTBranchNode<"for">){
-		super.doPreRun();
+	preRun(node:ProgramASTBranchNode<"for">){
+		super.preRun();
 		this.empty = node.nodeGroups[0].length == 0;
 		const endStatement = node.controlStatements[1];
 		if(endStatement.name.text !== this.name)

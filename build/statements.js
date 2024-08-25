@@ -87,15 +87,16 @@ let Statement = (() => {
     var Statement = _classThis = class {
         constructor(nodes) {
             this.nodes = nodes;
+            this.range = getTotalRange(this.nodes);
             this.preRunDone = false;
             this.type = new.target;
             this.stype = this.type.type;
             this.category = this.type.category;
-            this.range = getTotalRange(nodes);
         }
         token(ind) {
-            if (this.nodes.at(ind) instanceof Token)
-                return this.nodes.at(ind);
+            const node = this.nodes.at(ind);
+            if (node instanceof Token)
+                return node;
             else
                 crash(`Assertion failed: node at index ${ind} was not a token`);
         }
@@ -208,7 +209,7 @@ let Statement = (() => {
             else
                 crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
         }
-        doPreRun(node) {
+        preRun(node) {
             for (const field of this.type.evaluatableFields) {
                 const nodeValue = this[field];
                 if (!(nodeValue instanceof TypedNodeValue || nodeValue instanceof UntypedNodeValue))
@@ -216,9 +217,9 @@ let Statement = (() => {
                 nodeValue.init();
             }
         }
-        preRun(node) {
+        triggerPreRun(node) {
             if (!this.preRunDone)
-                this.doPreRun(node);
+                this.preRun(node);
             this.preRunDone = true;
         }
     };
@@ -229,6 +230,7 @@ let Statement = (() => {
         Statement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
+    _classThis.type = null;
     _classThis.category = null;
     _classThis.example = null;
     _classThis.tokens = null;
@@ -1053,8 +1055,8 @@ let ForStatement = (() => {
             this.to = (__runInitializers(this, _from_extraInitializers), __runInitializers(this, _to_initializers, this.exprT(5, "INTEGER")));
             this.empty = __runInitializers(this, _to_extraInitializers);
         }
-        doPreRun(node) {
-            super.doPreRun();
+        preRun(node) {
+            super.preRun();
             this.empty = node.nodeGroups[0].length == 0;
             const endStatement = node.controlStatements[1];
             if (endStatement.name.text !== this.name)
