@@ -41,7 +41,7 @@ import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTFunctionCallNode, ExpressionASTNodes, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
-import { ClassVariableType, EnumeratedVariableType, FileMode, NodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType } from "./runtime-types.js";
+import { ClassVariableType, EnumeratedVariableType, FileMode, TypedNodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UntypedNodeValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 if (!Symbol.metadata)
@@ -105,7 +105,7 @@ let Statement = (() => {
             return tokens;
         }
         tokenT(ind, type) {
-            return new NodeValue(this.token(ind), type);
+            return new TypedNodeValue(this.token(ind), type);
         }
         expr(ind, allowed = "expr", error) {
             if (allowed === "type")
@@ -120,7 +120,10 @@ let Statement = (() => {
                 crash(`Assertion failed: node at index ${ind} was not an expression`);
         }
         exprT(ind, type) {
-            return new NodeValue(this.expr(ind), type);
+            if (type)
+                return new TypedNodeValue(this.expr(ind), type);
+            else
+                return new UntypedNodeValue(this.expr(ind));
         }
         fmtText() {
             return this.nodes.map(t => t.fmtText()).join(" ");
@@ -208,7 +211,7 @@ let Statement = (() => {
         doPreRun(node) {
             for (const field of this.type.evaluatableFields) {
                 const nodeValue = this[field];
-                if (!(nodeValue instanceof NodeValue))
+                if (!(nodeValue instanceof TypedNodeValue || nodeValue instanceof UntypedNodeValue))
                     crash(`Decorated invalid field ${field}`);
                 nodeValue.init();
             }
@@ -573,17 +576,21 @@ let AssignmentStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _expression_decorators;
+    let _expression_initializers = [];
+    let _expression_extraInitializers = [];
     var AssignmentStatement = _classThis = class extends _classSuper {
         constructor(tokens) {
             super(tokens);
             this.target = this.expr(0);
-            this.expression = this.expr(2);
+            this.expression = __runInitializers(this, _expression_initializers, this.exprT(2));
+            __runInitializers(this, _expression_extraInitializers);
             if (this.target instanceof Token && isLiteral(this.target.type))
                 fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
         run(runtime) {
             if (this.target instanceof Token && !runtime.getVariable(this.target.text)) {
-                const { type, value } = runtime.evaluateExpr(this.expression);
+                const { type, value } = runtime.evaluateUntyped(this.expression);
                 if (type instanceof ClassVariableType) {
                     if (configs.statements.auto_declare_classes.value) {
                         runtime.getCurrentScope().variables[this.target.text] = {
@@ -602,6 +609,8 @@ let AssignmentStatement = (() => {
     __setFunctionName(_classThis, "AssignmentStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _expression_decorators = [evaluate];
+        __esDecorate(null, null, _expression_decorators, { kind: "field", name: "expression", static: false, private: false, access: { has: obj => "expression" in obj, get: obj => obj.expression, set: (obj, value) => { obj.expression = value; } }, metadata: _metadata }, _expression_initializers, _expression_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         AssignmentStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -642,10 +651,11 @@ let OutputStatement = (() => {
     var OutputStatement = _classThis = class extends _classSuper {
         constructor() {
             super(...arguments);
-            this.outMessage = splitTokensOnComma(this.nodes.slice(1)).map(parseExpression);
+            this.outMessage = splitTokensOnComma(this.nodes.slice(1))
+                .map(n => new UntypedNodeValue(parseExpression(n)));
         }
         run(runtime) {
-            runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
+            runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
         }
     };
     __setFunctionName(_classThis, "OutputStatement");
@@ -728,11 +738,10 @@ let ReturnStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _expression_decorators;
+    let _expression_initializers = [];
+    let _expression_extraInitializers = [];
     var ReturnStatement = _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            this.expression = this.expr(1);
-        }
         run(runtime) {
             const fn = runtime.getCurrentFunction();
             if (!fn)
@@ -751,13 +760,20 @@ let ReturnStatement = (() => {
             }
             return {
                 type: "function_return",
-                value: runtime.evaluateExpr(this.expression, runtime.resolveVariableType(type)).value
+                value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type)).value
             };
+        }
+        constructor() {
+            super(...arguments);
+            this.expression = __runInitializers(this, _expression_initializers, this.exprT(1));
+            __runInitializers(this, _expression_extraInitializers);
         }
     };
     __setFunctionName(_classThis, "ReturnStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _expression_decorators = [evaluate];
+        __esDecorate(null, null, _expression_decorators, { kind: "field", name: "expression", static: false, private: false, access: { has: obj => "expression" in obj, get: obj => obj.expression, set: (obj, value) => { obj.expression = value; } }, metadata: _metadata }, _expression_initializers, _expression_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ReturnStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -889,11 +905,10 @@ let SwitchStatement = (() => {
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = Statement;
+    let _expression_decorators;
+    let _expression_initializers = [];
+    let _expression_extraInitializers = [];
     var SwitchStatement = _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            this.expression = this.expr(2);
-        }
         static supportsSplit(block, statement) {
             if (block.nodeGroups.at(-1).length == 0 && block.nodeGroups.length != 1)
                 return `Previous case branch was empty. (Fallthrough is not supported.)`;
@@ -907,7 +922,7 @@ let SwitchStatement = (() => {
                 fail(`OTHERWISE case branch must be the last case branch`, err);
         }
         runBlock(runtime, { controlStatements, nodeGroups }) {
-            const { type: switchType, value: switchValue } = runtime.evaluateExpr(this.expression);
+            const { type: switchType, value: switchValue } = runtime.evaluateUntyped(this.expression);
             for (const [i, statement] of controlStatements.entries()) {
                 if (i == 0)
                     continue;
@@ -928,10 +943,17 @@ let SwitchStatement = (() => {
                 }
             }
         }
+        constructor() {
+            super(...arguments);
+            this.expression = __runInitializers(this, _expression_initializers, this.exprT(2));
+            __runInitializers(this, _expression_extraInitializers);
+        }
     };
     __setFunctionName(_classThis, "SwitchStatement");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _expression_decorators = [evaluate];
+        __esDecorate(null, null, _expression_decorators, { kind: "field", name: "expression", static: false, private: false, access: { has: obj => "expression" in obj, get: obj => obj.expression, set: (obj, value) => { obj.expression = value; } }, metadata: _metadata }, _expression_initializers, _expression_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         SwitchStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });

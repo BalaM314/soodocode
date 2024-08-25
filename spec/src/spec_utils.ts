@@ -1,7 +1,7 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { tokenTextMapping } from "../../build/lexer.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
-import { ArrayVariableType, ClassMethodData, ClassVariableType, NodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, TypedNodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
 import type { TextRange, TextRanged2 } from "../../build/types.js";
@@ -237,8 +237,8 @@ export function applyAnyRange<TIn extends
 		input.nodes.forEach(applyAnyRange);
 		forceType<Record<PropertyKey, unknown>>(input);
 		for(const k in input){
-			if(input[k] instanceof NodeValue){
-				assignUnsafeChecked(input[k] as NodeValue, "range", anyRange);
+			if(input[k] instanceof TypedNodeValue){
+				assignUnsafeChecked(input[k] as TypedNodeValue, "range", anyRange);
 			}
 		}
 	} else if(input instanceof ExpressionASTBranchNode){

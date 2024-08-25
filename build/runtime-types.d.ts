@@ -36,13 +36,25 @@ export declare const TypedValue: {
     DATE: (value: Date) => TypedValue_<PrimitiveVariableType<"DATE">>;
 };
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
-export declare class NodeValue<T extends ExpressionASTNode = ExpressionASTNode, InputType extends PrimitiveVariableTypeName | VariableType = VariableType, Type extends VariableType = InputType extends PrimitiveVariableTypeName ? PrimitiveVariableType<InputType> : InputType> {
+export interface NodeValue {
+    node: ExpressionASTNode;
+    value: VariableValue | TypedValue | null | undefined;
+    init(type?: VariableType): void;
+}
+export declare class TypedNodeValue<T extends ExpressionASTNode = ExpressionASTNode, InputType extends PrimitiveVariableTypeName | VariableType = VariableType, Type extends VariableType = InputType extends PrimitiveVariableTypeName ? PrimitiveVariableType<InputType> : InputType> implements NodeValue {
     node: T;
     value: VariableTypeMapping<Type> | null | undefined;
     type: Type;
     range: TextRange;
     constructor(node: T, inputType: InputType, value?: VariableTypeMapping<Type> | null | undefined);
     init(): void;
+}
+export declare class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implements NodeValue {
+    node: T;
+    constructor(node: T);
+    range: TextRange;
+    value: TypedValue | null | undefined;
+    init(type?: VariableType): void;
 }
 export declare abstract class BaseVariableType implements IFormattable {
     abstract getInitValue(runtime: Runtime, requireInit: boolean): unknown;

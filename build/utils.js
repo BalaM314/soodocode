@@ -521,6 +521,9 @@ export function capitalizeText(input) {
         .map((w, i) => i == 0 ? capitalizeWord(w) : w.toLowerCase())
         .join(" ");
 }
+export function shallowCloneOwnProperties(input) {
+    return Object.defineProperties({}, Object.getOwnPropertyDescriptors(input));
+}
 export class RangeArray extends Array {
     constructor(arg0, range) {
         if (typeof arg0 == "number") {
