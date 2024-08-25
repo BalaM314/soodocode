@@ -88,7 +88,7 @@ export declare class Runtime {
         type: "function_return";
         value: VariableValue;
     };
-    doPreRun(block: ProgramASTNode[]): void;
+    preRun(block: ProgramASTNode[]): void;
     statementExecuted(range: TextRangeLike, increment?: number): void;
     runProgram(code: ProgramASTNode[]): void;
     getOpenFile(filename: string): OpenedFile;

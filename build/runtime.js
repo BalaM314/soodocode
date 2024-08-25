@@ -1062,7 +1062,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     };
                 }
             }
-            doPreRun(block) {
+            preRun(block) {
                 for (const node of block) {
                     if (node instanceof Statement)
                         node.triggerPreRun();
@@ -1071,7 +1071,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                             statement.triggerPreRun(node);
                         }
                         for (const block of node.nodeGroups) {
-                            this.doPreRun(block);
+                            this.preRun(block);
                         }
                     }
                 }
@@ -1082,7 +1082,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
             }
             runProgram(code) {
-                this.doPreRun(code);
+                this.preRun(code);
                 this.runBlock(code, {
                     statement: "global",
                     opaque: true,
