@@ -12,7 +12,7 @@ import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
-import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, PassMode, Statement, statements } from "./statements.js";
+import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, FunctionArgumentPassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
 import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 
@@ -22,12 +22,12 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
-	let passMode:PassMode = "value";
+	let passMode:FunctionArgumentPassMode = "value";
 	let type:UnresolvedVariableType | null = null;
 	//Split the array on commas (no paren handling necessary)
 	const argumentz = splitTokensOnComma(tokens).map<FunctionArgumentDataPartial>(section => {
 
-		let passMode:PassMode | null;
+		let passMode:FunctionArgumentPassMode | null;
 		let type:UnresolvedVariableType | null;
 
 		//Increase the offset by 1 to ignore the pass mode specifier if present
@@ -59,7 +59,7 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 			{ passMode, type }
 		];
 	})
-		.map<[name:Token, {type:UnresolvedVariableType | null, passMode:PassMode}]>(([name, data]) => [name, {
+		.map<[name:Token, {type:UnresolvedVariableType | null, passMode:FunctionArgumentPassMode}]>(([name, data]) => [name, {
 			passMode: data.passMode ? passMode = data.passMode : passMode,
 			type: data.type
 		}])
