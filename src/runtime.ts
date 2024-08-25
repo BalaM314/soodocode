@@ -10,10 +10,10 @@ import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, NodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual, UntypedNodeValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr, zip } from "./utils.js";
+import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 
 //TODO: fix coercion
 
@@ -123,6 +123,10 @@ function checkValueEquality<T extends VariableType>(type:T, a:VariableTypeMappin
 
 function coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
 	//typescript really hates this function, beware
+
+	if(from.is("INTEGER") && to.is("REAL")) return value as never;
+	//TODO config, truncate or throw? also change the integer range coercion
+	if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as VariableTypeMapping<PrimitiveVariableType<"REAL" | "INTEGER">>) as never;
 	let assignabilityError;
 	if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
 	let disabledConfig:Config<unknown, true> | null = null;
@@ -133,9 +137,6 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 			else assignabilityError = f.quote`the length of the string ${v} is not 1`;
 		} else disabledConfig = configs.coercion.string_to_char;
 	}
-	if(from.is("INTEGER") && to.is("REAL")) return value as never;
-	//TODO config, truncate or throw? also change the integer range coercion
-	if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as VariableTypeMapping<PrimitiveVariableType<"REAL" | "INTEGER">>) as never;
 	if(to.is("STRING")){
 		if(from.is("BOOLEAN")){
 			if(configs.coercion.booleans_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase() as never;
@@ -373,10 +374,10 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 			}
 		} else fail(f.quote`Cannot access property ${property} on variable of type ${targetType} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
 	}
-	assignExpr(target:ExpressionAST, src:ExpressionAST){
+	assignExpr(target:ExpressionAST, src:UntypedNodeValue){
 		const variable = this.evaluateExpr(target, "variable");
 		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${target}`, target);
-		const {type, value} = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+		const {type, value} = this.evaluateUntyped(src, variable.assignabilityType ?? variable.type);
 		variable.value = value;
 		variable.updateType?.(type);
 	}
@@ -706,11 +707,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	static evaluateExpr<T extends VariableType | undefined | "variable">(expr:ExpressionAST, type:T, recursive?:boolean):VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>
 	static evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):VariableData | ConstantData | TypedValue | null {
 		try {
-			return this.prototype.evaluateExpr.call(Object.setPrototypeOf({
-				...Runtime.prototype
-			}, new Proxy({}, {
-				get(){ throw Runtime.NotStatic; },
-			})), expr, type);
+			return this.prototype.evaluateExpr.call(Object.setPrototypeOf(
+				shallowCloneOwnProperties(Runtime.prototype),
+				new Proxy({}, {
+					get(){ throw Runtime.NotStatic; },
+				})
+			), expr, type);
 		} catch(err){
 			if(err === Runtime.NotStatic) return null;
 			else throw err;
@@ -720,8 +722,22 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		T extends ExpressionASTNode,
 		InputType extends PrimitiveVariableTypeName | VariableType,
 		Type extends VariableType
-	>(value:NodeValue<T, InputType, Type>):VariableTypeMapping<Type> {
+	>(value:TypedNodeValue<T, InputType, Type>):VariableTypeMapping<Type> {
 		return value.value ?? (this.evaluateExpr(value.node, value.type) as TypedValue_<Type>).value;
+	}
+	evaluateUntyped(expr:UntypedNodeValue):TypedValue;
+	evaluateUntyped<Type extends VariableType>(expr:UntypedNodeValue, type:Type):TypedValue<Type>;
+	evaluateUntyped(value:UntypedNodeValue, type?:VariableType){
+		if(value.value != null && type && !typesEqual(value.value.type, type)){
+			//Types are not equal, evaluate it again
+			const result = this.evaluateExpr(value.node, type);
+			//Update the cached value
+			value.value = result;
+			return result;
+			//this is useful when `5` gets evaluated as REAL, then assigned to an INTEGER
+			//this code will change the cached value to INTEGER, improving performance
+		}
+		return value.value ?? this.evaluateExpr(value.node, type);
 	}
 	resolveVariableType(type:UnresolvedVariableType):VariableType {
 		if(type instanceof PrimitiveVariableType) return type;
