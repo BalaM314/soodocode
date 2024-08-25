@@ -11,7 +11,7 @@ import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
-import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, NodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue } from "./runtime-types.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
@@ -111,8 +111,8 @@ export class Statement implements TextRanged, IFormattable {
 		);
 		return tokens as RangeArray<Token>;
 	}
-	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):NodeValue<Token, InputType> {
-		return new NodeValue(this.token(ind), type);
+	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):TypedNodeValue<Token, InputType> {
+		return new TypedNodeValue(this.token(ind), type);
 	}
 	expr(ind:number):ExpressionAST;
 	expr<T extends "expr" | "type">(ind:number, allowed:T, error?:string):{
@@ -130,8 +130,11 @@ export class Statement implements TextRanged, IFormattable {
 		if(error != undefined) fail(error, this.nodes.at(ind));
 		else crash(`Assertion failed: node at index ${ind} was not an expression`);
 	}
-	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):NodeValue<ExpressionAST, InputType> {
-		return new NodeValue(this.expr(ind), type);
+	exprT(ind:number):UntypedNodeValue<ExpressionAST>;
+	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):TypedNodeValue<ExpressionAST, InputType>;
+	exprT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type?:InputType):TypedNodeValue<ExpressionAST, InputType> | UntypedNodeValue<ExpressionAST> {
+		if(type) return new TypedNodeValue(this.expr(ind), type);
+		else return new UntypedNodeValue(this.expr(ind));
 	}
 	fmtText(){
 		return this.nodes.map(t => t.fmtText()).join(" ");
@@ -229,7 +232,7 @@ export class Statement implements TextRanged, IFormattable {
 		for(const field of this.type.evaluatableFields){
 			//Safety: checked in the decorator
 			const nodeValue = (this as never as Record<typeof field, NodeValue>)[field];
-			if(!(nodeValue instanceof NodeValue)) crash(`Decorated invalid field ${field}`);
+			if(!(nodeValue instanceof TypedNodeValue || nodeValue instanceof UntypedNodeValue)) crash(`Decorated invalid field ${field}`);
 			nodeValue.init();
 		}
 	}
@@ -322,7 +325,7 @@ function finishStatements(){
 	statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
 }
 
-function evaluate<This extends Statement & {[_ in K]: NodeValue<ExpressionAST, VariableType>}, K extends string, Value>(
+function evaluate<This extends Statement & {[_ in K]: NodeValue}, K extends string, Value>(
 	_:undefined, context:ClassFieldDecoratorContext<This, Value> & { name: K; static: false; }
 ){
 	forceType<StatementDecoratorMetadata>(context.metadata);
@@ -451,15 +454,16 @@ export class TypeRecordStatement extends TypeStatement {
 export class AssignmentStatement extends Statement {
 	/** Can be a normal variable name, like [name x], or an array access expression */
 	target = this.expr(0);
-	expression = this.expr(2);
+	@evaluate expression = this.exprT(2);
 	constructor(tokens:RangeArray<ExpressionAST>){
 		super(tokens);
 		if(this.target instanceof Token && isLiteral(this.target.type))
 			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
 	run(runtime:Runtime){
+		//Handle auto declaration for class variables
 		if(this.target instanceof Token && !runtime.getVariable(this.target.text)){
-			const {type, value} = runtime.evaluateExpr(this.expression);
+			const {type, value} = runtime.evaluateUntyped(this.expression);
 			if(type instanceof ClassVariableType){
 				if(configs.statements.auto_declare_classes.value){
 					runtime.getCurrentScope().variables[this.target.text] = {
@@ -468,6 +472,7 @@ export class AssignmentStatement extends Statement {
 				} else fail(f.quote`Variable ${this.target.text} does not exist\n` + configs.statements.auto_declare_classes.errorHelp, this.target);
 			} else runtime.handleNonexistentVariable(this.target.text, this.target);
 		}
+
 		runtime.assignExpr(this.target, this.expression);
 	}
 }
@@ -478,9 +483,10 @@ export class AssignmentBadStatement extends Statement {
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
-	outMessage = splitTokensOnComma(this.nodes.slice(1) as RangeArray<Token>).map(parseExpression);
+	outMessage = splitTokensOnComma(this.nodes.slice(1) as RangeArray<Token>)
+		.map(n => new UntypedNodeValue(parseExpression(n)));
 	run(runtime:Runtime){
-		runtime._output(this.outMessage.map(expr => runtime.evaluateExpr(expr)));
+		runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
 	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")
@@ -519,7 +525,7 @@ export class InputStatement extends Statement {
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
-	expression = this.expr(1); //TODO the type is known at pre-run and can be cached
+	@evaluate expression = this.exprT(1);
 	run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
 		if(!fn) fail(`RETURN is only valid within a function.`, this);
@@ -534,7 +540,7 @@ export class ReturnStatement extends Statement {
 		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateExpr(this.expression, runtime.resolveVariableType(type)).value
+			value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type)).value
 		};
 	}
 }
@@ -580,7 +586,7 @@ export class ElseStatement extends Statement {
 @statement("switch", "CASE OF x", "block", "auto", "keyword.case", "keyword.of", "expr+")
 export class SwitchStatement extends Statement {
 	//First node group is blank, because it is between the CASE OF and the first case
-	expression:ExpressionAST = this.expr(2);
+	@evaluate expression = this.exprT(2);
 	static supportsSplit(block:ProgramASTBranchNode, statement:Statement):true | string {
 		if(block.nodeGroups.at(-1)!.length == 0 && block.nodeGroups.length != 1) return `Previous case branch was empty. (Fallthrough is not supported.)`;
 		return true;
@@ -594,7 +600,7 @@ export class SwitchStatement extends Statement {
 		) fail(`OTHERWISE case branch must be the last case branch`, err);
 	}
 	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
-		const { type:switchType, value:switchValue } = runtime.evaluateExpr(this.expression);
+		const { type:switchType, value:switchValue } = runtime.evaluateUntyped(this.expression);
 		for(const [i, statement] of controlStatements.entries()){
 			if(i == 0) continue;
 			//skip the first one as that is the switch statement
@@ -811,7 +817,7 @@ export class ProcedureStatement extends Statement {
 }
 
 interface IFileStatement {
-	filename: NodeValue<ExpressionAST, "STRING">;
+	filename: TypedNodeValue<ExpressionAST, "STRING">;
 }
 
 @statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")

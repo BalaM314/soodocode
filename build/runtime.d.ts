@@ -1,6 +1,6 @@
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
-import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, NodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableTypeName, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableTypeName, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, UntypedNodeValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
 import { RangeArray } from "./utils.js";
@@ -42,7 +42,7 @@ export declare class Runtime {
     processRecordAccess(expr: ExpressionASTBranchNode, outType: "variable"): VariableData | ConstantData;
     processRecordAccess(expr: ExpressionASTBranchNode, outType: "function"): ClassMethodCallInformation;
     processRecordAccess(expr: ExpressionASTBranchNode, outType?: VariableType | "variable" | "function"): TypedValue | VariableData | ConstantData | ClassMethodCallInformation;
-    assignExpr(target: ExpressionAST, src: ExpressionAST): void;
+    assignExpr(target: ExpressionAST, src: UntypedNodeValue): void;
     evaluateExpr(expr: ExpressionAST): TypedValue;
     evaluateExpr(expr: ExpressionAST, undefined: undefined, recursive: boolean): TypedValue;
     evaluateExpr(expr: ExpressionAST, type: "variable", recursive?: boolean): VariableData | ConstantData;
@@ -60,7 +60,9 @@ export declare class Runtime {
     static evaluateExpr<T extends VariableType>(expr: ExpressionAST, type: T): TypedValue<T> | null;
     static evaluateExpr<T extends VariableType | undefined>(expr: ExpressionAST, type: T): TypedValue<T extends undefined ? VariableType : T & {}> | null;
     static evaluateExpr<T extends VariableType | undefined | "variable">(expr: ExpressionAST, type: T, recursive?: boolean): VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>;
-    evaluate<T extends ExpressionASTNode, InputType extends PrimitiveVariableTypeName | VariableType, Type extends VariableType>(value: NodeValue<T, InputType, Type>): VariableTypeMapping<Type>;
+    evaluate<T extends ExpressionASTNode, InputType extends PrimitiveVariableTypeName | VariableType, Type extends VariableType>(value: TypedNodeValue<T, InputType, Type>): VariableTypeMapping<Type>;
+    evaluateUntyped(expr: UntypedNodeValue): TypedValue;
+    evaluateUntyped<Type extends VariableType>(expr: UntypedNodeValue, type: Type): TypedValue<Type>;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
     handleNonexistentClass(name: string, range: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;

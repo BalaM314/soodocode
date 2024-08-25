@@ -80,6 +80,7 @@ export declare function boxPrimitive<T>(input: T): BoxPrimitive<T>;
 export declare function unicodeSetsSupported(): boolean;
 export declare function capitalizeWord(word: string): string;
 export declare function capitalizeText(input: string): string;
+export declare function shallowCloneOwnProperties<T extends {}>(input: T): T;
 export declare class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
     range: TextRange;
     constructor(tokens: T[], range?: TextRange);

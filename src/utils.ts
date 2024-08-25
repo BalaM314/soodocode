@@ -573,6 +573,10 @@ export function capitalizeText(input:string):string {
 		.join(" ");
 }
 
+export function shallowCloneOwnProperties<T extends {}>(input:T):T {
+	return Object.defineProperties({}, Object.getOwnPropertyDescriptors(input)) as T;
+}
+
 export class RangeArray<T extends TextRanged2> extends Array<T> implements TextRanged {
 	range:TextRange;
 	// constructor(length:number);

@@ -146,11 +146,16 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 	return new TypedValue_(type, value) as TypedValue;
 }
 
-export class NodeValue<
+export interface NodeValue {
+	node: ExpressionASTNode;
+	value: VariableValue | TypedValue | null | undefined;
+	init(type?:VariableType):void;
+}
+export class TypedNodeValue<
 	T extends ExpressionASTNode = ExpressionASTNode,
 	InputType extends PrimitiveVariableTypeName | VariableType = VariableType,
 	Type extends VariableType = InputType extends PrimitiveVariableTypeName ? PrimitiveVariableType<InputType> : InputType
->{
+> implements NodeValue {
 	type: Type;
 	range = this.node.range;
 	constructor(
@@ -162,6 +167,16 @@ export class NodeValue<
 	}
 	init(){
 		this.value = (Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
+	}
+}
+export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implements NodeValue {
+	constructor(
+		public node: T
+	){}
+	range = this.node.range;
+	value: TypedValue | null | undefined;
+	init(type?:VariableType){
+		this.value = Runtime.evaluateExpr(this.node, type);
 	}
 }
 

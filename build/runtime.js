@@ -38,7 +38,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, tryRun, tryRunOr, zip } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 export class Files {
     constructor() {
         this.files = {};
@@ -127,6 +127,10 @@ function checkValueEquality(type, a, b, aPath, bPath, range) {
     return false;
 }
 function coerceValue(value, from, to, range) {
+    if (from.is("INTEGER") && to.is("REAL"))
+        return value;
+    if (from.is("REAL") && to.is("INTEGER"))
+        return Math.trunc(value);
     let assignabilityError;
     if ((assignabilityError = typesAssignable(to, from)) === true)
         return value;
@@ -142,10 +146,6 @@ function coerceValue(value, from, to, range) {
         else
             disabledConfig = configs.coercion.string_to_char;
     }
-    if (from.is("INTEGER") && to.is("REAL"))
-        return value;
-    if (from.is("REAL") && to.is("INTEGER"))
-        return Math.trunc(value);
     if (to.is("STRING")) {
         if (from.is("BOOLEAN")) {
             if (configs.coercion.booleans_to_string.value)
@@ -309,7 +309,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     if (outType == "variable") {
                         return {
                             type: outputType,
-                            declaration: target.declaration,
+                            declaration: (target).declaration,
                             mutable: true,
                             get value() { return targetValue[property]; },
                             set value(val) { targetValue[property] = val; }
@@ -382,7 +382,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 const variable = this.evaluateExpr(target, "variable");
                 if (!variable.mutable)
                     fail(f.quote `Cannot assign to constant ${target}`, target);
-                const { type, value } = this.evaluateExpr(src, variable.assignabilityType ?? variable.type);
+                const { type, value } = this.evaluateUntyped(src, variable.assignabilityType ?? variable.type);
                 variable.value = value;
                 variable.updateType?.(type);
             }
@@ -703,9 +703,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             static evaluateExpr(expr, type) {
                 try {
-                    return this.prototype.evaluateExpr.call(Object.setPrototypeOf({
-                        ..._a.prototype
-                    }, new Proxy({}, {
+                    return this.prototype.evaluateExpr.call(Object.setPrototypeOf(shallowCloneOwnProperties(_a.prototype), new Proxy({}, {
                         get() { throw _a.NotStatic; },
                     })), expr, type);
                 }
@@ -718,6 +716,14 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             evaluate(value) {
                 return value.value ?? this.evaluateExpr(value.node, value.type).value;
+            }
+            evaluateUntyped(value, type) {
+                if (value.value != null && type && !typesEqual(value.value.type, type)) {
+                    const result = this.evaluateExpr(value.node, type);
+                    value.value = result;
+                    return result;
+                }
+                return value.value ?? this.evaluateExpr(value.node, type);
             }
             resolveVariableType(type) {
                 if (type instanceof PrimitiveVariableType)
