@@ -224,9 +224,9 @@ export class Statement implements TextRanged, IFormattable {
 		} satisfies Record<LegalStatementType, string> as Record<string, string | undefined>)[type] ?? "unknown statement";
 	}
 	/** Higher scores are given lower priority. */
-	static tokensSortScore({tokens}:typeof Statement = this):number {
+	static tokensSortScore({tokens, invalidMessage}:typeof Statement = this):number {
 		//TODO move usage to end of statement definitions
-		return tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length;
+		return invalidMessage != null ? tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length : 10000;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -338,7 +338,7 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 }
 /** Called after all statement types have been defined and registered. May be called multiple times if necessary. */
 function finishStatements(){
-	statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
+	statements.irregular.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
 }
 
 /**
