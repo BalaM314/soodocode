@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-unary-minus */
 /**
 Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
@@ -89,7 +90,8 @@ export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFun
 				}] as const)),
 				aliases: data.aliases ?? [],
 				name,
-				//Unsound cast
+				//UNSOUND
+				// eslint-disable-next-line @typescript-eslint/unbound-method
 				impl: data.impl as never as ((this:Runtime, ...args:RangeAttached<BoxPrimitive<VariableValue>>[]) => VariableTypeMapping<PrimitiveVariableType>),
 				returnType: PrimitiveVariableType.get(data.returnType as PrimitiveVariableTypeName)
 			}]
