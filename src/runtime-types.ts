@@ -451,7 +451,7 @@ help: change the field's type to be a pointer`,
 	}
 	iterate<T>(value:VariableTypeMapping<RecordVariableType>, callback:(tval:TypedValue | null, name:string, range:TextRange) => T):T[] {
 		return Object.entries((this as RecordVariableType<true>).fields).map(([name, [type, range]]) =>
-			callback(value[name] != null ? typedValue(type, value[name]!) : null, name, range)
+			callback(value[name] != null ? typedValue(type, value[name]) : null, name, range)
 		);
 	}
 	asHTML(value:VariableTypeMapping<RecordVariableType>):string {
@@ -697,7 +697,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	iterateProperties<T>(value:VariableTypeMapping<ClassVariableType>, callback:(tval:TypedValue | null, name:string, statement:ClassPropertyStatement) => T):T[] {
 		return Object.entries((this as ClassVariableType<true>).properties).map(([name, [type, statement]]) =>
-			callback(value.properties[name] != null ? typedValue(type, value.properties[name]!) : null, name, statement)
+			callback(value.properties[name] != null ? typedValue(type, value.properties[name]) : null, name, statement)
 		);
 	}
 	asHTML(value:VariableTypeMapping<ClassVariableType>):string {

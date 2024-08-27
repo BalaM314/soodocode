@@ -15,8 +15,6 @@ import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, Consta
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 
-//TODO: fix coercion
-
 export class Files {
 	files: Record<string, File> = {};
 	private backupFiles: string | null = null;
@@ -694,6 +692,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		//major shenanigans
 		try {
 			return this.prototype.evaluateToken.call(new Proxy({}, {
+				// eslint-disable-next-line @typescript-eslint/only-throw-error
 				get(){ throw Runtime.NotStatic; },
 			}), token, type);
 		} catch(err){
@@ -710,6 +709,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return this.prototype.evaluateExpr.call(Object.setPrototypeOf(
 				shallowCloneOwnProperties(Runtime.prototype),
 				new Proxy({}, {
+					// eslint-disable-next-line @typescript-eslint/only-throw-error
 					get(){ throw Runtime.NotStatic; },
 				})
 			), expr, type);
@@ -1000,7 +1000,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		const evaluatedArgs:[VariableValue, TextRange][] = [];
 		let i = 0;
 		nextArg:
-		for(const {type} of fn.args.values()){
+		for(const [name, {type}] of fn.args.entries()){
 			const errors:SoodocodeError[] = [];
 			for(const possibleType of type){
 				if(tryRunOr(() => {
@@ -1009,7 +1009,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 				}, err => errors.push(err)))
 					continue nextArg;
 			}
-			throw errors.at(-1);
+			throw errors.at(-1) ?? crash(`Builtin function ${fn.name} has an argument ${name} that does not accept any types`);
 		}
 		const processedArgs:RangeAttached<BoxPrimitive<VariableValue>>[] =
 			evaluatedArgs.map(([value, range]) =>

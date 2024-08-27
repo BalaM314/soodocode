@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
 	{
-		ignores: ["build/", "spec/build/"],
+		ignores: ["build/", "spec/build/", "scripts/**.js", "scripts/**.d.ts"],
 	},
 	eslint.configs.recommended,
 	...tseslint.configs.recommendedTypeChecked,
@@ -41,21 +41,12 @@ export default tseslint.config(
 			"prefer-const": "warn",
 			"no-unexpected-multiline": "off",
 			"@typescript-eslint/no-unused-vars": "off",
-			"@typescript-eslint/unbound-method": "off",
+			// "@typescript-eslint/unbound-method": "off",
 			"@typescript-eslint/no-explicit-any": "off",
 			"@typescript-eslint/no-duplicate-type-constituents": "off",
+			"@typescript-eslint/no-unsafe-function-type": "off",
+			"@typescript-eslint/no-empty-object-type": "off",
 			// "@typescript-eslint/no-redundant-type-constituents": "off",
-			"@typescript-eslint/ban-types": [
-				"error",
-				{
-					extendDefaults: true,
-					types: {
-						"Symbol": false,
-						"{}": false,
-						"Function": false,
-					}
-				}
-			]
 			// "@typescript-eslint/no-non-null-assertion": "off",
 			// "@typescript-eslint/no-inferrable-types": "off",
 			// "@typescript-eslint/no-namespace": "off"
