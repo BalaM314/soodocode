@@ -371,7 +371,7 @@ export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | "
 /** Represents a fully processed program. */
 export type ProgramAST = {
 	program: string;
-	nodes: ProgramASTNode[];
+	nodes: ProgramASTNodeGroup;
 };
 /** Represents a single node in a program AST. */
 export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
@@ -386,7 +386,7 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 		 * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
 		 */
 		public controlStatements: ProgramASTBranchNodeTypeMapping<T>,
-		public nodeGroups: ProgramASTNode[][],
+		public nodeGroups: ProgramASTNodeGroup[],
 	){}
 	/** Unsafe due to array invariance */
 	controlStatements_(){
@@ -395,7 +395,7 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 	range():TextRange {
 		return getTotalRange([
 			...this.controlStatements,
-			...this.nodeGroups.flat()
+			...(this.nodeGroups as ProgramASTNode[][]).flat(1)
 		]);
 	}
 	static typeName(type:ProgramASTBranchNodeType){
@@ -419,6 +419,46 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 		return ProgramASTBranchNode.typeName(this.type);
 	}
 }
+export class ProgramASTNodeGroup extends Array<ProgramASTNode> {
+	requiresScope = true;
+	hasTypesOrConstants = true;
+	hasReturn = true;
+	preRun(parent?:ProgramASTBranchNode){
+		this.requiresScope = false;
+		this.hasTypesOrConstants = false;
+		this.hasReturn = false;
+
+		for(const node of this){
+			if(node instanceof ProgramASTBranchNode){
+				for(const block of node.nodeGroups){
+					block.preRun();
+					//this {
+					//	IF x < 5 THEN
+					//		RETURN 5
+					//	ENDIF
+					//}
+					//If the { RETURN 5 } group has a return statement, and the IF statement propagates the return, this block also can return
+					//But if the RETURN was inside a function or class, this block doesn't return
+					if(block.hasReturn && node.controlStatements[0].type.propagatesControlFlowInterruptions) this.hasReturn = true;
+				}
+				for(const statement of node.controlStatements){
+					statement.triggerPreRun(this, node); //UNSOUND
+				}
+			} else {
+				node.triggerPreRun(this, parent);
+			}
+		}
+	}
+	simple():this is { requiresScope: false; hasTypesOrConstants: false; hasReturn: false; } {
+		return !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;
+	}
+	static from(nodes:ProgramASTNode[]){
+		return super.from(nodes) as ProgramASTNodeGroup;
+	}
+}
+//Delete the useless function
+delete (ProgramASTNodeGroup as {from: any;}).from;
+
 /** The valid types for a branch node in a program AST. */
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;

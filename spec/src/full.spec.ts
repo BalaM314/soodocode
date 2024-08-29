@@ -95,7 +95,7 @@ OUTPUT MID("👨‍👨‍👧‍👧", 3, 2)`,
 declare_duplicate_illegal: [
 `DECLARE x: INTEGER
 DECLARE x: INTEGER`,
-"already declared"
+"already defined"
 ],
 declare_duplicate_legal: [
 `DECLARE x: INTEGER

@@ -9,9 +9,9 @@ This file contains the definitions for every statement type supported by Soodoco
 import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
-import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue } from "./runtime-types.js";
+import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue, VariableScope, VariableData, ConstantData } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
@@ -237,8 +237,20 @@ export class Statement implements TextRanged, IFormattable {
 		else
 			crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
 	}
-	/** This function is called once before execution starts, and is passed the closest branch node if it exists. The default implementation tries to evaluate evaluatable fields. */
-	preRun(node?:ProgramASTBranchNode){
+	static requiresScope = false;
+	static interruptsControlFlow = false;
+	/** True if a return from this statement causes the block to return, like an IF or FOR block statement. False for functions and classes, which do not execute their code. */
+	static propagatesControlFlowInterruptions = true;
+	/**
+	 * This function is called once before execution starts, and is passed the parent group, and the closest branch node if it exists.
+	 * Must tell the group if this statement requires a scope, or is a type statement, or interrupts control flow by returning, even if recursively.
+	 * The default implementation tries to evaluate evaluatable fields.
+	 **/
+	preRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
+		if(this.type.requiresScope) group.requiresScope = true;
+		if(this instanceof TypeStatement || this instanceof ConstantStatement) group.hasTypesOrConstants = true;
+		if(this.type.interruptsControlFlow) group.hasReturn = true;
+
 		for(const field of this.type.evaluatableFields){
 			//Safety: checked in the decorator
 			const nodeValue = (this as never as Record<typeof field, NodeValue>)[field];
@@ -246,8 +258,8 @@ export class Statement implements TextRanged, IFormattable {
 			nodeValue.init();
 		}
 	}
-	triggerPreRun(node?:ProgramASTBranchNode){
-		if(!this.preRunDone) this.preRun(node);
+	triggerPreRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
+		if(!this.preRunDone) this.preRun(group, node);
 		this.preRunDone = true;
 	}
 }
@@ -374,6 +386,7 @@ export abstract class TypeStatement extends Statement {
 
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
+	static requiresScope = true;
 	varType = processTypeData(this.expr(-1, "type"));
 	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokens(1, -2), this.token(-2)
@@ -382,18 +395,18 @@ export class DeclareStatement extends Statement {
 		const varType = runtime.resolveVariableType(this.varType);
 		if(varType instanceof SetVariableType) fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.nodes.at(-1));
 		for(const [variable, token] of this.variables){
-			if(runtime.getCurrentScope().variables[variable]) fail(`Variable ${variable} was already declared`, token);
-			runtime.getCurrentScope().variables[variable] = {
+			runtime.defineVariable(variable, {
 				type: varType,
 				value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
 				declaration: this,
 				mutable: true,
-			};
+			}, token);
 		}
 	}
 }
 @statement("constant", "CONSTANT x = 1.5", "keyword.constant", "name", "operator.equal_to", "literal") //the equal_to operator is used in this statement, idk why
 export class ConstantStatement extends Statement {
+	static requiresScope = true;
 	name = this.token(1).text;
 	expression = this.token(3);
 	run(runtime:Runtime){
@@ -411,6 +424,7 @@ export class ConstantStatement extends Statement {
 }
 @statement("define", "DEFINE PrimesBelow20 (2, 3, 5, 7, 11, 13, 17, 19): myIntegerSet", "keyword.define", "name", "parentheses.open", ".*", "parentheses.close", "punctuation.colon", "name")
 export class DefineStatement extends Statement {
+	static requiresScope = true;
 	name = this.token(1);
 	variableType = this.token(-1);
 	values = getUniqueNamesFromCommaSeparatedTokenList(
@@ -419,7 +433,7 @@ export class DefineStatement extends Statement {
 	run(runtime:Runtime){
 		const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
 		if(!(type instanceof SetVariableType)) fail(`DEFINE can only be used on set types, please use a declare statement instead`, this.variableType);
-		runtime.getCurrentScope().variables[this.name.text] = {
+		runtime.defineVariable(this.name.text, {
 			type,
 			declaration: this,
 			mutable: true,
@@ -427,7 +441,7 @@ export class DefineStatement extends Statement {
 				Runtime.evaluateToken(t, type.baseType as PrimitiveVariableType)
 					?? fail(f.quote`Cannot evaluate token ${t} in a static context`, t)
 			).value)
-		};
+		}, this.name);
 	}
 }
 
@@ -465,6 +479,7 @@ export class TypeSetStatement extends TypeStatement {
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
 export class TypeRecordStatement extends TypeStatement {
 	name = this.token(1);
+	static propagatesControlFlowInterruptions = false;
 	createTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const fields:Record<string, [UnresolvedVariableType, TextRange]> = {};
 		for(const statement of node.nodeGroups[0]){
@@ -476,6 +491,7 @@ export class TypeRecordStatement extends TypeStatement {
 }
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
 export class AssignmentStatement extends Statement {
+	static requiresScope = configs.statements.auto_declare_classes.value;
 	/** Can be a normal variable name, like [name x], or an array access expression */
 	target = this.expr(0);
 	@evaluate expression = this.exprT(2);
@@ -549,6 +565,7 @@ export class InputStatement extends Statement {
 }
 @statement("return", "RETURN z + 5", "keyword.return", "expr+")
 export class ReturnStatement extends Statement {
+	static interruptsControlFlow = true;
 	@evaluate expression = this.exprT(1);
 	run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
@@ -683,8 +700,8 @@ export class ForStatement extends Statement {
 	@evaluate from = this.exprT(3, "INTEGER");
 	@evaluate to = this.exprT(5, "INTEGER");
 	empty?:boolean;
-	preRun(node:ProgramASTBranchNode<"for">){
-		super.preRun();
+	preRun(group:ProgramASTNodeGroup, node:ProgramASTBranchNode<"for">){
+		super.preRun(group, node);
 		this.empty = node.nodeGroups[0].length == 0;
 		const endStatement = node.controlStatements[1];
 		if(endStatement.name.text !== this.name)
@@ -708,8 +725,30 @@ export class ForStatement extends Statement {
 		) return;
 
 		if(this.empty){
-			for(let i = from; direction == 1 ? i <= to : i >= to; i += step)
-				runtime.statementExecuted(this);
+			runtime.statementExecuted(this, Number(to - from) / _step);
+		} else if(node.nodeGroups[0].simple()){
+			let i = from;
+			const variable:ConstantData = {
+				declaration: this,
+				mutable: false,
+				type: PrimitiveVariableType.INTEGER,
+				value: Number(from)
+			};
+			const scope:VariableScope = {
+				statement: this,
+				opaque: false,
+				variables: {
+					[this.name]: variable
+				},
+				types: {}
+			};
+			runtime.scopes.push(scope);
+			while(direction == 1 ? i <= to : i >= to){
+				runtime.runBlockFast(node.nodeGroups[0]);
+				i += step;
+				variable.value = Number(i);
+			}
+			runtime.scopes.pop();
 		} else {
 			for(let i = from; direction == 1 ? i <= to : i >= to; i += step){
 				const result = runtime.runBlock(node.nodeGroups[0], {
@@ -721,8 +760,7 @@ export class ForStatement extends Statement {
 							declaration: this,
 							mutable: false,
 							type: PrimitiveVariableType.INTEGER,
-							get value(){ return Number(i); },
-							set value(value){ crash(`Attempted assignment to constant`); },
+							value: Number(i),
 						}
 					},
 					types: {}
@@ -805,6 +843,7 @@ export class FunctionStatement extends Statement {
 	returnTypeToken:ExpressionASTTypeNode;
 	name:string;
 	nameToken:Token;
+	static propagatesControlFlowInterruptions = false;
 	constructor(tokens:RangeArray<Token>, offset = 0){
 		super(tokens); //for subclasses
 		tokens = tokens.slice(offset);
@@ -827,6 +866,7 @@ export class ProcedureStatement extends Statement {
 	argsRange:TextRange;
 	name:string;
 	nameToken:Token;
+	static propagatesControlFlowInterruptions = false;
 	constructor(tokens:RangeArray<Token>, offset = 0){
 		super(tokens); //for subclasses
 		tokens = tokens.slice(offset);
@@ -957,8 +997,9 @@ class ClassMemberStatement {
 
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
 export class ClassStatement extends TypeStatement {
-	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
 	name = this.token(1);
+	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
+	static propagatesControlFlowInterruptions = false;
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		const classData = new ClassVariableType(false, this);
 		for(const node of branchNode.nodeGroups[0]){
@@ -1037,7 +1078,8 @@ export class ClassProcedureStatement extends combineClasses(ProcedureStatement, 
 	constructor(tokens:RangeArray<Token>){
 		super(tokens, 1);
 	}
-	preRun(node:ProgramASTBranchNode<"class_procedure">){
+	preRun(group:ProgramASTNodeGroup, node:ProgramASTBranchNode<"class_procedure">){
+		super.preRun(group, node);
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
 		//TODO can they actually be run from subclasses?
