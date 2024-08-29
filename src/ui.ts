@@ -28,10 +28,12 @@ function getElement<T extends typeof HTMLElement>(id:string, type:T){
 }
 
 type FlattenTreeOutput = [depth:number, statement:Statement];
-export function flattenTree(program:ProgramASTNode[]):FlattenTreeOutput[]{
+export function flattenTree(program:parserTypes.ProgramASTNodeGroup):FlattenTreeOutput[]{
 	return program.map(s => {
 		if(s instanceof Statement) return [[0, s] satisfies FlattenTreeOutput];
-		else return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement] satisfies FlattenTreeOutput);
+		else return flattenTree(
+			parserTypes.ProgramASTNodeGroup.from((s.nodeGroups as ProgramASTNode[][]).flat())
+		).map(([depth, statement]) => [depth + 1, statement] satisfies FlattenTreeOutput);
 	}).flat(1);
 }
 

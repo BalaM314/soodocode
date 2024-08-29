@@ -1,6 +1,6 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { tokenTextMapping } from "../../build/lexer.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "../../build/parser-types.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, TypedNodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
@@ -188,7 +188,7 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 export function process_ProgramAST(input:_ProgramAST, program:string = "" /* SPECNULL */):ProgramAST {
 	return {
 		program,
-		nodes: input.map(process_ProgramASTNode)
+		nodes: ProgramASTNodeGroup.from(input.map(process_ProgramASTNode))
 	};
 }
 
@@ -198,7 +198,7 @@ export function process_ProgramASTNode(input:_ProgramASTNode):ProgramASTNode {
 		: new ProgramASTBranchNode(
 			input.type,
 			input.controlStatements.map(process_Statement) as never,
-			input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
+			input.nodeGroups.map(block => ProgramASTNodeGroup.from(block.map(process_ProgramASTNode))),
 		);
 }
 export function process_VariableType(input:_VariableType):VariableType;
