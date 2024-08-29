@@ -9,7 +9,7 @@ This file contains the runtime, which executes the program AST.
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
 import { Token } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, operators } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual, UntypedNodeValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
@@ -184,6 +184,10 @@ function finishEvaluation(value:VariableValue, from:VariableType, to:VariableTyp
 }
 
 export class Runtime {
+	/**
+	 * Stores the current list of scopes.
+	 * If this is manually modified, Runtime.variableCache needs to be handled.
+	 **/
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = {};
 	openFiles: Record<string, OpenedFile | undefined> = {};
@@ -868,6 +872,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		return false;
 	}
+	defineVariable(name:string, data:VariableData | ConstantData, range:TextRangeLike){
+		const currentScope = this.getCurrentScope();
+		if(name in currentScope.variables) fail(f.quote`Variable ${name} was already defined`, range);
+		currentScope.variables[name] = data;
+	}
 	defineFunction(name:string, data:FunctionData, range:TextRange){
 		//TODO scope?
 		if(name in this.functions) fail(f.quote`Function or procedure ${name} has already been defined`, range);
@@ -1022,7 +1031,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(returnType) return typedValue(returnType, coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
 		else return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
 	}
-	runBlock(code:ProgramASTNode[], ...scopes:VariableScope[]):void | {
+	runBlock(code:ProgramASTNodeGroup, ...scopes:VariableScope[]):void | {
 		type: "function_return";
 		value: VariableValue;
 	}{
@@ -1036,14 +1045,15 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		, ["constants", "others", "typeNodes"]) as {
 			typeNodes: (TypeStatement | (ProgramASTBranchNode & {controlStatements: [TypeStatement]}))[],
 			constants: ConstantStatement[],
-			others: ProgramASTNode[]
+			others: ProgramASTNodeGroup
 		};
 		//First pass: run constants
 		for(const node of constants){
 			node.run(this);
 		}
-		//Second pass: initialize types
+		//Second pass: create types
 		const types: [name:string, type:VariableType<boolean>][] = [];
+		const currentScopeTypes = this.getCurrentScope().types;
 		for(const node of typeNodes){
 			let name, type;
 			if(node instanceof Statement){
@@ -1051,11 +1061,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			} else {
 				[name, type] = node.controlStatements[0].createTypeBlock(this, node);
 			}
-			if(this.getCurrentScope().types[name]) fail(f.quote`Type ${name} was defined twice`, node);
-			this.getCurrentScope().types[name] = type as VariableType<any>; //it will get initialized later
+			if(currentScopeTypes[name]) fail(f.quote`Type ${name} was defined twice`, node);
+			currentScopeTypes[name] = type as VariableType<any>; //it will get initialized later
 			types.push([name, type]);
 		}
-		//Third pass: resolve types
+		//Third pass: initialize (finish resolving) types
 		for(const [name, type] of types){
 			this.currentlyResolvingTypeName = name;
 			if(type instanceof PointerVariableType) this.currentlyResolvingPointerTypeName = name;
@@ -1063,7 +1073,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			this.currentlyResolvingPointerTypeName = null;
 		}
 		this.currentlyResolvingTypeName = null;
-		//Fourth pass: check type size
+		//Fourth pass: validate types
 		for(const [name, type] of types){
 			type.validate(this);
 		}
@@ -1091,16 +1101,14 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			};
 		}
 	}
-	preRun(block:ProgramASTNode[]){
-		for(const node of block){
-			if(node instanceof Statement) node.triggerPreRun();
-			else {
-				for(const statement of node.controlStatements){
-					statement.triggerPreRun(node as never); //UNSOUND
-				}
-				for(const block of node.nodeGroups){
-					this.preRun(block);
-				}
+	/** Optimized version of runBlock for blocks with no declarations, types, or return statements. */
+	runBlockFast(code:ProgramASTNodeGroup & { requiresScope: false; hasTypesOrConstants: false; hasReturn: false; }){
+		this.statementExecuted(code, code.length);
+		for(const node of code){
+			if(node instanceof Statement){
+				node.run(this);
+			} else {
+				node.controlStatements[0].runBlock(this, node satisfies ProgramASTBranchNode as never);
 			}
 		}
 	}
@@ -1110,8 +1118,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 	}
 	/** Creates a scope. */
-	runProgram(code:ProgramASTNode[]){
-		this.preRun(code);
+	runProgram(code:ProgramASTNodeGroup){
+		code.preRun();
 		this.runBlock(code, {
 			statement: "global",
 			opaque: true,
