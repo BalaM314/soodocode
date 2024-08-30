@@ -205,11 +205,10 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
 			//eg if the statement is "OUTPUY 5"
 			//Add those statements into the pool
 			if(closest && statements.byStartKeyword[closest]) 
-				return [...statements.irregular, ...statements.byStartKeyword[closest]!];
+				return [...statements.irregular, ...statements.byStartKeyword[closest]];
 			else return statements.irregular;
 		})();
 
-	validStatements.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
 	if(ctx?.allowOnly){
 		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
 		if(allowedValidStatements.length == 0){

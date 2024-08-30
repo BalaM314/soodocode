@@ -14,7 +14,7 @@ export type ClassProperties<
 export interface TagFunction<Tin = string, Tout = string> {
 	(stringChunks: readonly string[], ...varChunks: readonly Tin[]):Tout;
 }
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
 export type BoxPrimitive<T> = T extends number ? Number : T extends string ? String : T extends boolean ? Boolean : T;
 
 export type TextRange = [start:number, end:number]; //TODO convert to class

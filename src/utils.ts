@@ -402,7 +402,7 @@ export function tagProcessor<T>(
 	};
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
 export type Formattable = IFormattable | IFormattable[] | string | Exclude<UnresolvedVariableType, IFormattable> | String | Number | Boolean | number | boolean;
 function formatText(input:Formattable):string {
 	if(
