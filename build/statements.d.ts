@@ -1,7 +1,7 @@
 import { Token, TokenType } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, TokenMatcher } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
 import { StatementCheckTokenRange } from "./parser.js";
-import { ClassVariableType, FunctionData, TypedNodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue } from "./runtime-types.js";
+import { ClassVariableType, FunctionData, TypedNodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, VariableData, ConstantData } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
 import { RangeArray } from "./utils.js";
@@ -72,24 +72,30 @@ export declare class Statement implements TextRanged, IFormattable {
     static tokensSortScore({ tokens, invalidMessage }?: typeof Statement): number;
     run(runtime: Runtime): void | StatementExecutionResult;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | StatementExecutionResult;
-    preRun(node?: ProgramASTBranchNode): void;
-    triggerPreRun(node?: ProgramASTBranchNode): void;
+    static requiresScope: boolean;
+    static interruptsControlFlow: boolean;
+    static propagatesControlFlowInterruptions: boolean;
+    preRun(group: ProgramASTNodeGroup, node?: ProgramASTBranchNode): void;
+    triggerPreRun(group: ProgramASTNodeGroup, node?: ProgramASTBranchNode): void;
 }
 export declare abstract class TypeStatement extends Statement {
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
     createTypeBlock(runtime: Runtime, block: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
 export declare class DeclareStatement extends Statement {
+    static requiresScope: boolean;
     varType: UnresolvedVariableType;
     variables: [string, Token][];
     run(runtime: Runtime): void;
 }
 export declare class ConstantStatement extends Statement {
+    static requiresScope: boolean;
     name: string;
     expression: Token;
     run(runtime: Runtime): void;
 }
 export declare class DefineStatement extends Statement {
+    static requiresScope: boolean;
     name: Token;
     variableType: Token;
     values: RangeArray<Token>;
@@ -112,9 +118,11 @@ export declare class TypeSetStatement extends TypeStatement {
 }
 export declare class TypeRecordStatement extends TypeStatement {
     name: Token;
+    static propagatesControlFlowInterruptions: boolean;
     createTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
 export declare class AssignmentStatement extends Statement {
+    static requiresScope: boolean;
     target: import("./parser-types.js").ExpressionASTNode;
     expression: UntypedNodeValue<import("./parser-types.js").ExpressionASTNode>;
     constructor(tokens: RangeArray<ExpressionAST>);
@@ -133,44 +141,45 @@ export declare class InputStatement extends Statement {
     run(runtime: Runtime): void;
 }
 export declare class ReturnStatement extends Statement {
+    static interruptsControlFlow: boolean;
     expression: UntypedNodeValue<import("./parser-types.js").ExpressionASTNode>;
     run(runtime: Runtime): {
         type: "function_return";
         value: string | number | boolean | Date | (string | number | boolean | Date | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
+            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | {
                 properties: {
                     [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
                 propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
+            } | null)[] | Int32Array | Float64Array | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
                 properties: {
                     [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
                 propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType;
             } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
+        } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | {
             properties: {
                 [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
             };
             propertyTypes: Record<string, VariableType>;
             type: ClassVariableType;
         } | null)[] | Int32Array | Float64Array | {
-            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | {
+            [index: string]: string | number | boolean | Date | (string | number | boolean | Date | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | {
                 properties: {
                     [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
                 propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType;
-            } | null)[] | Int32Array | Float64Array | any | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
+            } | null)[] | Int32Array | Float64Array | any | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
                 properties: {
                     [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
                 };
                 propertyTypes: Record<string, VariableType>;
                 type: ClassVariableType;
             } | null;
-        } | import("./runtime-types.js").VariableData<VariableType<true>, null> | import("./runtime-types.js").ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
+        } | VariableData<VariableType<true>, null> | ConstantData<VariableType<true>> | (string | number | boolean | Date)[] | {
             properties: {
                 [index: string]: import("./runtime-types.js").VariableTypeMapping<any> | null;
             };
@@ -220,7 +229,7 @@ export declare class ForStatement extends Statement {
     from: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "INTEGER", PrimitiveVariableType<"INTEGER">>;
     to: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "INTEGER", PrimitiveVariableType<"INTEGER">>;
     empty?: boolean;
-    preRun(node: ProgramASTBranchNode<"for">): void;
+    preRun(group: ProgramASTNodeGroup, node: ProgramASTBranchNode<"for">): void;
     getStep(runtime: Runtime): number;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode<"for">): {
         type: "function_return";
@@ -263,6 +272,7 @@ export declare class FunctionStatement extends Statement {
     returnTypeToken: ExpressionASTTypeNode;
     name: string;
     nameToken: Token;
+    static propagatesControlFlowInterruptions: boolean;
     constructor(tokens: RangeArray<Token>, offset?: number);
     runBlock(runtime: Runtime, node: FunctionData<"function">): void;
 }
@@ -271,6 +281,7 @@ export declare class ProcedureStatement extends Statement {
     argsRange: TextRange;
     name: string;
     nameToken: Token;
+    static propagatesControlFlowInterruptions: boolean;
     constructor(tokens: RangeArray<Token>, offset?: number);
     runBlock(runtime: Runtime, node: FunctionData<"procedure">): void;
 }
@@ -319,8 +330,9 @@ declare class ClassMemberStatement {
     runBlock(): void;
 }
 export declare class ClassStatement extends TypeStatement {
-    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     name: Token;
+    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static propagatesControlFlowInterruptions: boolean;
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
@@ -337,7 +349,7 @@ export declare class ClassProcedureStatement extends ClassProcedureStatement_bas
     methodKeywordToken: Token;
     static blockType: ProgramASTBranchNodeType;
     constructor(tokens: RangeArray<Token>);
-    preRun(node: ProgramASTBranchNode<"class_procedure">): void;
+    preRun(group: ProgramASTNodeGroup, node: ProgramASTBranchNode<"class_procedure">): void;
 }
 export declare class ClassProcedureEndStatement extends Statement {
 }

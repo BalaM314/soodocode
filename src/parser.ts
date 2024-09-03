@@ -142,7 +142,10 @@ export function splitTokensToStatements(tokens:RangeArray<Token>):RangeArray<Tok
 		[CaseBranchRangeStatement, 5],
 		[CaseBranchRangeStatement, 6],
 	];
-	return splitTokens(tokens, "newline").map(ts => {
+	return splitTokens(tokens.select((token, i) => !(
+		//Delete newlines immediately preceding a THEN
+		token.type == "newline" && tokens[i + 1]?.type == "keyword.then"
+	)), "newline").map(ts => {
 		for(const [statement, length] of statementData){
 			if(ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length), false)))
 				return [ts.slice(0, length), ts.slice(length)];

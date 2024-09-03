@@ -1,5 +1,5 @@
 import { Token } from "./lexer-types.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNode } from "./parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNodeGroup } from "./parser-types.js";
 import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableTypeName, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, UntypedNodeValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
@@ -75,6 +75,7 @@ export declare class Runtime {
     getPointerTypeFor(type: VariableType): PointerVariableType | null;
     getCurrentScope(): VariableScope;
     canAccessClass(clazz: ClassVariableType): boolean;
+    defineVariable(name: string, data: VariableData | ConstantData, range: TextRangeLike): void;
     defineFunction(name: string, data: FunctionData, range: TextRange): void;
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
     getClass(name: string, range: TextRange): ClassVariableType<boolean>;
@@ -84,13 +85,17 @@ export declare class Runtime {
     callFunction<T extends boolean>(funcNode: FunctionData, args: RangeArray<ExpressionAST>, requireReturnValue?: T): VariableValue | (T extends false ? null : never);
     callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: RangeArray<ExpressionAST>, requireReturnValue?: T): (T extends false ? null : T extends undefined ? TypedValue | null : T extends true ? TypedValue : never);
     callBuiltinFunction(fn: BuiltinFunctionData, args: RangeArray<ExpressionAST>, returnType?: VariableType): TypedValue;
-    runBlock(code: ProgramASTNode[], ...scopes: VariableScope[]): void | {
+    runBlock(code: ProgramASTNodeGroup, ...scopes: VariableScope[]): void | {
         type: "function_return";
         value: VariableValue;
     };
-    preRun(block: ProgramASTNode[]): void;
+    runBlockFast(code: ProgramASTNodeGroup & {
+        requiresScope: false;
+        hasTypesOrConstants: false;
+        hasReturn: false;
+    }): void;
     statementExecuted(range: TextRangeLike, increment?: number): void;
-    runProgram(code: ProgramASTNode[]): void;
+    runProgram(code: ProgramASTNodeGroup): void;
     getOpenFile(filename: string): OpenedFile;
     getOpenFile<T extends FileMode>(filename: string, modes: T[], operationDescription: string): OpenedFileOfType<T>;
 }

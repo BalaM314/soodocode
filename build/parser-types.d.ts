@@ -95,19 +95,31 @@ export declare const operators: Record<OperatorType, Operator>;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;
-    nodes: ProgramASTNode[];
+    nodes: ProgramASTNodeGroup;
 };
 export type ProgramASTNode = ProgramASTLeafNode | ProgramASTBranchNode;
 export type ProgramASTLeafNode = Statement;
 export declare class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramASTBranchNodeType> implements TextRanged {
     type: T;
     controlStatements: ProgramASTBranchNodeTypeMapping<T>;
-    nodeGroups: ProgramASTNode[][];
-    constructor(type: T, controlStatements: ProgramASTBranchNodeTypeMapping<T>, nodeGroups: ProgramASTNode[][]);
+    nodeGroups: ProgramASTNodeGroup[];
+    constructor(type: T, controlStatements: ProgramASTBranchNodeTypeMapping<T>, nodeGroups: ProgramASTNodeGroup[]);
     controlStatements_(): Statement[];
     range(): TextRange;
     static typeName(type: ProgramASTBranchNodeType): string;
     typeName(): string;
+}
+export declare class ProgramASTNodeGroup extends Array<ProgramASTNode> {
+    requiresScope: boolean;
+    hasTypesOrConstants: boolean;
+    hasReturn: boolean;
+    preRun(parent?: ProgramASTBranchNode): void;
+    simple(): this is {
+        requiresScope: false;
+        hasTypesOrConstants: false;
+        hasReturn: false;
+    };
+    static from(nodes: ProgramASTNode[]): ProgramASTNodeGroup;
 }
 export declare const programASTBranchNodeTypes: readonly ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;

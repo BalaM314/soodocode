@@ -565,9 +565,17 @@ export class RangeArray extends Array {
         }
     }
     map(fn) {
-        return [...this].map(fn);
+        return Array.from(this).map(fn);
+    }
+    select(fn, range) {
+        if (this.length == 0)
+            return this.slice();
+        const arr = super.filter(fn);
+        arr.range = arr.length > 0 ? getTotalRange(arr) : (range ?? crash(`Cannot get range from an empty filtered list of tokens`));
+        return arr;
     }
 }
+RangeArray.prototype.filter = () => crash(`Do not call filter() on RangeArray, use select() instead.`);
 export function getAllPropertyDescriptors(object) {
     const proto = Object.getPrototypeOf(object);
     if (proto == Object.prototype || proto == null)
