@@ -26,7 +26,7 @@ export function flattenTree(program) {
         if (s instanceof Statement)
             return [[0, s]];
         else
-            return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement]);
+            return flattenTree(parserTypes.ProgramASTNodeGroup.from(s.nodeGroups.flat())).map(([depth, statement]) => [depth + 1, statement]);
     }).flat(1);
 }
 export function displayExpressionHTML(node, expand = false, format = true) {

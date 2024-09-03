@@ -15,6 +15,7 @@ import { VariableValue } from "../../src/runtime-types.js";
 type ErrorData = string;
 
 const fullTests:Record<string, [code:string, output:string[] | ErrorData, inputs?:string[]]> = {
+//#region misc
 empty: [
 ``,
 []
@@ -108,6 +109,7 @@ parse_invalid_expression_statement: [
 `2 + 2`,
 `Expected a statement, not an expression`
 ],
+//#endregion
 //#region types
 run_bool: [
 `DECLARE x: BOOLEAN
@@ -688,6 +690,20 @@ ENDCLASS`,
 ],
 //#endregion
 //#region statements
+if_normal: [
+`IF FALSE THEN
+ENDIF`,
+[]
+],
+if_then_next_line: [
+`IF TRUE
+	THEN
+		OUTPUT "Hello"
+	ELSE
+		OUTPUT "Bye"
+ENDIF`,
+["Hello"]
+],
 for_normal: [
 `FOR i <- 1 TO 3
 	OUTPUT i

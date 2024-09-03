@@ -1,5 +1,5 @@
 import { Token } from "./lexer-types.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNodeGroup } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -257,7 +257,7 @@ export type ConstantData<T extends VariableType = VariableType> = {
     mutable: false;
 };
 export type FunctionData = ProgramASTBranchNode & {
-    nodeGroups: [body: ProgramASTNode[]];
+    nodeGroups: [body: ProgramASTNodeGroup];
 } & ({
     type: "function";
     controlStatements: [start: FunctionStatement, end: Statement];
@@ -274,7 +274,7 @@ export type BuiltinFunctionData = {
 };
 export type ClassMethodStatement = ClassFunctionStatement | ClassProcedureStatement;
 export type ClassMethodData = ProgramASTBranchNode & {
-    nodeGroups: [body: ProgramASTNode[]];
+    nodeGroups: [body: ProgramASTNodeGroup];
 } & ({
     type: "class_function";
     controlStatements: [start: ClassFunctionStatement, end: Statement];
