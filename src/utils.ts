@@ -626,9 +626,18 @@ export class RangeArray<T extends TextRanged2> extends Array<T> implements TextR
 		}
 	}
 	map<U>(fn:(v:T, i:number, a:T[]) => U):U[] {
-		return [...this].map(fn);
+		return Array.from(this).map(fn);
+	}
+	/** If the resulting array is empty, but the parent array was not, range must be specified. */
+	select(fn:(v:T, i:number, a:T[]) => boolean, range?:TextRange):RangeArray<T> {
+		if(this.length == 0) return this.slice();
+		const arr = super.filter(fn) as never as RangeArray<T>;
+		arr.range = arr.length > 0 ? getTotalRange(arr) : (range ?? crash(`Cannot get range from an empty filtered list of tokens`));
+		return arr;
 	}
 }
+RangeArray.prototype.filter = () => crash(`Do not call filter() on RangeArray, use select() instead.`);
+
 
 export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
 export type MergeInstances<A, B> = A & B extends never ? 

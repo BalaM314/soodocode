@@ -261,7 +261,7 @@ export class ProgramASTBranchNode {
     range() {
         return getTotalRange([
             ...this.controlStatements,
-            ...this.nodeGroups.flat()
+            ...this.nodeGroups.flat(1)
         ]);
     }
     static typeName(type) {
@@ -285,6 +285,41 @@ export class ProgramASTBranchNode {
         return ProgramASTBranchNode.typeName(this.type);
     }
 }
+export class ProgramASTNodeGroup extends Array {
+    constructor() {
+        super(...arguments);
+        this.requiresScope = true;
+        this.hasTypesOrConstants = true;
+        this.hasReturn = true;
+    }
+    preRun(parent) {
+        this.requiresScope = false;
+        this.hasTypesOrConstants = false;
+        this.hasReturn = false;
+        for (const node of this) {
+            if (node instanceof ProgramASTBranchNode) {
+                for (const block of node.nodeGroups) {
+                    block.preRun();
+                    if (block.hasReturn && node.controlStatements[0].type.propagatesControlFlowInterruptions)
+                        this.hasReturn = true;
+                }
+                for (const statement of node.controlStatements) {
+                    statement.triggerPreRun(this, node);
+                }
+            }
+            else {
+                node.triggerPreRun(this, parent);
+            }
+        }
+    }
+    simple() {
+        return !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;
+    }
+    static from(nodes) {
+        return super.from(nodes);
+    }
+}
+delete ProgramASTNodeGroup.from;
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export function ProgramASTBranchNodeType(input) {
     if (programASTBranchNodeTypes.includes(input))

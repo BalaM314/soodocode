@@ -87,6 +87,7 @@ export declare class RangeArray<T extends TextRanged2> extends Array<T> implemen
     constructor(tokens: T[], range?: TextRange);
     slice(start?: number, end?: number): RangeArray<T>;
     map<U>(fn: (v: T, i: number, a: T[]) => U): U[];
+    select(fn: (v: T, i: number, a: T[]) => boolean, range?: TextRange): RangeArray<T>;
 }
 export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
 export type MergeInstances<A, B> = A & B extends never ? Omit<A, keyof B> & B : A & B;

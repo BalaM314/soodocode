@@ -209,7 +209,13 @@ let Statement = (() => {
             else
                 crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
         }
-        preRun(node) {
+        preRun(group, node) {
+            if (this.type.requiresScope)
+                group.requiresScope = true;
+            if (this instanceof TypeStatement || this instanceof ConstantStatement)
+                group.hasTypesOrConstants = true;
+            if (this.type.interruptsControlFlow)
+                group.hasReturn = true;
             for (const field of this.type.evaluatableFields) {
                 const nodeValue = this[field];
                 if (!(nodeValue instanceof TypedNodeValue || nodeValue instanceof UntypedNodeValue))
@@ -217,9 +223,9 @@ let Statement = (() => {
                 nodeValue.init();
             }
         }
-        triggerPreRun(node) {
+        triggerPreRun(group, node) {
             if (!this.preRunDone)
-                this.preRun(node);
+                this.preRun(group, node);
             this.preRunDone = true;
         }
     };
@@ -238,6 +244,9 @@ let Statement = (() => {
     _classThis.blockType = null;
     _classThis.allowOnly = null;
     _classThis.invalidMessage = null;
+    _classThis.requiresScope = false;
+    _classThis.interruptsControlFlow = false;
+    _classThis.propagatesControlFlowInterruptions = true;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -362,14 +371,12 @@ let DeclareStatement = (() => {
             if (varType instanceof SetVariableType)
                 fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.nodes.at(-1));
             for (const [variable, token] of this.variables) {
-                if (runtime.getCurrentScope().variables[variable])
-                    fail(`Variable ${variable} was already declared`, token);
-                runtime.getCurrentScope().variables[variable] = {
+                runtime.defineVariable(variable, {
                     type: varType,
                     value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
                     declaration: this,
                     mutable: true,
-                };
+                }, token);
             }
         }
     };
@@ -379,6 +386,9 @@ let DeclareStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         DeclareStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.requiresScope = true;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return DeclareStatement = _classThis;
@@ -416,6 +426,9 @@ let ConstantStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ConstantStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.requiresScope = true;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ConstantStatement = _classThis;
@@ -438,13 +451,13 @@ let DefineStatement = (() => {
             const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
             if (!(type instanceof SetVariableType))
                 fail(`DEFINE can only be used on set types, please use a declare statement instead`, this.variableType);
-            runtime.getCurrentScope().variables[this.name.text] = {
+            runtime.defineVariable(this.name.text, {
                 type,
                 declaration: this,
                 mutable: true,
                 value: this.values.map(t => (Runtime.evaluateToken(t, type.baseType)
                     ?? fail(f.quote `Cannot evaluate token ${t} in a static context`, t)).value)
-            };
+            }, this.name);
         }
     };
     __setFunctionName(_classThis, "DefineStatement");
@@ -453,6 +466,9 @@ let DefineStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         DefineStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.requiresScope = true;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return DefineStatement = _classThis;
@@ -567,6 +583,9 @@ let TypeRecordStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         TypeRecordStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.propagatesControlFlowInterruptions = false;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return TypeRecordStatement = _classThis;
@@ -616,6 +635,9 @@ let AssignmentStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         AssignmentStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.requiresScope = configs.statements.auto_declare_classes.value;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return AssignmentStatement = _classThis;
@@ -779,6 +801,9 @@ let ReturnStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ReturnStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.interruptsControlFlow = true;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ReturnStatement = _classThis;
@@ -1055,8 +1080,8 @@ let ForStatement = (() => {
             this.to = (__runInitializers(this, _from_extraInitializers), __runInitializers(this, _to_initializers, this.exprT(5, "INTEGER")));
             this.empty = __runInitializers(this, _to_extraInitializers);
         }
-        preRun(node) {
-            super.preRun();
+        preRun(group, node) {
+            super.preRun(group, node);
             this.empty = node.nodeGroups[0].length == 0;
             const endStatement = node.controlStatements[1];
             if (endStatement.name.text !== this.name)
@@ -1076,8 +1101,31 @@ let ForStatement = (() => {
                 direction == -1 && from < to)
                 return;
             if (this.empty) {
-                for (let i = from; direction == 1 ? i <= to : i >= to; i += step)
-                    runtime.statementExecuted(this);
+                runtime.statementExecuted(this, Number(to - from) / _step);
+            }
+            else if (node.nodeGroups[0].simple()) {
+                let i = from;
+                const variable = {
+                    declaration: this,
+                    mutable: false,
+                    type: PrimitiveVariableType.INTEGER,
+                    value: Number(from)
+                };
+                const scope = {
+                    statement: this,
+                    opaque: false,
+                    variables: {
+                        [this.name]: variable
+                    },
+                    types: {}
+                };
+                runtime.scopes.push(scope);
+                while (direction == 1 ? i <= to : i >= to) {
+                    runtime.runBlockFast(node.nodeGroups[0]);
+                    i += step;
+                    variable.value = Number(i);
+                }
+                runtime.scopes.pop();
             }
             else {
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
@@ -1089,8 +1137,7 @@ let ForStatement = (() => {
                                 declaration: this,
                                 mutable: false,
                                 type: PrimitiveVariableType.INTEGER,
-                                get value() { return Number(i); },
-                                set value(value) { crash(`Attempted assignment to constant`); },
+                                value: Number(i),
                             }
                         },
                         types: {}
@@ -1332,6 +1379,9 @@ let FunctionStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         FunctionStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.propagatesControlFlowInterruptions = false;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return FunctionStatement = _classThis;
@@ -1362,6 +1412,9 @@ let ProcedureStatement = (() => {
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         ProcedureStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    _classThis.propagatesControlFlowInterruptions = false;
+    (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
     return ProcedureStatement = _classThis;
@@ -1726,6 +1779,7 @@ let ClassStatement = (() => {
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
     _classThis.allowOnly = new Set(["class_property", "class_procedure", "class_function", "class.end"]);
+    _classThis.propagatesControlFlowInterruptions = false;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -1809,7 +1863,8 @@ let ClassProcedureStatement = (() => {
             super(tokens, 1);
             this.methodKeywordToken = this.token(1);
         }
-        preRun(node) {
+        preRun(group, node) {
+            super.preRun(group, node);
             if (this.name == "NEW" && this.accessModifier == "private")
                 fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
         }
