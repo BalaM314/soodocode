@@ -78,6 +78,14 @@ const symbolTests:[name:string, input:string, output:Symbol[] | "error"][] = Obj
 			["word", "imposter"]
 		]
 	],
+	consolidateNewlines: [
+		"\n\nx\n\n\n\n",
+		[
+			["newline", "\n\n"],
+			["word", "x",],
+			["newline", "\n\n\n\n"],
+		]
+	],
 	symbols1: [
 		"X <-<-<-- 5",
 		[
