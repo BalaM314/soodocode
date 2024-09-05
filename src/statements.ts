@@ -812,8 +812,8 @@ export class WhileStatement extends Statement {
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
-		//Register the execution of an infinite amount of statements if the condition is constant true
-		if(node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === true)
+		//Register the execution of an infinite amount of statements if the condition is constant false
+		if(node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === false)
 			runtime.statementExecuted(this, Infinity);
 
 		do {

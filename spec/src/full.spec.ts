@@ -525,21 +525,6 @@ OUTPUT Factorial(5)
 `,
 ["120"]
 ],
-run_procedure_without_leaking_scope: [
-`PROCEDURE x()
-	DECLARE xvar: INTEGER
-	xvar <- 5
-	CALL y()
-ENDPROCEDURE
-PROCEDURE y()
-	DECLARE yvar: INTEGER
-	yvar <- 5
-	OUTPUT yvar
-	OUTPUT xvar
-ENDPROCEDURE
-CALL x()`,
-`"xvar" does not exist`
-],
 //#endregion
 //#region enums
 parse_enum: [
@@ -687,6 +672,175 @@ CLASS Bmogus
 PUBLIC amogus: ARRAY[1:10] OF Amogus
 ENDCLASS`,
 []
+],
+//#endregion
+//#region scope
+global_variable_exists: [
+`DECLARE xvar: INTEGER
+xvar <- 5`,
+[]
+],
+global_variable_exists_inside_block: [
+`DECLARE xvar: INTEGER
+IF TRUE THEN
+	xvar <- 5
+ENDIF`,
+[]
+],
+global_variable_exists_inside_many_blocks: [
+`DECLARE xvar: INTEGER
+IF TRUE THEN
+	FOR i <- 1 TO 1
+		REPEAT
+			CASE OF TRUE
+				FALSE: OUTPUT 2
+				TRUE: IF TRUE THEN
+					xvar <- 5
+				ENDIF
+			ENDCASE
+		UNTIL TRUE
+	NEXT i
+ENDIF`,
+[]
+],
+local_variable_exists: [
+`PROCEDURE localScope()
+	DECLARE xvar: INTEGER
+	xvar <- 5
+	OUTPUT xvar
+ENDPROCEDURE
+CALL localScope()`,
+["5"]
+],
+local_variable_exists_inside_many_blocks: [
+`PROCEDURE localScope()
+	DECLARE xvar: INTEGER
+	IF TRUE THEN
+		FOR i <- 1 TO 1
+			REPEAT
+				CASE OF TRUE
+					FALSE: OUTPUT 2
+					TRUE: IF TRUE THEN
+						xvar <- 5
+					ENDIF
+				ENDCASE
+			UNTIL TRUE
+		NEXT i
+	ENDIF
+	OUTPUT xvar
+ENDPROCEDURE
+CALL localScope()`,
+["5"]
+],
+global_variable_exists_inside_function: [
+`DECLARE xvar: INTEGER
+PROCEDURE localScope()
+	xvar <- 5
+	OUTPUT xvar
+ENDPROCEDURE
+CALL localScope()`,
+["5"]
+],
+local_variable_does_not_exist_inside_function: [
+`PROCEDURE x()
+	DECLARE xvar: INTEGER
+	xvar <- 5
+	CALL y()
+ENDPROCEDURE
+PROCEDURE y()
+	DECLARE yvar: INTEGER
+	yvar <- 5
+	OUTPUT yvar
+	OUTPUT xvar
+ENDPROCEDURE
+CALL x()`,
+`"xvar" does not exist`
+],
+many_scopes: [
+`IF TRUE THEN
+	DECLARE a: INTEGER\na <- 1
+	OUTPUT a
+IF TRUE THEN
+	DECLARE b: INTEGER\nb <- 2
+	OUTPUT a, b
+IF TRUE THEN
+	DECLARE c: INTEGER\nc <- 3
+	OUTPUT a, b, c
+IF TRUE THEN
+	DECLARE d: INTEGER\nd <- 4
+	OUTPUT a, b, c, d
+IF TRUE THEN
+	DECLARE e: INTEGER\ne <- 5
+	OUTPUT a, b, c, d, e
+IF TRUE THEN
+	DECLARE f: INTEGER\nf <- 6
+	OUTPUT a, b, c, d, e, f
+IF TRUE THEN
+	DECLARE g: INTEGER\ng <- 7
+	OUTPUT a, b, c, d, e, f, g
+IF TRUE THEN
+	DECLARE h: INTEGER\nh <- 8
+	OUTPUT a, b, c, d, e, f, g, h
+IF TRUE THEN
+	DECLARE i: INTEGER\ni <- 9
+	OUTPUT a, b, c, d, e, f, g, h, i
+IF TRUE THEN
+	DECLARE j: INTEGER\nj <- 10
+	OUTPUT a, b, c, d, e, f, g, h, i, j
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF`,
+Array.from({length: 10}, (_, i) => Array.from({length: i + 1}, (_, j) => (j + 1).toString()).join(""))
+],
+many_scopes_invali_TODO: [
+`IF TRUE THEN
+	DECLARE a: INTEGER\na <- 1
+	OUTPUT a
+IF TRUE THEN
+	DECLARE b: INTEGER\nb <- 2
+	OUTPUT a, b
+IF TRUE THEN
+	DECLARE c: INTEGER\nc <- 3
+	OUTPUT a, b, c
+IF TRUE THEN
+	DECLARE d: INTEGER\nd <- 4
+	OUTPUT a, b, c, d
+IF TRUE THEN
+	DECLARE e: INTEGER\ne <- 5
+	OUTPUT a, b, c, d, e
+IF TRUE THEN
+	DECLARE f: INTEGER\nf <- 6
+	OUTPUT a, b, c, d, e, f
+IF TRUE THEN
+	DECLARE g: INTEGER\ng <- 7
+	OUTPUT a, b, c, d, e, f, g
+IF TRUE THEN
+	DECLARE h: INTEGER\nh <- 8
+	OUTPUT a, b, c, d, e, f, g, h
+IF TRUE THEN
+	DECLARE i: INTEGER\ni <- 9
+	OUTPUT a, b, c, d, e, f, g, h, i
+IF TRUE THEN
+	DECLARE j: INTEGER\nj <- 10
+	OUTPUT a, b, c, d, e, f, g, h, i, j
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF
+ENDIF`,
+Array.from({length: 10}, (_, i) => Array.from({length: i + 1}, (_, j) => (j + 1).toString()).join(""))
 ],
 //#endregion
 //#region statements
