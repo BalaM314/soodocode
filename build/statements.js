@@ -1295,7 +1295,7 @@ let DoWhileStatement = (() => {
     let _classSuper = Statement;
     var DoWhileStatement = _classThis = class extends _classSuper {
         runBlock(runtime, node) {
-            if (node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === true)
+            if (node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === false)
                 runtime.statementExecuted(this, Infinity);
             do {
                 const result = runtime.runBlock(node.nodeGroups[0], {
