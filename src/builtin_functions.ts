@@ -332,7 +332,8 @@ export const preprocessedBuiltinFunctions = ({
 		returnType: "DATE",
 		impl(){
 			return new Date();
-		}
+		},
+		aliases: ["NOW"]
 	}),
 	EOF: fn({
 		args: [
@@ -354,5 +355,24 @@ export const preprocessedBuiltinFunctions = ({
 			const mult = 10 ** places;
 			return Math.round(value * mult) / mult;
 		},
+	}),
+	POW: fn({
+		args: [
+			["Value", "REAL"],
+			["Exponent", "INTEGER"],
+		],
+		returnType: "REAL",
+		impl(value, exponent){
+			return value ** exponent;
+		}
+	}),
+	EXP: fn({
+		args: [
+			["Num", "REAL"]
+		],
+		returnType: "REAL",
+		impl(value){
+			return Math.exp(value);
+		}
 	}),
 }) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;

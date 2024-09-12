@@ -21,9 +21,9 @@ View the site [here](https://balam314.github.io/soodocode)
 * [x] pointer_reference pointer_dereference access
 
 ## Builtin functions
-* [x] LEFT, RIGHT, MID, TO_UPPER, TO_LOWER, UCASE, LCASE
+* [x] LEFT, RIGHT, MID/SUBSTRING, TO_UPPER, TO_LOWER, UCASE, LCASE
 * [x] NUM_TO_STR, STR_TO_NUM, IS_NUM, ASC, CHR, INT
-* [x] DAY, MONTH, YEAR, DAYINDEX, SETDATE, TODAY
+* [x] DAY, MONTH, YEAR, DAYINDEX, SETDATE, TODAY/NOW
 * [x] LENGTH() on arrays and strings
 * [x] RAND
 
@@ -58,4 +58,4 @@ View the site [here](https://balam314.github.io/soodocode)
 * [x] Hundreds of error messages
 * [x] Typo checking
 * [x] Error ranges (underline the exact cause of the error, highlight the area around it)
-
+* [x] Configurable
