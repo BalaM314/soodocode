@@ -476,6 +476,18 @@ export function min<T>(input:T[], predicate:(arg:T) => number, threshold = Infin
 	}
 	return minItem;
 }
+export function max<T>(input:T[], predicate:(arg:T) => number, threshold = -Infinity):T | null {
+	let max = threshold;
+	let maxItem:T | null = null;
+	for(const item of input){
+		const score = predicate(item);
+		if(score > max){
+			max = score;
+			maxItem = item;
+		}
+	}
+	return maxItem;
+}
 
 export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):number {
 	//case insensitive

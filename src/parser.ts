@@ -14,17 +14,19 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, FunctionArgumentPassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 
 
-/** Parses function arguments, such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
+/** Parses function arguments (everything between the parentheses), such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
 export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens:RangeArray<Token>):FunctionArguments {
 	//special case: blank
 	if(tokens.length == 0) return new Map();
 
+	//Use state variables to remember the previous pass mode / type
+	//to handle things like `BYREF a, b, c, d: INTEGER`
 	let passMode:FunctionArgumentPassMode = "value";
 	let type:UnresolvedVariableType | null = null;
-	//Split the array on commas (no paren handling necessary)
+	//Split the arguments on commas
 	const argumentz = splitTokensOnComma(tokens).map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:FunctionArgumentPassMode | null;
@@ -78,6 +80,7 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 	return argumentsMap;
 });
 
+/** Processes an ExpressionASTTypeNode into an UnresolvedVariableType. */
 export const processTypeData = errorBoundary()(function _processTypeData(typeNode:ExpressionASTTypeNode):UnresolvedVariableType {
 	if(typeNode instanceof Token){
 		return PrimitiveVariableType.resolve(typeNode);
@@ -90,6 +93,7 @@ export const processTypeData = errorBoundary()(function _processTypeData(typeNod
 	impossible();
 });
 
+/** Parses an ExpressionASTTypeNode from a list of tokens. */
 export const parseType = errorBoundary()(function _parseType(tokens:RangeArray<Token>):ExpressionASTTypeNode {
 	if(tokens.length == 0) crash(`Cannot parse empty type`);
 
@@ -129,6 +133,7 @@ export const parseType = errorBoundary()(function _parseType(tokens:RangeArray<T
 	fail(f.quote`Cannot parse type from ${tokens}`, tokens);
 });
 
+/** Determines statement boundaries given a token list. Usually splits on newlines, with a few special cases. */
 export function splitTokensToStatements(tokens:RangeArray<Token>):RangeArray<Token>[] {
 	const statementData:[statement:typeof Statement, length:number][] = [
 		[CaseBranchStatement, 2],
@@ -146,6 +151,10 @@ export function splitTokensToStatements(tokens:RangeArray<Token>):RangeArray<Tok
 	}).flat(1).filter(ts => ts.length > 0); //remove blank lines
 }
 
+/**
+ * Main parser function.
+ * Converts a list of tokens into a fully parsed AST.
+ */
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	const lines:RangeArray<Token>[] = splitTokensToStatements(tokens);
 	const programNodes:ProgramASTNode[] = [];
@@ -192,39 +201,60 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	};
 }
 
+/**
+ * Decides which statement definitions should be checked against, given a list of tokens.
+ * Only checking a subset of statement definitions helps improve error accuracy and performance.
+ * May return a deferred error function, which should be called if any of the statements parse successfully.
+ */
 export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null):[
 	definitions: (typeof Statement)[],
 	error: ((valid:typeof Statement) => never) | null,
 ]{
 	const ctx = context?.controlStatements[0].type;
 	let validStatements =
+		//Try to use the list of statements that start with the first token, if any exist.
 		statements.byStartKeyword[tokens[0].type]
 		?? (() => {
 			const closest = closestKeywordToken(tokens[0].text);
 			//Check if there are statements that start with a keyword that is close to the first token
 			//eg if the statement is "OUTPUY 5"
 			//Add those statements into the pool
-			if(closest && statements.byStartKeyword[closest]) 
+			if(closest && statements.byStartKeyword[closest]){
 				return [...statements.irregular, ...statements.byStartKeyword[closest]];
-			else return statements.irregular;
+			} else {
+				//Otherwise, just return the irregular statements
+				return statements.irregular;
+			}
 		})();
 
+	//If the current block only allows certain statements
 	if(ctx?.allowOnly){
-		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
+		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly!.has(s.type));
 		if(allowedValidStatements.length == 0){
+			//None of the possible statements are allowed
+			//Return them anyway, and throw the error later
 			return [
 				validStatements,
 				statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
 			];
 		} else validStatements = allowedValidStatements;
 	}
+
 	if(validStatements.length == 0) fail(`No valid statement definitions`, tokens);
-	const allowedValidStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
-	if(allowedValidStatements.length == 0) return [
-		validStatements,
-		statement => fail(`${statement.typeName()} statement is only valid in ${ProgramASTBranchNode.typeName(statement.blockType!)} blocks`, tokens)
-	];
-	validStatements = allowedValidStatements;
+
+	//Remove all statements that require a different block type 
+	const allowedValidStatements = validStatements.filter(s => !(
+		s.blockType && s.blockType != context?.type.split(".")[0]
+	));
+	if(allowedValidStatements.length == 0){
+		//Return them anyway, and throw the error later
+		//None of the possible statements are allowed
+		return [
+			validStatements,
+			statement => fail(`${statement.typeName()} statement is only valid in ${ProgramASTBranchNode.typeName(statement.blockType!)} blocks`, tokens)
+		];
+	} else validStatements = allowedValidStatements;
+
 	return [validStatements, null];
 }
 
@@ -233,12 +263,14 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
  * @argument tokens must not contain any newlines.
  **/
 export const parseStatement = errorBoundary()(function _parseStatement(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement {
-	if(tokens.length < 1) crash("Empty statement");
+	if(tokens.length <= 0) crash("Empty statement");
+
 	const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
+	
 	const errors:(StatementCheckFailResult & {err?:SoodocodeError;})[] = [];
 	for(const possibleStatement of possibleStatements){
 		const result = checkStatement(possibleStatement, tokens, allowRecursiveCall);
-		if(Array.isArray(result)){
+		if(Array.isArray(result)){ //if the statement is valid
 			if(possibleStatement.invalidMessage){
 				if(typeof possibleStatement.invalidMessage == "function"){
 					const [message, range] = possibleStatement.invalidMessage(result, context);
@@ -269,16 +301,16 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 	}
 	//Statement is invalid, choose the most relevant error message
 	//Check if it's a valid expression
+	//But not if it's a single token, because lots of random text is an identifier and therefore is a valid expression
 	const [expr] = tryRun(() => parseExpression(tokens));
 	if(expr && !(expr instanceof Token)){
 		if(expr instanceof ExpressionASTFunctionCallNode)
 			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`, tokens);
 		else fail(`Expected a statement, not an expression`, tokens);
 	}
-	let maxError = errors[0];
-	for(const error of errors){
-		if(error.priority >= maxError.priority) maxError = error;
-	}
+
+	//Fail with the highest priority error
+	const maxError = max(errors, e => e.priority) ?? crash(`must have been at least one error`);
 	if(maxError.err) throw maxError.err;
 	else fail(maxError.message, maxError.range, tokens);
 });
@@ -409,6 +441,7 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 	}
 	return output;
 }
+/** Computes the best error message, given a token matcher and the token that failed to match it. */
 function getMessage(expected:TokenMatcher, found:Token, priority:number):StatementCheckFailResult {
 	if(isKey(tokenTextMapping, expected)){
 		if(tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase()) return {
@@ -430,6 +463,8 @@ function getMessage(expected:TokenMatcher, found:Token, priority:number):Stateme
 		range: found.range
 	};
 }
+
+/** Crashes if the checkStatement function attempts to read unknown properties from the fake statement definition. */
 export function checkTokens(tokens:RangeArray<Token>, input:TokenMatcher[]):boolean {
 	return Array.isArray(checkStatement(fakeObject<typeof Statement>({
 		tokens: input,
@@ -437,6 +472,10 @@ export function checkTokens(tokens:RangeArray<Token>, input:TokenMatcher[]):bool
 		blockType: null,
 	}), tokens, false));
 }
+
+
+
+//#region expression parser
 
 function cannotEndExpression(token:Token){
 	//TODO is this the best way?
@@ -446,8 +485,9 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 
-export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
+export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"]; //TODO new is not an expression leaf node...
 
+/** Parses the provided token as an expression leaf node. Examples: number, string, variable name */
 export function parseExpressionLeafNode(token:Token):ExpressionASTLeafNode {
 	//Number, string, char, boolean, and variables can be parsed as-is
 	if(expressionLeafNodeTypes.includes(token.type))
@@ -456,15 +496,24 @@ export function parseExpressionLeafNode(token:Token):ExpressionASTLeafNode {
 		fail(`Invalid expression leaf node`, token);
 };
 
+/** Parses an expression from a list of tokens. */
 export const parseExpression = errorBoundary({
 	predicate: (_input, recursive) => !recursive,
 	message: () => `Expected "$rc" to be an expression, but it was invalid: `
-})(function _parseExpression(input:RangeArray<Token>, recursive = false):ExpressionASTNode {
+})(function _parseExpression(
+	input:RangeArray<Token>,
+	/** Used to set the general range for errors to be the outermost expression (which is the only one where recursive is false). */
+	recursive = false
+):ExpressionASTNode {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input as any}`);
-	//If there is only one token
+	//If there is only one token, parse it as a leaf node
 	if(input.length == 1) return parseExpressionLeafNode(input[0]);
 
-	let error: typeof impossible = () => fail(`No operators found`, input.length > 0 ? input : undefined);
+	/** Some logic in this function handles cases where the input might be valid, or there is a specifc error message to explain why is is not valid. */
+	let deferredError: typeof impossible = () => fail(`No operators found`, input.length > 0 ? input : undefined);
+
+	//Recursive descent parser, modified with a lot of extra cases.
+
 	//Go through P E M-D A-S in reverse order to find the operator with the lowest priority
 	for(const operatorsOfCurrentPriority of operatorsByPriority){
 		const nestLevel = manageNestLevel(true);
@@ -473,7 +522,7 @@ export const parseExpression = errorBoundary({
 		for(let i = input.length - 1; i >= 0; i --){
 			nestLevel.update(input[i]);
 
-			let operator!:Operator; //assignment assertion goes brrrrr
+			let operator!:Operator; //assignment assertion: within the find() call
 			if(
 				nestLevel.out() && //the operator is not inside parentheses and
 				operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for, TODO optimize triple nested loop
@@ -548,10 +597,10 @@ export const parseExpression = errorBoundary({
 					}
 					if(operator == operators.access){
 						if(!(right.length == 1 && (right[0].type == "name" || right[0].type == "keyword.new"))){ //TODO properly handle keywords being names, everywhere
-							error = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+							deferredError = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
 							continue;
 						}
-					} 
+					}
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
@@ -622,6 +671,6 @@ export const parseExpression = errorBoundary({
 		);
 	}
 
-	//No operators found at all, something went wrong
-	error();
+	//No operators found at all, invalid input
+	deferredError();
 });
