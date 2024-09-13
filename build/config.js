@@ -5,6 +5,13 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             value: v.value,
             errorHelp: typeof v.value == "boolean" ? ("errorHelp" in v ? `help: ${v.errorHelp} by enabling the config "${v.name}"` : "shortDescription" in v ? `help: ${v.shortDescription.replace(/\.$/, "")} by enabling the config "${v.name}"` : null) : ("errorHelp" in v ? `help: ${v.errorHelp}` : null)
         }]))])))({
+    syntax: {
+        semicolons_as_newlines: {
+            name: `Treat semicolons as newlines`,
+            errorHelp: `Treat semicolons as newlines`,
+            value: true,
+        }
+    },
     coercion: {
         arrays_same_length: {
             name: "Coerce arrays of same length",

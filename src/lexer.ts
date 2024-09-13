@@ -8,6 +8,7 @@ second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.3
 */
 
 
+import { configs } from "./config.js";
 import { Symbol, SymbolType, SymbolizedProgram, Token, TokenType, TokenizedProgram } from "./lexer-types.js";
 import { TextRange } from "./types.js";
 import { RangeArray, access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
@@ -207,6 +208,7 @@ class SymbolizerIO {
 	/** Writes a {@link Symbol} to the output, using the last matched text and range. */
 	write(type:SymbolType){
 		if(!this.lastMatched || !this.lastMatchedRange) crash(`Cannot write symbol, no stored match`);
+		if(type == "punctuation.semicolon" && configs.syntax.semicolons_as_newlines.value) type = "newline";
 		this.output.push(new Symbol(type, this.lastMatched, this.lastMatchedRange.slice()));
 		this.lastMatched = this.lastMatchedRange = null;
 	}

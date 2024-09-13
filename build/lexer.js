@@ -1,3 +1,4 @@
+import { configs } from "./config.js";
 import { Symbol, Token } from "./lexer-types.js";
 import { RangeArray, access, crash, f, fail, unicodeSetsSupported } from "./utils.js";
 export const symbolTypeData = [
@@ -180,6 +181,8 @@ class SymbolizerIO {
     write(type) {
         if (!this.lastMatched || !this.lastMatchedRange)
             crash(`Cannot write symbol, no stored match`);
+        if (type == "punctuation.semicolon" && configs.syntax.semicolons_as_newlines.value)
+            type = "newline";
         this.output.push(new Symbol(type, this.lastMatched, this.lastMatchedRange.slice()));
         this.lastMatched = this.lastMatchedRange = null;
     }
