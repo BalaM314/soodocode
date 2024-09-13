@@ -595,7 +595,7 @@ export class EndBadStatement extends Statement {
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
 	@evaluate condition = this.exprT(1, "BOOLEAN");
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"if">){
 		if(runtime.evaluate(this.condition)){
 			return runtime.runBlock(node.nodeGroups[0]);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
@@ -623,7 +623,7 @@ export class SwitchStatement extends Statement {
 			s instanceof CaseBranchStatement && s.value.type == "keyword.otherwise" && i != arr.length - 1)
 		) fail(`OTHERWISE case branch must be the last case branch`, err);
 	}
-	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode):void | StatementExecutionResult {
+	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode<"switch">):void | StatementExecutionResult {
 		const { type:switchType, value:switchValue } = runtime.evaluateUntyped(this.expression);
 		for(const [i, statement] of controlStatements.entries()){
 			if(i == 0) continue;
@@ -754,7 +754,7 @@ export class ForEndBadStatement extends Statement {
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
 	@evaluate condition = this.exprT(1, "BOOLEAN");
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"while">){
 		
 		//Register the execution of an infinite amount of statements if the condition is constant true
 		if(node.nodeGroups[0].length == 0 && this.condition.value === true)
@@ -815,7 +815,7 @@ export class FunctionStatement extends Statement {
 		this.nameToken = tokens[1];
 		this.name = tokens[1].text;
 	}
-	runBlock(runtime:Runtime, node:FunctionData){
+	runBlock(runtime:Runtime, node:FunctionData<"function">){
 		runtime.defineFunction(this.name, node, this.nameToken.range);
 	}
 }
@@ -835,7 +835,7 @@ export class ProcedureStatement extends Statement {
 		this.nameToken = tokens[1];
 		this.name = tokens[1].text;
 	}
-	runBlock(runtime:Runtime, node:FunctionData){
+	runBlock(runtime:Runtime, node:FunctionData<"procedure">){
 		runtime.defineFunction(this.name, node, this.nameToken.range);
 	}
 }

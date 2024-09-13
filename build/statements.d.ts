@@ -69,7 +69,7 @@ export declare class Statement implements TextRanged, IFormattable {
     static supportsSplit(block: ProgramASTBranchNode, statement: Statement): true | string;
     static checkBlock(block: ProgramASTBranchNode): void;
     static typeName(type?: StatementType): string;
-    static tokensSortScore({ tokens }?: typeof Statement): number;
+    static tokensSortScore({ tokens, invalidMessage }?: typeof Statement): number;
     run(runtime: Runtime): void | StatementExecutionResult;
     runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | StatementExecutionResult;
     preRun(node?: ProgramASTBranchNode): void;
@@ -188,7 +188,7 @@ export declare class EndBadStatement extends Statement {
 }
 export declare class IfStatement extends Statement {
     condition: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
-    runBlock(runtime: Runtime, node: ProgramASTBranchNode): void | {
+    runBlock(runtime: Runtime, node: ProgramASTBranchNode<"if">): void | {
         type: "function_return";
         value: VariableValue;
     };
@@ -200,7 +200,7 @@ export declare class SwitchStatement extends Statement {
     expression: UntypedNodeValue<import("./parser-types.js").ExpressionASTNode>;
     static supportsSplit(block: ProgramASTBranchNode, statement: Statement): true | string;
     static checkBlock({ nodeGroups, controlStatements }: ProgramASTBranchNode): void;
-    runBlock(runtime: Runtime, { controlStatements, nodeGroups }: ProgramASTBranchNode): void | StatementExecutionResult;
+    runBlock(runtime: Runtime, { controlStatements, nodeGroups }: ProgramASTBranchNode<"switch">): void | StatementExecutionResult;
 }
 export declare class CaseBranchStatement extends Statement {
     value: Token;
@@ -241,7 +241,7 @@ export declare class ForEndBadStatement extends Statement {
 }
 export declare class WhileStatement extends Statement {
     condition: TypedNodeValue<import("./parser-types.js").ExpressionASTNode, "BOOLEAN", PrimitiveVariableType<"BOOLEAN">>;
-    runBlock(runtime: Runtime, node: ProgramASTBranchNode): {
+    runBlock(runtime: Runtime, node: ProgramASTBranchNode<"while">): {
         type: "function_return";
         value: VariableValue;
     } | undefined;
@@ -264,7 +264,7 @@ export declare class FunctionStatement extends Statement {
     name: string;
     nameToken: Token;
     constructor(tokens: RangeArray<Token>, offset?: number);
-    runBlock(runtime: Runtime, node: FunctionData): void;
+    runBlock(runtime: Runtime, node: FunctionData<"function">): void;
 }
 export declare class ProcedureStatement extends Statement {
     args: FunctionArguments;
@@ -272,7 +272,7 @@ export declare class ProcedureStatement extends Statement {
     name: string;
     nameToken: Token;
     constructor(tokens: RangeArray<Token>, offset?: number);
-    runBlock(runtime: Runtime, node: FunctionData): void;
+    runBlock(runtime: Runtime, node: FunctionData<"procedure">): void;
 }
 interface IFileStatement {
     filename: TypedNodeValue<ExpressionAST, "STRING">;
@@ -319,7 +319,7 @@ declare class ClassMemberStatement {
     runBlock(): void;
 }
 export declare class ClassStatement extends TypeStatement {
-    static allowOnly: Set<"function" | "type" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     name: Token;
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];

@@ -197,8 +197,8 @@ let Statement = (() => {
                 "class_function.end": "ENDFUNCTION (class)",
             }[type] ?? "unknown statement";
         }
-        static tokensSortScore({ tokens } = this) {
-            return tokens.filter(t => [".*", ".+", "expr+", "type+"].includes(t)).length * 100 - tokens.length;
+        static tokensSortScore({ tokens, invalidMessage } = this) {
+            return invalidMessage != null ? tokens.filter(t => [".*", ".+", "expr+", "type+"].includes(t)).length * 100 - tokens.length : 10000;
         }
         run(runtime) {
             crash(`Missing runtime implementation for statement ${this.stype}`);
@@ -325,7 +325,7 @@ function statement(type, example, ...args) {
     };
 }
 function finishStatements() {
-    statements.irregular.sort((a, b) => (a.invalidMessage ? 1 : 0) - (b.invalidMessage ? 1 : 0));
+    statements.irregular.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
 }
 function evaluate(_, context) {
     var _a;

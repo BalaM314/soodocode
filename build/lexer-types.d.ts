@@ -33,7 +33,7 @@ export declare class Token implements TextRanged, IFormattable {
     fmtText(): string;
     fmtDebug(): string;
     clone(): Token;
-    mergeFrom(other: Token | Symbol): void;
+    mergeFrom(tokenAfter: Token | Symbol): void;
     extendRange(other: TextRangeLike): Token;
     clearRange(): Token;
     rangeBefore(): TextRange;

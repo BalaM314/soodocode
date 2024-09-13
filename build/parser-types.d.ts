@@ -1,5 +1,5 @@
 import { Token, TokenType } from "./lexer-types.js";
-import type { DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, Statement } from "./statements.js";
+import type { CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassInheritsStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassStatement, DoWhileEndStatement, DoWhileStatement, ElseStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, IfStatement, ProcedureStatement, Statement, SwitchStatement, TypeStatement, WhileStatement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 import { RangeArray } from "./utils.js";
 export type ExpressionAST = ExpressionASTNode;
@@ -68,31 +68,30 @@ export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | Express
 export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTTypeNode;
 export declare const ExpressionASTTypeNodes: readonly [typeof Token, typeof ExpressionASTArrayTypeNode, typeof ExpressionASTRangeTypeNode];
 export declare const ExpressionASTNodes: readonly [typeof Token, typeof ExpressionASTBranchNode, typeof ExpressionASTFunctionCallNode, typeof ExpressionASTArrayAccessNode, typeof ExpressionASTClassInstantiationNode];
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
-export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
+export type OperatorName<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
+export type OperatorFix = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";
-export type OperatorName = "operator.or" | "operator.and" | "operator.equal_to" | "operator.not_equal_to" | "operator.less_than" | "operator.less_than_equal" | "operator.greater_than" | "operator.greater_than_equal" | "operator.add" | "operator.subtract" | "operator.string_concatenate" | "operator.multiply" | "operator.divide" | "operator.integer_divide" | "operator.mod" | "operator.pointer_reference" | "operator.not" | "operator.negate" | "operator.pointer_dereference" | "operator.access";
+export type OperatorType = `operator.${OperatorName}`;
 export declare class Operator implements IFormattable {
     token: TokenType;
-    name: OperatorName;
-    type: OperatorMode;
+    id: OperatorType;
+    fix: OperatorFix;
     category: OperatorCategory;
     constructor(args: ClassProperties<Operator>);
     fmtText(): string;
     fmtDebug(): string;
 }
 export type PreprocessedOperator = {
+    category: OperatorCategory;
+    fix?: OperatorFix;
+} & ({
+    id: OperatorType;
     token: TokenType;
-    category: OperatorCategory;
-    type?: OperatorMode;
-    name: OperatorName;
 } | {
-    token: OperatorName & TokenType;
-    category: OperatorCategory;
-    type?: OperatorMode;
-};
+    token: OperatorType & TokenType;
+});
 export declare const operatorsByPriority: Operator[][];
-export declare const operators: Record<"add" | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference" | "multiply" | "divide" | "mod" | "integer_divide" | "and" | "or" | "not" | "equal_to" | "not_equal_to" | "less_than" | "greater_than" | "less_than_equal" | "greater_than_equal" | "string_concatenate", Operator>;
+export declare const operators: Record<OperatorName, Operator>;
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 export type ProgramAST = {
     program: string;
@@ -113,4 +112,4 @@ export declare class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = P
 export declare const programASTBranchNodeTypes: readonly ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"];
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 export declare function ProgramASTBranchNodeType(input: string): ProgramASTBranchNodeType;
-export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> = T extends "for" ? [ForStatement, ForEndStatement] : T extends "dowhile" ? [DoWhileStatement, DoWhileEndStatement] : Statement[];
+export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> = T extends "if" ? [IfStatement, Statement] | [IfStatement, ElseStatement, Statement] : T extends "for" ? [ForStatement, ForEndStatement] : T extends "for.step" ? [ForStepStatement, ForEndStatement] : T extends "while" ? [WhileStatement, Statement] : T extends "dowhile" ? [DoWhileStatement, DoWhileEndStatement] : T extends "function" ? [FunctionStatement, Statement] : T extends "procedure" ? [ProcedureStatement, Statement] : T extends "switch" ? [SwitchStatement, ...CaseBranchStatement[], Statement] : T extends "type" ? [TypeStatement, Statement] : T extends "class" ? [ClassStatement, Statement] : T extends "class.inherits" ? [ClassInheritsStatement, Statement] : T extends "class_function" ? [ClassFunctionStatement, ClassFunctionEndStatement] : T extends "class_procedure" ? [ClassProcedureStatement, ClassProcedureEndStatement] : Statement[];
