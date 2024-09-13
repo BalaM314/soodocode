@@ -109,6 +109,24 @@ parse_invalid_expression_statement: [
 `2 + 2`,
 `Expected a statement, not an expression`
 ],
+string_escape_sequences: [
+`
+OUTPUT "a\\na"
+OUTPUT "a\\ta"
+OUTPUT "a\\"a"
+OUTPUT "a\\'a"
+OUTPUT '\\''
+OUTPUT "\\\\"`,
+["a\na", "a\ta", "a\"a", "a'a", "'", "\\"]
+],
+more_string_escape_sequences: [
+`OUTPUT "a\\\\na"`,
+["a\\na"]
+],
+no_invalid_escape_sequences: [
+`OUTPUT "a\\aa"`,
+`Unescaped backslash`
+],
 //#endregion
 //#region types
 run_bool: [

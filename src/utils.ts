@@ -565,13 +565,16 @@ export function boxPrimitive<T>(input:T):BoxPrimitive<T> {
 	return input as never;
 }
 
+let _unicodeSetsSupported:null | boolean = null;
 export function unicodeSetsSupported(){
-	try {
-		void new RegExp("", "v");
-		return true;
-	} catch(err){
-		return false;
-	}
+	return _unicodeSetsSupported ??= (() => {
+		try {
+			void new RegExp("", "v");
+			return true;
+		} catch(err){
+			return false;
+		}
+	})();
 }
 
 export function capitalizeWord(word:string):string {

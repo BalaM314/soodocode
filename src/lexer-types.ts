@@ -22,7 +22,8 @@ export const symbolTypes = [
 	"invalid.not_equal_to",
 	"space",
 	"newline",
-	"operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range"
+	"operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range",
+	"escape.quote.double", "escape.quote.single", "escape.backslash", "escape.tab", "escape.newline", "escape_character",
 ] as const;
 /** The type of a {@link Symbol}. */
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
@@ -68,6 +69,17 @@ export class Symbol implements TextRanged {
 	}
 	rangeAfter():TextRange {
 		return [this.range[1], this.range[1] + 1];
+	}
+	/** Gets the text that should be appended to a string that this symbol is a part of. */
+	getStringText(){
+		switch(this.type){
+			case "escape.backslash": return `\\`;
+			case "escape.newline": return `\n`;
+			case "escape.quote.double": return `"`;
+			case "escape.quote.single": return `'`;
+			case "escape.tab": return `\t`;
+			default: return this.text;
+		}
 	}
 }
 
