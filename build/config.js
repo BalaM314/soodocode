@@ -173,7 +173,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             name: "Maximum statement count",
             description: `Maximum number of statements that can be executed by the runtime. If this is exceeded, the program terminates. Useful to prevent infinite loops.`,
             errorHelp: `Increase the statement limit by changing the config "Maximum statement count"`,
-            value: 100000
+            value: 100100
         }
     },
     classes: {

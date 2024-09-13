@@ -1,6 +1,6 @@
 import { Token } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup } from "./parser-types.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
 import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
@@ -111,7 +111,7 @@ export function splitTokensToStatements(tokens) {
         [CaseBranchRangeStatement, 5],
         [CaseBranchRangeStatement, 6],
     ];
-    return splitTokens(tokens, "newline").map(ts => {
+    return splitTokens(tokens.select((token, i) => !(token.type == "newline" && tokens[i + 1]?.type == "keyword.then")), "newline").map(ts => {
         for (const [statement, length] of statementData) {
             if (ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length), false)))
                 return [ts.slice(0, length), ts.slice(length)];
@@ -121,7 +121,7 @@ export function splitTokensToStatements(tokens) {
 }
 export function parse({ program, tokens }) {
     const lines = splitTokensToStatements(tokens);
-    const programNodes = [];
+    const programNodes = new ProgramASTNodeGroup();
     function getActiveBuffer() {
         if (blockStack.length == 0)
             return programNodes;
@@ -135,7 +135,7 @@ export function parse({ program, tokens }) {
             getActiveBuffer().push(statement);
         }
         else if (statement.category == "block") {
-            const node = new ProgramASTBranchNode(ProgramASTBranchNodeType(statement.stype), [statement], [[]]);
+            const node = new ProgramASTBranchNode(ProgramASTBranchNodeType(statement.stype), [statement], [new ProgramASTNodeGroup()]);
             getActiveBuffer().push(node);
             blockStack.push(node);
         }
@@ -159,7 +159,7 @@ export function parse({ program, tokens }) {
             if ((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
                 fail(`Unexpected statement: ${errorMessage}`, statement, null);
             lastNode.controlStatements_().push(statement);
-            lastNode.nodeGroups.push([]);
+            lastNode.nodeGroups.push(new ProgramASTNodeGroup());
         }
         else
             statement.category;

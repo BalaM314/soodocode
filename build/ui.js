@@ -26,7 +26,7 @@ export function flattenTree(program) {
         if (s instanceof Statement)
             return [[0, s]];
         else
-            return flattenTree(s.nodeGroups.flat()).map(([depth, statement]) => [depth + 1, statement]);
+            return flattenTree(parserTypes.ProgramASTNodeGroup.from(s.nodeGroups.flat())).map(([depth, statement]) => [depth + 1, statement]);
     }).flat(1);
 }
 export function displayExpressionHTML(node, expand = false, format = true) {
@@ -361,7 +361,7 @@ function executeSoodocode() {
     const noOutput = `<span style="color: lightgray;">&lt;no output&gt;</span>`;
     const output = [];
     const runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => {
-        const str = m.map(x => x.asHTML(false)).join("");
+        const str = m.map(x => x.asHTML(false)).join(" ");
         output.push(str);
         if (configs.runtime.display_output_immediately.value) {
             outputDiv.innerHTML += str + "\n";

@@ -644,16 +644,20 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 if (token.type == "name") {
                     if (type == "function")
                         return this.getFunction(token);
-                    const enumType = this.getEnumFromValue(token.text);
-                    if (enumType) {
-                        if (type == "variable")
+                    if (type == "variable") {
+                        const variable = this.getVariable(token.text);
+                        if (variable)
+                            return variable;
+                        const enumType = this.getEnumFromValue(token.text);
+                        if (enumType)
                             fail(f.quote `Cannot evaluate enum value ${token.text} as a variable`, token);
-                        return finishEvaluation(token.text, enumType, type);
+                        this.handleNonexistentVariable(token.text, token.range);
                     }
                     else {
+                        const enumType = this.getEnumFromValue(token.text);
+                        if (enumType)
+                            return finishEvaluation(token.text, enumType, type);
                         const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
-                        if (type == "variable")
-                            return variable;
                         if (variable.value == null)
                             fail(f.quote `Variable ${token.text} has not been initialized`, token);
                         return finishEvaluation(variable.value, variable.type, type);
@@ -842,6 +846,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 return false;
             }
+            defineVariable(name, data, range) {
+                const currentScope = this.getCurrentScope();
+                if (name in currentScope.variables)
+                    fail(f.quote `Variable ${name} was already defined`, range);
+                currentScope.variables[name] = data;
+            }
             defineFunction(name, data, range) {
                 if (name in this.functions)
                     fail(f.quote `Function or procedure ${name} has already been defined`, range);
@@ -1013,6 +1023,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     node.run(this);
                 }
                 const types = [];
+                const currentScopeTypes = this.getCurrentScope().types;
                 for (const node of typeNodes) {
                     let name, type;
                     if (node instanceof Statement) {
@@ -1021,9 +1032,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     else {
                         [name, type] = node.controlStatements[0].createTypeBlock(this, node);
                     }
-                    if (this.getCurrentScope().types[name])
+                    if (currentScopeTypes[name])
                         fail(f.quote `Type ${name} was defined twice`, node);
-                    this.getCurrentScope().types[name] = type;
+                    currentScopeTypes[name] = type;
                     types.push([name, type]);
                 }
                 for (const [name, type] of types) {
@@ -1062,17 +1073,14 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     };
                 }
             }
-            preRun(block) {
-                for (const node of block) {
-                    if (node instanceof Statement)
-                        node.triggerPreRun();
+            runBlockFast(code) {
+                this.statementExecuted(code, code.length);
+                for (const node of code) {
+                    if (node instanceof Statement) {
+                        node.run(this);
+                    }
                     else {
-                        for (const statement of node.controlStatements) {
-                            statement.triggerPreRun(node);
-                        }
-                        for (const block of node.nodeGroups) {
-                            this.preRun(block);
-                        }
+                        node.controlStatements[0].runBlock(this, node);
                     }
                 }
             }
@@ -1082,7 +1090,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
             }
             runProgram(code) {
-                this.preRun(code);
+                code.preRun();
                 this.runBlock(code, {
                     statement: "global",
                     opaque: true,
