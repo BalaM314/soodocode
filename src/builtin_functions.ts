@@ -7,7 +7,7 @@ This file contains all builtin functions defined in the insert.
 */
 
 
-import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "./runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "./runtime-types.js";
 import type { Runtime } from "./runtime.js";
 import type { BoxPrimitive, RangeAttached } from "./types.js";
 import { f, fail } from "./utils.js";
@@ -36,14 +36,7 @@ import { f, fail } from "./utils.js";
  **/
 type BuiltinFunctionArgType = PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[];
 type BuiltinFunctionArg = [name:string, type:BuiltinFunctionArgType];
-type PrimitiveVariableTypeMapping<T> =
-	T extends "INTEGER" ? number :
-	T extends "REAL" ? number :
-	T extends "STRING" ? string :
-	T extends "CHAR" ? string :
-	T extends "BOOLEAN" ? boolean :
-	T extends "DATE" ? Date :
-	never;
+
 /** Maps BuiltinFunctionArgTypes to the JS type */
 type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 	T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ?
@@ -51,7 +44,7 @@ type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 			RangeAttached<PrimitiveVariableTypeMapping<U>> : //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
 		U extends [infer S] ?
 			S extends PrimitiveVariableTypeName ?
-				RangeAttached<PrimitiveVariableTypeMapping<U>> :
+				RangeAttached<PrimitiveVariableTypeMapping<S>> :
 				RangeAttached<unknown[]>
 		: never :
 	T extends PrimitiveVariableTypeName
@@ -65,18 +58,36 @@ type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> =
 			[K in keyof TSuppliedArgs]: FunctionArgVariableTypeMapping<TSuppliedArgs[K][1]>; //discard the name, use the other generic to get the corresponding type
 		};
 type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TReturn extends PrimitiveVariableTypeName> = {
+	/** The names and types of the arguments required by this function. */
 	args: TArgs;
 	returnType: TReturn;
+	/** The implementation of this function. */
 	impl(this:Runtime, ...args:FunctionArgs<TArgs>):PrimitiveVariableTypeMapping<TReturn>;
+	/**
+	 * List of aliases. The function can also be called by any of these names.
+	 * 
+	 * Example:
+	 * ```
+	 * FOO: {
+	 * 	args: [],
+	 * 	returnType: "INTEGER",
+	 * 	impl(){}
+	 * 	aliases: ["BAR", "BAZ"]
+	 * }
+	 * ```
+	 * The function `FOO()` can also be called with `BAR()` or `BAZ()`.
+	 **/
 	aliases?: string[];
 };
-/** Wrapper function used to get the correct type definitions */
+/** Wrapper function used to get the correct type definitions for a preprocessed builtin function data. */
 function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName>(data:PreprocesssedBuiltinFunctionData<T, S>){
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
 
-let builtinFunctions; //cache
-export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFunctions, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> => builtinFunctions ??= ( // eslint-disable-line @typescript-eslint/no-unsafe-return
+/** Cached result from calling getBuiltinFunctions() */
+let builtinFunctionsCache;
+/** Thunk to prevent initializing variable types at file load */
+export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFunctions, BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>> => builtinFunctionsCache ??= ( // eslint-disable-line @typescript-eslint/no-unsafe-return
 	<T extends string>(d:Record<T, PreprocesssedBuiltinFunctionData<any, any>>) => {
 		const obj:Record<string, BuiltinFunctionData> = Object.fromEntries(Object.entries(d).map(([name, data]) =>
 			[name, {
@@ -102,6 +113,7 @@ export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFun
 		return obj;
 	}
 )(preprocessedBuiltinFunctions);
+/** Contains the data used to generate the builtin functions. */
 export const preprocessedBuiltinFunctions = ({
 	//Source: s23 P22 insert
 	LEFT: fn({

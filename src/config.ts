@@ -1,4 +1,5 @@
 
+/** A global config used to modify soodocode's behavior. */
 export type Config<T, Help extends boolean> = {
 	name:string;
 	description:string | null;
@@ -7,18 +8,26 @@ export type Config<T, Help extends boolean> = {
 } & (Help extends true ? {
 	errorHelp: string;
 } : {});
+/** Preprocessed config data. */
 type ConfigData<T> = {
+	/** Display name for this config option */
 	name:string;
+	/** Default value */
 	value:T;
 	// type: "checkbox" | "boolean" | "integer" | "number";
 } & ({
+	/** This text will be used to generate the description text, and will also show up in the error help. Should start with "Allow `...`", so it makes sense when "by enabling the config `...`" is appended. */
 	shortDescription:string;
+	/** Second line of the description, does not show up in the error help. */
 	fullDescription?:string;
 } | {
+	/** Full description used for this config option. May be left blank. */
 	description?:string;
+	/** "help: " is prepended to this text. */
 	errorHelp?:string;
 });
 
+/** Stores global configs used to modify soodocode's behavior. */
 export const configs = (<T extends Record<string, Record<string, ConfigData<unknown>>>>(data:T) =>
 	Object.fromEntries(Object.entries(data).map(([k1, v]) =>
 		[k1, Object.fromEntries(Object.entries(v).map(([k2, v]) =>
