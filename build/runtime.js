@@ -481,7 +481,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a number`, expr);
                     let guessedType = type ?? PrimitiveVariableType.REAL;
                     let value;
-                    if (expr.operator.type == "unary_prefix") {
+                    if (expr.operator.fix == "unary_prefix") {
                         const operand = this.evaluateExpr(expr.nodes[0], guessedType, true);
                         switch (expr.operator) {
                             case operators.negate:
@@ -572,7 +572,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 if (type?.is("BOOLEAN") || expr.operator.category == "logical") {
                     if (type && !type.is("BOOLEAN"))
                         fail(f.quote `Expected this expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`, expr);
-                    if (expr.operator.type == "unary_prefix") {
+                    if (expr.operator.fix == "unary_prefix") {
                         const operand = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true);
                         switch (expr.operator) {
                             case operators.not: {
@@ -985,7 +985,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     fail(f.quote `Builtin function ${fn.name} does not return a value`, undefined);
                 const evaluatedArgs = [];
                 let i = 0;
-                nextArg: for (const { type } of fn.args.values()) {
+                nextArg: for (const [name, { type }] of fn.args.entries()) {
                     const errors = [];
                     for (const possibleType of type) {
                         if (tryRunOr(() => {
@@ -994,7 +994,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         }, err => errors.push(err)))
                             continue nextArg;
                     }
-                    throw errors.at(-1);
+                    throw errors.at(-1) ?? crash(`Builtin function ${fn.name} has an argument ${name} that does not accept any types`);
                 }
                 const processedArgs = evaluatedArgs.map(([value, range]) => Object.assign(boxPrimitive(value), { range }));
                 if (returnType)

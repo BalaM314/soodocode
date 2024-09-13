@@ -6,7 +6,7 @@ This file contains the types for the parser.
 */
 
 import { Token, TokenType } from "./lexer-types.js";
-import type { DoWhileEndStatement, DoWhileStatement, ForEndStatement, ForStatement, Statement } from "./statements.js";
+import type { CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassInheritsStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassStatement, DoWhileEndStatement, DoWhileStatement, ElseStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, IfStatement, ProcedureStatement, Statement, SwitchStatement, TypeStatement, WhileStatement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
 import { crash, f, getTotalRange, RangeArray } from "./utils.js";
 
@@ -37,18 +37,19 @@ export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 		return this.allTokens.map(t => t.text).join(" ");
 	}
 	fmtText():string {
-		if(this.operator.type.startsWith("unary_prefix")){
+		if(this.operator.fix.startsWith("unary_prefix")){
 			return `(${this.operatorToken.text} ${this.nodes[0].fmtText()})`;
-		} else if(this.operator.type.startsWith("unary_postfix")){
+		} else if(this.operator.fix.startsWith("unary_postfix")){
 			return `(${this.nodes[0].fmtText()} ${this.operatorToken.text})`;
 		} else { //binary operator
 			return `(${this.nodes[0].fmtText()} ${this.operatorToken.text} ${this.nodes[1].fmtText()})`;
 		}
 	}
 	fmtDebug():string {
-		return `[${this.operator.name} ${this.nodes.map(n => n.fmtDebug()).join(" ")}]`;
+		return `[${this.operator.id} ${this.nodes.map(n => n.fmtDebug()).join(" ")}]`;
 	}
 }
+/** Represents a function call expression in an expression AST. */
 export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
@@ -68,6 +69,7 @@ export class ExpressionASTFunctionCallNode implements TextRanged, IFormattable {
 		return f.debug`${this.functionName}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
 	}
 }
+/** Represents a class instantiation expression in an expression AST. */
 export class ExpressionASTClassInstantiationNode implements TextRanged {
 	range: TextRange;
 	constructor(
@@ -87,6 +89,7 @@ export class ExpressionASTClassInstantiationNode implements TextRanged {
 		return `NEW ${this.className.text}(${this.args.map(n => n.fmtDebug()).join(" ")})`;
 	}
 }
+/** Represents an array access expression in an expression AST. */
 export class ExpressionASTArrayAccessNode implements TextRanged, IFormattable {
 	range: TextRange;
 	constructor(
@@ -123,7 +126,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 		return `ARRAY${rangeText} OF ${this.elementType.fmtDebug()}`;
 	}
 }
-/** Represents a special node that represents an array type, such as `ARRAY[1:10, 1:20] OF INTEGER` */
+/** Represents a special node that represents a range type, such as `1..20` */
 export class ExpressionASTRangeTypeNode implements TextRanged, IFormattable {
 	range: TextRange = this.allTokens.range;
 	constructor(
@@ -176,34 +179,37 @@ export const ExpressionASTNodes = [
 	Token, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode
 ] as const;
 
-export type OperatorType<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
-export type OperatorMode = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
+/** Names for operators that are valid within expressions. Includes operator.negate and operator.pointer_reference, but not operator.minus or operator.assignment. */
+export type OperatorName<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
+/**
+ * The way that this operator can be used within expressions.
+ * 
+ * * binary: an operator that is between two other expressions.
+ * Example: a + b
+ * 
+ * * unary_prefix: an operator that comes before one expression.
+ * Example: - c
+ * 
+ * * binary_o_unary_prefix: An operator that is between two other expressions, like binary, but has also been overloaded as a unary prefix operator.
+ * Example: d - e (the - operator can also be a unary prefix operator)
+ * 
+ * * unary_prefix_o_postfix: An operator that comes before one expression, but has also been overloaded as a unary postfix operator.
+ * Example: ^ x
+ * 
+ * * unary_postfix_o_prefix: An operator that comes after one expression, but has also been overloaded as a unary prefix operator.
+ * Example: y ^
+ */
+export type OperatorFix = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
 export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
-export type OperatorName =
-	| "operator.or"
-	| "operator.and"
-	| "operator.equal_to"
-	| "operator.not_equal_to"
-	| "operator.less_than"
-	| "operator.less_than_equal"
-	| "operator.greater_than"
-	| "operator.greater_than_equal"
-	| "operator.add"
-	| "operator.subtract"
-	| "operator.string_concatenate"
-	| "operator.multiply"
-	| "operator.divide"
-	| "operator.integer_divide"
-	| "operator.mod"
-	| "operator.pointer_reference"
-	| "operator.not"
-	| "operator.negate"
-	| "operator.pointer_dereference"
-	| "operator.access";
+/**
+ * Token types for operators that are valid within expressions.
+ * Includes operator.negate and operator.pointer_reference, but not operator.minus or operator.assignment.
+ */
+export type OperatorType = `operator.${OperatorName}`;
 export class Operator implements IFormattable {
 	token!: TokenType;
-	name!: OperatorName;
-	type!: OperatorMode;
+	id!: OperatorType;
+	fix!: OperatorFix;
 	category!: OperatorCategory;
 	constructor(args:ClassProperties<Operator>){
 		Object.assign(this, args);
@@ -230,23 +236,22 @@ export class Operator implements IFormattable {
 			"operator.negate": "negate",
 			"operator.pointer_dereference": "pointer dereference",
 			"operator.access": "access",
-		}[this.name];
+		}[this.id];
 	}
 	fmtDebug(){
-		return `Operator [${this.name}] (${this.category} ${this.type})`;
+		return `Operator [${this.id}] (${this.category} ${this.fix})`;
 	}
 }
 
 export type PreprocessedOperator = {
+	category: OperatorCategory;
+	fix?: OperatorFix;
+} & ({
+	id: OperatorType;
 	token: TokenType;
-	category: OperatorCategory;
-	type?: OperatorMode;
-	name: OperatorName;
 } | {
-	token: OperatorName & TokenType;
-	category: OperatorCategory;
-	type?: OperatorMode;
-};
+	token: OperatorType & TokenType;
+});
 
 /** Lowest to highest. Operators in the same 1D array have the same priority and are evaluated left to right. */
 export const operatorsByPriority = ((input:PreprocessedOperator[][]):Operator[][] =>
@@ -254,8 +259,8 @@ export const operatorsByPriority = ((input:PreprocessedOperator[][]):Operator[][
 		new Operator({
 			token: o.token,
 			category: o.category,
-			type: o.type ?? "binary",
-			name: "name" in o ? o.name : o.token,
+			fix: o.fix ?? "binary",
+			id: "id" in o ? o.id : o.token,
 		})
 	))
 )([
@@ -296,10 +301,10 @@ export const operatorsByPriority = ((input:PreprocessedOperator[][]):Operator[][
 			token: "operator.add",
 			category: "arithmetic"
 		},{
-			name: "operator.subtract",
+			id: "operator.subtract",
 			token: "operator.minus",
 			category: "arithmetic",
-			type: "binary_o_unary_prefix"
+			fix: "binary_o_unary_prefix"
 		},{
 			token: "operator.string_concatenate",
 			category: "string"
@@ -323,34 +328,34 @@ export const operatorsByPriority = ((input:PreprocessedOperator[][]):Operator[][
 	[
 		{
 			token: "operator.pointer",
-			name: "operator.pointer_reference",
+			id: "operator.pointer_reference",
 			category: "special",
-			type: "unary_prefix_o_postfix"
+			fix: "unary_prefix_o_postfix"
 		},
 		{
 			token: "operator.not",
 			category: "logical",
-			type: "unary_prefix"
+			fix: "unary_prefix"
 		},
 		{
 			token: "operator.minus",
-			name: "operator.negate",
+			id: "operator.negate",
 			category: "arithmetic",
-			type: "unary_prefix"
+			fix: "unary_prefix"
 		},
 	],
 	[
 		{
 			token: "operator.pointer",
-			name: "operator.pointer_dereference",
+			id: "operator.pointer_dereference",
 			category: "special",
-			type: "unary_postfix_o_prefix"
+			fix: "unary_postfix_o_prefix"
 		}
 	],
 	[
 		{
 			token: "punctuation.period",
-			name: "operator.access",
+			id: "operator.access",
 			category: "special",
 		}
 	]
@@ -360,9 +365,9 @@ export const operatorsByPriority = ((input:PreprocessedOperator[][]):Operator[][
 /** Indexed by OperatorType */
 export const operators = Object.fromEntries(
 	operatorsByPriority.flat().map(o => [
-		o.name.startsWith("operator.") ? o.name.split("operator.")[1] : crash(`operator names should start with operator.`), o
+		o.id.startsWith("operator.") ? o.id.split("operator.")[1] : crash(`operator names should start with operator.`), o
 	] as const)
-) as Record<OperatorType, Operator>;
+) as Record<OperatorName, Operator>;
 
 
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
@@ -388,7 +393,7 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 		public controlStatements: ProgramASTBranchNodeTypeMapping<T>,
 		public nodeGroups: ProgramASTNode[][],
 	){}
-	/** Unsafe due to array invariance */
+	/** Unsafe due to array bivariance */
 	controlStatements_(){
 		return this.controlStatements satisfies Statement[] as Statement[];
 	}
@@ -427,6 +432,17 @@ export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType 
 	crash(`"${input}" is not a valid program AST branch node type`);
 }
 export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> =
+	T extends "if" ? [IfStatement, Statement] | [IfStatement, ElseStatement, Statement] :
 	T extends "for" ? [ForStatement, ForEndStatement] :
+	T extends "for.step" ? [ForStepStatement, ForEndStatement] :
+	T extends "while" ? [WhileStatement, Statement] :
 	T extends "dowhile" ? [DoWhileStatement, DoWhileEndStatement] :
+	T extends "function" ? [FunctionStatement, Statement] :
+	T extends "procedure" ? [ProcedureStatement, Statement] :
+	T extends "switch" ? [SwitchStatement, ...CaseBranchStatement[], Statement] :
+	T extends "type" ? [TypeStatement, Statement] :
+	T extends "class" ? [ClassStatement, Statement] :
+	T extends "class.inherits" ? [ClassInheritsStatement, Statement] :
+	T extends "class_function" ? [ClassFunctionStatement, ClassFunctionEndStatement] :
+	T extends "class_procedure" ? [ClassProcedureStatement, ClassProcedureEndStatement] :
 	Statement[];
