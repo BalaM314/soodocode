@@ -18,7 +18,15 @@ import { RangeArray, access, crash, f, fail, impossible, unicodeSetsSupported } 
 export const symbolTypeData: [
 	matcher: string | [SymbolSpecifierFuncName] | RegExp, symbol:SymbolType
 ][] = [
+	//Should be sorted by length in descending order to ensure correct parsing.
 	[/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
+	[`\\"`, "escape.quote.double"],
+	[`\\'`, "escape.quote.single"],
+	[`\\\\`, "escape.backslash"],
+	[`\\t`, "escape.tab"],
+	[`\\n`, "escape.newline"], //This is a backslash followed by n
+	[`\\\n`, "space"], //This is a backslash followed by a newline, and is treated as whitespace as the newline has been escaped.
+	[`\\`, "escape_character"],
 	[">=", "operator.greater_than_equal"],
 	["<=", "operator.less_than_equal"],
 	["<>", "operator.not_equal_to"],
@@ -43,7 +51,7 @@ export const symbolTypeData: [
 	["{", "brace.open"],
 	["}", "brace.close"],
 	["'", "quote.single"],
-	["\"", "quote.double"],
+	[`"`, "quote.double"],
 	[":", "punctuation.colon"],
 	[";", "punctuation.semicolon"],
 	[",", "punctuation.comma"],
@@ -262,7 +270,6 @@ export function symbolize(input:string):SymbolizedProgram {
 
 /** Converts a list of symbols into a list of tokens. */
 export function tokenize(input:SymbolizedProgram):TokenizedProgram {
-	//TODO: string escape sequences
 	const tokens:Token[] = [];
 	const state = {
 		singlelineComment: null as null | Symbol,
@@ -290,7 +297,8 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		} else if(state.multilineComment){
 			//discard the symbol
 		} else if(state.singleQuotedString){
-			currentString += symbol.text;
+			if(symbol.type == "escape_character") fail(`Unescaped backslash in string\nhelp: escape the backslash by adding another backslash before it`, symbol);
+			currentString += symbol.getStringText();
 			if(symbol.type === "quote.single"){
 				state.singleQuotedString = null;
 				const range:TextRange = [symbol.range[1] - currentString.length, symbol.range[1]];
@@ -309,7 +317,8 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 				currentString = "";
 			}
 		} else if(state.doubleQuotedString){
-			currentString += symbol.text;
+			if(symbol.type == "escape_character") fail(`Unescaped backslash in string\nhelp: escape the backslash by adding another backslash before it`, symbol);
+			currentString += symbol.getStringText();
 			if(symbol.type === "quote.double"){
 				state.doubleQuotedString = null;
 				tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
@@ -337,6 +346,9 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
 		else if(symbol.type === "unknown") fail(f.quote`Invalid character ${symbol}`, symbol);
+		else if([
+			"escape.quote.double", "escape.quote.single", "escape.backslash", "escape.tab", "escape.newline"
+		].includes(symbol.type)) fail(f.quote`Invalid escape sequence ${symbol}: escape sequences are only allowed within strings`, symbol);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
