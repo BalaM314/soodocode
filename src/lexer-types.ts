@@ -8,6 +8,7 @@ This file contains types for the lexer, such as Symbol and Token.
 import type { IFormattable, TextRange, TextRanged, TextRangeLike } from "./types.js";
 import { crash, getRange, getTotalRange, RangeArray } from "./utils.js";
 
+/** List of all valid types of a {@link Symbol}. */
 export const symbolTypes = [
 	"numeric_fragment",
 	"quote.single", "quote.double",
@@ -23,19 +24,25 @@ export const symbolTypes = [
 	"newline",
 	"operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range"
 ] as const;
+/** The type of a {@link Symbol}. */
 export type SymbolType = typeof symbolTypes extends ReadonlyArray<infer T> ? T : never;
 
+/** A program after it has passed through the first stage of processing. Contains the full text, and a list of {@link Symbol Symbols}. */
 export type SymbolizedProgram = {
 	program: string;
 	symbols: Symbol[];
 }
 
+/** A program after it has passed through the second stage of processing. Contains the full text, and a list of {@link Token Tokens}. Has whitespace and comments removed. */
 export type TokenizedProgram = {
 	program: string;
 	tokens: RangeArray<Token>;
 }
 
-/** Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (") */
+/**
+ * Represents a single symbol parsed from the input text, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" (")
+ * Determination of Symbols is not context-specific.
+ */
 export class Symbol implements TextRanged {
 	constructor(
 		public type: SymbolType,
@@ -64,6 +71,7 @@ export class Symbol implements TextRanged {
 	}
 }
 
+/** List of all valid types of a {@link Token}. */
 export const tokenTypes = [
 	//use _ to join words
 	"number.decimal",
@@ -92,13 +100,17 @@ export const tokenTypes = [
 	"newline",
 	"operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range"
 ] as const;
+/** The type of a {@link Token}. */
 export type TokenType = typeof tokenTypes extends ReadonlyArray<infer T> ? T : never;
 export function TokenType(input:string):TokenType {
 	if(tokenTypes.includes(input)) return input;
 	crash(`"${input}" is not a valid token type`);
 }
 
-/** Represents a single token parsed from the list of symbols, such as such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus") */
+/**
+ * Represents a single token parsed from the list of symbols, such as such as "operator.add" (`+`), "number.decimal" (`12.34`), "keyword.readfile" (`READFILE`), or "string" (`"amogus"`)
+ * Determination of Tokens is context-specific.
+ */
 export class Token implements TextRanged, IFormattable {
 	constructor(
 		public type: TokenType,
@@ -114,9 +126,10 @@ export class Token implements TextRanged, IFormattable {
 	clone():Token {
 		return new Token(this.type, this.text, this.range.slice());
 	}
-	mergeFrom(other:Token | Symbol){
-		this.text += other.text;
-		this.extendRange(other);
+	/** Mutates this Token to include the text and range of the next token. */
+	mergeFrom(tokenAfter:Token | Symbol){
+		this.text += tokenAfter.text;
+		this.extendRange(tokenAfter);
 	}
 	extendRange(other:TextRangeLike):Token {
 		this.range = getTotalRange([getRange(other), this]);
