@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens) {
     if (tokens.length == 0)
         return new Map();
@@ -176,13 +176,15 @@ export function getPossibleStatements(tokens, context) {
     let validStatements = statements.byStartKeyword[tokens[0].type]
         ?? (() => {
             const closest = closestKeywordToken(tokens[0].text);
-            if (closest && statements.byStartKeyword[closest])
+            if (closest && statements.byStartKeyword[closest]) {
                 return [...statements.irregular, ...statements.byStartKeyword[closest]];
-            else
+            }
+            else {
                 return statements.irregular;
+            }
         })();
     if (ctx?.allowOnly) {
-        const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
+        const allowedValidStatements = validStatements.filter(s => ctx.allowOnly.has(s.type));
         if (allowedValidStatements.length == 0) {
             return [
                 validStatements,
@@ -194,17 +196,19 @@ export function getPossibleStatements(tokens, context) {
     }
     if (validStatements.length == 0)
         fail(`No valid statement definitions`, tokens);
-    const allowedValidStatements = validStatements.filter(s => !s.blockType || s.blockType == context?.type.split(".")[0]);
-    if (allowedValidStatements.length == 0)
+    const allowedValidStatements = validStatements.filter(s => !(s.blockType && s.blockType != context?.type.split(".")[0]));
+    if (allowedValidStatements.length == 0) {
         return [
             validStatements,
             statement => fail(`${statement.typeName()} statement is only valid in ${ProgramASTBranchNode.typeName(statement.blockType)} blocks`, tokens)
         ];
-    validStatements = allowedValidStatements;
+    }
+    else
+        validStatements = allowedValidStatements;
     return [validStatements, null];
 }
 export const parseStatement = errorBoundary()(function _parseStatement(tokens, context, allowRecursiveCall) {
-    if (tokens.length < 1)
+    if (tokens.length <= 0)
         crash("Empty statement");
     const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
     const errors = [];
@@ -250,11 +254,7 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens, c
         else
             fail(`Expected a statement, not an expression`, tokens);
     }
-    let maxError = errors[0];
-    for (const error of errors) {
-        if (error.priority >= maxError.priority)
-            maxError = error;
-    }
+    const maxError = max(errors, e => e.priority) ?? crash(`must have been at least one error`);
     if (maxError.err)
         throw maxError.err;
     else
@@ -428,7 +428,7 @@ export const parseExpression = errorBoundary({
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     if (input.length == 1)
         return parseExpressionLeafNode(input[0]);
-    let error = () => fail(`No operators found`, input.length > 0 ? input : undefined);
+    let deferredError = () => fail(`No operators found`, input.length > 0 ? input : undefined);
     for (const operatorsOfCurrentPriority of operatorsByPriority) {
         const nestLevel = manageNestLevel(true);
         for (let i = input.length - 1; i >= 0; i--) {
@@ -483,7 +483,7 @@ export const parseExpression = errorBoundary({
                     }
                     if (operator == operators.access) {
                         if (!(right.length == 1 && (right[0].type == "name" || right[0].type == "keyword.new"))) {
-                            error = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+                            deferredError = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
                             continue;
                         }
                     }
@@ -525,5 +525,5 @@ export const parseExpression = errorBoundary({
         const parsedTarget = parseExpression(target, true);
         return new ExpressionASTArrayAccessNode(parsedTarget, new RangeArray(splitTokensOnComma(indicesTokens).map(e => parseExpression(e, true))), input);
     }
-    error();
+    deferredError();
 });

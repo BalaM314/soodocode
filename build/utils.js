@@ -426,6 +426,18 @@ export function min(input, predicate, threshold = Infinity) {
     }
     return minItem;
 }
+export function max(input, predicate, threshold = -Infinity) {
+    let max = threshold;
+    let maxItem = null;
+    for (const item of input) {
+        const score = predicate(item);
+        if (score > max) {
+            max = score;
+            maxItem = item;
+        }
+    }
+    return maxItem;
+}
 export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
     a = a.toLowerCase();
     b = b.toLowerCase();
