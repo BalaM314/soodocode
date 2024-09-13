@@ -373,7 +373,7 @@ export const operators = Object.fromEntries(
 /** Matches one or more tokens when validating a statement. expr+ causes an expression to be parsed, and type+ causes a type to be parsed. Variadic matchers cannot be adjacent, because the matcher after the variadic matcher is used to determine how many tokens to match. */
 export type TokenMatcher = TokenType | "." | "literal" | "literal|otherwise" | ".*" | ".+" | "expr+" | "type+" | "file_mode" | "class_modifier";
 
-/** Represents a fully processed program. */
+/** Represents a fully processed program. Contains the program represented as an abstract syntax tree. */
 export type ProgramAST = {
 	program: string;
 	nodes: ProgramASTNode[];
@@ -388,12 +388,16 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 		public type: T,
 		/**
 		 * Contains the control statements for this block.
-		 * @example for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
+		 * Example: for FUNCTION blocks, the first element will be the FUNCTION statement and the second one will be the ENDFUNCTION statement.
 		 */
 		public controlStatements: ProgramASTBranchNodeTypeMapping<T>,
+		/**
+		 * Contains all the statements between the control statements.
+		 * Example: for `IF FALSE THEN; a; ELSE; b; c; ENDIF;`, the value of nodeGroups will be [[a], [b, c]].
+		 */
 		public nodeGroups: ProgramASTNode[][],
 	){}
-	/** Unsafe due to array bivariance */
+	/** Unsound due to array bivariance */
 	controlStatements_(){
 		return this.controlStatements satisfies Statement[] as Statement[];
 	}
@@ -424,8 +428,11 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 		return ProgramASTBranchNode.typeName(this.type);
 	}
 }
+// A type that looks like `name.variant` is treated as a variant of `name`,
+// meaning things that require a block of type `name` will also accept `name.variant`.
 /** The valid types for a branch node in a program AST. */
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;
+/** The valid types for a branch node in a program AST. */
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType {
 	if(programASTBranchNodeTypes.includes(input)) return input;
