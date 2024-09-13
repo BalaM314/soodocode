@@ -12,7 +12,8 @@ export const symbolTypes = [
     "invalid.not_equal_to",
     "space",
     "newline",
-    "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range"
+    "operator.add", "operator.minus", "operator.multiply", "operator.divide", "operator.mod", "operator.integer_divide", "operator.and", "operator.or", "operator.not", "operator.equal_to", "operator.not_equal_to", "operator.less_than", "operator.greater_than", "operator.less_than_equal", "operator.greater_than_equal", "operator.assignment", "operator.pointer", "operator.string_concatenate", "operator.range",
+    "escape.quote.double", "escape.quote.single", "escape.backslash", "escape.tab", "escape.newline", "escape_character",
 ];
 export class Symbol {
     constructor(type, text, range) {
@@ -38,6 +39,16 @@ export class Symbol {
     }
     rangeAfter() {
         return [this.range[1], this.range[1] + 1];
+    }
+    getStringText() {
+        switch (this.type) {
+            case "escape.backslash": return `\\`;
+            case "escape.newline": return `\n`;
+            case "escape.quote.double": return `"`;
+            case "escape.quote.single": return `'`;
+            case "escape.tab": return `\t`;
+            default: return this.text;
+        }
     }
 }
 export const tokenTypes = [

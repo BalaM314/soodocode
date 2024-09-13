@@ -8,6 +8,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
     syntax: {
         semicolons_as_newlines: {
             name: `Treat semicolons as newlines`,
+            description: `This allows you to write code like \`a <- 5; b <- 5\` on the same line.`,
             errorHelp: `Treat semicolons as newlines`,
             value: true,
         }

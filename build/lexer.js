@@ -3,6 +3,13 @@ import { Symbol, Token } from "./lexer-types.js";
 import { RangeArray, access, crash, f, fail, unicodeSetsSupported } from "./utils.js";
 export const symbolTypeData = [
     [/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
+    [`\\"`, "escape.quote.double"],
+    [`\\'`, "escape.quote.single"],
+    [`\\\\`, "escape.backslash"],
+    [`\\t`, "escape.tab"],
+    [`\\n`, "escape.newline"],
+    [`\\\n`, "space"],
+    [`\\`, "escape_character"],
     [">=", "operator.greater_than_equal"],
     ["<=", "operator.less_than_equal"],
     ["<>", "operator.not_equal_to"],
@@ -27,7 +34,7 @@ export const symbolTypeData = [
     ["{", "brace.open"],
     ["}", "brace.close"],
     ["'", "quote.single"],
-    ["\"", "quote.double"],
+    [`"`, "quote.double"],
     [":", "punctuation.colon"],
     [";", "punctuation.semicolon"],
     [",", "punctuation.comma"],
@@ -260,7 +267,9 @@ export function tokenize(input) {
         else if (state.multilineComment) {
         }
         else if (state.singleQuotedString) {
-            currentString += symbol.text;
+            if (symbol.type == "escape_character")
+                fail(`Unescaped backslash in string\nhelp: escape the backslash by adding another backslash before it`, symbol);
+            currentString += symbol.getStringText();
             if (symbol.type === "quote.single") {
                 state.singleQuotedString = null;
                 const range = [symbol.range[1] - currentString.length, symbol.range[1]];
@@ -281,7 +290,9 @@ export function tokenize(input) {
             }
         }
         else if (state.doubleQuotedString) {
-            currentString += symbol.text;
+            if (symbol.type == "escape_character")
+                fail(`Unescaped backslash in string\nhelp: escape the backslash by adding another backslash before it`, symbol);
+            currentString += symbol.getStringText();
             if (symbol.type === "quote.double") {
                 state.doubleQuotedString = null;
                 tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
@@ -319,6 +330,10 @@ export function tokenize(input) {
             void 0;
         else if (symbol.type === "unknown")
             fail(f.quote `Invalid character ${symbol}`, symbol);
+        else if ([
+            "escape.quote.double", "escape.quote.single", "escape.backslash", "escape.tab", "escape.newline"
+        ].includes(symbol.type))
+            fail(f.quote `Invalid escape sequence ${symbol}: escape sequences are only allowed within strings`, symbol);
         else if (symbol.type === "numeric_fragment") {
             state.decimalNumber = "allowDecimal";
             if (isNaN(Number(symbol.text)))
