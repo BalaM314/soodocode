@@ -5,6 +5,7 @@
 		"tsBuildInfoFile": "../build/.tsbuildinfo",
 		"outDir": "../build/",
 		"rootDir": ".",
+		"declaration": true,
 	},
 	"include": [
 		"./**.ts"

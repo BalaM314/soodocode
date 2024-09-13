@@ -10,7 +10,7 @@ which is the preferred representation of the program.
 
 import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, TokenMatcher } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, FunctionArgumentPassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
@@ -142,7 +142,10 @@ export function splitTokensToStatements(tokens:RangeArray<Token>):RangeArray<Tok
 		[CaseBranchRangeStatement, 5],
 		[CaseBranchRangeStatement, 6],
 	];
-	return splitTokens(tokens, "newline").map(ts => {
+	return splitTokens(tokens.select((token, i) => !(
+		//Delete newlines immediately preceding a THEN
+		token.type == "newline" && tokens[i + 1]?.type == "keyword.then"
+	)), "newline").map(ts => {
 		for(const [statement, length] of statementData){
 			if(ts.length > length && Array.isArray(checkStatement(statement, ts.slice(0, length), false)))
 				return [ts.slice(0, length), ts.slice(length)];
@@ -157,7 +160,7 @@ export function splitTokensToStatements(tokens:RangeArray<Token>):RangeArray<Tok
  */
 export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 	const lines:RangeArray<Token>[] = splitTokensToStatements(tokens);
-	const programNodes:ProgramASTNode[] = [];
+	const programNodes = new ProgramASTNodeGroup();
 	function getActiveBuffer(){
 		if(blockStack.length == 0) return programNodes;
 		else return blockStack.at(-1)!.nodeGroups.at(-1)!;
@@ -171,7 +174,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 			const node = new ProgramASTBranchNode(
 				ProgramASTBranchNodeType(statement.stype),
 				[statement] as never, //will be mutated later
-				[[]]
+				[new ProgramASTNodeGroup()]
 			);
 			getActiveBuffer().push(node);
 			blockStack.push(node);
@@ -190,7 +193,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 			if((errorMessage = lastNode.controlStatements[0].type.supportsSplit(lastNode, statement)) !== true)
 				fail(`Unexpected statement: ${errorMessage}`, statement, null);
 			lastNode.controlStatements_().push(statement);
-			lastNode.nodeGroups.push([]);
+			lastNode.nodeGroups.push(new ProgramASTNodeGroup());
 		} else statement.category satisfies never;
 	}
 	if(blockStack.length)
