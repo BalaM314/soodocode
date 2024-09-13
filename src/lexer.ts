@@ -13,8 +13,9 @@ import { TextRange } from "./types.js";
 import { RangeArray, access, crash, f, fail, impossible, unicodeSetsSupported } from "./utils.js";
 
 
+/** Stores a list of symbol matchers and their corresponding {@link SymbolType types}. */
 export const symbolTypeData: [
-	identifier: string | [SymbolSpecifierFuncName] | RegExp, symbol:SymbolType
+	matcher: string | [SymbolSpecifierFuncName] | RegExp, symbol:SymbolType
 ][] = [
 	[/(?:<[-\u2010-\u2015]{1,3})|[\uF0AC\u2190\u21D0\u21E0\u21FD]/, "operator.assignment"],
 	[">=", "operator.greater_than_equal"],
@@ -115,7 +116,8 @@ export const tokenNameTypeData = {
 	"WHILE": "keyword.while",
 	"WRITE": "keyword.file_mode.write",
 	"WRITEFILE": "keyword.write_file",
-	//Unused except in tests for de-boilerplating
+	
+	//These token mappings are not directly used by the lexer, instead, they are used for error messages and unit tests.
 	"<-": "operator.assignment",
 	">=": "operator.greater_than_equal",
 	"<=": "operator.less_than_equal",
@@ -149,16 +151,24 @@ export const tokenTextMapping =
 type SymbolSpecifierFuncName = "isAlphanumeric" | "isNumber";
 /** Util class for the symbolizer. Makes it easier to process a string. */
 class SymbolizerIO {
+	/** Stores the last piece of text that was successfully matched. */
 	lastMatched:string | null = null;
+	/** Stores the range of the last piece of text that was successfully matched. */
 	lastMatchedRange:TextRange | null = null;
 	output:Symbol[] = [];
 	constructor(public string:string, public offset:number = 0){}
 	inc(amount:number){
 		this.offset += amount;
 	}
+	/** Returns the character currently being processed. */
 	at(){
 		return this.string[this.offset];
 	}
+	/**
+	 * Attempts to match a string or regexp.
+	 * If the match succeeds, the matched text is stored in `lastMatched` and `lastMatchedRange`.
+	 * @returns whether the match succeeded.
+	 */
 	cons(input:string | RegExp):boolean {
 		if(input instanceof RegExp){
 			const matchData = input.exec(this.string.slice(this.offset));
@@ -176,9 +186,11 @@ class SymbolizerIO {
 			} else return false;
 		}
 	}
+	/** @returns whether there is any text left */
 	has(){
 		return this.string[this.offset] != undefined;
 	}
+	/** Successfully matches the current character, and updates `lastMatched` and `lastMatchedRange`. */
 	read(){
 		this.lastMatchedRange ??= [this.offset, this.offset];
 		this.lastMatched ??= "";
@@ -192,6 +204,7 @@ class SymbolizerIO {
 	writeText(type:SymbolType, text:string, range:TextRange){
 		this.output.push(new Symbol(type, text, range));
 	}
+	/** Writes a {@link Symbol} to the output, using the last matched text and range. */
 	write(type:SymbolType){
 		if(!this.lastMatched || !this.lastMatchedRange) crash(`Cannot write symbol, no stored match`);
 		this.output.push(new Symbol(type, this.lastMatched, this.lastMatchedRange.slice()));
@@ -247,12 +260,13 @@ export function symbolize(input:string):SymbolizedProgram {
 
 /** Converts a list of symbols into a list of tokens. */
 export function tokenize(input:SymbolizedProgram):TokenizedProgram {
+	//TODO: string escape sequences
 	const tokens:Token[] = [];
 	const state = {
-		sComment: null as null | Symbol,
-		mComment: null as null | Symbol,
-		sString: null as null | Symbol,
-		dString: null as null | Symbol,
+		singlelineComment: null as null | Symbol,
+		multilineComment: null as null | Symbol,
+		singleQuotedString: null as null | Symbol,
+		doubleQuotedString: null as null | Symbol,
 		decimalNumber: "none" as "none" | "allowDecimal" | "requireNumber",
 	};
 	let currentString = "";
@@ -262,21 +276,21 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			state.decimalNumber = "none"; //Cursed state reset
 
 		//State checks and comments
-		if(state.sComment){
+		if(state.singlelineComment){
 			if(symbol.type === "newline"){
-				state.sComment = null;
+				state.singlelineComment = null;
 				symbol.type satisfies TokenType;
 				tokens.push(symbol.toToken());
 			}
 		} else if(symbol.type === "comment.multiline.close"){
-			if(state.mComment) state.mComment = null;
+			if(state.multilineComment) state.multilineComment = null;
 			else fail(`Cannot close multiline comment, no open multiline comment`, symbol);
-		} else if(state.mComment){
+		} else if(state.multilineComment){
 			//discard the symbol
-		} else if(state.sString){
+		} else if(state.singleQuotedString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.single"){
-				state.sString = null;
+				state.singleQuotedString = null;
 				const range:TextRange = [symbol.range[1] - currentString.length, symbol.range[1]];
 				if(unicodeSetsSupported()){
 					if((new RegExp(`^'\\p{RGI_Emoji_Flag_Sequence}'$`, "v")).test(currentString)) fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
@@ -292,15 +306,15 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 				tokens.push(new Token("char", currentString, range));
 				currentString = "";
 			}
-		} else if(state.dString){
+		} else if(state.doubleQuotedString){
 			currentString += symbol.text;
 			if(symbol.type === "quote.double"){
-				state.dString = null;
+				state.doubleQuotedString = null;
 				tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
 				currentString = "";
 			}
-		} else if(symbol.type === "comment.singleline") state.sComment = symbol;
-		else if(symbol.type === "comment.multiline.open") state.mComment = symbol;
+		} else if(symbol.type === "comment.singleline") state.singlelineComment = symbol;
+		else if(symbol.type === "comment.multiline.open") state.multilineComment = symbol;
 		//Decimals
 		else if(state.decimalNumber == "requireNumber"){
 			const num = tokens.at(-1)!;
@@ -314,10 +328,10 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			state.decimalNumber = "requireNumber";
 			tokens.at(-1)!.mergeFrom(symbol);
 		} else if(symbol.type === "quote.single"){
-			state.sString = symbol;
+			state.singleQuotedString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "quote.double"){
-			state.dString = symbol;
+			state.doubleQuotedString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
 		else if(symbol.type === "unknown") fail(f.quote`Invalid character ${symbol}`, symbol);
@@ -335,9 +349,9 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		}
 	}
 	//Ending state checks
-	if(state.mComment) fail(`Unclosed multiline comment`, state.mComment);
-	if(state.dString) fail(`Unclosed double-quoted string`, state.dString);
-	if(state.sString) fail(`Unclosed single-quoted string`, state.sString);
+	if(state.multilineComment) fail(`Unclosed multiline comment`, state.multilineComment);
+	if(state.doubleQuotedString) fail(`Unclosed double-quoted string`, state.doubleQuotedString);
+	if(state.singleQuotedString) fail(`Unclosed single-quoted string`, state.singleQuotedString);
 	if(state.decimalNumber == "requireNumber") fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1)!.rangeAfter());
 	return {
 		program: input.program,
