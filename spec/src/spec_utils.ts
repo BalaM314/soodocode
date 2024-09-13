@@ -1,6 +1,6 @@
 import { Symbol, SymbolType, Token, TokenType } from "../../build/lexer-types.js";
 import { tokenTextMapping } from "../../build/lexer.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, operators } from "../../build/parser-types.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, TypedNodeValue, PrimitiveVariableType, PrimitiveVariableTypeName, UnresolvedVariableType, VariableType } from "../../build/runtime-types.js";
 import { Runtime } from "../../build/runtime.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements.js";
@@ -39,7 +39,7 @@ export type _ExpressionASTTypeNode = _Token | _ExpressionASTRangeTypeNode | _Exp
 export type _VariableType = Exclude<VariableType, PrimitiveVariableType> | PrimitiveVariableTypeName;
 export type _UnresolvedVariableType = string;
 
-export type _Operator = OperatorType;
+export type _Operator = OperatorName;
 
 export type StatementUnion<T extends keyof typeof statementCreators = keyof typeof statementCreators> = T extends unknown ? [statementType:T, ...Parameters<(typeof statementCreators)[T]>] : never;
 export type _Statement = [constructor:typeof Statement, input:(_Token | _ExpressionAST | _ExpressionASTArrayTypeNode)[]] | StatementUnion;
@@ -73,7 +73,7 @@ export type Processed<T> =
 	never
 ;
 
-export const operatorTokens: Record<OperatorType, Token> = {
+export const operatorTokens: Record<OperatorName, Token> = {
 	"add": token("operator.add", "+"),
 	"subtract": token("operator.minus", "-"),
 	"multiply": token("operator.multiply", "*"),
@@ -197,7 +197,7 @@ export function process_ProgramASTNode(input:_ProgramASTNode):ProgramASTNode {
 		? process_Statement(input)
 		: new ProgramASTBranchNode(
 			input.type,
-			input.controlStatements.map(process_Statement),
+			input.controlStatements.map(process_Statement) as never,
 			input.nodeGroups.map(block => block.map(process_ProgramASTNode)),
 		);
 }

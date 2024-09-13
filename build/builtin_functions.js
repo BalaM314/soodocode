@@ -3,8 +3,8 @@ import { f, fail } from "./utils.js";
 function fn(data) {
     return data;
 }
-let builtinFunctions;
-export const getBuiltinFunctions = () => builtinFunctions ?? (builtinFunctions = ((d) => {
+let builtinFunctionsCache;
+export const getBuiltinFunctions = () => builtinFunctionsCache ?? (builtinFunctionsCache = ((d) => {
     const obj = Object.fromEntries(Object.entries(d).map(([name, data]) => [name, {
             args: new Map(data.args.map(([name, type]) => [name, {
                     passMode: "reference",
@@ -239,7 +239,8 @@ export const preprocessedBuiltinFunctions = ({
         returnType: "DATE",
         impl() {
             return new Date();
-        }
+        },
+        aliases: ["NOW"]
     }),
     EOF: fn({
         args: [
@@ -261,5 +262,24 @@ export const preprocessedBuiltinFunctions = ({
             const mult = 10 ** places;
             return Math.round(value * mult) / mult;
         },
+    }),
+    POW: fn({
+        args: [
+            ["Value", "REAL"],
+            ["Exponent", "INTEGER"],
+        ],
+        returnType: "REAL",
+        impl(value, exponent) {
+            return value ** exponent;
+        }
+    }),
+    EXP: fn({
+        args: [
+            ["Num", "REAL"]
+        ],
+        returnType: "REAL",
+        impl(value) {
+            return Math.exp(value);
+        }
     }),
 });

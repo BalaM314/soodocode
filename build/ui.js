@@ -42,12 +42,12 @@ export function displayExpressionHTML(node, expand = false, format = true) {
         return format ? `<span class="expression-display-block">${text}</span>` : text;
     }
     else {
-        if (node.operator.type.startsWith("unary_prefix"))
+        if (node.operator.fix.startsWith("unary_prefix"))
             return (`(
 ${node.operatorToken.text}
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`);
-        else if (node.operator.type.startsWith("unary_postfix"))
+        else if (node.operator.fix.startsWith("unary_postfix"))
             return (`(
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
 ${node.operatorToken.text}
@@ -165,7 +165,7 @@ export function evaluateExpressionDemo(node) {
         fail(f.quote `Cannot evaluate expression ${node}: array contents unknown`, node);
     }
     else
-        switch (node.operator.name) {
+        switch (node.operator.id) {
             case "operator.negate": return -evaluateExpressionDemo(node.nodes[0]);
             case "operator.add": return evaluateExpressionDemo(node.nodes[0]) + evaluateExpressionDemo(node.nodes[1]);
             case "operator.subtract": return evaluateExpressionDemo(node.nodes[0]) - evaluateExpressionDemo(node.nodes[1]);
@@ -173,7 +173,7 @@ export function evaluateExpressionDemo(node) {
             case "operator.divide": return evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]);
             case "operator.integer_divide": return Math.trunc(evaluateExpressionDemo(node.nodes[0]) / evaluateExpressionDemo(node.nodes[1]));
             case "operator.mod": return evaluateExpressionDemo(node.nodes[0]) % evaluateExpressionDemo(node.nodes[1]);
-            default: fail(f.quote `Cannot evaluate expression: cannot evaluate node ${node}: unknown operator type ${node.operator.name}`, node);
+            default: fail(f.quote `Cannot evaluate expression: cannot evaluate node ${node}: unknown operator type ${node.operator.id}`, node);
         }
 }
 export function download(filename, data) {

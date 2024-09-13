@@ -230,10 +230,10 @@ export function symbolize(input) {
 export function tokenize(input) {
     const tokens = [];
     const state = {
-        sComment: null,
-        mComment: null,
-        sString: null,
-        dString: null,
+        singlelineComment: null,
+        multilineComment: null,
+        singleQuotedString: null,
+        doubleQuotedString: null,
         decimalNumber: "none",
     };
     let currentString = "";
@@ -241,25 +241,25 @@ export function tokenize(input) {
     for (symbol of input.symbols) {
         if (state.decimalNumber == "allowDecimal" && symbol.type !== "punctuation.period")
             state.decimalNumber = "none";
-        if (state.sComment) {
+        if (state.singlelineComment) {
             if (symbol.type === "newline") {
-                state.sComment = null;
+                state.singlelineComment = null;
                 symbol.type;
                 tokens.push(symbol.toToken());
             }
         }
         else if (symbol.type === "comment.multiline.close") {
-            if (state.mComment)
-                state.mComment = null;
+            if (state.multilineComment)
+                state.multilineComment = null;
             else
                 fail(`Cannot close multiline comment, no open multiline comment`, symbol);
         }
-        else if (state.mComment) {
+        else if (state.multilineComment) {
         }
-        else if (state.sString) {
+        else if (state.singleQuotedString) {
             currentString += symbol.text;
             if (symbol.type === "quote.single") {
-                state.sString = null;
+                state.singleQuotedString = null;
                 const range = [symbol.range[1] - currentString.length, symbol.range[1]];
                 if (unicodeSetsSupported()) {
                     if ((new RegExp(`^'\\p{RGI_Emoji_Flag_Sequence}'$`, "v")).test(currentString))
@@ -277,18 +277,18 @@ export function tokenize(input) {
                 currentString = "";
             }
         }
-        else if (state.dString) {
+        else if (state.doubleQuotedString) {
             currentString += symbol.text;
             if (symbol.type === "quote.double") {
-                state.dString = null;
+                state.doubleQuotedString = null;
                 tokens.push(new Token("string", currentString, [symbol.range[1] - currentString.length, symbol.range[1]]));
                 currentString = "";
             }
         }
         else if (symbol.type === "comment.singleline")
-            state.sComment = symbol;
+            state.singlelineComment = symbol;
         else if (symbol.type === "comment.multiline.open")
-            state.mComment = symbol;
+            state.multilineComment = symbol;
         else if (state.decimalNumber == "requireNumber") {
             const num = tokens.at(-1);
             if (symbol.type == "numeric_fragment") {
@@ -305,11 +305,11 @@ export function tokenize(input) {
             tokens.at(-1).mergeFrom(symbol);
         }
         else if (symbol.type === "quote.single") {
-            state.sString = symbol;
+            state.singleQuotedString = symbol;
             currentString += symbol.text;
         }
         else if (symbol.type === "quote.double") {
-            state.dString = symbol;
+            state.doubleQuotedString = symbol;
             currentString += symbol.text;
         }
         else if (symbol.type === "space")
@@ -333,12 +333,12 @@ export function tokenize(input) {
             tokens.push(symbol.toToken());
         }
     }
-    if (state.mComment)
-        fail(`Unclosed multiline comment`, state.mComment);
-    if (state.dString)
-        fail(`Unclosed double-quoted string`, state.dString);
-    if (state.sString)
-        fail(`Unclosed single-quoted string`, state.sString);
+    if (state.multilineComment)
+        fail(`Unclosed multiline comment`, state.multilineComment);
+    if (state.doubleQuotedString)
+        fail(`Unclosed double-quoted string`, state.doubleQuotedString);
+    if (state.singleQuotedString)
+        fail(`Unclosed single-quoted string`, state.singleQuotedString);
     if (state.decimalNumber == "requireNumber")
         fail(`Expected a numeric fragment, but found end of input`, input.symbols.at(-1).rangeAfter());
     return {

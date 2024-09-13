@@ -482,7 +482,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 			let guessedType = (type as PrimitiveVariableType<"REAL" | "INTEGER">) ?? PrimitiveVariableType.REAL; //Use this type to evaluate the expression
 			let value:number;
 			//if the requested type is INTEGER, the sub expressions will be evaluated as integers and return an error if not possible
-			if(expr.operator.type == "unary_prefix"){
+			if(expr.operator.fix == "unary_prefix"){
 				const operand = this.evaluateExpr(expr.nodes[0], guessedType, true);
 				switch(expr.operator){
 					case operators.negate:
@@ -563,7 +563,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			if(type && !type.is("BOOLEAN"))
 				fail(f.quote`Expected this expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`, expr);
 
-			if(expr.operator.type == "unary_prefix"){
+			if(expr.operator.fix == "unary_prefix"){
 				const operand = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true);
 				switch(expr.operator){
 					case operators.not: {
@@ -1071,7 +1071,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			if(node instanceof Statement){
 				result = node.run(this);
 			} else {
-				result = node.controlStatements[0].runBlock(this, node satisfies ProgramASTBranchNode as never);
+				result = (node.controlStatements[0] as Statement).runBlock(this, node satisfies ProgramASTBranchNode as never);
 			}
 			if(result){
 				if(result.type == "function_return"){

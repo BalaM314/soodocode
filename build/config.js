@@ -57,13 +57,13 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
         date_to_string: {
             name: "Coerce DATE to STRING",
             shortDescription: `Allow implicitly converting a DATE to a STRING.`,
-            fullDescription: `If this is disabled, the OUTPUT statement will still be able to print dates.`,
+            fullDescription: `If this is disabled, the OUTPUT statement will still be able to print DATEs.`,
             value: false,
         },
         arrays_to_string: {
             name: "Coerce arrays to STRING",
             shortDescription: `Allow implicitly converting an array to a STRING.`,
-            fullDescription: `If this is disabled, the OUTPUT statement will still be able to print arrays.`,
+            fullDescription: `If this is disabled, the OUTPUT statement will still be able to print ARRAYs.`,
             value: false,
         },
     },

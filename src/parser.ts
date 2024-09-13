@@ -161,7 +161,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 		} else if(statement.category == "block"){
 			const node = new ProgramASTBranchNode(
 				ProgramASTBranchNodeType(statement.stype),
-				[statement],
+				[statement] as never, //will be mutated later
 				[[]]
 			);
 			getActiveBuffer().push(node);
@@ -443,7 +443,7 @@ function cannotEndExpression(token:Token){
 	return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
 function canBeUnaryOperator(token:Token){
-	return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
+	return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 
 export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
@@ -479,17 +479,17 @@ export const parseExpression = errorBoundary({
 				operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type) //it is currently being searched for, TODO optimize triple nested loop
 			){
 				//this is the lowest priority operator in the expression and should become the root node
-				if(operator.type.startsWith("unary_prefix")){
+				if(operator.fix.startsWith("unary_prefix")){
 					//Make sure there is only something on right side of the operator
 					const right = input.slice(i + 1);
 					if(i != 0){ //if there are tokens to the left of a unary prefix operator
-						if(operator.type == "unary_prefix_o_postfix" && (
+						if(operator.fix == "unary_prefix_o_postfix" && (
 							//"^ x ^ ^"
 							//     ⬆: this should be allowed
 							//x^.prop"
 							// ⬆: this should NOT be allowed
 							//Make sure everything to the right is unary postfix operators of the same priority
-							right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.type == "unary_postfix_o_prefix" || o.type == "unary_prefix_o_postfix"))
+							right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.fix == "unary_postfix_o_prefix" || o.fix == "unary_prefix_o_postfix"))
 						)) continue; //this is the postfix operator
 						//Binary operators
 						//  1 / 2 / 3
@@ -505,7 +505,7 @@ export const parseExpression = errorBoundary({
 						fail(f.text`Unexpected expression on left side of operator ${input[i]}`, input[i]);
 					}
 					if(right.length == 0) fail(f.text`Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
-					if(right.length == 1 && operator.name == "operator.negate" && right[0].type == "number.decimal"){
+					if(right.length == 1 && operator.id == "operator.negate" && right[0].type == "number.decimal"){
 						//Special handling for negative numbers:
 						//Do not create an expression, instead create a negative number token
 						const negativeNumber = right[0].clone();
@@ -519,11 +519,11 @@ export const parseExpression = errorBoundary({
 						new RangeArray([parseExpression(right, true)]),
 						input
 					);
-				} else if(operator.type.startsWith("unary_postfix")){
+				} else if(operator.fix.startsWith("unary_postfix")){
 					//Make sure there is only something on left side of the operator
 					const left = input.slice(0, i);
 					if(i != input.length - 1){ //if there are tokens to the right of a unary postfix operator
-						if(operator.type == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
+						if(operator.fix == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
 						//No need to worry about operator priority changing for postfix
 						fail(f.text`Unexpected expression on left side of operator ${input[i]}`, input[i]);
 					}
@@ -539,11 +539,11 @@ export const parseExpression = errorBoundary({
 					const left = input.slice(0, i);
 					const right = input.slice(i + 1);
 					if(left.length == 0){
-						if(operator.type == "binary_o_unary_prefix") continue; //this is the unary operator, try again
+						if(operator.fix == "binary_o_unary_prefix") continue; //this is the unary operator, try again
 						else fail(f.text`Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
 					}
 					if(right.length == 0) fail(f.text`Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
-					if(operator.type == "binary_o_unary_prefix"){
+					if(operator.fix == "binary_o_unary_prefix"){
 						if(cannotEndExpression(input[i - 1])) continue; //Binary operator can't fit here, this must be the unary operator
 					}
 					if(operator == operators.access){

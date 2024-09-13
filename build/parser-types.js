@@ -12,10 +12,10 @@ export class ExpressionASTBranchNode {
         return this.allTokens.map(t => t.text).join(" ");
     }
     fmtText() {
-        if (this.operator.type.startsWith("unary_prefix")) {
+        if (this.operator.fix.startsWith("unary_prefix")) {
             return `(${this.operatorToken.text} ${this.nodes[0].fmtText()})`;
         }
-        else if (this.operator.type.startsWith("unary_postfix")) {
+        else if (this.operator.fix.startsWith("unary_postfix")) {
             return `(${this.nodes[0].fmtText()} ${this.operatorToken.text})`;
         }
         else {
@@ -23,7 +23,7 @@ export class ExpressionASTBranchNode {
         }
     }
     fmtDebug() {
-        return `[${this.operator.name} ${this.nodes.map(n => n.fmtDebug()).join(" ")}]`;
+        return `[${this.operator.id} ${this.nodes.map(n => n.fmtDebug()).join(" ")}]`;
     }
 }
 export class ExpressionASTFunctionCallNode {
@@ -139,17 +139,17 @@ export class Operator {
             "operator.negate": "negate",
             "operator.pointer_dereference": "pointer dereference",
             "operator.access": "access",
-        }[this.name];
+        }[this.id];
     }
     fmtDebug() {
-        return `Operator [${this.name}] (${this.category} ${this.type})`;
+        return `Operator [${this.id}] (${this.category} ${this.fix})`;
     }
 }
 export const operatorsByPriority = ((input) => input.map(row => row.map(o => new Operator({
     token: o.token,
     category: o.category,
-    type: o.type ?? "binary",
-    name: "name" in o ? o.name : o.token,
+    fix: o.fix ?? "binary",
+    id: "id" in o ? o.id : o.token,
 }))))([
     [
         {
@@ -188,10 +188,10 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => new
             token: "operator.add",
             category: "arithmetic"
         }, {
-            name: "operator.subtract",
+            id: "operator.subtract",
             token: "operator.minus",
             category: "arithmetic",
-            type: "binary_o_unary_prefix"
+            fix: "binary_o_unary_prefix"
         }, {
             token: "operator.string_concatenate",
             category: "string"
@@ -214,40 +214,40 @@ export const operatorsByPriority = ((input) => input.map(row => row.map(o => new
     [
         {
             token: "operator.pointer",
-            name: "operator.pointer_reference",
+            id: "operator.pointer_reference",
             category: "special",
-            type: "unary_prefix_o_postfix"
+            fix: "unary_prefix_o_postfix"
         },
         {
             token: "operator.not",
             category: "logical",
-            type: "unary_prefix"
+            fix: "unary_prefix"
         },
         {
             token: "operator.minus",
-            name: "operator.negate",
+            id: "operator.negate",
             category: "arithmetic",
-            type: "unary_prefix"
+            fix: "unary_prefix"
         },
     ],
     [
         {
             token: "operator.pointer",
-            name: "operator.pointer_dereference",
+            id: "operator.pointer_dereference",
             category: "special",
-            type: "unary_postfix_o_prefix"
+            fix: "unary_postfix_o_prefix"
         }
     ],
     [
         {
             token: "punctuation.period",
-            name: "operator.access",
+            id: "operator.access",
             category: "special",
         }
     ]
 ]);
 export const operators = Object.fromEntries(operatorsByPriority.flat().map(o => [
-    o.name.startsWith("operator.") ? o.name.split("operator.")[1] : crash(`operator names should start with operator.`), o
+    o.id.startsWith("operator.") ? o.id.split("operator.")[1] : crash(`operator names should start with operator.`), o
 ]));
 export class ProgramASTBranchNode {
     constructor(type, controlStatements, nodeGroups) {

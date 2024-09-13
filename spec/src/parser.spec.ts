@@ -3397,7 +3397,7 @@ describe("parseExpression", () => {
 
 describe("parseStatement", () => {
 	for(const [name, program, output, context] of parseStatementTests){
-		const fakeNode = context ? new ProgramASTBranchNode(context[0], [context[1]], []) : null;
+		const fakeNode = context ? new ProgramASTBranchNode(context[0], [context[1]] as never, []) : null;
 		if(output === "error"){
 			it(`should not parse ${name} into a statement`, () => {
 				expect(() => parseStatement(program, fakeNode, true)).toThrowMatching(e => e instanceof SoodocodeError);

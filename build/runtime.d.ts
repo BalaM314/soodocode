@@ -32,7 +32,7 @@ export declare class Runtime {
     currentlyResolvingTypeName: string | null;
     currentlyResolvingPointerTypeName: string | null;
     fs: Files;
-    builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF" | "ROUND", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
+    builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF" | "ROUND" | "POW" | "EXP", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
     statementsExecuted: number;
     constructor(_input: (message: string, type: VariableType) => string, _output: (values: TypedValue[]) => void);
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): TypedValue;

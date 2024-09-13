@@ -889,15 +889,10 @@ export type ConstantData<T extends VariableType = VariableType> = {
 	mutable: false;
 }
 /** Either a function or a procedure */
-export type FunctionData = ProgramASTBranchNode & {
-	nodeGroups: [body:ProgramASTNode[]];
-} & ({
-	type: "function";
-	controlStatements: [start:FunctionStatement, end:Statement];
-} | {
-	type: "procedure";
-	controlStatements: [start:ProcedureStatement, end:Statement];
-});
+export type FunctionData<T extends "function" | "procedure" = "function" | "procedure"> =
+	(T extends unknown ? ProgramASTBranchNode<T> : never) & {
+		nodeGroups: [body:ProgramASTNode[]];
+	};
 export type BuiltinFunctionData = {
 	args:BuiltinFunctionArguments;
 	returnType:VariableType | null;

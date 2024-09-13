@@ -181,7 +181,6 @@ export function getPossibleStatements(tokens, context) {
             else
                 return statements.irregular;
         })();
-    validStatements.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
     if (ctx?.allowOnly) {
         const allowedValidStatements = validStatements.filter(s => ctx.allowOnly?.has(s.type));
         if (allowedValidStatements.length == 0) {
@@ -411,7 +410,7 @@ function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
 function canBeUnaryOperator(token) {
-    return Object.values(operators).find(o => o.type.startsWith("unary_prefix") && o.token == token.type);
+    return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
 export function parseExpressionLeafNode(token) {
@@ -437,10 +436,10 @@ export const parseExpression = errorBoundary({
             let operator;
             if (nestLevel.out() &&
                 operatorsOfCurrentPriority.find(o => (operator = o).token == input[i].type)) {
-                if (operator.type.startsWith("unary_prefix")) {
+                if (operator.fix.startsWith("unary_prefix")) {
                     const right = input.slice(i + 1);
                     if (i != 0) {
-                        if (operator.type == "unary_prefix_o_postfix" && (right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.type == "unary_postfix_o_prefix" || o.type == "unary_prefix_o_postfix"))))
+                        if (operator.fix == "unary_prefix_o_postfix" && (right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.fix == "unary_postfix_o_prefix" || o.fix == "unary_prefix_o_postfix"))))
                             continue;
                         if (canBeUnaryOperator(input[i - 1]))
                             continue;
@@ -448,7 +447,7 @@ export const parseExpression = errorBoundary({
                     }
                     if (right.length == 0)
                         fail(f.text `Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
-                    if (right.length == 1 && operator.name == "operator.negate" && right[0].type == "number.decimal") {
+                    if (right.length == 1 && operator.id == "operator.negate" && right[0].type == "number.decimal") {
                         const negativeNumber = right[0].clone();
                         negativeNumber.extendRange(input[i]);
                         negativeNumber.text = input[i].text + negativeNumber.text;
@@ -456,10 +455,10 @@ export const parseExpression = errorBoundary({
                     }
                     return new ExpressionASTBranchNode(input[i], operator, new RangeArray([parseExpression(right, true)]), input);
                 }
-                else if (operator.type.startsWith("unary_postfix")) {
+                else if (operator.fix.startsWith("unary_postfix")) {
                     const left = input.slice(0, i);
                     if (i != input.length - 1) {
-                        if (operator.type == "unary_postfix_o_prefix" && left.length == 0)
+                        if (operator.fix == "unary_postfix_o_prefix" && left.length == 0)
                             continue;
                         fail(f.text `Unexpected expression on left side of operator ${input[i]}`, input[i]);
                     }
@@ -471,14 +470,14 @@ export const parseExpression = errorBoundary({
                     const left = input.slice(0, i);
                     const right = input.slice(i + 1);
                     if (left.length == 0) {
-                        if (operator.type == "binary_o_unary_prefix")
+                        if (operator.fix == "binary_o_unary_prefix")
                             continue;
                         else
                             fail(f.text `Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
                     }
                     if (right.length == 0)
                         fail(f.text `Expected expression on right side of operator ${input[i]}`, input[i].rangeAfter());
-                    if (operator.type == "binary_o_unary_prefix") {
+                    if (operator.fix == "binary_o_unary_prefix") {
                         if (cannotEndExpression(input[i - 1]))
                             continue;
                     }
