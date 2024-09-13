@@ -799,7 +799,7 @@ ENDIF
 ENDIF`,
 Array.from({length: 10}, (_, i) => Array.from({length: i + 1}, (_, j) => (j + 1).toString()).join(""))
 ],
-many_scopes_invali_TODO: [
+many_scopes_invalid: [
 `IF TRUE THEN
 	DECLARE a: INTEGER\na <- 1
 	OUTPUT a
@@ -833,6 +833,7 @@ IF TRUE THEN
 ENDIF
 ENDIF
 ENDIF
+OUTPUT h
 ENDIF
 ENDIF
 ENDIF
@@ -840,7 +841,7 @@ ENDIF
 ENDIF
 ENDIF
 ENDIF`,
-Array.from({length: 10}, (_, i) => Array.from({length: i + 1}, (_, j) => (j + 1).toString()).join(""))
+`"h"`
 ],
 //#endregion
 //#region statements
