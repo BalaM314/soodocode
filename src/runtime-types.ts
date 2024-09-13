@@ -14,7 +14,7 @@ import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js
 import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
 import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, RangeArray, zip } from "./utils.js";
 
-/**Stores the JS type used for each pseudocode variable type */
+/** Maps a pseudocode VariableType to the type used to represent it in TS. */
 export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValue
 	T extends PrimitiveVariableType<infer U> ? (
 		U extends "INTEGER" ? number :
@@ -49,6 +49,7 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 	never
 ;
 
+/** Stores all primitive type names. */
 export const primitiveVariableTypeNames = [
 	"INTEGER",
 	"REAL",
@@ -58,6 +59,14 @@ export const primitiveVariableTypeNames = [
 	"DATE",
 ] as const;
 export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extends ReadonlyArray<infer T> ? T : never;
+export type PrimitiveVariableTypeMapping<T extends PrimitiveVariableTypeName> =
+	T extends "INTEGER" ? number :
+	T extends "REAL" ? number :
+	T extends "STRING" ? string :
+	T extends "CHAR" ? string :
+	T extends "BOOLEAN" ? boolean :
+	T extends "DATE" ? Date :
+	never;
 
 export type TypedValue<T extends VariableType = VariableType> =
 	//Trigger DCT
