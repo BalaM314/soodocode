@@ -53,6 +53,14 @@ export const configs = (<T extends Record<string, Record<string, ConfigData<unkn
 		}
 	}
 )({
+	syntax: {
+		semicolons_as_newlines: {
+			name: `Treat semicolons as newlines`,
+			description: `This allows you to write code like \`a <- 5; b <- 5\` on the same line.`,
+			errorHelp: `Treat semicolons as newlines`,
+			value: true,
+		}
+	},
 	coercion: {
 		arrays_same_length: {
 			name: "Coerce arrays of same length",

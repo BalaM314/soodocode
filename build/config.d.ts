@@ -7,6 +7,9 @@ export type Config<T, Help extends boolean> = {
     errorHelp: string;
 } : {});
 export declare const configs: {
+    syntax: {
+        semicolons_as_newlines: Config<boolean, true>;
+    };
     coercion: {
         arrays_same_length: Config<boolean, true>;
         arrays_same_total_size: Config<boolean, true>;
