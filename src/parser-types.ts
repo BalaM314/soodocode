@@ -433,6 +433,7 @@ export class ProgramASTNodeGroup extends Array<ProgramASTNode> {
 	requiresScope = true;
 	hasTypesOrConstants = true;
 	hasReturn = true;
+	private _simple = false;
 	preRun(parent?:ProgramASTBranchNode){
 		this.requiresScope = false;
 		this.hasTypesOrConstants = false;
@@ -458,9 +459,10 @@ export class ProgramASTNodeGroup extends Array<ProgramASTNode> {
 				node.triggerPreRun(this, parent);
 			}
 		}
+		this._simple = !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;
 	}
 	simple():this is { requiresScope: false; hasTypesOrConstants: false; hasReturn: false; } {
-		return !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;
+		return this._simple;
 	}
 	static from(nodes:ProgramASTNode[]){
 		return super.from(nodes) as ProgramASTNodeGroup;

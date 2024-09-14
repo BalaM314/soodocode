@@ -291,6 +291,7 @@ export class ProgramASTNodeGroup extends Array {
         this.requiresScope = true;
         this.hasTypesOrConstants = true;
         this.hasReturn = true;
+        this._simple = false;
     }
     preRun(parent) {
         this.requiresScope = false;
@@ -311,9 +312,10 @@ export class ProgramASTNodeGroup extends Array {
                 node.triggerPreRun(this, parent);
             }
         }
+        this._simple = !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;
     }
     simple() {
-        return !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;
+        return this._simple;
     }
     static from(nodes) {
         return super.from(nodes);

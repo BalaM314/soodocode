@@ -797,8 +797,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             *activeScopes() {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     yield this.scopes[i];
-                    if (this.scopes[i].opaque && i > 1)
-                        i = 1;
+                    if (this.scopes[i].opaque && i > 0) {
+                        if (this.scopes[0].statement == "global")
+                            yield this.scopes[0];
+                        return null;
+                    }
                 }
                 return null;
             }
@@ -957,7 +960,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 if (func instanceof ProcedureStatement && requireReturnValue)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
                 const scope = this.assembleScope(func, args);
-                const output = this.runBlock(funcNode.nodeGroups[0], scope);
+                const output = this.runBlock(funcNode.nodeGroups[0], false, scope);
                 if (func instanceof ProcedureStatement) {
                     return null;
                 }
@@ -977,7 +980,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 const methodScope = this.assembleScope(func, args);
                 const previousClassData = this.classData;
                 this.classData = { instance, method, clazz };
-                const output = this.runBlock(method.nodeGroups[0], classScope, methodScope);
+                const output = this.runBlock(method.nodeGroups[0], false, classScope, methodScope);
                 this.classData = previousClassData;
                 if (func instanceof ClassProcedureStatement) {
                     return null;
@@ -1012,7 +1015,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 else
                     return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
             }
-            runBlock(code, ...scopes) {
+            runBlock(code, allScopesEmpty, ...scopes) {
+                if (code.simple() && allScopesEmpty)
+                    return this.runBlockFast(code);
                 this.scopes.push(...scopes);
                 let returned = null;
                 const { typeNodes, constants, others } = groupArray(code, c => (c instanceof TypeStatement ||
@@ -1091,7 +1096,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
             }
             runProgram(code) {
                 code.preRun();
-                this.runBlock(code, {
+                this.runBlock(code, true, {
                     statement: "global",
                     opaque: true,
                     variables: {},
