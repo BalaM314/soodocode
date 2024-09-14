@@ -1310,6 +1310,14 @@ CLASS mogus INHERITS amogus
 ENDCLASS`,
 ``
 ],
+parse_illegal_super_use_1: [
+`OUTPUT SUPER`,
+`expression`
+],
+parse_illegal_super_use_2: [
+`OUTPUT (1+2+(3*SUPER)+4+5)`,
+`expression`
+],
 instantiate_class_blank: [
 `CLASS amogus
 	PUBLIC PROCEDURE NEW()
@@ -1789,15 +1797,33 @@ OUTPUT " "
 CALL cc.test2()`,
 ["B", "A", " ", "C", "B", "A", " ", "C", "B", "A", "  ", "B2", "A", " ", "B2", "A", " ", "B2", "A"]
 ],
-run_weird_super: [
+run_super_call: [
 `CLASS a
-PUBLIC PROCEDURE NEW()
-ENDPROCEDURE
+	PUBLIC PROCEDURE NEW()
+	ENDPROCEDURE
+	PUBLIC FUNCTION Sus() RETURNS INTEGER
+		RETURN 5
+	ENDFUNCTION
 ENDCLASS
 CLASS b INHERITS a
-PUBLIC FUNCTION Sus() RETURNS INTEGER
-	RETURN SUPER.NEW
-ENDFUNCTION
+	PUBLIC FUNCTION Sus() RETURNS INTEGER
+		RETURN SUPER.Sus() + 6
+	ENDFUNCTION
+ENDCLASS
+DECLARE myB: b
+myB <- NEW b()
+OUTPUT myB.Sus()`,
+["11"]
+],
+run_weird_super: [
+`CLASS a
+	PUBLIC PROCEDURE NEW()
+	ENDPROCEDURE
+ENDCLASS
+CLASS b INHERITS a
+	PUBLIC FUNCTION Sus() RETURNS INTEGER
+		RETURN SUPER.NEW
+	ENDFUNCTION
 ENDCLASS
 
 DECLARE b: b

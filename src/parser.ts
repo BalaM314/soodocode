@@ -488,13 +488,16 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 
-export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"]; //TODO new is not an expression leaf node...
+export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"]; //TODO new is not an expression leaf node...
 
 /** Parses the provided token as an expression leaf node. Examples: number, string, variable name */
-export function parseExpressionLeafNode(token:Token):ExpressionASTLeafNode {
+export function parseExpressionLeafNode(token:Token, allowSuper = false, allowNew = false):ExpressionASTLeafNode {
 	//Number, string, char, boolean, and variables can be parsed as-is
-	if(expressionLeafNodeTypes.includes(token.type))
-		return token;
+	if(
+		expressionLeafNodeTypes.includes(token.type) ||
+		(allowSuper && token.type == "keyword.super") ||
+		(allowNew && token.type == "keyword.new")
+	) return token;
 	else
 		fail(`Invalid expression leaf node`, token);
 };
@@ -506,11 +509,13 @@ export const parseExpression = errorBoundary({
 })(function _parseExpression(
 	input:RangeArray<Token>,
 	/** Used to set the general range for errors to be the outermost expression (which is the only one where recursive is false). */
-	recursive = false
+	recursive = false,
+	allowSuper = false,
+	allowNew = false,
 ):ExpressionASTNode {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input as any}`);
 	//If there is only one token, parse it as a leaf node
-	if(input.length == 1) return parseExpressionLeafNode(input[0]);
+	if(input.length == 1) return parseExpressionLeafNode(input[0], allowSuper, allowNew);
 
 	/** Some logic in this function handles cases where the input might be valid, or there is a specifc error message to explain why is is not valid. */
 	let deferredError: typeof impossible = () => fail(`No operators found`, input.length > 0 ? input : undefined);
@@ -607,7 +612,7 @@ export const parseExpression = errorBoundary({
 					return new ExpressionASTBranchNode(
 						input[i],
 						operator,
-						new RangeArray([parseExpression(left, true), parseExpression(right, true)]),
+						new RangeArray([parseExpression(left, true, operator == operators.access), parseExpression(right, true, false, operator == operators.access)]),
 						input
 					);
 				}

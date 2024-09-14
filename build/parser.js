@@ -412,9 +412,11 @@ function cannotEndExpression(token) {
 function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
-export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"];
-export function parseExpressionLeafNode(token) {
-    if (expressionLeafNodeTypes.includes(token.type))
+export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+export function parseExpressionLeafNode(token, allowSuper = false, allowNew = false) {
+    if (expressionLeafNodeTypes.includes(token.type) ||
+        (allowSuper && token.type == "keyword.super") ||
+        (allowNew && token.type == "keyword.new"))
         return token;
     else
         fail(`Invalid expression leaf node`, token);
@@ -423,11 +425,11 @@ export function parseExpressionLeafNode(token) {
 export const parseExpression = errorBoundary({
     predicate: (_input, recursive) => !recursive,
     message: () => `Expected "$rc" to be an expression, but it was invalid: `
-})(function _parseExpression(input, recursive = false) {
+})(function _parseExpression(input, recursive = false, allowSuper = false, allowNew = false) {
     if (!Array.isArray(input))
         crash(`parseExpression(): expected array of tokens, got ${input}`);
     if (input.length == 1)
-        return parseExpressionLeafNode(input[0]);
+        return parseExpressionLeafNode(input[0], allowSuper, allowNew);
     let deferredError = () => fail(`No operators found`, input.length > 0 ? input : undefined);
     for (const operatorsOfCurrentPriority of operatorsByPriority) {
         const nestLevel = manageNestLevel(true);
@@ -487,7 +489,7 @@ export const parseExpression = errorBoundary({
                             continue;
                         }
                     }
-                    return new ExpressionASTBranchNode(input[i], operator, new RangeArray([parseExpression(left, true), parseExpression(right, true)]), input);
+                    return new ExpressionASTBranchNode(input[i], operator, new RangeArray([parseExpression(left, true, operator == operators.access), parseExpression(right, true, false, operator == operators.access)]), input);
                 }
             }
         }
