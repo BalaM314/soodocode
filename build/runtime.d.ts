@@ -85,7 +85,7 @@ export declare class Runtime {
     callFunction<T extends boolean>(funcNode: FunctionData, args: RangeArray<ExpressionAST>, requireReturnValue?: T): VariableValue | (T extends false ? null : never);
     callClassMethod<T extends boolean>(method: ClassMethodData, clazz: ClassVariableType, instance: VariableTypeMapping<ClassVariableType>, args: RangeArray<ExpressionAST>, requireReturnValue?: T): (T extends false ? null : T extends undefined ? TypedValue | null : T extends true ? TypedValue : never);
     callBuiltinFunction(fn: BuiltinFunctionData, args: RangeArray<ExpressionAST>, returnType?: VariableType): TypedValue;
-    runBlock(code: ProgramASTNodeGroup, ...scopes: VariableScope[]): void | {
+    runBlock(code: ProgramASTNodeGroup, allScopesEmpty: boolean, ...scopes: VariableScope[]): void | {
         type: "function_return";
         value: VariableValue;
     };

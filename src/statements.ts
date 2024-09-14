@@ -613,10 +613,16 @@ export class EndBadStatement extends Statement {
 export class IfStatement extends Statement {
 	@evaluate condition = this.exprT(1, "BOOLEAN");
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"if">){
+		const scope:VariableScope = {
+			statement: this,
+			opaque: false,
+			variables: {},
+			types: {},
+		};
 		if(runtime.evaluate(this.condition)){
-			return runtime.runBlock(node.nodeGroups[0]);
+			return runtime.runBlock(node.nodeGroups[0], true, scope);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
-			return runtime.runBlock(node.nodeGroups[1]);
+			return runtime.runBlock(node.nodeGroups[1], true, scope);
 		}
 	}
 }
@@ -652,7 +658,12 @@ export class SwitchStatement extends Statement {
 					crash(`OTHERWISE case branch must be the last case branch`);
 
 				if(statement.branchMatches(switchType, switchValue)){
-					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`));
+					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
+						statement: this,
+						opaque: false,
+						variables: {},
+						types: {}
+					});
 					break;
 				}
 			} else {
@@ -727,7 +738,6 @@ export class ForStatement extends Statement {
 		if(this.empty){
 			runtime.statementExecuted(this, Number(to - from) / _step);
 		} else if(node.nodeGroups[0].simple()){
-			let i = from;
 			const variable:ConstantData = {
 				declaration: this,
 				mutable: false,
@@ -743,15 +753,17 @@ export class ForStatement extends Statement {
 				types: {}
 			};
 			runtime.scopes.push(scope);
-			while(direction == 1 ? i <= to : i >= to){
+			for(
+				let i = from;
+				direction == 1 ? i <= to : i >= to;
+				i += step, variable.value = Number(i)
+			){
 				runtime.runBlockFast(node.nodeGroups[0]);
-				i += step;
-				variable.value = Number(i);
 			}
 			runtime.scopes.pop();
 		} else {
 			for(let i = from; direction == 1 ? i <= to : i >= to; i += step){
-				const result = runtime.runBlock(node.nodeGroups[0], {
+				const result = runtime.runBlock(node.nodeGroups[0], false, {
 					statement: this,
 					opaque: false,
 					variables: {
@@ -799,7 +811,7 @@ export class WhileStatement extends Statement {
 			runtime.statementExecuted(this, Infinity);
 
 		while(runtime.evaluate(this.condition)){
-			const result = runtime.runBlock(node.nodeGroups[0], {
+			const result = runtime.runBlock(node.nodeGroups[0], true, {
 				statement: this,
 				opaque: false,
 				variables: {},
@@ -817,7 +829,7 @@ export class DoWhileStatement extends Statement {
 			runtime.statementExecuted(this, Infinity);
 
 		do {
-			const result = runtime.runBlock(node.nodeGroups[0], {
+			const result = runtime.runBlock(node.nodeGroups[0], true, {
 				statement: this,
 				opaque: false,
 				variables: {},

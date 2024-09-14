@@ -824,7 +824,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	*activeScopes(){
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			yield this.scopes[i];
-			if(this.scopes[i].opaque && i > 1) i = 1; //skip to the global scope
+			if(this.scopes[i].opaque && i > 0){
+				if(this.scopes[0].statement == "global") yield this.scopes[0];
+				return null;
+			}
 		}
 		return null;
 	}
@@ -971,7 +974,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
 
 		const scope = this.assembleScope(func, args);
-		const output = this.runBlock(funcNode.nodeGroups[0], scope);
+		const output = this.runBlock(funcNode.nodeGroups[0], false, scope);
 		if(func instanceof ProcedureStatement){
 			//requireReturnValue satisfies false;
 			return null as never;
@@ -996,7 +999,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		const methodScope = this.assembleScope(func, args);
 		const previousClassData = this.classData;
 		this.classData = {instance, method, clazz};
-		const output = this.runBlock(method.nodeGroups[0], classScope, methodScope);
+		const output = this.runBlock(method.nodeGroups[0], false, classScope, methodScope);
 		this.classData = previousClassData;
 		if(func instanceof ClassProcedureStatement){
 			//requireReturnValue satisfies false;
@@ -1031,10 +1034,14 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		if(returnType) return typedValue(returnType, coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
 		else return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
 	}
-	runBlock(code:ProgramASTNodeGroup, ...scopes:VariableScope[]):void | {
+	/**
+	 * @param allScopesEmpty If true, the scopes are all empty and are therefore optional.
+	 */
+	runBlock(code:ProgramASTNodeGroup, allScopesEmpty:boolean, ...scopes:VariableScope[]):void | {
 		type: "function_return";
 		value: VariableValue;
 	}{
+		if(code.simple() && allScopesEmpty) return this.runBlockFast(code);
 		this.scopes.push(...scopes);
 		let returned:null | VariableValue = null;
 		const {typeNodes, constants, others} = groupArray(code, c =>
@@ -1120,7 +1127,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	/** Creates a scope. */
 	runProgram(code:ProgramASTNodeGroup){
 		code.preRun();
-		this.runBlock(code, {
+		this.runBlock(code, true, {
 			statement: "global",
 			opaque: true,
 			variables: {},
