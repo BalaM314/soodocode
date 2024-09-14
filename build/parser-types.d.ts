@@ -113,6 +113,7 @@ export declare class ProgramASTNodeGroup extends Array<ProgramASTNode> {
     requiresScope: boolean;
     hasTypesOrConstants: boolean;
     hasReturn: boolean;
+    private _simple;
     preRun(parent?: ProgramASTBranchNode): void;
     simple(): this is {
         requiresScope: false;

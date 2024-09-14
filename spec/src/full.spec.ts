@@ -750,6 +750,46 @@ ENDPROCEDURE
 CALL localScope()`,
 ["5"]
 ],
+declaration_works_inside_many_blocks: [
+`PROCEDURE localScope()
+	IF TRUE THEN
+		FOR i <- 1 TO 1
+			REPEAT
+				CASE OF TRUE
+					FALSE: OUTPUT 2
+					TRUE: IF TRUE THEN
+						DECLARE xvar: INTEGER
+						xvar <- 5
+						OUTPUT xvar
+					ENDIF
+				ENDCASE
+			UNTIL TRUE
+		NEXT i
+	ENDIF
+ENDPROCEDURE
+CALL localScope()`,
+["5"]
+],
+declaration_works_inside_many_blocks_2: [
+`PROCEDURE localScope()
+	IF TRUE THEN
+		FOR i <- 1 TO 1
+			REPEAT
+				DECLARE xvar: INTEGER
+				CASE OF TRUE
+					FALSE: OUTPUT 2
+					TRUE: IF TRUE THEN
+						xvar <- 5
+					ENDIF
+				ENDCASE
+				OUTPUT xvar
+			UNTIL TRUE
+		NEXT i
+	ENDIF
+ENDPROCEDURE
+CALL localScope()`,
+["5"]
+],
 global_variable_exists_inside_function: [
 `DECLARE xvar: INTEGER
 PROCEDURE localScope()
