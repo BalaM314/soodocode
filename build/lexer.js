@@ -133,6 +133,7 @@ export const tokenNameTypeData = {
     ".": "punctuation.period",
     "\n": "newline",
 };
+Object.setPrototypeOf(tokenNameTypeData, null);
 export const tokenTextMapping = Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
 class SymbolizerIO {
     constructor(string, offset = 0) {
