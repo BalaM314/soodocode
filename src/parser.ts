@@ -511,9 +511,9 @@ export const parseExpression = errorBoundary({
 })(function _parseExpression(
 	input:RangeArray<Token>,
 	/** Used to set the general range for errors to be the outermost expression (which is the only one where recursive is false). */
-	recursive = false,
-	allowSuper = false,
-	allowNew = false,
+	recursive:boolean = false,
+	allowSuper:boolean = false,
+	allowNew:boolean = false,
 ):ExpressionASTNode {
 	if(!Array.isArray(input)) crash(`parseExpression(): expected array of tokens, got ${input as any}`);
 	//If there is only one token, parse it as a leaf node
