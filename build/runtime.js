@@ -127,14 +127,26 @@ function checkValueEquality(type, a, b, aPath, bPath, range) {
     return false;
 }
 function coerceValue(value, from, to, range) {
-    if (from.is("INTEGER") && to.is("REAL"))
-        return value;
-    if (from.is("REAL") && to.is("INTEGER"))
-        return Math.trunc(value);
     let assignabilityError;
     if ((assignabilityError = typesAssignable(to, from)) === true)
         return value;
     let disabledConfig = null;
+    if (from.is("INTEGER") && to.is("REAL"))
+        return value;
+    if (from.is("REAL") && to.is("INTEGER")) {
+        forceType(value);
+        if (configs.coercion.real_to_int.value) {
+            if (Number.isInteger(value))
+                return value;
+            else if (configs.coercion.truncate_real_to_int.value)
+                return Math.trunc(value);
+            else {
+                assignabilityError = `the number ${value} is not an integer`;
+            }
+        }
+        else
+            disabledConfig = configs.coercion.real_to_int;
+    }
     if (from.is("STRING") && to.is("CHAR")) {
         if (configs.coercion.string_to_char.value) {
             const v = value;

@@ -38,6 +38,17 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             errorHelp: `Allow implicitly converting a STRING to a CHAR`,
             value: true,
         },
+        real_to_int: {
+            name: "Coerce REAL to INTEGER",
+            description: `Allow implicitly converting a valid REAL to an INTEGER. Example: allows converting a variable of type REAL with value 5 to INTEGER. If this is disabled, you can explicitly convert a REAL to INTEGER by using the integer division operator, like this: real DIV 1`,
+            errorHelp: `Allow implicitly converting a REAL to an INTEGER`,
+            value: true,
+        },
+        truncate_real_to_int: {
+            name: "Truncate REAL to INTEGER",
+            description: `Allow converting REALs to INTEGERs, even if truncating is necessary. Example: converts 5.9 to 5.`,
+            value: false,
+        },
         numbers_to_string: {
             name: "Coerce numbers to STRING",
             description: `Allow implicitly converting an INTEGER or a REAL to a STRING without using the NUM_TO_STR function.\nFor example, LEFT(1234, 2) returns "12". If this is disabled, the OUTPUT statement will still be able to print numbers.`,
