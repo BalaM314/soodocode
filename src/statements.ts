@@ -56,8 +56,8 @@ export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_
 
 /** Stores all statement constructors. */
 export const statements = {
-	byStartKeyword: {} as Partial<Record<TokenType, (typeof Statement)[]>>,
-	byType: {} as Record<StatementType, typeof Statement>,
+	byStartKeyword: Object.create(null) as Partial<Record<TokenType, (typeof Statement)[]>>,
+	byType: Object.create(null) as Record<StatementType, typeof Statement>,
 	irregular: [] as (typeof Statement)[],
 };
 
@@ -480,7 +480,7 @@ export class TypeRecordStatement extends TypeStatement {
 	name = this.token(1);
 	static propagatesControlFlowInterruptions = false;
 	createTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		const fields:Record<string, [UnresolvedVariableType, TextRange]> = {};
+		const fields:Record<string, [UnresolvedVariableType, TextRange]> = Object.create(null);
 		for(const statement of node.nodeGroups[0]){
 			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`, statement);
 			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
@@ -615,8 +615,8 @@ export class IfStatement extends Statement {
 		const scope:VariableScope = {
 			statement: this,
 			opaque: false,
-			variables: {},
-			types: {},
+			variables: Object.create(null),
+			types: Object.create(null),
 		};
 		if(runtime.evaluate(this.condition)){
 			return runtime.runBlock(node.nodeGroups[0], true, scope);
@@ -660,8 +660,8 @@ export class SwitchStatement extends Statement {
 					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
 						statement: this,
 						opaque: false,
-						variables: {},
-						types: {}
+						variables: Object.create(null),
+						types: Object.create(null),
 					});
 					break;
 				}
@@ -736,20 +736,25 @@ export class ForStatement extends Statement {
 
 		if(this.empty){
 			runtime.statementExecuted(this, Number(to - from) / _step);
-		} else if(node.nodeGroups[0].simple()){
-			const variable:ConstantData = {
-				declaration: this,
-				mutable: false,
-				type: PrimitiveVariableType.INTEGER,
-				value: Number(from)
-			};
+			return;
+		}
+		
+		const variable:ConstantData = {
+			declaration: this,
+			mutable: false,
+			type: PrimitiveVariableType.INTEGER,
+			value: null!,
+		};
+		if(node.nodeGroups[0].simple()){
+			//The contents do not have any types or declarations, so the scope does not need to be reset
+			//Use the same scope for all loop iterations
 			const scope:VariableScope = {
 				statement: this,
 				opaque: false,
-				variables: {
+				variables: Object.setPrototypeOf({
 					[this.name]: variable
-				},
-				types: {}
+				}, null),
+				types: Object.create(null),
 			};
 			runtime.scopes.push(scope);
 			for(
@@ -762,22 +767,16 @@ export class ForStatement extends Statement {
 			}
 			runtime.scopes.pop();
 		} else {
-			const variable:ConstantData = {
-				declaration: this,
-				mutable: false,
-				type: PrimitiveVariableType.INTEGER,
-				value: null!,
-			};
 			for(let i = from; direction == 1 ? i <= to : i >= to; i += step){
 				variable.value = Number(i);
 				const result = runtime.runBlock(node.nodeGroups[0], false, {
 					statement: this,
 					opaque: false,
-					variables: {
-						//Set the loop variable in the loop scope
+					//Set the loop variable in the loop scope
+					variables: Object.setPrototypeOf({
 						[this.name]: variable
-					},
-					types: {}
+					}, null),
+					types: Object.create(null)
 				});
 				if(result) return result;
 			}
@@ -816,8 +815,8 @@ export class WhileStatement extends Statement {
 			const result = runtime.runBlock(node.nodeGroups[0], true, {
 				statement: this,
 				opaque: false,
-				variables: {},
-				types: {},
+				variables: Object.create(null),
+				types: Object.create(null),
 			});
 			if(result) return result;
 		}
@@ -834,8 +833,8 @@ export class DoWhileStatement extends Statement {
 			const result = runtime.runBlock(node.nodeGroups[0], true, {
 				statement: this,
 				opaque: false,
-				variables: {},
-				types: {},
+				variables: Object.create(null),
+				types: Object.create(null),
 			});
 			if(result) return result;
 		} while(!runtime.evaluate(node.controlStatements[1].condition));

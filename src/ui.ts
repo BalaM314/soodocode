@@ -193,7 +193,6 @@ export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 }
 
 export function download(filename:string, data:BlobPart){
-	//Self explanatory.
 	const el = document.createElement("a");
 	el.setAttribute("href", URL.createObjectURL(new Blob([data])));
 	el.setAttribute("download", filename);

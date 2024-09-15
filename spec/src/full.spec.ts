@@ -127,6 +127,15 @@ no_invalid_escape_sequences: [
 `OUTPUT "a\\aa"`,
 `Unescaped backslash`
 ],
+js_reserved_words: [
+`TYPE __proto__ = ^INTEGER
+DECLARE hasOwnProperty: INTEGER
+hasOwnProperty <- 5
+DECLARE __proto__: __proto__
+__proto__ <- ^hasOwnProperty
+OUTPUT __proto__^`,
+["5"]
+],
 //#endregion
 //#region types
 run_bool: [

@@ -466,7 +466,7 @@ export class SetVariableType extends BaseVariableType {
     }
 }
 export class ClassVariableType extends BaseVariableType {
-    constructor(initialized, statement, properties = {}, ownMethods = {}, allMethods = {}, propertyStatements = []) {
+    constructor(initialized, statement, properties = Object.create(null), ownMethods = Object.create(null), allMethods = Object.create(null), propertyStatements = []) {
         super();
         this.initialized = initialized;
         this.statement = statement;
@@ -523,10 +523,7 @@ export class ClassVariableType extends BaseVariableType {
     }
     construct(runtime, args) {
         const This = this;
-        const propertiesInitializer = {};
-        Object.defineProperties(propertiesInitializer, Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
-                enumerable: true,
-                configurable: true,
+        const propertiesInitializer = Object.defineProperties(Object.create(null), Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
                 get() {
                     const value = v[0].getInitValue(runtime, false);
                     Object.defineProperty(propertiesObj, k, {
@@ -549,7 +546,7 @@ export class ClassVariableType extends BaseVariableType {
         const propertiesObj = Object.create(propertiesInitializer);
         const data = {
             properties: propertiesObj,
-            propertyTypes: {},
+            propertyTypes: Object.create(null),
             type: This
         };
         const [clazz, method] = This.allMethods["NEW"]
@@ -565,7 +562,7 @@ export class ClassVariableType extends BaseVariableType {
         return {
             statement: this.statement,
             opaque: true,
-            types: {},
+            types: Object.create(null),
             variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
                     type: instance.propertyTypes[k] ?? v[0],
                     assignabilityType: v[0],

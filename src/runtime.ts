@@ -16,7 +16,7 @@ import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./ty
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 
 export class Files {
-	files: Record<string, File> = {};
+	files: Record<string, File> = Object.create(null);
 	private backupFiles: string | null = null;
 	getFile(filename:string, create:true):File;
 	getFile(filename:string, create?:boolean):File | undefined;
@@ -204,8 +204,8 @@ export class Runtime {
 	 * If this is manually modified, Runtime.variableCache needs to be handled.
 	 **/
 	scopes: VariableScope[] = [];
-	functions: Record<string, FunctionData> = {};
-	openFiles: Record<string, OpenedFile | undefined> = {};
+	functions: Record<string, FunctionData> = Object.create(null);
+	openFiles: Record<string, OpenedFile | undefined> = Object.create(null);
 	/** While a class method is executing, this variable is set to data about the class method. */
 	classData: {
 		/** This is the class type that the method is linked to, NOT the class type of the instance. Used to determine what SUPER is. */
@@ -942,10 +942,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			.map(([k, v]) => [k, this.cloneValue(type.fields[k][0], v as VariableValue)])
 		) as VariableTypeMapping<RecordVariableType> as VariableTypeMapping<T>;
 		if(type instanceof ClassVariableType) return {
-			properties: Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).properties)
-				.map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v as VariableValue)])
-			),
-			propertyTypes: {},
+			properties: Object.setPrototypeOf(Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).properties)
+				.map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v as VariableValue)])),
+			null),
+			propertyTypes: Object.setPrototypeOf(Object.fromEntries(Object.entries((value as VariableTypeMapping<ClassVariableType>).propertyTypes)), null),
 			type: (value as VariableTypeMapping<ClassVariableType>).type
 		} satisfies VariableTypeMapping<ClassVariableType> as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
@@ -955,8 +955,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		const scope:VariableScope = {
 			statement: func,
 			opaque: !(func instanceof ClassProcedureStatement || func instanceof ClassFunctionStatement),
-			variables: {},
-			types: {},
+			variables: Object.create(null),
+			types: Object.create(null),
 		};
 		for(const [i, [name, {type, passMode}]] of [...func.args.entries()].entries()){
 			const rType = this.resolveVariableType(type);
@@ -1145,8 +1145,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		this.runBlock(code, true, {
 			statement: "global",
 			opaque: true,
-			variables: {},
-			types: {}
+			variables: Object.create(null),
+			types: Object.create(null),
 		});
 
 		for(const [name, file] of Object.entries(this.openFiles)){

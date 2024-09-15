@@ -153,6 +153,7 @@ export const tokenNameTypeData = {
 	".": "punctuation.period",
 	"\n": "newline",
 } as const satisfies Record<string, TokenType>;
+Object.setPrototypeOf(tokenNameTypeData, null);
 export const tokenTextMapping =
 	Object.fromEntries(Object.entries(tokenNameTypeData).map(r => r.reverse()));
 

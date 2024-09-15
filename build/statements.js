@@ -75,8 +75,8 @@ export function StatementType(input) {
     crash(`"${input}" is not a valid statement type`);
 }
 export const statements = {
-    byStartKeyword: {},
-    byType: {},
+    byStartKeyword: Object.create(null),
+    byType: Object.create(null),
     irregular: [],
 };
 let Statement = (() => {
@@ -568,7 +568,7 @@ let TypeRecordStatement = (() => {
             this.name = this.token(1);
         }
         createTypeBlock(runtime, node) {
-            const fields = {};
+            const fields = Object.create(null);
             for (const statement of node.nodeGroups[0]) {
                 if (!(statement instanceof DeclareStatement))
                     fail(`Statements in a record type block can only be declaration statements`, statement);
@@ -881,8 +881,8 @@ let IfStatement = (() => {
             const scope = {
                 statement: this,
                 opaque: false,
-                variables: {},
-                types: {},
+                variables: Object.create(null),
+                types: Object.create(null),
             };
             if (runtime.evaluate(this.condition)) {
                 return runtime.runBlock(node.nodeGroups[0], true, scope);
@@ -969,8 +969,8 @@ let SwitchStatement = (() => {
                         runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
                             statement: this,
                             opaque: false,
-                            variables: {},
-                            types: {}
+                            variables: Object.create(null),
+                            types: Object.create(null),
                         });
                         break;
                     }
@@ -1113,21 +1113,22 @@ let ForStatement = (() => {
                 return;
             if (this.empty) {
                 runtime.statementExecuted(this, Number(to - from) / _step);
+                return;
             }
-            else if (node.nodeGroups[0].simple()) {
-                const variable = {
-                    declaration: this,
-                    mutable: false,
-                    type: PrimitiveVariableType.INTEGER,
-                    value: Number(from)
-                };
+            const variable = {
+                declaration: this,
+                mutable: false,
+                type: PrimitiveVariableType.INTEGER,
+                value: null,
+            };
+            if (node.nodeGroups[0].simple()) {
                 const scope = {
                     statement: this,
                     opaque: false,
-                    variables: {
+                    variables: Object.setPrototypeOf({
                         [this.name]: variable
-                    },
-                    types: {}
+                    }, null),
+                    types: Object.create(null),
                 };
                 runtime.scopes.push(scope);
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
@@ -1137,21 +1138,15 @@ let ForStatement = (() => {
                 runtime.scopes.pop();
             }
             else {
-                const variable = {
-                    declaration: this,
-                    mutable: false,
-                    type: PrimitiveVariableType.INTEGER,
-                    value: null,
-                };
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
                     variable.value = Number(i);
                     const result = runtime.runBlock(node.nodeGroups[0], false, {
                         statement: this,
                         opaque: false,
-                        variables: {
+                        variables: Object.setPrototypeOf({
                             [this.name]: variable
-                        },
-                        types: {}
+                        }, null),
+                        types: Object.create(null)
                     });
                     if (result)
                         return result;
@@ -1272,8 +1267,8 @@ let WhileStatement = (() => {
                 const result = runtime.runBlock(node.nodeGroups[0], true, {
                     statement: this,
                     opaque: false,
-                    variables: {},
-                    types: {},
+                    variables: Object.create(null),
+                    types: Object.create(null),
                 });
                 if (result)
                     return result;
@@ -1312,8 +1307,8 @@ let DoWhileStatement = (() => {
                 const result = runtime.runBlock(node.nodeGroups[0], true, {
                     statement: this,
                     opaque: false,
-                    variables: {},
-                    types: {},
+                    variables: Object.create(null),
+                    types: Object.create(null),
                 });
                 if (result)
                     return result;
