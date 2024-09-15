@@ -9,6 +9,7 @@ export declare class Files {
     private backupFiles;
     getFile(filename: string, create: true): File;
     getFile(filename: string, create?: boolean): File | undefined;
+    createFile(filename: string): File;
     makeBackup(): void;
     canLoadBackup(): boolean;
     loadBackup(): void;
