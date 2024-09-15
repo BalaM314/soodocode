@@ -324,7 +324,7 @@ td, th {
 	resize: none;
 }
 #files-dialog-contents:disabled {
-
+	cursor: not-allowed;
 }
 
 .text-button {
