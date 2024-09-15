@@ -20,6 +20,8 @@ import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f, capitalizeText } from "./utils.js";
 import { Config, configs } from "./config.js";
 
+const persistentFilesystem = new runtime.Files();
+
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
 	const element = <unknown>document.getElementById(id);
 	if(element instanceof type) return element as T["prototype"];
@@ -499,7 +501,8 @@ function executeSoodocode(){
 				console.log("now");
 			}
 			printPrefixed(str);
-		}
+		},
+		persistentFilesystem
 	);
 	try {
 		if(configs.runtime.display_output_immediately.value) outputDiv.innerHTML = "";
@@ -568,7 +571,10 @@ function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
 	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
 	Object.assign(window,
-		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes
+		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes,
+		{
+			persistentFilesystem
+		}
 	);
 }
 
