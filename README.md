@@ -29,7 +29,8 @@ View the site [here](https://balam314.github.io/soodocode)
 
 ## Arrays
 * [x] n-dimensional arrays
-* [x] Arrays with generic size (in function arguments)
+* [x] Arrays with generic size in function arguments
+* [x] Arrays with generic size in class properties
 * [x] Arrays with size determined by expressions
 
 ## Types
@@ -49,7 +50,7 @@ View the site [here](https://balam314.github.io/soodocode)
 ## Files
 * [x] OPENFILE READFILE WRITEFILE CLOSEFILE statements
 * [ ] SEEK GETRECORD PUTRECORD statements
-* [ ] File GUI
+* [x] File GUI
 * [x] EOF() function
 
 ## Misc
@@ -59,3 +60,4 @@ View the site [here](https://balam314.github.io/soodocode)
 * [x] Typo checking
 * [x] Error ranges (underline the exact cause of the error, highlight the area around it)
 * [x] Configurable
+* [x] Allows any words as identifiers (except pseudocode keywords), including `for`, `__proto__`, and `hasOwnProperty`
