@@ -1115,6 +1115,113 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			]],
 		]],
 	],
+	pointerRefDerefArray: [
+		[
+			"operator.pointer",
+			"amogus",
+			"bracket.open",
+			1,
+			"bracket.close",
+			"operator.pointer",
+		],
+		["tree", "pointer_reference", [
+			["tree", "pointer_dereference", [
+				["tree", ["array access", "amogus"], [
+					1,
+				]]
+			]],
+		]],
+	],
+	pointerRefDerefAccess1: [
+		[
+			"operator.pointer",
+			"amogus",
+			"punctuation.period",
+			"amogus",
+			"operator.pointer",
+		],
+		["tree", "pointer_reference", [
+			["tree", "pointer_dereference", [
+				["tree", "access", [
+					"amogus",
+					"amogus"
+				]]
+			]],
+		]],
+	],
+	pointerRefDerefAccess2: [
+		[
+			"amogus",
+			"operator.pointer",
+			"punctuation.period",
+			"amogus",
+			"operator.pointer",
+		],
+		["tree", "pointer_dereference", [
+			["tree", "access", [
+				["tree", "pointer_dereference", [
+					"amogus",
+				]],
+				"amogus"
+			]]
+		]],
+	],
+	pointerRefDerefAccess3: [
+		[
+			"operator.pointer",
+			"amogus",
+			"punctuation.period",
+			"operator.pointer",
+			"amogus",
+		],
+		"error"
+	],
+	pointerRefDerefAccess4: [
+		[
+			"operator.pointer",
+			"amogus",
+			"operator.add",
+			"operator.pointer",
+			"amogus",
+		],
+		["tree", "add", [
+			["tree", "pointer_reference", [
+				"amogus",
+			]],
+			["tree", "pointer_reference", [
+				"amogus",
+			]],
+		]]
+	],
+	pointerRefDerefAccess5: [
+		[
+			"operator.pointer",
+			"operator.pointer",
+			"amogus",
+			"operator.pointer",
+			"operator.pointer",
+			"punctuation.period",
+			"amogus",
+			"operator.pointer",
+			"operator.pointer",
+		],
+		["tree", "pointer_reference", [
+			["tree", "pointer_reference", [
+				["tree", "pointer_dereference", [
+					["tree", "pointer_dereference", [
+						["tree", "access", [
+							["tree", "pointer_dereference", [
+								["tree", "pointer_dereference", [
+									"amogus",
+								]],
+							]],
+							"amogus",
+						]],
+					]],
+				]],
+			]],
+		]],
+	],
 	SussyBaka: [
 		[
 			"parentheses.open",

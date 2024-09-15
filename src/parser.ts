@@ -481,8 +481,10 @@ export function checkTokens(tokens:RangeArray<Token>, input:TokenMatcher[]):bool
 //#region expression parser
 
 function cannotEndExpression(token:Token){
-	//TODO is this the best way?
 	return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
+}
+function canBeOperator(token:Token){
+	return Object.values(operators).find(o => o.token == token.type);
 }
 function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
@@ -540,14 +542,22 @@ export const parseExpression = errorBoundary({
 					//Make sure there is only something on right side of the operator
 					const right = input.slice(i + 1);
 					if(i != 0){ //if there are tokens to the left of a unary prefix operator
-						if(operator.fix == "unary_prefix_o_postfix" && (
-							//"^ x ^ ^"
-							//     ⬆: this should be allowed
+						if(operator.fix == "unary_prefix_o_postfix"){
+							if(
+								//"^ x ^ ^"
+								//     ⬆: this should be allowed
+								//Make sure everything to the right is unary postfix operators of the same priority
+								right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.fix == "unary_postfix_o_prefix" || o.fix == "unary_prefix_o_postfix"))
+							) continue; //this is the postfix operator
 							//x^.prop"
-							// ⬆: this should NOT be allowed
-							//Make sure everything to the right is unary postfix operators of the same priority
-							right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.fix == "unary_postfix_o_prefix" || o.fix == "unary_prefix_o_postfix"))
-						)) continue; //this is the postfix operator
+							// ⬆: this should also be allowed
+							//If the operator on the right was of lower priority, it would have already been selected for recursion
+							//so it must be a higher priority operator
+							if(right[0] && canBeOperator(right[0])){
+								deferredError = () => fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+								continue;
+							}
+						}
 						//Binary operators
 						//  1 / 2 / 3
 						// (1 / 2)/ 3
@@ -558,6 +568,8 @@ export const parseExpression = errorBoundary({
 						// -(- 2)
 						// ^
 						// lowest priority is leftmost
+
+						//If the operator on the left is a unary operator,
 						if(canBeUnaryOperator(input[i - 1])) continue; //Operator priority assumption is wrong, try again!
 						fail(f.text`Unexpected expression on left side of operator ${input[i]}`, input[i]);
 					}
@@ -581,8 +593,12 @@ export const parseExpression = errorBoundary({
 					const left = input.slice(0, i);
 					if(i != input.length - 1){ //if there are tokens to the right of a unary postfix operator
 						if(operator.fix == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
+						if(input[i + 1] && canBeOperator(input[i + 1])){
+							deferredError = () => fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+							continue;
+						}
 						//No need to worry about operator priority changing for postfix
-						fail(f.text`Unexpected expression on left side of operator ${input[i]}`, input[i]);
+						fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
 					}
 					if(left.length == 0) fail(f.text`Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
 					return new ExpressionASTBranchNode(
