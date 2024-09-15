@@ -209,6 +209,12 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             errorHelp: `Allow implicit variable creation`,
             value: true
         },
+        infinite_pointer_types: {
+            name: "Infinite pointer types",
+            description: `Enabling this config allows creating a pointer that points to itself infinitely. This is useless, but fun.`,
+            errorHelp: `Allow infinite pointer types`,
+            value: true
+        },
     },
     runtime: {
         display_output_immediately: {
