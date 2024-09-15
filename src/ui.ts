@@ -215,6 +215,13 @@ const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButton
 // const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
 const uploadButton = getElement("upload-button", HTMLInputElement);
 const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
+const filesDialog = getElement("files-dialog", HTMLDialogElement);
+const fileSelect = getElement("files-dialog-select", HTMLSelectElement);
+const fileDownloadButton = getElement("files-dialog-download", HTMLSpanElement);
+const fileUploadButton = getElement("files-dialog-upload", HTMLSpanElement);
+const fileCreateButton = getElement("files-dialog-create", HTMLSpanElement);
+const fileDeleteButton = getElement("files-dialog-delete", HTMLSpanElement);
+const fileContents = getElement("files-dialog-contents", HTMLTextAreaElement);
 
 window.addEventListener("keydown", e => {
 	if(e.key == "s" && e.ctrlKey){
@@ -244,7 +251,46 @@ uploadButton.onchange = (event:Event) => {
 getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
 	settingsDialog.showModal();
 });
+getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+	filesDialog.showModal();
+});
 settingsDialog.append(generateConfigsDialog());
+function getSelectedFile():runtimeTypes.File | null {
+	const filename = fileSelect.value.split("file_")[1];
+	if(!filename) return null;
+	return persistentFilesystem.files[filename] ?? null;
+}
+function onSelectedFileChange(){
+	const file = getSelectedFile();
+	if(file){
+		fileContents.value = file.text;
+		fileContents.placeholder = "File empty...";
+		fileContents.disabled = false;
+	} else {
+		fileContents.value = "";
+		fileContents.placeholder = "Select a file to edit...";
+		fileContents.disabled = true;
+	}
+}
+function updateFileSelectOptions(){
+	//Keep the first one
+	Array.from(fileSelect.children).slice(1).forEach(n => n.remove());
+	for(const file of Object.values(persistentFilesystem.files)){
+		const option = document.createElement("option");
+		option.value = `file_${file.name}`;
+		option.innerText = file.name;
+		fileSelect.appendChild(option);
+	}
+}
+onSelectedFileChange();
+updateFileSelectOptions();
+fileContents.addEventListener("change", function updateFileData(){
+	const file = getSelectedFile();
+	if(!file) return;
+	if(!fileContents.value.endsWith("\n")) fileContents.value += "\n";
+	file.text = fileContents.value;
+});
+fileSelect.addEventListener("change", onSelectedFileChange);
 
 /*evaluateExpressionButton.addEventListener("click", () => {
 	try {
@@ -520,6 +566,8 @@ function executeSoodocode(){
 		console.time("execution");
 		runtime.runProgram(program.nodes);
 		console.timeEnd("execution");
+		updateFileSelectOptions();
+		onSelectedFileChange();
 
 		if(configs.runtime.display_output_immediately.value){
 			if(outputDiv.innerText.trim().length == 0) outputDiv.innerHTML = noOutput;
