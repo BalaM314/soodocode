@@ -237,16 +237,16 @@ let Runtime = (() => {
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
     return _a = class Runtime {
-            constructor(_input, _output) {
+            constructor(_input, _output, fs = new Files()) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
+                this.fs = fs;
                 this.scopes = [];
                 this.functions = {};
                 this.openFiles = {};
                 this.classData = null;
                 this.currentlyResolvingTypeName = null;
                 this.currentlyResolvingPointerTypeName = null;
-                this.fs = new Files();
                 this.builtinFunctions = getBuiltinFunctions();
                 this.statementsExecuted = 0;
             }

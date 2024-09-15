@@ -212,12 +212,12 @@ export class Runtime {
 	currentlyResolvingTypeName: string | null = null;
 	/** While a pointer type is being resolved, this variable is set to the name of the type. */
 	currentlyResolvingPointerTypeName: string | null = null;
-	fs = new Files();
 	builtinFunctions = getBuiltinFunctions();
 	statementsExecuted = 0;
 	constructor(
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
+		public fs = new Files(),
 	){}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;

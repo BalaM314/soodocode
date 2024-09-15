@@ -12,6 +12,7 @@ import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
 import { configs } from "./config.js";
+const persistentFilesystem = new runtime.Files();
 function getElement(id, type) {
     const element = document.getElementById(id);
     if (element instanceof type)
@@ -192,6 +193,13 @@ const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
 const uploadButton = getElement("upload-button", HTMLInputElement);
 const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
+const filesDialog = getElement("files-dialog", HTMLDialogElement);
+const fileSelect = getElement("files-dialog-select", HTMLSelectElement);
+const fileDownloadButton = getElement("files-dialog-download", HTMLSpanElement);
+const fileUploadButton = getElement("files-dialog-upload", HTMLSpanElement);
+const fileCreateButton = getElement("files-dialog-create", HTMLSpanElement);
+const fileDeleteButton = getElement("files-dialog-delete", HTMLSpanElement);
+const fileContents = getElement("files-dialog-contents", HTMLTextAreaElement);
 window.addEventListener("keydown", e => {
     if (e.key == "s" && e.ctrlKey) {
         e.preventDefault();
@@ -220,7 +228,49 @@ uploadButton.onchange = (event) => {
 getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
     settingsDialog.showModal();
 });
+getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+    filesDialog.showModal();
+});
 settingsDialog.append(generateConfigsDialog());
+function getSelectedFile() {
+    const filename = fileSelect.value.split("file_")[1];
+    if (!filename)
+        return null;
+    return persistentFilesystem.files[filename] ?? null;
+}
+function onSelectedFileChange() {
+    const file = getSelectedFile();
+    if (file) {
+        fileContents.value = file.text;
+        fileContents.placeholder = "File empty...";
+        fileContents.disabled = false;
+    }
+    else {
+        fileContents.value = "";
+        fileContents.placeholder = "Select a file to edit...";
+        fileContents.disabled = true;
+    }
+}
+function updateFileSelectOptions() {
+    Array.from(fileSelect.children).slice(1).forEach(n => n.remove());
+    for (const file of Object.values(persistentFilesystem.files)) {
+        const option = document.createElement("option");
+        option.value = `file_${file.name}`;
+        option.innerText = file.name;
+        fileSelect.appendChild(option);
+    }
+}
+onSelectedFileChange();
+updateFileSelectOptions();
+fileContents.addEventListener("change", function updateFileData() {
+    const file = getSelectedFile();
+    if (!file)
+        return;
+    if (!fileContents.value.endsWith("\n"))
+        fileContents.value += "\n";
+    file.text = fileContents.value;
+});
+fileSelect.addEventListener("change", onSelectedFileChange);
 soodocodeInput.onkeydown = e => {
     if ((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)) {
         e.preventDefault();
@@ -368,7 +418,7 @@ function executeSoodocode() {
             console.log("now");
         }
         printPrefixed(str);
-    });
+    }, persistentFilesystem);
     try {
         if (configs.runtime.display_output_immediately.value)
             outputDiv.innerHTML = "";
@@ -386,6 +436,8 @@ function executeSoodocode() {
         console.time("execution");
         runtime.runProgram(program.nodes);
         console.timeEnd("execution");
+        updateFileSelectOptions();
+        onSelectedFileChange();
         if (configs.runtime.display_output_immediately.value) {
             if (outputDiv.innerText.trim().length == 0)
                 outputDiv.innerHTML = noOutput;
@@ -443,6 +495,8 @@ setInterval(() => {
 function dumpFunctionsToGlobalScope() {
     shouldDump = true;
     window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
-    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes);
+    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, {
+        persistentFilesystem
+    });
 }
 dumpFunctionsToGlobalScope();
