@@ -901,6 +901,30 @@ ENDIF
 ENDIF`,
 `"h"`
 ],
+pointers_to_for_variable_simple: [
+`TYPE pINTEGER = ^INTEGER
+DECLARE pointers: ARRAY[1:10] OF pINTEGER
+FOR i <- 1 TO 10
+	//DECLARE foo: STRING
+	pointers[i] <- ^i
+NEXT i
+FOR i <- 1 TO 10
+	OUTPUT pointers[i]^
+NEXT i`,
+Array(10).fill("10")
+],
+pointers_to_for_variable: [
+`TYPE pINTEGER = ^INTEGER
+DECLARE pointers: ARRAY[1:10] OF pINTEGER
+FOR i <- 1 TO 10
+	DECLARE foo: STRING
+	pointers[i] <- ^i
+NEXT i
+FOR i <- 1 TO 10
+	OUTPUT pointers[i]^
+NEXT i`,
+Array(10).fill("10")
+],
 //#endregion
 //#region statements
 if_normal: [
