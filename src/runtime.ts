@@ -1142,7 +1142,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	/** Creates a scope. */
 	runProgram(code:ProgramASTNodeGroup){
 		code.preRun();
-		this.runBlock(code, true, {
+		this.runBlock(code, false, {
 			statement: "global",
 			opaque: true,
 			variables: Object.create(null),
