@@ -46,14 +46,36 @@
 				<button id="execute-soodocode-button">Execute</button><br>
 				<button id="dump-tokens-button">Show parser output</button>
 				<span id="settings-dialog-button" class="text-button" style="font-size: 25px; color: #CFC;">Settings 🛠</span>
+				<span id="files-dialog-button" class="text-button" style="font-size: 25px; color: #FCC;">Files 📂</span>
 			</div>
 			<h2>Program output</h2>
 			<div id="output-div" class="output-div"></div>
-			<dialog id="settings-dialog">
-				<div id="settings-header">
+			<dialog id="settings-dialog" class="dialog">
+				<div id="settings-header" class="dialog-header">
 					<span id="settings-header-text">Settings</span>
 				</div>
-				<span id="settings-dialog-close" class="text-button" onclick="document.getElementById('settings-dialog').close()">❌</span>
+				<span id="settings-dialog-close" class="text-button dialog-close" onclick="document.getElementById('settings-dialog').close()">❌</span>
+			</dialog>
+			<dialog id="files-dialog" class="dialog">
+				<div id="files-dialog-inner">
+					<div id="files-header" class="dialog-header">
+						<span id="files-header-text">Files</span>
+					</div>
+					<span id="files-dialog-close" class="text-button dialog-close" onclick="document.getElementById('files-dialog').close()">❌</span>
+					<div id="files-dialog-select-line">
+						<label for="files-dialog-select">
+							Select File
+						</label>
+						<select id="files-dialog-select" name="files-dialog-select" autofocus="false">
+							<option id="files-dialog-select-none" value="none" selected>(no file selected)</option>
+						</select>
+						<span id="files-dialog-download" class="text-button" style="font-size: 20px; color: #CCF;">Download ⇓</span>
+						<span id="files-dialog-upload" class="text-button" style="font-size: 20px; color: #CCF;">Upload ⇑</span>
+						<span id="files-dialog-create" class="text-button" style="font-size: 20px; color: #CFC;">Create ➕</span>
+						<span id="files-dialog-delete" class="text-button" style="font-size: 20px; color: #F88;">Delete 🗑</span>
+					</div>
+					<textarea id="files-dialog-contents" disabled></textarea>
+				</div>
 			</dialog>
 			<footer>
 				Copyright © <a href="https://github.com/BalaM314">BalaM314</a>, 2024. All Rights Reserved. <a href="https://github.com/BalaM314/soodocode">Open source.</a>
