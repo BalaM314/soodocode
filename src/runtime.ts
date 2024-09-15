@@ -122,12 +122,22 @@ function checkValueEquality<T extends VariableType>(type:T, a:VariableTypeMappin
 function coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
 	//typescript really hates this function, beware
 
-	if(from.is("INTEGER") && to.is("REAL")) return value as never;
-	//TODO config, truncate or throw? also change the integer range coercion
-	if(from.is("REAL") && to.is("INTEGER")) return Math.trunc(value as VariableTypeMapping<PrimitiveVariableType<"REAL" | "INTEGER">>) as never;
 	let assignabilityError;
 	if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
 	let disabledConfig:Config<unknown, true> | null = null;
+	if(from.is("INTEGER") && to.is("REAL")) return value as never;
+	if(from.is("REAL") && to.is("INTEGER")){
+		forceType<VariableTypeMapping<PrimitiveVariableType<"REAL">>>(value);
+		if(configs.coercion.real_to_int.value){
+			if(Number.isInteger(value)) return value as never;
+			else if(configs.coercion.truncate_real_to_int.value) return Math.trunc(value) as never;
+			else {
+				assignabilityError = `the number ${value} is not an integer`;
+				// Don't tell the user about this one
+				// disabledConfig = configs.coercion.truncate_real_to_int;
+			}
+		} else disabledConfig = configs.coercion.real_to_int;
+	}
 	if(from.is("STRING") && to.is("CHAR")){
 		if(configs.coercion.string_to_char.value){
 			const v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);

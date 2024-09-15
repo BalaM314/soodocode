@@ -15,6 +15,13 @@ export declare const configs: {
         arrays_same_total_size: Config<boolean, true>;
         enums_to_integer: Config<boolean, true>;
         string_to_char: Config<boolean, true>;
+        real_to_int: Config<boolean, true>;
+        truncate_real_to_int: {
+            name: string;
+            description: string | null;
+            value: boolean;
+            defaultValue: boolean;
+        };
         numbers_to_string: Config<boolean, true>;
         enums_to_string: Config<boolean, true>;
         booleans_to_string: Config<boolean, true>;
