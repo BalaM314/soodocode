@@ -482,11 +482,24 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 	constructor(
 		public initialized: Init,
 		public name: string,
-		public target: (Init extends true ? never : UnresolvedVariableType) | VariableType
+		public target: (Init extends true ? never : UnresolvedVariableType) | VariableType,
+		public range: TextRange
 	){super();}
 	init(runtime:Runtime){
 		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
 		(this as PointerVariableType<true>).initialized = true;
+	}
+	validate(){
+		if(!configs.pointers.infinite_pointer_types.value){
+			if(PointerVariableType.isInfinite(this as PointerVariableType<true>))
+				fail(f.quote`Pointer type ${this.name} references itself infinitely\n` + configs.pointers.infinite_pointer_types.errorHelp, this);
+		}
+	}
+	static isInfinite(type:PointerVariableType, seen = new Set<PointerVariableType>()):boolean {
+		if(seen.has(type)) return true;
+		if(!(type.target instanceof PointerVariableType)) return false;
+		seen.add(type);
+		return PointerVariableType.isInfinite(type.target, seen);
 	}
 	fmtText():string {
 		return f.short`${this.name} (user-defined pointer type ^${this.target})`;

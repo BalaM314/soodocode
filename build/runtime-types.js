@@ -366,16 +366,31 @@ help: change the field's type to be a pointer`, range);
     }
 }
 export class PointerVariableType extends BaseVariableType {
-    constructor(initialized, name, target) {
+    constructor(initialized, name, target, range) {
         super();
         this.initialized = initialized;
         this.name = name;
         this.target = target;
+        this.range = range;
     }
     init(runtime) {
         if (Array.isArray(this.target))
             this.target = runtime.resolveVariableType(this.target);
         this.initialized = true;
+    }
+    validate() {
+        if (!configs.pointers.infinite_pointer_types.value) {
+            if (PointerVariableType.isInfinite(this))
+                fail(f.quote `Pointer type ${this.name} references itself infinitely\n` + configs.pointers.infinite_pointer_types.errorHelp, this);
+        }
+    }
+    static isInfinite(type, seen = new Set()) {
+        if (seen.has(type))
+            return true;
+        if (!(type.target instanceof PointerVariableType))
+            return false;
+        seen.add(type);
+        return PointerVariableType.isInfinite(type.target, seen);
     }
     fmtText() {
         return f.short `${this.name} (user-defined pointer type ^${this.target})`;

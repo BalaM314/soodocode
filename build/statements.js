@@ -487,7 +487,7 @@ let TypePointerStatement = (() => {
             this.targetType = processTypeData(this.expr(4, "type"));
         }
         createType(runtime) {
-            return [this.name, new PointerVariableType(false, this.name, this.targetType)];
+            return [this.name, new PointerVariableType(false, this.name, this.targetType, this.range)];
         }
     };
     __setFunctionName(_classThis, "TypePointerStatement");

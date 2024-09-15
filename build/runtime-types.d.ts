@@ -140,8 +140,11 @@ export declare class PointerVariableType<Init extends boolean = true> extends Ba
     initialized: Init;
     name: string;
     target: (Init extends true ? never : UnresolvedVariableType) | VariableType;
-    constructor(initialized: Init, name: string, target: (Init extends true ? never : UnresolvedVariableType) | VariableType);
+    range: TextRange;
+    constructor(initialized: Init, name: string, target: (Init extends true ? never : UnresolvedVariableType) | VariableType, range: TextRange);
     init(runtime: Runtime): void;
+    validate(): void;
+    static isInfinite(type: PointerVariableType, seen?: Set<PointerVariableType<true>>): boolean;
     fmtText(): string;
     fmtShort(): string;
     fmtQuoted(): string;

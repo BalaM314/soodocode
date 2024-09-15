@@ -113,6 +113,7 @@ export declare const configs: {
     };
     pointers: {
         implicit_variable_creation: Config<boolean, true>;
+        infinite_pointer_types: Config<boolean, true>;
     };
     runtime: {
         display_output_immediately: {
