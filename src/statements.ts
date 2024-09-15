@@ -450,7 +450,7 @@ export class TypePointerStatement extends TypeStatement {
 	targetType = processTypeData(this.expr(4, "type"));
 	createType(runtime:Runtime){
 		return [this.name, new PointerVariableType(
-			false, this.name, this.targetType
+			false, this.name, this.targetType, this.range
 		)] as [name: string, type: VariableType<false>];
 	}
 }
