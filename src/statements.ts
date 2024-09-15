@@ -225,13 +225,12 @@ export class Statement implements TextRanged, IFormattable {
 	}
 	/** Higher scores are given lower priority. */
 	static tokensSortScore({tokens, invalidMessage}:typeof Statement = this):number {
-		//TODO move usage to end of statement definitions
 		return invalidMessage != null ? tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length : 10000;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult { //TODO merge this with run()
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult {
 		if(this.category == "block")
 			crash(`Missing runtime implementation for block statement ${this.stype}`);
 		else

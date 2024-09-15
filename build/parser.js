@@ -409,6 +409,9 @@ export function checkTokens(tokens, input) {
 function cannotEndExpression(token) {
     return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
+function canBeOperator(token) {
+    return Object.values(operators).find(o => o.token == token.type);
+}
 function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
@@ -441,8 +444,14 @@ export const parseExpression = errorBoundary({
                 if (operator.fix.startsWith("unary_prefix")) {
                     const right = input.slice(i + 1);
                     if (i != 0) {
-                        if (operator.fix == "unary_prefix_o_postfix" && (right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.fix == "unary_postfix_o_prefix" || o.fix == "unary_prefix_o_postfix"))))
-                            continue;
+                        if (operator.fix == "unary_prefix_o_postfix") {
+                            if (right.every(n => operatorsOfCurrentPriority.some(o => o.token == n.type && o.fix == "unary_postfix_o_prefix" || o.fix == "unary_prefix_o_postfix")))
+                                continue;
+                            if (right[0] && canBeOperator(right[0])) {
+                                deferredError = () => fail(f.text `Unexpected expression on right side of operator ${input[i]}`, input[i]);
+                                continue;
+                            }
+                        }
                         if (canBeUnaryOperator(input[i - 1]))
                             continue;
                         fail(f.text `Unexpected expression on left side of operator ${input[i]}`, input[i]);
@@ -462,7 +471,11 @@ export const parseExpression = errorBoundary({
                     if (i != input.length - 1) {
                         if (operator.fix == "unary_postfix_o_prefix" && left.length == 0)
                             continue;
-                        fail(f.text `Unexpected expression on left side of operator ${input[i]}`, input[i]);
+                        if (input[i + 1] && canBeOperator(input[i + 1])) {
+                            deferredError = () => fail(f.text `Unexpected expression on right side of operator ${input[i]}`, input[i]);
+                            continue;
+                        }
+                        fail(f.text `Unexpected expression on right side of operator ${input[i]}`, input[i]);
                     }
                     if (left.length == 0)
                         fail(f.text `Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
