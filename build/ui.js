@@ -200,6 +200,7 @@ const fileUploadButton = getElement("files-dialog-upload", HTMLSpanElement);
 const fileCreateButton = getElement("files-dialog-create", HTMLSpanElement);
 const fileDeleteButton = getElement("files-dialog-delete", HTMLSpanElement);
 const fileContents = getElement("files-dialog-contents", HTMLTextAreaElement);
+const fileDialogUploadInput = getElement("file-dialog-upload-button", HTMLInputElement);
 window.addEventListener("keydown", e => {
     if (e.key == "s" && e.ctrlKey) {
         e.preventDefault();
@@ -251,7 +252,8 @@ function onSelectedFileChange() {
         fileContents.disabled = true;
     }
 }
-function updateFileSelectOptions() {
+function updateFileSelectOptions(filenameToSelect) {
+    const oldValue = fileSelect.value;
     Array.from(fileSelect.children).slice(1).forEach(n => n.remove());
     for (const file of Object.values(persistentFilesystem.files)) {
         const option = document.createElement("option");
@@ -259,9 +261,15 @@ function updateFileSelectOptions() {
         option.innerText = file.name;
         fileSelect.appendChild(option);
     }
+    if (filenameToSelect && filenameToSelect in persistentFilesystem.files) {
+        fileSelect.value = `file_${filenameToSelect}`;
+    }
+    else if (oldValue.split("file_")[1] in persistentFilesystem.files) {
+        fileSelect.value = oldValue;
+    }
 }
-onSelectedFileChange();
 updateFileSelectOptions();
+onSelectedFileChange();
 fileContents.addEventListener("change", function updateFileData() {
     const file = getSelectedFile();
     if (!file)
@@ -271,6 +279,57 @@ fileContents.addEventListener("change", function updateFileData() {
     file.text = fileContents.value;
 });
 fileSelect.addEventListener("change", onSelectedFileChange);
+fileDownloadButton.addEventListener("mousedown", () => {
+    const file = getSelectedFile();
+    if (!file) {
+        alert(`Please select a file to download.`);
+    }
+    else {
+        download(file.name, file.text);
+    }
+});
+fileUploadButton.addEventListener("click", () => fileDialogUploadInput.click());
+fileDeleteButton.addEventListener("mousedown", () => {
+    const file = getSelectedFile();
+    if (!file) {
+        alert(`Please select a file to delete.`);
+    }
+    else {
+        if (confirm(`Are you sure you want to delete the file ${file.name}? This action is irreversible.`)) {
+            delete persistentFilesystem.files[file.name];
+            updateFileSelectOptions();
+            onSelectedFileChange();
+        }
+    }
+});
+fileCreateButton.addEventListener("mousedown", () => {
+    const filename = prompt("Enter the name of the file to create:");
+    if (!filename)
+        return;
+    if (!(filename in persistentFilesystem.files)) {
+        persistentFilesystem.getFile(filename, true);
+    }
+    updateFileSelectOptions(filename);
+    onSelectedFileChange();
+});
+fileDialogUploadInput.addEventListener("change", (event) => {
+    const file = event.target?.files?.[0];
+    if (!file)
+        return;
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = e => {
+        const content = e.target?.result?.toString();
+        if (content == null)
+            return;
+        if (persistentFilesystem.getFile(file.name)?.text && !confirm(`Are you sure you want to overwrite the existing file ${file.name}? This action is irreversible.`))
+            return;
+        const fi = persistentFilesystem.getFile(file.name, true);
+        fi.text = content;
+        updateFileSelectOptions(file.name);
+        onSelectedFileChange();
+    };
+});
 soodocodeInput.onkeydown = e => {
     if ((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)) {
         e.preventDefault();
