@@ -582,10 +582,10 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public initialized: Init,
 		public statement: ClassStatement,
 		/** Stores regular and inherited properties. */
-		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = {},
+		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = Object.create(null) as never,
 		/** Does not store inherited methods. */
-		public ownMethods: Record<string, ClassMethodData> = {},
-		public allMethods: Record<string, [source:ClassVariableType<Init extends true ? true : boolean>, data:ClassMethodData]> = {},
+		public ownMethods: Record<string, ClassMethodData> = Object.create(null) as never,
+		public allMethods: Record<string, [source:ClassVariableType<Init extends true ? true : boolean>, data:ClassMethodData]> = Object.create(null) as never,
 		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
 	init(runtime:Runtime){
@@ -637,15 +637,34 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
 	}
 	construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
+		//Behold, the power of javascript!
+
+		//CLASS Foo
+		//	PUBLIC arr: ARRAY OF INTEGER
+		//	PUBLIC PROCEDURE NEW(Length: INTEGER)
+		//		DECLARE temp: ARRAY[1:Length] OF INTEGER
+		//		arr <- temp
+		//	ENDPROCEDURE
+		//ENDCLASS
+		//
+		//Here, the property "arr" cannot be initialized, as it does not have a known length
+		//However, it does not need to be initialized, as it is assigned in the constructor
+
+		//Use an object (called propertiesInitializer) with getter functions to lazily initialize the instance
+		//Create another object to hold the initialized values and prototype link it to the initializer
+		//If anything tries to access the value of the variable, and it hasn't been initialized,
+		//the access will get delegated to the initializer object, which will initialize the property on the values object
+		//If nothing tries to access the value before setting it, it doesn't get uselessly initialized
+		//After calling the constructor, make sure all fields have been initialized, then unlink the initializer object
+
 		const This = this as ClassVariableType<true>;
-		const propertiesInitializer = {};
-		Object.defineProperties(
-			propertiesInitializer,
+
+		const propertiesInitializer = Object.defineProperties(
+			Object.create(null),
 			Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
-				enumerable: true,
-				configurable: true,
 				get(){
 					const value = v[0].getInitValue(runtime, false);
+					//Use defineProperty to make sure we're setting it on the values object, not the initializer object
 					Object.defineProperty(propertiesObj, k, {
 						configurable: true,
 						enumerable: true,
@@ -655,6 +674,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 					return value;
 				},
 				set(val:VariableValue){
+					//Use defineProperty to make sure we're setting it on the values object, not the initializer object
 					Object.defineProperty(propertiesObj, k, {
 						configurable: true,
 						enumerable: true,
@@ -665,10 +685,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			} satisfies PropertyDescriptor])) satisfies PropertyDescriptorMap
 		);
 		const propertiesObj = Object.create(propertiesInitializer) as Record<string, VariableValue | null>;
-		//Lazily initialize properties
 		const data:VariableTypeMapping<ClassVariableType> = {
 			properties: propertiesObj,
-			propertyTypes: {},
+			propertyTypes: Object.create(null),
 			type: This
 		};
 
@@ -688,7 +707,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		return {
 			statement: this.statement,
 			opaque: true,
-			types: {},
+			types: Object.create(null),
 			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
 				type: instance.propertyTypes[k] ?? v[0],
 				assignabilityType: v[0],

@@ -41,7 +41,7 @@ import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, Consta
 import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 export class Files {
     constructor() {
-        this.files = {};
+        this.files = Object.create(null);
         this.backupFiles = null;
     }
     getFile(filename, create = false) {
@@ -247,8 +247,8 @@ let Runtime = (() => {
                 this._output = _output;
                 this.fs = fs;
                 this.scopes = [];
-                this.functions = {};
-                this.openFiles = {};
+                this.functions = Object.create(null);
+                this.openFiles = Object.create(null);
                 this.classData = null;
                 this.currentlyResolvingTypeName = null;
                 this.currentlyResolvingPointerTypeName = null;
@@ -928,9 +928,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         .map(([k, v]) => [k, this.cloneValue(type.fields[k][0], v)]));
                 if (type instanceof ClassVariableType)
                     return {
-                        properties: Object.fromEntries(Object.entries(value.properties)
-                            .map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v)])),
-                        propertyTypes: {},
+                        properties: Object.setPrototypeOf(Object.fromEntries(Object.entries(value.properties)
+                            .map(([k, v]) => [k, this.cloneValue(type.properties[k][0], v)])), null),
+                        propertyTypes: Object.setPrototypeOf(Object.fromEntries(Object.entries(value.propertyTypes)), null),
                         type: value.type
                     };
                 crash(f.quote `Cannot clone value of type ${type}`);
@@ -941,8 +941,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 const scope = {
                     statement: func,
                     opaque: !(func instanceof ClassProcedureStatement || func instanceof ClassFunctionStatement),
-                    variables: {},
-                    types: {},
+                    variables: Object.create(null),
+                    types: Object.create(null),
                 };
                 for (const [i, [name, { type, passMode }]] of [...func.args.entries()].entries()) {
                     const rType = this.resolveVariableType(type);
@@ -1116,8 +1116,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 this.runBlock(code, true, {
                     statement: "global",
                     opaque: true,
-                    variables: {},
-                    types: {}
+                    variables: Object.create(null),
+                    types: Object.create(null),
                 });
                 for (const [name, file] of Object.entries(this.openFiles)) {
                     if (file == undefined)
