@@ -755,24 +755,27 @@ export class ForStatement extends Statement {
 			for(
 				let i = from;
 				direction == 1 ? i <= to : i >= to;
-				i += step, variable.value = Number(i)
+				i += step
 			){
+				variable.value = Number(i);
 				runtime.runBlockFast(node.nodeGroups[0]);
 			}
 			runtime.scopes.pop();
 		} else {
+			const variable:ConstantData = {
+				declaration: this,
+				mutable: false,
+				type: PrimitiveVariableType.INTEGER,
+				value: null!,
+			};
 			for(let i = from; direction == 1 ? i <= to : i >= to; i += step){
+				variable.value = Number(i);
 				const result = runtime.runBlock(node.nodeGroups[0], false, {
 					statement: this,
 					opaque: false,
 					variables: {
 						//Set the loop variable in the loop scope
-						[this.name]: {
-							declaration: this,
-							mutable: false,
-							type: PrimitiveVariableType.INTEGER,
-							value: Number(i),
-						}
+						[this.name]: variable
 					},
 					types: {}
 				});
