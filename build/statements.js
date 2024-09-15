@@ -1130,23 +1130,26 @@ let ForStatement = (() => {
                     types: {}
                 };
                 runtime.scopes.push(scope);
-                for (let i = from; direction == 1 ? i <= to : i >= to; i += step, variable.value = Number(i)) {
+                for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
+                    variable.value = Number(i);
                     runtime.runBlockFast(node.nodeGroups[0]);
                 }
                 runtime.scopes.pop();
             }
             else {
+                const variable = {
+                    declaration: this,
+                    mutable: false,
+                    type: PrimitiveVariableType.INTEGER,
+                    value: null,
+                };
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
+                    variable.value = Number(i);
                     const result = runtime.runBlock(node.nodeGroups[0], false, {
                         statement: this,
                         opaque: false,
                         variables: {
-                            [this.name]: {
-                                declaration: this,
-                                mutable: false,
-                                type: PrimitiveVariableType.INTEGER,
-                                value: Number(i),
-                            }
+                            [this.name]: variable
                         },
                         types: {}
                     });
