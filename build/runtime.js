@@ -49,6 +49,11 @@ export class Files {
             name: filename, text: ""
         } : undefined);
     }
+    createFile(filename) {
+        return {
+            name: filename, text: ""
+        };
+    }
     makeBackup() {
         this.backupFiles = JSON.stringify(this.files);
     }
@@ -1122,7 +1127,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
             }
             getOpenFile(filename, modes, operationDescription) {
-                const data = (this.openFiles[filename] ?? fail(f.quote `File ${filename} is not open or does not exist.`, undefined));
+                const data = (this.openFiles[filename] ?? fail(f.quote `File ${filename} has not been opened.`, undefined));
                 if (modes && operationDescription && !modes.includes(data.mode))
                     fail(f.quote `${operationDescription} requires the file to have been opened with mode ${modes.map(m => `"${m}"`).join(" or ")}, but the mode is ${data.mode}`, undefined);
                 return data;
