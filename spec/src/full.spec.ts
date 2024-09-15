@@ -127,7 +127,7 @@ no_invalid_escape_sequences: [
 `OUTPUT "a\\aa"`,
 `Unescaped backslash`
 ],
-js_reserved_words: [
+js_reserved_words_proto_1: [
 `TYPE __proto__ = ^INTEGER
 DECLARE hasOwnProperty: INTEGER
 hasOwnProperty <- 5
@@ -135,6 +135,66 @@ DECLARE __proto__: __proto__
 __proto__ <- ^hasOwnProperty
 OUTPUT __proto__^`,
 ["5"]
+],
+js_reserved_words_proto_2: [
+`TYPE __proto__
+	DECLARE __proto__: STRING
+	DECLARE isPrototypeOf, propertyIsEnumerable: BOOLEAN
+ENDTYPE
+
+DECLARE __proto__, hasOwnProperty: __proto__
+__proto__.__proto__ <- "JS is a wonderful language!"
+__proto__.isPrototypeOf <- TRUE
+__proto__.propertyIsEnumerable <- TRUE
+OUTPUT __proto__.__proto__
+OUTPUT __proto__.isPrototypeOf
+OUTPUT __proto__.propertyIsEnumerable
+
+__proto__ <- __proto__`,
+["JS is a wonderful language!", "TRUE", "TRUE"]
+],
+js_reserved_words_proto_3: [
+`CLASS __proto__
+	PUBLIC __proto__: STRING
+	PUBLIC isPrototypeOf, propertyIsEnumerable: BOOLEAN
+	PUBLIC __defineSetter__: ARRAY OF BOOLEAN
+	PUBLIC PROCEDURE NEW(hasOwnProperty, valueOf:STRING)
+		OUTPUT hasOwnProperty
+		OUTPUT valueOf
+		isPrototypeOf <- TRUE
+		propertyIsEnumerable <- LENGTH(valueOf) > 5
+	__proto__ <- "Object.create(null) my beloved"
+	DECLARE temp: ARRAY[0:LENGTH(hasOwnProperty)] OF BOOLEAN
+	temp[0] <- TRUE
+	__defineSetter__ <- temp
+	ENDPROCEDURE
+	PUBLIC FUNCTION __lookupGetter__() RETURNS INTEGER
+		RETURN 5
+	ENDFUNCTION
+ENDCLASS
+
+DECLARE __proto__: __proto__
+__proto__ <- NEW __proto__("JS is a wonderful language!", "123456")
+OUTPUT __proto__.__proto__
+OUTPUT __proto__.isPrototypeOf
+OUTPUT __proto__.propertyIsEnumerable
+OUTPUT __proto__.__lookupGetter__()
+
+PROCEDURE nowCloneIt(BYVAL __defineGetter__:__proto__)
+	OUTPUT LENGTH(__defineGetter__.__defineSetter__)
+	OUTPUT __defineGetter__.__defineSetter__[0]
+	__defineGetter__.__defineSetter__[0] <- FALSE
+	OUTPUT __defineGetter__.__defineSetter__[0]
+ENDPROCEDURE
+
+OUTPUT LENGTH(__proto__.__defineSetter__)
+OUTPUT __proto__.__defineSetter__[0]
+CALL nowCloneIt(__proto__)
+OUTPUT __proto__.__defineSetter__[0]`,
+[
+	"JS is a wonderful language!", "123456", "Object.create(null) my beloved", "TRUE", "TRUE", "5",
+	"28", "TRUE", "28", "TRUE", "FALSE", "TRUE"
+]
 ],
 //#endregion
 //#region types
