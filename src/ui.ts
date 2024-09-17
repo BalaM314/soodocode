@@ -39,7 +39,7 @@ export function flattenTree(program:parserTypes.ProgramASTNodeGroup):FlattenTree
 	}).flat(1);
 }
 
-
+/** Must escape HTML special chars from user input. */
 export function displayExpressionHTML(node:ExpressionASTNodeExt, expand = false, format = true):string {
 	if(node instanceof Token || node instanceof ExpressionASTArrayTypeNode || node instanceof ExpressionASTRangeTypeNode)
 		return escapeHTML(node.fmtText());
@@ -55,26 +55,27 @@ export function displayExpressionHTML(node:ExpressionASTNodeExt, expand = false,
 	} else {
 		if(node.operator.fix.startsWith("unary_prefix")) return (
 `(
-${node.operatorToken.text}
+${escapeHTML(node.operatorToken.text)}
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`
 		);
 		else if(node.operator.fix.startsWith("unary_postfix")) return (
 `(
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.operatorToken.text}
+${escapeHTML(node.operatorToken.text)}
 )`
 		);
 		else return (
 `(
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.operatorToken.text}
+${escapeHTML(node.operatorToken.text)}
 ${displayExpressionHTML(node.nodes[1], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`
 		);
 	}
 }
 
+/** Must escape HTML special chars from user input. */
 export function displayProgram(program:ProgramAST | ProgramASTNode[]):string {
 	return (Array.isArray(program) ? program : program.nodes).map(node => {
 		if(node instanceof Statement) return displayStatement(node);
@@ -100,6 +101,7 @@ displayStatement(statement)
 		);
 	}).join("");
 }
+/** Must escape HTML special chars from user input. */
 export function displayStatement(statement:Statement){
 	return (
 `<div class="program-display-statement">\
@@ -523,6 +525,7 @@ ${displayProgram(program)}`
 	}
 });
 
+/** Must escape HTML special chars from user input. */
 export function showRange(text:string, error:SoodocodeError):string {
 	if(!error.rangeGeneral && !error.rangeSpecific) return ``; //can't show anything
 	

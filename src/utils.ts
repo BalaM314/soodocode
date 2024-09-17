@@ -374,9 +374,10 @@ export function errorBoundary({predicate = (() => true), message}:Partial<{
 	};
 }
 
+/** Must only be called once on input. */
 export function escapeHTML(input?:string):string {
 	if(input == undefined) return "";
-	return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+	return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 export function parseError(thing:unknown):string {

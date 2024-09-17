@@ -45,18 +45,18 @@ export function displayExpressionHTML(node, expand = false, format = true) {
     else {
         if (node.operator.fix.startsWith("unary_prefix"))
             return (`(
-${node.operatorToken.text}
+${escapeHTML(node.operatorToken.text)}
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`);
         else if (node.operator.fix.startsWith("unary_postfix"))
             return (`(
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.operatorToken.text}
+${escapeHTML(node.operatorToken.text)}
 )`);
         else
             return (`(
 ${displayExpressionHTML(node.nodes[0], expand, format).split("\n").map((l, i, a) => (i == a.length - 1 ? "↱ " : "\t") + l).join("\n")}
-${node.operatorToken.text}
+${escapeHTML(node.operatorToken.text)}
 ${displayExpressionHTML(node.nodes[1], expand, format).split("\n").map((l, i) => (i == 0 ? "↳ " : "\t") + l).join("\n")}
 )`);
     }
