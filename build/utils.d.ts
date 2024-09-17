@@ -102,4 +102,6 @@ export type MixClassesTuple<Classes extends (new (...args: any[]) => unknown)[]>
 ] ? MixClasses<MixClassesTuple<Left>, Last> : never;
 export declare function getAllPropertyDescriptors(object: Record<PropertyKey, unknown>): PropertyDescriptorMap;
 export declare function combineClasses<const Classes extends (new (...args: any[]) => unknown)[]>(...classes: Classes): MixClassesTuple<Classes>;
+export declare function match<K extends PropertyKey, O extends Record<K, unknown>>(value: K, clauses: O): O[K];
+export declare function match<K extends PropertyKey, O extends Partial<Record<K, unknown>>, D>(value: K, clauses: O, defaultValue: D): O[K] | D;
 export {};

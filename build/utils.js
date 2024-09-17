@@ -55,7 +55,7 @@ export function displayTokenMatcher(input) {
                 "character"} "${tokenTextMapping[input]}"`;
     }
     else
-        return {
+        return match(input, {
             ".": "one token",
             ".*": "anything",
             ".+": "something",
@@ -69,7 +69,7 @@ export function displayTokenMatcher(input) {
             "string": "a string literal",
             "number.decimal": "a number",
             "name": "an identifier"
-        }[input];
+        });
 }
 export function applyRangeTransformers(text, ranges, transformer = (x => x)) {
     const chars = [...text].map(transformer);
@@ -603,4 +603,7 @@ export function combineClasses(...classes) {
     return Object.assign(ctor, statics, {
         prototype: ctorPrototype
     });
+}
+export function match(value, clauses, defaultValue) {
+    return value in clauses ? clauses[value] : defaultValue;
 }

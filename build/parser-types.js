@@ -1,5 +1,5 @@
 import { Token } from "./lexer-types.js";
-import { crash, f, getTotalRange } from "./utils.js";
+import { crash, f, getTotalRange, match } from "./utils.js";
 export class ExpressionASTBranchNode {
     constructor(operatorToken, operator, nodes, allTokens) {
         this.operatorToken = operatorToken;
@@ -118,7 +118,7 @@ export class Operator {
         Object.assign(this, args);
     }
     fmtText() {
-        return {
+        return match(this.id, {
             "operator.or": "or",
             "operator.and": "and",
             "operator.equal_to": "equal to",
@@ -139,7 +139,7 @@ export class Operator {
             "operator.negate": "negate",
             "operator.pointer_dereference": "pointer dereference",
             "operator.access": "access",
-        }[this.id];
+        });
     }
     fmtDebug() {
         return `Operator [${this.id}] (${this.category} ${this.fix})`;
@@ -265,7 +265,7 @@ export class ProgramASTBranchNode {
         ]);
     }
     static typeName(type) {
-        return {
+        return match(type, {
             "if": "if",
             "for": "for",
             "for.step": "for (step)",
@@ -279,7 +279,7 @@ export class ProgramASTBranchNode {
             "class.inherits": "class",
             "class_function": "class function",
             "class_procedure": "class procedure",
-        }[type];
+        });
     }
     typeName() {
         return ProgramASTBranchNode.typeName(this.type);

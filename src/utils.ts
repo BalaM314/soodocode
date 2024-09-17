@@ -70,7 +70,7 @@ export function displayTokenMatcher(input:TokenMatcher):string {
 			input.startsWith("operator.") ? "operator" :
 			"character"
 		} "${tokenTextMapping[input]}"`;
-	} else return {
+	} else return match(input, {
 		".": "one token",
 		".*": "anything",
 		".+": "something",
@@ -84,7 +84,7 @@ export function displayTokenMatcher(input:TokenMatcher):string {
 		"string": "a string literal",
 		"number.decimal": "a number",
 		"name": "an identifier"
-	}[input];
+	});
 }
 
 /**
@@ -732,4 +732,10 @@ export function combineClasses<const Classes extends (new (...args:any[]) => unk
 			prototype: ctorPrototype
 		}
 	) as never as MixClassesTuple<Classes>;
+}
+
+export function match<K extends PropertyKey, O extends Record<K, unknown>>(value:K, clauses:O):O[K];
+export function match<K extends PropertyKey, O extends Partial<Record<K, unknown>>, D>(value:K, clauses:O, defaultValue:D):O[K] | D;
+export function match(value:PropertyKey, clauses:Record<PropertyKey, unknown>, defaultValue?:unknown):unknown {
+	return value in clauses ? clauses[value] : defaultValue;
 }
