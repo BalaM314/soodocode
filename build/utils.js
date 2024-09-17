@@ -314,7 +314,7 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
 export function escapeHTML(input) {
     if (input == undefined)
         return "";
-    return input.replaceAll(/&(?!(amp;)|(lt;)|(gt;))/g, "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 export function parseError(thing) {
     if (thing instanceof Error) {

@@ -96,6 +96,7 @@ class TypedValue_<T extends VariableType> {
 			return this.type == PrimitiveVariableType.get(type);
 		impossible();
 	}
+	/** MUST escape HTML special chars from user input. */
 	asHTML(recursive:boolean):string {
 		if(this.type instanceof PrimitiveVariableType){
 			if(this.typeIs("INTEGER"))
@@ -545,7 +546,7 @@ export class EnumeratedVariableType extends BaseVariableType {
 		return null;
 	}
 	asHTML(value:VariableTypeMapping<EnumeratedVariableType>):string {
-		return escapeHTML(value);
+		return escapeHTML(value satisfies string);
 	}
 	asString(value:VariableTypeMapping<EnumeratedVariableType>):string {
 		return value;
