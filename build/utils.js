@@ -71,23 +71,25 @@ export function displayTokenMatcher(input) {
             "name": "an identifier"
         }[input];
 }
-export function applyRangeTransformers(text, ranges) {
-    for (const [[range, start, end, transformer = (x) => x], remaining] of withRemaining(ranges)) {
-        text = text.slice(0, range[0]) + start + transformer(text.slice(...range)) + end + text.slice(range[1]);
+export function applyRangeTransformers(text, ranges, transformer = (x => x)) {
+    const chars = [...text].map(transformer);
+    for (const [[range, start, end], remaining] of withRemaining(ranges)) {
+        chars.splice(range[1], 0, end);
+        chars.splice(range[0], 0, start);
         remaining.forEach(([next]) => {
             next[0] =
-                next[0] >= range[1] ? next[0] + start.length + end.length :
-                    next[0] > range[0] ? next[0] + start.length :
-                        (next[0] >= range[0] && next[1] <= range[1]) ? next[0] + start.length :
+                next[0] >= range[1] ? next[0] + 2 :
+                    next[0] > range[0] ? next[0] + 1 :
+                        (next[0] >= range[0] && next[1] <= range[1]) ? next[0] + 1 :
                             next[0];
             next[1] =
-                next[1] > range[1] ? next[1] + start.length + end.length :
-                    (next[1] >= range[1] && next[0] < range[0]) ? next[1] + start.length + end.length :
-                        next[1] > range[0] ? next[1] + start.length :
+                next[1] > range[1] ? next[1] + 2 :
+                    (next[1] >= range[1] && next[0] < range[0]) ? next[1] + 2 :
+                        next[1] > range[0] ? next[1] + 1 :
                             next[1];
         });
     }
-    return text;
+    return chars.join("");
 }
 export function separateArray(arr, predicate) {
     const a = [];

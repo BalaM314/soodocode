@@ -87,15 +87,35 @@ export function displayTokenMatcher(input:TokenMatcher):string {
 	}[input];
 }
 
-export function applyRangeTransformers(
-	text:string, ranges:Array<readonly [
+/**
+ * Applies range transformers to some text.
+ * @param transformer Called on each character (Unicode scalar value)
+ * @returns the text, with the start and end values specified in `ranges`.
+ */
+export function applyRangeTransformers<T>(
+	text:string,
+	ranges:Array<readonly [
 		range:TextRange,
-		start:string, end:string,
-		transformer?:(rangeText:string) => string
-	]>
-){
-	for(const [[range, start, end, transformer = (x:string) => x], remaining] of withRemaining(ranges)){
-		text = text.slice(0, range[0]) + start + transformer(text.slice(...range)) + end + text.slice(range[1]);
+		start:string, end:string
+	]>,
+	transformer:(char:string) => string = (x => x)
+):string{
+	/*
+		Motivating example: the text
+
+		"aa" & 2 & "bb"
+		01234567890123
+
+		Here, the range [5, 6) needs to have a span tag placed around it.
+		However, the &s also need to be escaped with escapeHTML.
+		Replacing them with &amp; will cause [5, 6) to point to some other text.
+
+		Solution: split the text on characters, and individually escape each character. Then, the range will still be valid.
+	*/
+	const chars = [...text].map(transformer);
+	for(const [[range, start, end], remaining] of withRemaining(ranges)){
+		chars.splice(range[1], 0, end);
+		chars.splice(range[0], 0, start);
 		remaining.forEach(([next]) => {
 			/*
 				0123456789qwertyuiop9876543210
@@ -106,18 +126,18 @@ export function applyRangeTransformers(
 				>= 4: + start + end
 			*/
 			next[0] =
-				next[0] >= range[1] ? next[0] + start.length + end.length :
-				next[0] > range[0] ? next[0] + start.length :
-				(next[0] >= range[0] && next[1] <= range[1]) ? next[0] + start.length :
-				next[0];
+				next[0] >= range[1] ? next[0] + 2 : //Increase by start + end
+				next[0] > range[0] ? next[0] + 1 : //Increase by start
+				(next[0] >= range[0] && next[1] <= range[1]) ? next[0] + 1 : //Increase by start
+				next[0]; //Don't increase
 			next[1] =
-				next[1] > range[1] ? next[1] + start.length + end.length :
-				(next[1] >= range[1] && next[0] < range[0]) ? next[1] + start.length + end.length :
-				next[1] > range[0] ? next[1] + start.length :
-				next[1];
+				next[1] > range[1] ? next[1] + 2 : //Increase by start + end
+				(next[1] >= range[1] && next[0] < range[0]) ? next[1] + 2 : //Increase by start + end
+				next[1] > range[0] ? next[1] + 1 : //Increase by start
+				next[1]; //Don't increase
 		});
 	}
-	return text;
+	return chars.join("");
 }
 
 export function separateArray<T, S extends T>(arr:T[], predicate:(item:T) => item is S):[true: S[], false: T[]];

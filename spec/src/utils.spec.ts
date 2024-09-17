@@ -54,11 +54,6 @@ describe("applyRangeTranformers", () => {
 			[[0, 10], "<", ">"]
 		])).toEqual(`<0123456789>`);
 	});
-	it("should apply one range transformer with transform function", () => {
-		expect(applyRangeTransformers(`abcdefghij`, [
-			[[1, 4], "<", ">", t => t.toUpperCase()]
-		])).toEqual(`a<BCD>efghij`);
-	});
 	it("should apply two non-overlapping range transformer", () => {
 		expect(applyRangeTransformers(`0123456789`, [
 			[[1, 2], "<", ">"],
@@ -116,6 +111,14 @@ describe("applyRangeTranformers", () => {
 			[[3, 8], "<", ">"],
 			[[5, 8], "(", ")"],
 		])).toEqual(`012<34(567)>89`);
+	});
+	it("should handle cases where the transformer increases the length of some characters", () => {
+		expect(applyRangeTransformers(`0123456789`, [
+			[[1, 2], "<", ">"]
+		], c => c == "0" || c == "2" ? c.repeat(3) : c)).toEqual(`000<1>2223456789`);
+		expect(applyRangeTransformers(`0123456789`, [
+			[[1, 4], "<", ">"]
+		], c => c == "0" || c == "2" ? c.repeat(3) : c)).toEqual(`000<12223>456789`);
 	});
 });
 
