@@ -12,6 +12,7 @@ import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
 import { configs } from "./config.js";
+const savedProgramKey = "soodocode:savedProgram";
 const persistentFilesystem = new runtime.Files();
 function getElement(id, type) {
     const element = document.getElementById(id);
@@ -526,6 +527,17 @@ function executeSoodocode() {
         }
         console.error(err);
     }
+}
+function saveProgram() {
+    if (soodocodeInput.value.trim().length > 0) {
+        localStorage.setItem(savedProgramKey, soodocodeInput.value);
+    }
+}
+setInterval(saveProgram, 5000);
+window.addEventListener("beforeunload", saveProgram);
+const savedProgram = localStorage.getItem(savedProgramKey);
+if (savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0) {
+    soodocodeInput.value = savedProgram;
 }
 let flashing = false;
 let bouncing = false;
