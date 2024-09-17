@@ -20,6 +20,8 @@ import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f, capitalizeText } from "./utils.js";
 import { Config, configs } from "./config.js";
 
+const savedProgramKey = "soodocode:savedProgram";
+
 const persistentFilesystem = new runtime.Files();
 
 function getElement<T extends typeof HTMLElement>(id:string, type:T){
@@ -645,6 +647,22 @@ function executeSoodocode(){
 		}
 		console.error(err);
 	}
+}
+
+function saveProgram(){
+	if(soodocodeInput.value.trim().length > 0){
+		//If there is any text in the input, save it to localstorage
+		localStorage.setItem(savedProgramKey, soodocodeInput.value);
+	}
+}
+//Save program to localstorage
+setInterval(saveProgram, 5000);
+window.addEventListener("beforeunload", saveProgram);
+
+const savedProgram = localStorage.getItem(savedProgramKey);
+if(savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0){
+	//If there is a saved program, and the input is empty
+	soodocodeInput.value = savedProgram;
 }
 
 let flashing = false;
