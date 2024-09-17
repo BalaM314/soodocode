@@ -8,7 +8,7 @@ This file contains the types for the parser.
 import { Token, TokenType } from "./lexer-types.js";
 import type { CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassInheritsStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassStatement, DoWhileEndStatement, DoWhileStatement, ElseStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, IfStatement, ProcedureStatement, Statement, SwitchStatement, TypeStatement, WhileStatement } from "./statements.js";
 import type { ClassProperties, IFormattable, TextRange, TextRanged } from "./types.js";
-import { crash, f, getTotalRange, RangeArray } from "./utils.js";
+import { crash, f, getTotalRange, match, RangeArray } from "./utils.js";
 
 
 /** Represents an expression tree. */
@@ -215,7 +215,7 @@ export class Operator implements IFormattable {
 		Object.assign(this, args);
 	}
 	fmtText(){
-		return {
+		return match(this.id, {
 			"operator.or": "or",
 			"operator.and": "and",
 			"operator.equal_to": "equal to",
@@ -236,7 +236,7 @@ export class Operator implements IFormattable {
 			"operator.negate": "negate",
 			"operator.pointer_dereference": "pointer dereference",
 			"operator.access": "access",
-		}[this.id];
+		});
 	}
 	fmtDebug(){
 		return `Operator [${this.id}] (${this.category} ${this.fix})`;
@@ -408,7 +408,7 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 		]);
 	}
 	static typeName(type:ProgramASTBranchNodeType){
-		return {
+		return match(type, {
 			"if": "if",
 			"for": "for",
 			"for.step": "for (step)",
@@ -422,7 +422,7 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 			"class.inherits": "class",
 			"class_function": "class function",
 			"class_procedure": "class procedure",
-		}[type];
+		});
 	}
 	typeName(){
 		return ProgramASTBranchNode.typeName(this.type);
