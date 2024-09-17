@@ -313,7 +313,7 @@ const expressionTests = ((data:Record<string, [
 		}
 	],
 	pointerRef1: (() => {
-		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER);
+		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER, [-1, -1]);
 		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 			type: PrimitiveVariableType.INTEGER,
 			declaration: null!,
@@ -334,7 +334,7 @@ const expressionTests = ((data:Record<string, [
 	})(),
 	pointerRef_array_udt: (() => {
 		const foo = new EnumeratedVariableType("foo", ["a", "b", "c"]);
-		const arrayPointer = new PointerVariableType(true, "intPtr", arrayType([[1, 10]], foo));
+		const arrayPointer = new PointerVariableType(true, "intPtr", arrayType([[1, 10]], foo), [-1, -1]);
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: arrayType([[1, 10]], foo),
 			declaration: null!,
@@ -397,7 +397,7 @@ const expressionTests = ((data:Record<string, [
 	// 	]
 	// })(),
 	pointerRef_invalid_undeclared_variable: (() => {
-		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER);
+		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER, [-1, -1]);
 		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 			type: PrimitiveVariableType.INTEGER,
 			declaration: null!,
@@ -424,7 +424,7 @@ const expressionTests = ((data:Record<string, [
 			"INTEGER",
 			["INTEGER", 20],
 			r => {
-				const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER);
+				const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER, [-1, -1]);
 				const amogusVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 					type: PrimitiveVariableType.INTEGER,
 					declaration: null!,
