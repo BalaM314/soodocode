@@ -444,13 +444,13 @@ export function showRange(text, error) {
     const formattedRangeText = applyRangeTransformers(rangeText, [
         error.rangeGeneral && [
             error.rangeGeneral.map(n => n - outerRange[0]),
-            `<span class="error-range-outer">`, "</span>", escapeHTML
+            `<span class="error-range-outer">`, "</span>",
         ],
         error.rangeSpecific && [
             error.rangeSpecific.map(n => n - outerRange[0]),
-            `<span class="error-range-inner">`, "</span>", escapeHTML
+            `<span class="error-range-inner">`, "</span>",
         ],
-    ].filter(Boolean));
+    ].filter(Boolean), escapeHTML);
     return `
 ${formattedPreviousLine}\
 ${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHTML(restOfLine)}`;

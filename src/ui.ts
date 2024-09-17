@@ -560,13 +560,13 @@ export function showRange(text:string, error:SoodocodeError):string {
 	const formattedRangeText = applyRangeTransformers(rangeText, [
 		error.rangeGeneral && [
 			error.rangeGeneral.map(n => n - outerRange[0]), //Everything before outerRange[0] was sliced off, so subtract that
-			`<span class="error-range-outer">`, "</span>", escapeHTML
+			`<span class="error-range-outer">`, "</span>",
 		] as const,
 		error.rangeSpecific && [
 			error.rangeSpecific.map(n => n - outerRange[0]), //Everything before outerRange[0] was sliced off, so subtract that
-			`<span class="error-range-inner">`, "</span>", escapeHTML
+			`<span class="error-range-inner">`, "</span>",
 		] as const,
-	].filter(Boolean));
+	].filter(Boolean), escapeHTML);
 	return `
 ${formattedPreviousLine}\
 ${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
