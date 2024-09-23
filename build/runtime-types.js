@@ -101,6 +101,14 @@ export class UntypedNodeValue {
         this.value = Runtime.evaluateExpr(this.node, type);
     }
 }
+export class VariableNodeValue {
+    constructor(node, value = null) {
+        this.node = node;
+        this.value = value;
+    }
+    init() {
+    }
+}
 export class BaseVariableType {
     validate(runtime) { }
     is(...type) {
