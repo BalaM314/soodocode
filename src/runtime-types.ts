@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -159,7 +159,7 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 export interface NodeValue {
 	node: ExpressionASTNode;
 	value: VariableValue | TypedValue | null | undefined;
-	init(type?:VariableType):void;
+	init():void;
 }
 export class TypedNodeValue<
 	T extends ExpressionASTNode = ExpressionASTNode,
@@ -185,8 +185,8 @@ export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implement
 	){}
 	range = this.node.range;
 	value: TypedValue | null | undefined;
-	init(type?:VariableType){
-		this.value = Runtime.evaluateExpr(this.node, type);
+	init(){
+		this.value = Runtime.evaluateExpr(this.node);
 	}
 }
 
