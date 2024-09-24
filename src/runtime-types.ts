@@ -386,7 +386,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	asHTML(value:VariableTypeMapping<ArrayVariableType>, recursive:boolean):string {
 		return `<span class="sth-bracket">[</span>${
-			this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)<span>`).join(", ")
+			this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)</span>`).join(", ")
 		}<span class="sth-bracket">]</span>`;
 	}
 	asString(value:VariableTypeMapping<ArrayVariableType>):string {
@@ -467,7 +467,7 @@ help: change the field's type to be a pointer`,
 	asHTML(value:VariableTypeMapping<RecordVariableType>):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			this.iterate(value, (tval, name) =>
-				`\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n"
+				`\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n"
 			).join("")
 		}<span class="sth-brace">}</span>`;
 	}
@@ -745,14 +745,14 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	asHTML(value:VariableTypeMapping<ClassVariableType>):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			this.iterateProperties(value, (tval, name) => {
-				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
 			}).join("")
 		}<span class="sth-brace">}</span>`;
 	}
 	asString(value:VariableTypeMapping<ClassVariableType>):string {
 		return `${escapeHTML(this.name)} {\n${
 			this.iterateProperties(value, (tval, name) => {
-				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
 			}).join("")
 		}}`;
 	}
