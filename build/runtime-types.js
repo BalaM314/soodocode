@@ -97,16 +97,8 @@ export class UntypedNodeValue {
         this.node = node;
         this.range = this.node.range;
     }
-    init(type) {
-        this.value = Runtime.evaluateExpr(this.node, type);
-    }
-}
-export class VariableNodeValue {
-    constructor(node, value = null) {
-        this.node = node;
-        this.value = value;
-    }
     init() {
+        this.value = Runtime.evaluateExpr(this.node);
     }
 }
 export class BaseVariableType {
@@ -295,7 +287,7 @@ export class ArrayVariableType extends BaseVariableType {
             return Array.from(value, (v) => callback(typedValue(this.elementType, v)));
     }
     asHTML(value, recursive) {
-        return `<span class="sth-bracket">[</span>${this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)<span>`).join(", ")}<span class="sth-bracket">]</span>`;
+        return `<span class="sth-bracket">[</span>${this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)</span>`).join(", ")}<span class="sth-bracket">]</span>`;
     }
     asString(value) {
         return `[${this.mapValues(value, tval => tval?.asString() ?? `(uninitialized)`).join(", ")}]`;
@@ -367,7 +359,7 @@ help: change the field's type to be a pointer`, range);
         return Object.entries(this.fields).map(([name, [type, range]]) => callback(value[name] != null ? typedValue(type, value[name]) : null, name, range));
     }
     asHTML(value) {
-        return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${this.iterate(value, (tval, name) => `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n").join("")}<span class="sth-brace">}</span>`;
+        return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${this.iterate(value, (tval, name) => `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n").join("")}<span class="sth-brace">}</span>`;
     }
     asString(value) {
         return `${this.name} {\n${this.iterate(value, (tval, name) => `\t${name}: ${tval != null ? tval.asString() : '(uninitialized)'},`.replaceAll("\n", "\n\t") + "\n").join("")}}`;
@@ -606,12 +598,12 @@ export class ClassVariableType extends BaseVariableType {
     }
     asHTML(value) {
         return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${this.iterateProperties(value, (tval, name) => {
-            return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+            return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
         }).join("")}<span class="sth-brace">}</span>`;
     }
     asString(value) {
         return `${escapeHTML(this.name)} {\n${this.iterateProperties(value, (tval, name) => {
-            return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+            return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
         }).join("")}}`;
     }
 }
