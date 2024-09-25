@@ -114,15 +114,29 @@ export function generateConfigsDialog() {
             }
             else if (typeof config.value == "number") {
                 input.type = "number";
+                if (config.range) {
+                    [input.min, input.max] = config.range.map(String);
+                }
                 input.value = Number(config.value).toString();
                 input.addEventListener("change", () => {
+                    const value = Number(input.value);
+                    if (isNaN(value))
+                        return;
+                    if (config.range) {
+                        if (!(config.range[0] <= value && value <= config.range[1]))
+                            return;
+                    }
                     config.value = Number(input.value);
                 });
             }
             else if (typeof config.value == "string") {
                 input.type = "text";
                 input.value = config.value;
+                if (config.stringLength != undefined)
+                    input.minLength = input.maxLength = config.stringLength;
                 input.addEventListener("change", () => {
+                    if (config.stringLength != undefined && input.value.length != config.stringLength)
+                        return;
                     config.value = input.value;
                 });
             }
