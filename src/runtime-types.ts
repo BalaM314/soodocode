@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import { configs } from "./config.js";
 import { Token } from "./lexer-types.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -159,7 +159,7 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 export interface NodeValue {
 	node: ExpressionASTNode;
 	value: VariableValue | TypedValue | null | undefined;
-	init(type?:VariableType):void;
+	init():void;
 }
 export class TypedNodeValue<
 	T extends ExpressionASTNode = ExpressionASTNode,
@@ -185,8 +185,8 @@ export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implement
 	){}
 	range = this.node.range;
 	value: TypedValue | null | undefined;
-	init(type?:VariableType){
-		this.value = Runtime.evaluateExpr(this.node, type);
+	init(){
+		this.value = Runtime.evaluateExpr(this.node);
 	}
 }
 
@@ -386,7 +386,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	asHTML(value:VariableTypeMapping<ArrayVariableType>, recursive:boolean):string {
 		return `<span class="sth-bracket">[</span>${
-			this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)<span>`).join(", ")
+			this.mapValues(value, tval => tval?.asHTML(true) ?? `<span class="sth-invalid">(uninitialized)</span>`).join(", ")
 		}<span class="sth-bracket">]</span>`;
 	}
 	asString(value:VariableTypeMapping<ArrayVariableType>):string {
@@ -467,7 +467,7 @@ help: change the field's type to be a pointer`,
 	asHTML(value:VariableTypeMapping<RecordVariableType>):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			this.iterate(value, (tval, name) =>
-				`\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n"
+				`\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n"
 			).join("")
 		}<span class="sth-brace">}</span>`;
 	}
@@ -745,14 +745,14 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	asHTML(value:VariableTypeMapping<ClassVariableType>):string {
 		return `<span class="sth-type">${escapeHTML(this.name)}</span> <span class="sth-brace">{</span>\n${
 			this.iterateProperties(value, (tval, name) => {
-				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
 			}).join("")
 		}<span class="sth-brace">}</span>`;
 	}
 	asString(value:VariableTypeMapping<ClassVariableType>):string {
 		return `${escapeHTML(this.name)} {\n${
 			this.iterateProperties(value, (tval, name) => {
-				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)<span>'},`.replaceAll("\n", "\n\t") + "\n";
+				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
 			}).join("")
 		}}`;
 	}
