@@ -289,6 +289,39 @@ export const preprocessedBuiltinFunctions = ({
         returnType: "INTEGER",
         impl(timezone) {
             return Date.now() + timezone * 36000;
-        },
+        }
+    }),
+    DOWNLOADIMAGE: fn({
+        args: [
+            ["Bytes", [["INTEGER"]]],
+            ["Width", "INTEGER"],
+            ["Height", "INTEGER"],
+            ["Filename", "STRING"],
+        ],
+        returnType: "STRING",
+        impl(bytes, width, height, filename) {
+            if (bytes.length != width * height * 4)
+                fail(`Incorrect array length: expected width * height * 4 (${width * height * 4}), got ${bytes.length}\nhelp: bytes should contain the image data in RGBA format, 4 bytes for each pixel`, bytes);
+            if (typeof ImageData == "undefined" || typeof createImageBitmap == "undefined" || typeof document == "undefined") {
+                fail(`DOWNLOADIMAGE is only supported when running in a browser.`, bytes);
+            }
+            else {
+                const data = new ImageData(new Uint8ClampedArray(bytes), width, height);
+                createImageBitmap(data).then(bitmap => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext("bitmaprenderer").transferFromImageBitmap(bitmap);
+                    const el = document.createElement("a");
+                    el.setAttribute("href", canvas.toDataURL());
+                    el.setAttribute("download", filename);
+                    el.style.display = "none";
+                    document.body.appendChild(el);
+                    el.click();
+                    document.body.removeChild(el);
+                });
+                return `Downloading...`;
+            }
+        }
     }),
 });

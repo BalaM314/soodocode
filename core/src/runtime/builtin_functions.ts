@@ -9,7 +9,7 @@ This file contains all builtin functions. Some defined in the insert, others wer
 
 import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
 import type { Runtime } from "../runtime/runtime.js";
-import { f, fail } from "../utils/funcs.js";
+import { f, fail, tryRun } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached } from "../utils/types.js";
 
 //Warning: this file contains extremely sane code
@@ -44,7 +44,11 @@ type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 			RangeAttached<PrimitiveVariableTypeMapping<U>> : //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
 		U extends [infer S] ?
 			S extends PrimitiveVariableTypeName ?
-				RangeAttached<PrimitiveVariableTypeMapping<S>> :
+				RangeAttached<PrimitiveVariableTypeMapping<S>[] | (
+					S extends "INTEGER" ? Int32Array :
+					S extends "REAL" ? Float64Array :
+					never
+				)> :
 				RangeAttached<unknown[]>
 		: never :
 	T extends PrimitiveVariableTypeName
@@ -394,6 +398,38 @@ export const preprocessedBuiltinFunctions = ({
 		returnType: "INTEGER",
 		impl(timezone){
 			return Date.now() + timezone * 36_000;
-		},
+		}
+	}),
+	DOWNLOADIMAGE: fn({
+		args: [
+			["Bytes", [["INTEGER"]]],
+			["Width", "INTEGER"],
+			["Height", "INTEGER"],
+			["Filename", "STRING"],
+		],
+		returnType: "STRING",
+		impl(bytes, width, height, filename){
+			if(bytes.length != width * height * 4) fail(`Incorrect array length: expected width * height * 4 (${width * height * 4}), got ${bytes.length}\nhelp: bytes should contain the image data in RGBA format, 4 bytes for each pixel`, bytes);
+			if(typeof ImageData == "undefined" || typeof createImageBitmap == "undefined" || typeof document == "undefined"){
+				//Running in Node
+				fail(`DOWNLOADIMAGE is only supported when running in a browser.`, bytes);
+			} else {
+				const data = new ImageData(new Uint8ClampedArray(bytes), width, height);
+				void createImageBitmap(data).then(bitmap => {
+					const canvas = document.createElement("canvas");
+					canvas.width = width;
+					canvas.height = height;
+					canvas.getContext("bitmaprenderer")!.transferFromImageBitmap(bitmap);
+					const el = document.createElement("a");
+					el.setAttribute("href", canvas.toDataURL());
+					el.setAttribute("download", filename);
+					el.style.display = "none";
+					document.body.appendChild(el);
+					el.click();
+					document.body.removeChild(el);
+				});
+				return `Downloading...`;
+			}
+		}
 	}),
 }) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;
