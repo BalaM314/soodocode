@@ -3,7 +3,7 @@ import type { Runtime } from "../runtime/runtime.js";
 import type { RangeAttached } from "../utils/types.js";
 type BuiltinFunctionArgType = PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[];
 type BuiltinFunctionArg = [name: string, type: BuiltinFunctionArgType];
-type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> = T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ? U extends PrimitiveVariableTypeName ? RangeAttached<PrimitiveVariableTypeMapping<U>> : U extends [infer S] ? S extends PrimitiveVariableTypeName ? RangeAttached<PrimitiveVariableTypeMapping<S>> : RangeAttached<unknown[]> : never : T extends PrimitiveVariableTypeName ? RangeAttached<PrimitiveVariableTypeMapping<T>> : never;
+type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> = T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ? U extends PrimitiveVariableTypeName ? RangeAttached<PrimitiveVariableTypeMapping<U>> : U extends [infer S] ? S extends PrimitiveVariableTypeName ? RangeAttached<PrimitiveVariableTypeMapping<S>[] | (S extends "INTEGER" ? Int32Array : S extends "REAL" ? Float64Array : never)> : RangeAttached<unknown[]> : never : T extends PrimitiveVariableTypeName ? RangeAttached<PrimitiveVariableTypeMapping<T>> : never;
 type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> = [
     TSuppliedArgs & 0
 ] extends [1] ? RangeAttached<VariableValue>[] : {
@@ -43,5 +43,6 @@ export declare const preprocessedBuiltinFunctions: {
     POW: PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
     EXP: PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
     TIME: PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
+    DOWNLOADIMAGE: PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], "INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
 };
 export {};
