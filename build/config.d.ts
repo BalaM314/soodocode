@@ -124,3 +124,5 @@ export declare const configs: {
         };
     };
 };
+export declare function saveConfigs(): void;
+export declare function loadConfigs(): void;
