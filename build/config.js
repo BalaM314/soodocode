@@ -4,7 +4,9 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             description: "description" in v ? v.description : "shortDescription" in v ? v.shortDescription + (v.fullDescription ? "\n" + v.fullDescription : "") : null,
             defaultValue: v.value,
             value: v.value,
-            errorHelp: typeof v.value == "boolean" ? ("errorHelp" in v ? `help: ${v.errorHelp} by enabling the config "${v.name}"` : "shortDescription" in v ? `help: ${v.shortDescription.replace(/\.$/, "")} by enabling the config "${v.name}"` : null) : ("errorHelp" in v ? `help: ${v.errorHelp}` : null)
+            errorHelp: typeof v.value == "boolean" ? ("errorHelp" in v ? `help: ${v.errorHelp} by enabling the config "${v.name}"` : "shortDescription" in v ? `help: ${v.shortDescription.replace(/\.$/, "")} by enabling the config "${v.name}"` : null) : ("errorHelp" in v ? `help: ${v.errorHelp}` : null),
+            range: v.range,
+            stringLength: v.stringLength
         }]))])))({
     syntax: {
         semicolons_as_newlines: {
@@ -123,12 +125,14 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             description: `Maximum size in bytes allowed for arrays of integers and reals. This is separate from arrays of other types because we can use a native array, which is more memory efficient.`,
             errorHelp: `Increase the limit by increasing the config "Arrays: Max size (primitives)"`,
             value: 256000100,
+            range: [0, Number.MAX_SAFE_INTEGER],
         },
         max_size_composite: {
             name: "Max size (composite)",
             description: `Maximum size allowed for arrays of non-primitive values.`,
             errorHelp: `Increase the limit by increasing the config "Arrays: Max size (composite)"`,
             value: 1000100,
+            range: [0, Number.MAX_SAFE_INTEGER],
         },
         use_32bit_integers: {
             name: "Use 32-bit integers",
@@ -154,6 +158,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
         INTEGER: {
             name: "Default INTEGER value",
             value: 0,
+            range: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]
         },
         REAL: {
             name: "Default REAL value",
@@ -170,6 +175,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
         CHAR: {
             name: "Default CHAR value",
             value: " ",
+            stringLength: 1,
         },
         DATE: {
             name: "Default DATE value",
@@ -193,7 +199,8 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             name: "Maximum statement count",
             description: `Maximum number of statements that can be executed by the runtime. If this is exceeded, the program terminates. Useful to prevent infinite loops.`,
             errorHelp: `Increase the statement limit by changing the config "Maximum statement count"`,
-            value: 100100
+            value: 100100,
+            range: [0, Infinity]
         }
     },
     classes: {

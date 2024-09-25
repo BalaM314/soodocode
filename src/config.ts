@@ -6,6 +6,8 @@ export type Config<T, Help extends boolean> = {
 	description:string | null;
 	value:T;
 	defaultValue:T;
+	range?: T extends number ? [low:number, high:number] : never;
+	stringLength?: T extends string ? number : never;
 } & (Help extends true ? {
 	errorHelp: string;
 } : {});
@@ -15,7 +17,10 @@ type ConfigData<T> = {
 	name:string;
 	/** Default value */
 	value:T;
-	// type: "checkbox" | "boolean" | "integer" | "number";
+	/** Only valid for number configs, inclusive range */
+	range?: [low:number, high:number];
+	/** Only valid for string configs, must be exactly this length */
+	stringLength?: number;
 } & ({
 	/** This text will be used to generate the description text, and will also show up in the error help. Should start with "Allow `...`", so it makes sense when "by enabling the config `...`" is appended. */
 	shortDescription:string;
@@ -43,7 +48,9 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 						"errorHelp" in v ? `help: ${v.errorHelp} by enabling the config "${v.name}"` : "shortDescription" in v ? `help: ${v.shortDescription.replace(/\.$/, "")} by enabling the config "${v.name}"` : null
 					) : (
 						"errorHelp" in v ? `help: ${v.errorHelp}` : null
-					)
+					),
+				range: v.range,
+				stringLength: v.stringLength
 			}]
 		))]
 	)) as {
@@ -172,12 +179,14 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 			description: `Maximum size in bytes allowed for arrays of integers and reals. This is separate from arrays of other types because we can use a native array, which is more memory efficient.`,
 			errorHelp: `Increase the limit by increasing the config "Arrays: Max size (primitives)"`,
 			value: 256_000_100,
+			range: [0, Number.MAX_SAFE_INTEGER],
 		},
 		max_size_composite: {
 			name: "Max size (composite)",
 			description: `Maximum size allowed for arrays of non-primitive values.`,
 			errorHelp: `Increase the limit by increasing the config "Arrays: Max size (composite)"`,
 			value: 1_000_100,
+			range: [0, Number.MAX_SAFE_INTEGER],
 		},
 		use_32bit_integers: {
 			name: "Use 32-bit integers",
@@ -204,6 +213,7 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 		INTEGER: {
 			name: "Default INTEGER value",
 			value: 0,
+			range: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]
 		},
 		REAL: {
 			name: "Default REAL value",
@@ -220,6 +230,7 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 		CHAR: {
 			name: "Default CHAR value",
 			value: " ",
+			stringLength: 1,
 		},
 		DATE: {
 			name: "Default DATE value",
@@ -243,7 +254,8 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 			name: "Maximum statement count",
 			description: `Maximum number of statements that can be executed by the runtime. If this is exceeded, the program terminates. Useful to prevent infinite loops.`,
 			errorHelp: `Increase the statement limit by changing the config "Maximum statement count"`,
-			value: 100_100
+			value: 100_100,
+			range: [0, Infinity]
 		}
 	},
 	classes: {
