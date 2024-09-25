@@ -6,6 +6,7 @@ import * as runtime from "./runtime.js";
 import * as runtimeTypes from "./runtime-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
+import * as config from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
@@ -227,6 +228,9 @@ uploadButton.onchange = (event) => {
         }
     };
 };
+setInterval(saveAll, 5000);
+window.addEventListener("beforeunload", saveAll);
+loadAll();
 getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
     settingsDialog.showModal();
 });
@@ -528,16 +532,18 @@ function executeSoodocode() {
         console.error(err);
     }
 }
-function saveProgram() {
+function saveAll() {
     if (soodocodeInput.value.trim().length > 0) {
         localStorage.setItem(savedProgramKey, soodocodeInput.value);
     }
+    config.saveConfigs();
 }
-setInterval(saveProgram, 5000);
-window.addEventListener("beforeunload", saveProgram);
-const savedProgram = localStorage.getItem(savedProgramKey);
-if (savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0) {
-    soodocodeInput.value = savedProgram;
+function loadAll() {
+    const savedProgram = localStorage.getItem(savedProgramKey);
+    if (savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0) {
+        soodocodeInput.value = savedProgram;
+    }
+    config.loadConfigs();
 }
 let flashing = false;
 let bouncing = false;
@@ -566,7 +572,7 @@ setInterval(() => {
 function dumpFunctionsToGlobalScope() {
     shouldDump = true;
     window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
-    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, {
+    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, config, {
         persistentFilesystem
     });
 }

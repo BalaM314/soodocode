@@ -1,3 +1,4 @@
+import { isKey } from "./utils.js";
 export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([k1, v]) => [k1, Object.fromEntries(Object.entries(v).map(([k2, v]) => [k2, {
             name: v.name,
             description: "description" in v ? v.description : "shortDescription" in v ? v.shortDescription + (v.fullDescription ? "\n" + v.fullDescription : "") : null,
@@ -171,7 +172,7 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
             value: " ",
         },
         DATE: {
-            name: "Default INTEGER value",
+            name: "Default DATE value",
             value: new Date(0),
         },
     },
@@ -224,3 +225,28 @@ export const configs = ((data) => Object.fromEntries(Object.entries(data).map(([
         }
     }
 });
+const configsKey = "soodocode:configs";
+export function saveConfigs() {
+    const data = JSON.stringify(Object.fromEntries(Object.entries(configs).map(([category, items]) => [category, Object.fromEntries(Object.entries(items).map(([key, config]) => [key, config.value]))])));
+    localStorage.setItem(configsKey, data);
+}
+export function loadConfigs() {
+    const dataString = localStorage.getItem(configsKey);
+    if (!dataString)
+        return;
+    try {
+        const data = JSON.parse(dataString);
+        for (const [category, items] of Object.entries(data)) {
+            if (isKey(configs, category) && typeof items == "object" && items != null) {
+                for (const [key, value] of Object.entries(items)) {
+                    if (isKey(configs[category], key)) {
+                        if (typeof configs[category][key].value == typeof value) {
+                            configs[category][key].value = value;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch { }
+}

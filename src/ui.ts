@@ -13,12 +13,13 @@ import * as runtime from "./runtime.js";
 import * as runtimeTypes from "./runtime-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
+import * as config from "./config.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f, capitalizeText } from "./utils.js";
-import { Config, configs } from "./config.js";
+import { configs } from "./config.js";
 
 const savedProgramKey = "soodocode:savedProgram";
 
@@ -251,6 +252,11 @@ uploadButton.onchange = (event:Event) => {
 		}
 	};
 };
+
+//Save program to localstorage
+setInterval(saveAll, 5000);
+window.addEventListener("beforeunload", saveAll);
+loadAll();
 
 getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
 	settingsDialog.showModal();
@@ -649,20 +655,20 @@ function executeSoodocode(){
 	}
 }
 
-function saveProgram(){
+function saveAll(){
 	if(soodocodeInput.value.trim().length > 0){
 		//If there is any text in the input, save it to localstorage
 		localStorage.setItem(savedProgramKey, soodocodeInput.value);
 	}
+	config.saveConfigs();
 }
-//Save program to localstorage
-setInterval(saveProgram, 5000);
-window.addEventListener("beforeunload", saveProgram);
-
-const savedProgram = localStorage.getItem(savedProgramKey);
-if(savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0){
-	//If there is a saved program, and the input is empty
-	soodocodeInput.value = savedProgram;
+function loadAll(){
+	const savedProgram = localStorage.getItem(savedProgramKey);
+	if(savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0){
+		//If there is a saved program, and the input is empty
+		soodocodeInput.value = savedProgram;
+	}
+	config.loadConfigs();
 }
 
 let flashing = false;
@@ -691,7 +697,7 @@ function dumpFunctionsToGlobalScope(){
 	shouldDump = true;
 	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
 	Object.assign(window,
-		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes,
+		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, config,
 		{
 			persistentFilesystem
 		}

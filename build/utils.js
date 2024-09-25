@@ -411,7 +411,7 @@ export const f = {
 };
 export function forceType(input) { }
 export function isKey(record, key) {
-    return key in record;
+    return Object.hasOwn(record, key);
 }
 export function access(record, key, fallback) {
     return record[key] ?? fallback;
