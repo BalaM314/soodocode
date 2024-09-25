@@ -3,6 +3,8 @@ export type Config<T, Help extends boolean> = {
     description: string | null;
     value: T;
     defaultValue: T;
+    range?: T extends number ? [low: number, high: number] : never;
+    stringLength?: T extends string ? number : never;
 } & (Help extends true ? {
     errorHelp: string;
 } : {});
@@ -21,6 +23,8 @@ export declare const configs: {
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
         numbers_to_string: Config<boolean, true>;
         enums_to_string: Config<boolean, true>;
@@ -35,12 +39,16 @@ export declare const configs: {
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
         coerce_int_real: {
             name: string;
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
         coerce_arrays: Config<boolean, true>;
         allow_different_types: Config<boolean, true>;
@@ -54,6 +62,8 @@ export declare const configs: {
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
     };
     initialization: {
@@ -66,36 +76,48 @@ export declare const configs: {
             description: string | null;
             value: number;
             defaultValue: number;
+            range?: [low: number, high: number] | undefined;
+            stringLength?: undefined;
         };
         REAL: {
             name: string;
             description: string | null;
             value: number;
             defaultValue: number;
+            range?: [low: number, high: number] | undefined;
+            stringLength?: undefined;
         };
         BOOLEAN: {
             name: string;
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
         STRING: {
             name: string;
             description: string | null;
             value: string;
             defaultValue: string;
+            range?: undefined;
+            stringLength?: number | undefined;
         };
         CHAR: {
             name: string;
             description: string | null;
             value: string;
             defaultValue: string;
+            range?: undefined;
+            stringLength?: number | undefined;
         };
         DATE: {
             name: string;
             description: string | null;
             value: Date;
             defaultValue: Date;
+            range?: undefined;
+            stringLength?: undefined;
         };
     };
     statements: {
@@ -109,6 +131,8 @@ export declare const configs: {
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
     };
     pointers: {
@@ -121,6 +145,8 @@ export declare const configs: {
             description: string | null;
             value: boolean;
             defaultValue: boolean;
+            range?: undefined;
+            stringLength?: undefined;
         };
     };
 };

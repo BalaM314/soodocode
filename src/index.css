@@ -297,6 +297,9 @@ td, th {
 .settings-grid-item input {
 	margin-right: 10px;
 }
+.settings-grid-item input:invalid {
+	background-color: #FCC;
+}
 
 #files-dialog-inner {
 	display: flex;
