@@ -387,4 +387,13 @@ export const preprocessedBuiltinFunctions = ({
 			return Math.exp(value);
 		}
 	}),
+	TIME: fn({
+		args: [
+			["Timezone", "INTEGER"]
+		],
+		returnType: "INTEGER",
+		impl(timezone){
+			return Date.now() + timezone * 36_000;
+		},
+	}),
 }) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;
