@@ -1,5 +1,5 @@
 import { Token } from "./lexer-types.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNodeGroup } from "./parser-types.js";
+import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNodeGroup } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
@@ -32,8 +32,8 @@ export declare const TypedValue: { [N in PrimitiveVariableTypeName]: (value: Var
 export declare function typedValue<T extends VariableType>(type: T, value: VariableTypeMapping<T>): TypedValue;
 export interface NodeValue {
     node: ExpressionASTNode;
-    value: VariableValue | TypedValue | VariableData | null | undefined;
-    init(type?: VariableType): void;
+    value: VariableValue | TypedValue | null | undefined;
+    init(): void;
 }
 export declare class TypedNodeValue<T extends ExpressionASTNode = ExpressionASTNode, InputType extends PrimitiveVariableTypeName | VariableType = VariableType, Type extends VariableType = InputType extends PrimitiveVariableTypeName ? PrimitiveVariableType<InputType> : InputType> implements NodeValue {
     node: T;
@@ -48,12 +48,6 @@ export declare class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> i
     constructor(node: T);
     range: TextRange;
     value: TypedValue | null | undefined;
-    init(type?: VariableType): void;
-}
-export declare class VariableNodeValue implements NodeValue {
-    node: ExpressionASTLeafNode;
-    value: VariableData | ConstantData | null;
-    constructor(node: ExpressionASTLeafNode, value?: VariableData | ConstantData | null);
     init(): void;
 }
 export declare abstract class BaseVariableType implements IFormattable {
