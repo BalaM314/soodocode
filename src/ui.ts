@@ -531,16 +531,14 @@ ${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span styl
 <h2>Statements</h2>
 ${displayProgram(program)}`
 		;
-		outputDiv.style.color = "white";
 	} catch(err){
-		outputDiv.style.color = "red";
 		if(err instanceof SoodocodeError){
-			outputDiv.innerText = `Error: ${err.message}`;
-			if(err.rangeSpecific) outputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.rangeSpecific)}"`;
-			if(err.rangeGeneral) outputDiv.innerText += `\nat "${soodocodeInput.value.slice(...err.rangeGeneral)}"`;
+			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
+				+ showRange(soodocodeInput.value, err);
 		} else {
-			outputDiv.innerText = `Soodocode crashed! ${parseError(err)}`;
+			outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
 		}
+		console.error(err);
 	}
 });
 
