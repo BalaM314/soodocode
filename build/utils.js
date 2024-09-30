@@ -249,9 +249,7 @@ export class SoodocodeError extends Error {
         this.modified = false;
     }
     formatMessage(text) {
-        return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther) : `<empty>`).replace("$r", this.rangeSpecific ? (text.slice(...this.rangeSpecific) || "<empty>") :
-            this.rangeGeneral ? (text.slice(...this.rangeGeneral) || "<empty>") :
-                `<empty>`);
+        return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther) : `<empty>`);
     }
 }
 export function fail(message, rangeSpecific, rangeGeneral, rangeOther) {
