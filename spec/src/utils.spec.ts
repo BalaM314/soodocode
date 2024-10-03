@@ -1,5 +1,5 @@
 import "jasmine";
-import { applyRangeTransformers, combineClasses, manageNestLevel, MergeClassConstructors, MixClasses } from "../../build/utils.js";
+import { applyRangeTransformers, combineClasses, manageNestLevel, MergeClassConstructors } from "../../build/utils.js";
 import { token } from "./spec_utils.js";
 
 describe("manageNestLevel", () => {

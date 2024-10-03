@@ -18,27 +18,47 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, impossible, parseError, f, capitalizeText } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
 import { configs } from "./config.js";
 
 const savedProgramKey = "soodocode:savedProgram";
-
 const persistentFilesystem = new runtime.Files();
 
-function getElement<T extends typeof HTMLElement>(id:string, type:T, mode:"id" | "class" = "id"){
+const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
+const headerText = getElement("header-text", HTMLSpanElement);
+const secondFocusableElement = getElement("second-focusable-element", HTMLAnchorElement, "class");
+const outputDiv = getElement("output-div", HTMLDivElement);
+const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
+const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
+// const expressionInput = getElement("expression-input", HTMLInputElement);
+// const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
+// const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
+// const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
+// const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
+const uploadButton = getElement("upload-button", HTMLInputElement);
+const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
+const filesDialog = getElement("files-dialog", HTMLDialogElement);
+const fileSelect = getElement("files-dialog-select", HTMLSelectElement);
+const fileDownloadButton = getElement("files-dialog-download", HTMLSpanElement);
+const fileUploadButton = getElement("files-dialog-upload", HTMLSpanElement);
+const fileCreateButton = getElement("files-dialog-create", HTMLSpanElement);
+const fileDeleteButton = getElement("files-dialog-delete", HTMLSpanElement);
+const fileContents = getElement("files-dialog-contents", HTMLTextAreaElement);
+const fileDialogUploadInput = getElement("file-dialog-upload-button", HTMLInputElement);
+
+export function getElement<T extends typeof HTMLElement>(id:string, type:T, mode:"id" | "class" = "id"){
 	const element:unknown = mode == "class" ? document.getElementsByClassName(id)[0] : document.getElementById(id);
 	if(element instanceof type) return element as T["prototype"];
 	else if(element instanceof HTMLElement) crash(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
 	else crash(`Element with id ${id} does not exist`);
 }
 
-type FlattenTreeOutput = [depth:number, statement:Statement];
-export function flattenTree(program:parserTypes.ProgramASTNodeGroup):FlattenTreeOutput[]{
+export function flattenTree(program:parserTypes.ProgramASTNodeGroup):(readonly [depth:number, statement:Statement])[]{
 	return program.map(s => {
-		if(s instanceof Statement) return [[0, s] satisfies FlattenTreeOutput];
+		if(s instanceof Statement) return [[0, s] as const];
 		else return flattenTree(
 			parserTypes.ProgramASTNodeGroup.from((s.nodeGroups as ProgramASTNode[][]).flat())
-		).map(([depth, statement]) => [depth + 1, statement] satisfies FlattenTreeOutput);
+		).map(([depth, statement]) => [depth + 1, statement] as const);
 	}).flat(1);
 }
 
@@ -219,80 +239,67 @@ export function download(filename:string, data:BlobPart){
 	document.body.removeChild(el);
 }
 
-const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
-const headerText = getElement("header-text", HTMLSpanElement);
-const secondFocusableElement = getElement("second-focusable-element", HTMLAnchorElement, "class");
-const outputDiv = getElement("output-div", HTMLDivElement);
-const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
-const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
-// const expressionInput = getElement("expression-input", HTMLInputElement);
-// const expressionOutputDiv = getElement("expression-output-div", HTMLDivElement);
-// const dumpExpressionTreeButton = getElement("dump-expression-tree-button", HTMLButtonElement);
-// const dumpExpressionTreeVerbose = getElement("dump-expression-tree-verbose", HTMLInputElement);
-// const evaluateExpressionButton = getElement("evaluate-expression-button", HTMLButtonElement);
-const uploadButton = getElement("upload-button", HTMLInputElement);
-const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
-const filesDialog = getElement("files-dialog", HTMLDialogElement);
-const fileSelect = getElement("files-dialog-select", HTMLSelectElement);
-const fileDownloadButton = getElement("files-dialog-download", HTMLSpanElement);
-const fileUploadButton = getElement("files-dialog-upload", HTMLSpanElement);
-const fileCreateButton = getElement("files-dialog-create", HTMLSpanElement);
-const fileDeleteButton = getElement("files-dialog-delete", HTMLSpanElement);
-const fileContents = getElement("files-dialog-contents", HTMLTextAreaElement);
-const fileDialogUploadInput = getElement("file-dialog-upload-button", HTMLInputElement);
-
-window.addEventListener("keydown", e => {
-	if(e.key == "s" && e.ctrlKey){
-		e.preventDefault();
-		download("program.sc", soodocodeInput.value);
-	} else if(e.key == "o" && e.ctrlKey){
-		e.preventDefault();
-		uploadButton.click();
-	} else if(e.key == "Escape"){
-		if(document.activeElement == soodocodeInput){
-			//When in the code editor: Escape and focus the next element in the tab order, which is the github icon
-			//Necessary because the code editor captures tab, which is normally used to do that
-			secondFocusableElement.focus();
-		} else {
-			//When not in the code editor: focus the code editor
-			soodocodeInput.focus();
-		}
-	} else if(e.key == " " || e.key == "Enter"){
-		const el = document.activeElement;
-		if(el instanceof HTMLSpanElement && el.classList.contains("text-button")){
-			el.click();
+function setupGlobalKeybinds(){
+	window.addEventListener("keydown", e => {
+		//TODO move these, pressing Ctrl+S when the file dialog is open should trigger download and upload
+		if(e.key == "s" && e.ctrlKey){
 			e.preventDefault();
+			download("program.sc", soodocodeInput.value);
+		} else if(e.key == "o" && e.ctrlKey){
+			e.preventDefault();
+			uploadButton.click();
+		} else if(e.key == "Escape"){
+			if(document.activeElement == soodocodeInput){
+				//When in the code editor: Escape and focus the next element in the tab order, which is the github icon
+				//Necessary because the code editor captures tab, which is normally used to do that
+				secondFocusableElement.focus();
+			} else {
+				//When not in the code editor: focus the code editor
+				soodocodeInput.focus();
+			}
+		} else if(e.key == " " || e.key == "Enter"){
+			const el = document.activeElement;
+			if(el instanceof HTMLSpanElement && el.classList.contains("text-button")){
+				el.click();
+				e.preventDefault();
+			}
 		}
-	}
-});
+	});
+}
 
-uploadButton.onchange = (event:Event) => {
-	//Load a save file
-	const file = (event.target as HTMLInputElement)?.files?.[0];
-	if(!file) return;
-	const reader = new FileReader();
-	reader.readAsText(file);
-	reader.onload = e => {
-		const content = e.target?.result?.toString();
-		if(content == null) return;
-		if(confirm(`Are you sure you want to load this file? This will erase your current program.`)){
-			soodocodeInput.value = content;
-		}
+function setupEventHandlers(){
+	uploadButton.onchange = (event) => {
+		//Load a save file
+		const file = (event.target as HTMLInputElement)?.files?.[0];
+		if(!file) return;
+		const reader = new FileReader();
+		reader.readAsText(file);
+		reader.onload = e => {
+			const content = e.target?.result?.toString();
+			if(content == null) return;
+			if(confirm(`Are you sure you want to load this file? This will erase your current program.`)){
+				soodocodeInput.value = content;
+			}
+		};
 	};
-};
+	getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+		settingsDialog.showModal();
+	});
+	getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+		filesDialog.showModal();
+	});
+	executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
+	dumpTokensButton.addEventListener("click", displayAST);
+}
 
-//Save program to localstorage
-setInterval(saveAll, 5000);
-window.addEventListener("beforeunload", saveAll);
-loadAll();
+function setupAutosave(){
+	//Save program to localstorage
+	setInterval(saveAll, 5000);
+	window.addEventListener("beforeunload", saveAll);
+	loadAll();
+}
 
-getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
-	settingsDialog.showModal();
-});
-getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
-	filesDialog.showModal();
-});
-settingsDialog.append(generateConfigsDialog());
+
 function getSelectedFile():runtimeTypes.File | null {
 	const filename = fileSelect.value.split("file_")[1];
 	if(!filename) return null;
@@ -326,60 +333,65 @@ function updateFileSelectOptions(filenameToSelect?:string){
 		fileSelect.value = oldValue;
 	}
 }
-updateFileSelectOptions();
-onSelectedFileChange();
-fileContents.addEventListener("change", function updateFileData(){
-	const file = getSelectedFile();
-	if(!file) return;
-	if(!fileContents.value.endsWith("\n")) fileContents.value += "\n";
-	file.text = fileContents.value;
-});
-fileSelect.addEventListener("change", onSelectedFileChange);
-fileDownloadButton.addEventListener("click", () => {
-	const file = getSelectedFile();
-	if(!file){
-		alert(`Please select a file to download.`);
-	} else {
-		download(file.name, file.text);
-	}
-});
-fileUploadButton.addEventListener("click", () => fileDialogUploadInput.click());
-fileDeleteButton.addEventListener("click", () => {
-	const file = getSelectedFile();
-	if(!file){
-		alert(`Please select a file to delete.`);
-	} else {
-		if(confirm(`Are you sure you want to delete the file ${file.name}? This action is irreversible.`)){
-			delete persistentFilesystem.files[file.name];
-			updateFileSelectOptions();
-			onSelectedFileChange();
-		}
-	}
-});
-fileCreateButton.addEventListener("click", () => {
-	const filename = prompt("Enter the name of the file to create:");
-	if(!filename) return;
-	if(!(filename in persistentFilesystem.files)){
-		persistentFilesystem.getFile(filename, true);
-	}
-	updateFileSelectOptions(filename);
+function setupFileGUI(){
+	updateFileSelectOptions();
 	onSelectedFileChange();
-});
-fileDialogUploadInput.addEventListener("change", (event) => {
-	const file = (event.target as HTMLInputElement)?.files?.[0];
-	if(!file) return;
-	const reader = new FileReader();
-	reader.readAsText(file);
-	reader.onload = e => {
-		const content = e.target?.result?.toString();
-		if(content == null) return;
-		if(persistentFilesystem.getFile(file.name)?.text && !confirm(`Are you sure you want to overwrite the existing file ${file.name}? This action is irreversible.`)) return;
-		const fi = persistentFilesystem.getFile(file.name, true);
-		fi.text = content;
-		updateFileSelectOptions(file.name);
+	setupFileGUIHandlers();
+}
+function setupFileGUIHandlers(){
+	fileContents.addEventListener("change", function updateFileData(){
+		const file = getSelectedFile();
+		if(!file) return;
+		if(!fileContents.value.endsWith("\n")) fileContents.value += "\n";
+		file.text = fileContents.value;
+	});
+	fileSelect.addEventListener("change", onSelectedFileChange);
+	fileDownloadButton.addEventListener("click", () => {
+		const file = getSelectedFile();
+		if(!file){
+			alert(`Please select a file to download.`);
+		} else {
+			download(file.name, file.text);
+		}
+	});
+	fileUploadButton.addEventListener("click", () => fileDialogUploadInput.click());
+	fileDeleteButton.addEventListener("click", () => {
+		const file = getSelectedFile();
+		if(!file){
+			alert(`Please select a file to delete.`);
+		} else {
+			if(confirm(`Are you sure you want to delete the file ${file.name}? This action is irreversible.`)){
+				delete persistentFilesystem.files[file.name];
+				updateFileSelectOptions();
+				onSelectedFileChange();
+			}
+		}
+	});
+	fileCreateButton.addEventListener("click", () => {
+		const filename = prompt("Enter the name of the file to create:");
+		if(!filename) return;
+		if(!(filename in persistentFilesystem.files)){
+			persistentFilesystem.getFile(filename, true);
+		}
+		updateFileSelectOptions(filename);
 		onSelectedFileChange();
-	};
-});
+	});
+	fileDialogUploadInput.addEventListener("change", (event) => {
+		const file = (event.target as HTMLInputElement)?.files?.[0];
+		if(!file) return;
+		const reader = new FileReader();
+		reader.readAsText(file);
+		reader.onload = e => {
+			const content = e.target?.result?.toString();
+			if(content == null) return;
+			if(persistentFilesystem.getFile(file.name)?.text && !confirm(`Are you sure you want to overwrite the existing file ${file.name}? This action is irreversible.`)) return;
+			const fi = persistentFilesystem.getFile(file.name, true);
+			fi.text = content;
+			updateFileSelectOptions(file.name);
+			onSelectedFileChange();
+		};
+	});
+}
 
 /*evaluateExpressionButton.addEventListener("click", () => {
 	try {
@@ -458,108 +470,72 @@ dumpExpressionTreeButton.addEventListener("click", () => {
 	}
 });*/
 
-soodocodeInput.onkeydown = e => {
-	if((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)){
-		e.preventDefault();
-		//Save cursor position
-		const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
-		const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
-		const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n(?=\t)/g)?.length ?? 0;
-		//indent the text
-		soodocodeInput.value = soodocodeInput.value
-			.slice(0, end)
-			.split("\n")
-			.map((line, i) =>
-				i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line
-			).join("\n") + soodocodeInput.value.slice(end);
-		//Replace cursor position
-		soodocodeInput.selectionStart = start - 1;
-		soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
-	} else if(e.key == "Tab" || (e.key == "]" && e.ctrlKey)){
-		e.preventDefault();
-		if(soodocodeInput.selectionStart == soodocodeInput.selectionEnd && !(e.key == "]" && e.ctrlKey)){
-			//Insert a tab character
-
-			//Save cursor position
-			const start = soodocodeInput.selectionStart;
-			//Insert tab
-			soodocodeInput.value = soodocodeInput.value.slice(0, start) + "\t" + soodocodeInput.value.slice(start);
-			//Replace cursor position
-			soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
-		} else {
-			//indent the block
-
+function setupTextEditor(){
+	soodocodeInput.onkeydown = e => {
+		if((e.shiftKey && e.key == "Tab") || (e.key == "[" && e.ctrlKey)){
+			e.preventDefault();
 			//Save cursor position
 			const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
 			const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
-			const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n/g)?.length ?? 0;
+			const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n(?=\t)/g)?.length ?? 0;
 			//indent the text
 			soodocodeInput.value = soodocodeInput.value
 				.slice(0, end)
 				.split("\n")
 				.map((line, i) =>
-					i >= numNewlinesBefore ? "\t" + line : line
+					i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line
 				).join("\n") + soodocodeInput.value.slice(end);
 			//Replace cursor position
-			soodocodeInput.selectionStart = start + 1;
-			soodocodeInput.selectionEnd = end + 1 + numNewlinesWithin;
+			soodocodeInput.selectionStart = start - 1;
+			soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
+		} else if(e.key == "Tab" || (e.key == "]" && e.ctrlKey)){
+			e.preventDefault();
+			if(soodocodeInput.selectionStart == soodocodeInput.selectionEnd && !(e.key == "]" && e.ctrlKey)){
+				//Insert a tab character
+	
+				//Save cursor position
+				const start = soodocodeInput.selectionStart;
+				//Insert tab
+				soodocodeInput.value = soodocodeInput.value.slice(0, start) + "\t" + soodocodeInput.value.slice(start);
+				//Replace cursor position
+				soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start + 1;
+			} else {
+				//indent the block
+	
+				//Save cursor position
+				const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
+				const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
+				const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n/g)?.length ?? 0;
+				//indent the text
+				soodocodeInput.value = soodocodeInput.value
+					.slice(0, end)
+					.split("\n")
+					.map((line, i) =>
+						i >= numNewlinesBefore ? "\t" + line : line
+					).join("\n") + soodocodeInput.value.slice(end);
+				//Replace cursor position
+				soodocodeInput.selectionStart = start + 1;
+				soodocodeInput.selectionEnd = end + 1 + numNewlinesWithin;
+			}
+		} else if(e.key == "Enter" && e.ctrlKey){
+			e.preventDefault();
+			executeSoodocode();
+		} else if(e.key == "\\" && e.ctrlKey){
+			displayAST();
 		}
-	} else if(e.key == "Enter" && e.ctrlKey){
-		e.preventDefault();
-		executeSoodocode();
-	} else if(e.key == "\\" && e.ctrlKey){
-		displayAST();
-	}
-	//Update text
-	// const newText = soodocodeInput.value.replace("", "");
-	// if(soodocodeInput.value != newText){
-	// 	const start = soodocodeInput.selectionStart;
-	// 	soodocodeInput.value = newText;
-	// 	soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start;
-	// }
-};
-
-function displayAST(){
-	try {
-		const symbols = lexer.symbolize(soodocodeInput.value);
-		const tokens = lexer.tokenize(symbols);
-		const program = parser.parse(tokens);
-		outputDiv.innerHTML = `\
-<!--<h2>Symbols</h2>\
-<div class="display-scroller">
-<table>
-<thead>
-<tr> <th>Text</th> <th>Type</th> </tr>
-</thead>
-<tbody>
-${symbols.symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
-</tbody>
-</table>
-</div>-->
-<h2>Tokens</h2>\
-<div class="display-scroller">
-<table>
-<thead>
-<tr> <th>Text</th> <th>Type</th> </tr>
-</thead>
-<tbody>
-${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
-</tbody>
-</table>
-</div>
-<h2>Statements</h2>
-${displayProgram(program)}`;
-	} catch (err) {
-		if (err instanceof SoodocodeError) {
-			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
-				+ showRange(soodocodeInput.value, err);
-		} else {
-			outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
-		}
-		console.error(err);
-	}
+		//Update text
+		// const newText = soodocodeInput.value.replace("", "");
+		// if(soodocodeInput.value != newText){
+		// 	const start = soodocodeInput.selectionStart;
+		// 	soodocodeInput.value = newText;
+		// 	soodocodeInput.selectionStart = soodocodeInput.selectionEnd = start;
+		// }
+	};
 }
-dumpTokensButton.addEventListener("click", displayAST);
+
+function printPrefixed(value:unknown){
+	console.log(`%c[Runtime]`, `color: lime;`, value);
+}
 
 /** Must escape HTML special chars from user input. */
 export function showRange(text:string, error:SoodocodeError):string {
@@ -611,17 +587,53 @@ ${formattedPreviousLine}\
 ${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
 }
 
-function printPrefixed(value:unknown){
-	console.log(`%c[Runtime]`, `color: lime;`, value);
-}
 function flashOutputDiv(){
 	outputDiv.style.animationName = "";
 	void outputDiv.offsetHeight; //reflow
 	outputDiv.style.animationName = "highlight-output-div";
 }
 
-let shouldDump = false;
-executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
+function displayAST(){
+	try {
+		const symbols = lexer.symbolize(soodocodeInput.value);
+		const tokens = lexer.tokenize(symbols);
+		const program = parser.parse(tokens);
+		outputDiv.innerHTML = `\
+<!--<h2>Symbols</h2>\
+<div class="display-scroller">
+<table>
+<thead>
+<tr> <th>Text</th> <th>Type</th> </tr>
+</thead>
+<tbody>
+${symbols.symbols.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+</tbody>
+</table>
+</div>-->
+<h2>Tokens</h2>\
+<div class="display-scroller">
+<table>
+<thead>
+<tr> <th>Text</th> <th>Type</th> </tr>
+</thead>
+<tbody>
+${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span style="text-decoration:underline">\\n</span>`)}</td><td>${t.type}</td></tr>`).join("\n")}
+</tbody>
+</table>
+</div>
+<h2>Statements</h2>
+${displayProgram(program)}`;
+	} catch (err) {
+		if (err instanceof SoodocodeError) {
+			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
+				+ showRange(soodocodeInput.value, err);
+		} else {
+			outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
+		}
+		console.error(err);
+	}
+}
+
 let lastOutputText:string = "";
 function executeSoodocode(){
 	const noOutput = `<span style="color: lightgray;">&lt;no output&gt;</span>`;
@@ -647,11 +659,9 @@ function executeSoodocode(){
 		const tokens = lexer.tokenize(symbols);
 		const program = parser.parse(tokens);
 		console.timeEnd("parsing");
-		if(shouldDump){
-			Object.assign(window, {
-				symbols, tokens, program, runtime
-			});
-		}
+		Object.assign(window, {
+			symbols, tokens, program, runtime
+		});
 		runtime.fs.makeBackup();
 		console.time("execution");
 		runtime.runProgram(program.nodes);
@@ -699,31 +709,36 @@ function loadAll(){
 	config.loadConfigs();
 }
 
-let flashing = false;
-let bouncing = false;
-let flipped = false;
-const clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-headerText.addEventListener("click", e => {
-	clickTimes.shift();
-	clickTimes.push(Date.now());
-	if(e.shiftKey) flashing = !flashing;
-	if(e.altKey) bouncing = !bouncing;
-	if(e.ctrlKey) flipped = !flipped;
-	headerText.style.setProperty("transform", flipped ? "scaleX(-1)" : "none");
-	headerText.style.setProperty("animation-name", bouncing ? "sizebounce" : "none");
-	//modifying animation-play-state didn't work as the animation could get paused when the size is high, causing scrollbars to appear
-	if(!e.shiftKey && !e.altKey && !e.ctrlKey)
-		headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
-	if(((Date.now() - clickTimes[0]) / 10) < 500)
-		headerText.style.setProperty("visibility", "hidden");
-});
-setInterval(() => {
-	if(flashing) headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
-}, 500);
+function setupHeaderEasterEgg(){
+	let flashing = false;
+	let bouncing = false;
+	let flipped = false;
+	const clickTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+	headerText.addEventListener("click", e => {
+		clickTimes.shift();
+		clickTimes.push(Date.now());
+		if(e.shiftKey) flashing = !flashing;
+		if(e.altKey) bouncing = !bouncing;
+		if(e.ctrlKey) flipped = !flipped;
+		headerText.style.setProperty("transform", flipped ? "scaleX(-1)" : "none");
+		headerText.style.setProperty("animation-name", bouncing ? "sizebounce" : "none");
+		//modifying animation-play-state didn't work as the animation could get paused when the size is high, causing scrollbars to appear
+		if(!e.shiftKey && !e.altKey && !e.ctrlKey)
+			headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
+		if(((Date.now() - clickTimes[0]) / 10) < 500)
+			headerText.style.setProperty("visibility", "hidden");
+	});
+	setInterval(() => {
+		if(flashing) headerText.style.setProperty('color', `hsl(${Math.floor(Math.random() * 360)}, 80%, 80%)`);
+	}, 500);
+}
 
+declare global {
+	// eslint-disable-next-line no-var
+	var runtime: Runtime;
+}
 function dumpFunctionsToGlobalScope(){
-	shouldDump = true;
-	(window as unknown as {runtime: Runtime;}).runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
+	window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
 	Object.assign(window,
 		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, config,
 		{
@@ -732,5 +747,16 @@ function dumpFunctionsToGlobalScope(){
 	);
 }
 
-dumpFunctionsToGlobalScope();
+function main(){
+	setupGlobalKeybinds();
+	setupEventHandlers();
+	setupAutosave();
+	setupFileGUI();
+	settingsDialog.append(generateConfigsDialog());
+	setupTextEditor();
+	setupHeaderEasterEgg();
+	dumpFunctionsToGlobalScope();
+}
+main();
+
 
