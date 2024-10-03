@@ -155,8 +155,9 @@ export function generateConfigsDialog():HTMLElement {
 			} else if(typeof config.value == "string"){
 				input.type = "text";
 				input.value = config.value;
-				if(config.stringLength != undefined)
-					input.minLength = input.maxLength = config.stringLength
+				if(config.stringLength != undefined){
+					input.minLength = input.maxLength = config.stringLength;
+				}
 				input.addEventListener("change", () => {
 					if(config.stringLength != undefined && input.value.length != config.stringLength) return;
 					config.value = input.value;
@@ -218,8 +219,9 @@ export function download(filename:string, data:BlobPart){
 	document.body.removeChild(el);
 }
 
-const headerText = getElement("header-text", HTMLSpanElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
+const headerText = getElement("header-text", HTMLSpanElement);
+const githubIcon = getElement("github-icon", HTMLAnchorElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
@@ -246,6 +248,21 @@ window.addEventListener("keydown", e => {
 	} else if(e.key == "o" && e.ctrlKey){
 		e.preventDefault();
 		uploadButton.click();
+	} else if(e.key == "Escape"){
+		if(document.activeElement == soodocodeInput){
+			//When in the code editor: Escape and focus the next element in the tab order, which is the github icon
+			//Necessary because the code editor captures tab, which is normally used to do that
+			githubIcon.focus();
+		} else {
+			//When not in the code editor: focus the code editor
+			soodocodeInput.focus();
+		}
+	} else if(e.key == " " || e.key == "Enter"){
+		const el = document.activeElement;
+		if(el instanceof HTMLSpanElement && el.classList.contains("text-button")){
+			el.click();
+			e.preventDefault();
+		}
 	}
 });
 
@@ -318,7 +335,7 @@ fileContents.addEventListener("change", function updateFileData(){
 	file.text = fileContents.value;
 });
 fileSelect.addEventListener("change", onSelectedFileChange);
-fileDownloadButton.addEventListener("mousedown", () => {
+fileDownloadButton.addEventListener("click", () => {
 	const file = getSelectedFile();
 	if(!file){
 		alert(`Please select a file to download.`);
@@ -327,7 +344,7 @@ fileDownloadButton.addEventListener("mousedown", () => {
 	}
 });
 fileUploadButton.addEventListener("click", () => fileDialogUploadInput.click());
-fileDeleteButton.addEventListener("mousedown", () => {
+fileDeleteButton.addEventListener("click", () => {
 	const file = getSelectedFile();
 	if(!file){
 		alert(`Please select a file to delete.`);
@@ -339,7 +356,7 @@ fileDeleteButton.addEventListener("mousedown", () => {
 		}
 	}
 });
-fileCreateButton.addEventListener("mousedown", () => {
+fileCreateButton.addEventListener("click", () => {
 	const filename = prompt("Enter the name of the file to create:");
 	if(!filename) return;
 	if(!(filename in persistentFilesystem.files)){
@@ -490,6 +507,8 @@ soodocodeInput.onkeydown = e => {
 	} else if(e.key == "Enter" && e.ctrlKey){
 		e.preventDefault();
 		executeSoodocode();
+	} else if(e.key == "\\" && e.ctrlKey){
+		displayAST();
 	}
 	//Update text
 	// const newText = soodocodeInput.value.replace("", "");
@@ -500,7 +519,7 @@ soodocodeInput.onkeydown = e => {
 	// }
 };
 
-dumpTokensButton.addEventListener("click", () => {
+function displayAST(){
 	try {
 		const symbols = lexer.symbolize(soodocodeInput.value);
 		const tokens = lexer.tokenize(symbols);
@@ -529,10 +548,9 @@ ${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span styl
 </table>
 </div>
 <h2>Statements</h2>
-${displayProgram(program)}`
-		;
-	} catch(err){
-		if(err instanceof SoodocodeError){
+${displayProgram(program)}`;
+	} catch (err) {
+		if (err instanceof SoodocodeError) {
 			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
 				+ showRange(soodocodeInput.value, err);
 		} else {
@@ -540,7 +558,8 @@ ${displayProgram(program)}`
 		}
 		console.error(err);
 	}
-});
+}
+dumpTokensButton.addEventListener("click", displayAST);
 
 /** Must escape HTML special chars from user input. */
 export function showRange(text:string, error:SoodocodeError):string {

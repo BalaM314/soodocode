@@ -132,8 +132,9 @@ export function generateConfigsDialog() {
             else if (typeof config.value == "string") {
                 input.type = "text";
                 input.value = config.value;
-                if (config.stringLength != undefined)
+                if (config.stringLength != undefined) {
                     input.minLength = input.maxLength = config.stringLength;
+                }
                 input.addEventListener("change", () => {
                     if (config.stringLength != undefined && input.value.length != config.stringLength)
                         return;
@@ -202,8 +203,9 @@ export function download(filename, data) {
     el.click();
     document.body.removeChild(el);
 }
-const headerText = getElement("header-text", HTMLSpanElement);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
+const headerText = getElement("header-text", HTMLSpanElement);
+const githubIcon = getElement("github-icon", HTMLAnchorElement);
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
@@ -225,6 +227,21 @@ window.addEventListener("keydown", e => {
     else if (e.key == "o" && e.ctrlKey) {
         e.preventDefault();
         uploadButton.click();
+    }
+    else if (e.key == "Escape") {
+        if (document.activeElement == soodocodeInput) {
+            githubIcon.focus();
+        }
+        else {
+            soodocodeInput.focus();
+        }
+    }
+    else if (e.key == " " || e.key == "Enter") {
+        const el = document.activeElement;
+        if (el instanceof HTMLSpanElement && el.classList.contains("text-button")) {
+            el.click();
+            e.preventDefault();
+        }
     }
 });
 uploadButton.onchange = (event) => {
@@ -298,7 +315,7 @@ fileContents.addEventListener("change", function updateFileData() {
     file.text = fileContents.value;
 });
 fileSelect.addEventListener("change", onSelectedFileChange);
-fileDownloadButton.addEventListener("mousedown", () => {
+fileDownloadButton.addEventListener("click", () => {
     const file = getSelectedFile();
     if (!file) {
         alert(`Please select a file to download.`);
@@ -308,7 +325,7 @@ fileDownloadButton.addEventListener("mousedown", () => {
     }
 });
 fileUploadButton.addEventListener("click", () => fileDialogUploadInput.click());
-fileDeleteButton.addEventListener("mousedown", () => {
+fileDeleteButton.addEventListener("click", () => {
     const file = getSelectedFile();
     if (!file) {
         alert(`Please select a file to delete.`);
@@ -321,7 +338,7 @@ fileDeleteButton.addEventListener("mousedown", () => {
         }
     }
 });
-fileCreateButton.addEventListener("mousedown", () => {
+fileCreateButton.addEventListener("click", () => {
     const filename = prompt("Enter the name of the file to create:");
     if (!filename)
         return;
@@ -385,8 +402,11 @@ soodocodeInput.onkeydown = e => {
         e.preventDefault();
         executeSoodocode();
     }
+    else if (e.key == "\\" && e.ctrlKey) {
+        displayAST();
+    }
 };
-dumpTokensButton.addEventListener("click", () => {
+function displayAST() {
     try {
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
@@ -427,7 +447,8 @@ ${displayProgram(program)}`;
         }
         console.error(err);
     }
-});
+}
+dumpTokensButton.addEventListener("click", displayAST);
 export function showRange(text, error) {
     if (!error.rangeGeneral && !error.rangeSpecific)
         return ``;
