@@ -10,7 +10,7 @@ export declare function manageNestLevel(reversed?: boolean, validate?: boolean):
     done(input: Token[] | TextRange): void;
 };
 export declare function displayTokenMatcher(input: TokenMatcher): string;
-export declare function applyRangeTransformers<T>(text: string, ranges: Array<readonly [
+export declare function applyRangeTransformers(text: string, ranges: Array<readonly [
     range: TextRange,
     start: string,
     end: string

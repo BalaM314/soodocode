@@ -92,7 +92,7 @@ export function displayTokenMatcher(input:TokenMatcher):string {
  * @param transformer Called on each character (Unicode scalar value)
  * @returns the text, with the start and end values specified in `ranges`.
  */
-export function applyRangeTransformers<T>(
+export function applyRangeTransformers(
 	text:string,
 	ranges:Array<readonly [
 		range:TextRange,
@@ -588,7 +588,7 @@ export function unicodeSetsSupported(){
 		try {
 			void new RegExp("", "v");
 			return true;
-		} catch(err){
+		} catch {
 			return false;
 		}
 	})();
