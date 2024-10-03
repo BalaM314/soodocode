@@ -15,8 +15,8 @@ import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseE
 import { configs } from "./config.js";
 const savedProgramKey = "soodocode:savedProgram";
 const persistentFilesystem = new runtime.Files();
-function getElement(id, type) {
-    const element = document.getElementById(id);
+function getElement(id, type, mode = "id") {
+    const element = mode == "class" ? document.getElementsByClassName(id)[0] : document.getElementById(id);
     if (element instanceof type)
         return element;
     else if (element instanceof HTMLElement)
@@ -205,7 +205,7 @@ export function download(filename, data) {
 }
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const headerText = getElement("header-text", HTMLSpanElement);
-const githubIcon = getElement("github-icon", HTMLAnchorElement);
+const secondFocusableElement = getElement("second-focusable-element", HTMLAnchorElement, "class");
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
@@ -230,7 +230,7 @@ window.addEventListener("keydown", e => {
     }
     else if (e.key == "Escape") {
         if (document.activeElement == soodocodeInput) {
-            githubIcon.focus();
+            secondFocusableElement.focus();
         }
         else {
             soodocodeInput.focus();

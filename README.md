@@ -61,3 +61,8 @@ View the site [here](https://balam314.github.io/soodocode)
 * [x] Error ranges (underline the exact cause of the error, highlight the area around it)
 * [x] Configurable
 * [x] Allows any words as identifiers (except pseudocode keywords), including `for`, `__proto__`, and `hasOwnProperty`
+
+## User interface
+* [x] Minimalistic
+* [x] Create, view, edit, delete, upload, and download files
+* [x] All features accessible with only the keyboard
