@@ -113,7 +113,7 @@ export declare class TypeEnumStatement extends TypeStatement {
 }
 export declare class TypeSetStatement extends TypeStatement {
     name: Token;
-    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "BOOLEAN" | "STRING" | "CHAR" | "DATE">;
+    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
     createType(runtime: Runtime): [name: string, type: VariableType<false>];
 }
 export declare class TypeRecordStatement extends TypeStatement {
