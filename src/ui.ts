@@ -25,8 +25,8 @@ const savedProgramKey = "soodocode:savedProgram";
 
 const persistentFilesystem = new runtime.Files();
 
-function getElement<T extends typeof HTMLElement>(id:string, type:T){
-	const element = <unknown>document.getElementById(id);
+function getElement<T extends typeof HTMLElement>(id:string, type:T, mode:"id" | "class" = "id"){
+	const element:unknown = mode == "class" ? document.getElementsByClassName(id)[0] : document.getElementById(id);
 	if(element instanceof type) return element as T["prototype"];
 	else if(element instanceof HTMLElement) crash(`Element with id ${id} was fetched as type ${type.name}, but was of type ${element.constructor.name}`);
 	else crash(`Element with id ${id} does not exist`);
@@ -221,7 +221,7 @@ export function download(filename:string, data:BlobPart){
 
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const headerText = getElement("header-text", HTMLSpanElement);
-const githubIcon = getElement("github-icon", HTMLAnchorElement);
+const secondFocusableElement = getElement("second-focusable-element", HTMLAnchorElement, "class");
 const outputDiv = getElement("output-div", HTMLDivElement);
 const dumpTokensButton = getElement("dump-tokens-button", HTMLButtonElement);
 const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButtonElement);
@@ -252,7 +252,7 @@ window.addEventListener("keydown", e => {
 		if(document.activeElement == soodocodeInput){
 			//When in the code editor: Escape and focus the next element in the tab order, which is the github icon
 			//Necessary because the code editor captures tab, which is normally used to do that
-			githubIcon.focus();
+			secondFocusableElement.focus();
 		} else {
 			//When not in the code editor: focus the code editor
 			soodocodeInput.focus();
