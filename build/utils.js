@@ -522,7 +522,7 @@ export function unicodeSetsSupported() {
             void new RegExp("", "v");
             return true;
         }
-        catch (err) {
+        catch {
             return false;
         }
     })());
