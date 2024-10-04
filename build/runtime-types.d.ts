@@ -225,13 +225,14 @@ export declare const fileModes: readonly ["READ", "WRITE", "APPEND", "RANDOM"];
 export type FileMode = typeof fileModes extends ReadonlyArray<infer T> ? T : never;
 export declare function FileMode(input: string): FileMode;
 export type File = {
-    name: string;
-    text: string;
+    readonly name: string;
+    readonly text: string;
 };
 export type OpenedFile = {
-    file: File;
-    mode: FileMode;
-    openRange: TextRange;
+    readonly name: string;
+    readonly mode: FileMode;
+    readonly openRange: TextRange;
+    text: string;
 } & ({
     mode: "READ";
     lines: string[];

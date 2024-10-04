@@ -1439,10 +1439,12 @@ let OpenFileStatement = (() => {
         run(runtime) {
             const name = runtime.evaluate(this.filename);
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-            const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this);
+            const file = runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this.filename);
+            if (runtime.openFiles[name])
+                fail(f.quote `File ${name} has already been opened.`, this.filename);
             if (mode == "READ") {
                 runtime.openFiles[name] = {
-                    file,
+                    ...file,
                     mode,
                     lines: file.text.split("\n").slice(0, -1),
                     lineNumber: 0,
@@ -1453,10 +1455,9 @@ let OpenFileStatement = (() => {
                 fail(`Not yet implemented`, this.mode);
             }
             else {
-                if (mode == "WRITE")
-                    file.text = "";
                 runtime.openFiles[name] = {
-                    file,
+                    name: file.name,
+                    text: mode == "APPEND" ? file.text : "",
                     mode,
                     openRange: this.range,
                 };
@@ -1494,12 +1495,19 @@ let CloseFileStatement = (() => {
     var CloseFileStatement = _classThis = class extends _classSuper {
         run(runtime) {
             const name = runtime.evaluate(this.filename);
-            if (runtime.openFiles[name])
+            const openFile = runtime.openFiles[name];
+            if (openFile) {
+                if (["WRITE", "APPEND", "RANDOM"].includes(openFile.mode)) {
+                    runtime.fs.updateFile(name, openFile.text);
+                }
                 runtime.openFiles[name] = undefined;
-            else if (name in runtime.openFiles)
+            }
+            else if (name in runtime.openFiles) {
                 fail(f.quote `Cannot close file ${name}, because it has already been closed.`, this);
-            else
+            }
+            else {
                 fail(f.quote `Cannot close file ${name}, because it was never opened.`, this);
+            }
         }
         constructor() {
             super(...arguments);
@@ -1573,7 +1581,7 @@ let WriteFileStatement = (() => {
         run(runtime) {
             const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-            data.file.text += runtime.evaluate(this.data) + "\n";
+            data.text += runtime.evaluate(this.data) + "\n";
         }
         constructor() {
             super(...arguments);

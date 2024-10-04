@@ -1,19 +1,10 @@
+import { FileSystem } from "./files.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTNode, ProgramASTNodeGroup } from "./parser-types.js";
-import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableTypeName, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, UntypedNodeValue } from "./runtime-types.js";
+import { BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableTypeName, TypedValue, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, UntypedNodeValue } from "./runtime-types.js";
 import { FunctionStatement, ProcedureStatement } from "./statements.js";
 import type { TextRange, TextRangeLike } from "./types.js";
 import { RangeArray } from "./utils.js";
-export declare class Files {
-    files: Record<string, File>;
-    private backupFiles;
-    getFile(filename: string, create: true): File;
-    getFile(filename: string, create?: boolean): File | undefined;
-    createFile(filename: string): File;
-    makeBackup(): void;
-    canLoadBackup(): boolean;
-    loadBackup(): void;
-}
 export type ClassMethodCallInformation = {
     clazz: ClassVariableType;
     instance: VariableTypeMapping<ClassVariableType>;
@@ -22,7 +13,7 @@ export type ClassMethodCallInformation = {
 export declare class Runtime {
     _input: (message: string, type: VariableType) => string;
     _output: (values: TypedValue[]) => void;
-    fs: Files;
+    fs: FileSystem;
     scopes: VariableScope[];
     functions: Record<string, FunctionData>;
     openFiles: Record<string, OpenedFile | undefined>;
@@ -35,7 +26,7 @@ export declare class Runtime {
     currentlyResolvingPointerTypeName: string | null;
     builtinFunctions: Record<"LEFT" | "RIGHT" | "MID" | "LENGTH" | "TO_UPPER" | "TO_LOWER" | "UCASE" | "LCASE" | "NUM_TO_STR" | "STR_TO_NUM" | "IS_NUM" | "ASC" | "CHR" | "INT" | "RAND" | "DAY" | "MONTH" | "YEAR" | "DAYINDEX" | "SETDATE" | "TODAY" | "EOF" | "ROUND" | "POW" | "EXP", BuiltinFunctionData> & Partial<Record<string, BuiltinFunctionData>>;
     statementsExecuted: number;
-    constructor(_input: (message: string, type: VariableType) => string, _output: (values: TypedValue[]) => void, fs?: Files);
+    constructor(_input: (message: string, type: VariableType) => string, _output: (values: TypedValue[]) => void, fs?: FileSystem);
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType): TypedValue;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType: "variable"): VariableData;
     processArrayAccess(expr: ExpressionASTArrayAccessNode, outType?: VariableType | "variable"): TypedValue | VariableData;

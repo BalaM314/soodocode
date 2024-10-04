@@ -14,6 +14,8 @@ import * as runtimeTypes from "./runtime-types.js";
 import * as statements from "./statements.js";
 import * as utils from "./utils.js";
 import * as config from "./config.js";
+import * as files from "./files.js";
+import * as builtin_functions from "./builtin_functions.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
@@ -22,7 +24,7 @@ import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseE
 import { configs } from "./config.js";
 
 const savedProgramKey = "soodocode:savedProgram";
-const persistentFilesystem = new runtime.Files();
+const fileSystem = new files.TemporaryFileSystem();
 
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const headerText = getElement("header-text", HTMLSpanElement);
@@ -303,7 +305,7 @@ function setupAutosave(){
 function getSelectedFile():runtimeTypes.File | null {
 	const filename = fileSelect.value.split("file_")[1];
 	if(!filename) return null;
-	return persistentFilesystem.files[filename] ?? null;
+	return fileSystem.openFile(filename) ?? null;
 }
 function onSelectedFileChange(){
 	const file = getSelectedFile();
@@ -321,15 +323,15 @@ function updateFileSelectOptions(filenameToSelect?:string){
 	//Keep the first one
 	const oldValue = fileSelect.value;
 	Array.from(fileSelect.children).slice(1).forEach(n => n.remove());
-	for(const file of Object.values(persistentFilesystem.files)){
+	for(const filename of fileSystem.listFiles()){
 		const option = document.createElement("option");
-		option.value = `file_${file.name}`;
-		option.innerText = file.name;
+		option.value = `file_${filename}`;
+		option.innerText = filename;
 		fileSelect.appendChild(option);
 	}
-	if(filenameToSelect && filenameToSelect in persistentFilesystem.files){
+	if(filenameToSelect && fileSystem.hasFile(filenameToSelect)){
 		fileSelect.value = `file_${filenameToSelect}`;
-	} else if(oldValue.split("file_")[1] in persistentFilesystem.files){
+	} else if(fileSystem.hasFile(oldValue.split("file_")[1])){
 		fileSelect.value = oldValue;
 	}
 }
@@ -342,8 +344,8 @@ function setupFileGUIHandlers(){
 	fileContents.addEventListener("change", function updateFileData(){
 		const file = getSelectedFile();
 		if(!file) return;
-		if(!fileContents.value.endsWith("\n")) fileContents.value += "\n";
-		file.text = fileContents.value;
+		if(!fileContents.value.endsWith("\n")) fileContents.value += "\n"; //trailing newline
+		fileSystem.updateFile(file.name, fileContents.value);
 	});
 	fileSelect.addEventListener("change", onSelectedFileChange);
 	fileDownloadButton.addEventListener("click", () => {
@@ -361,7 +363,7 @@ function setupFileGUIHandlers(){
 			alert(`Please select a file to delete.`);
 		} else {
 			if(confirm(`Are you sure you want to delete the file ${file.name}? This action is irreversible.`)){
-				delete persistentFilesystem.files[file.name];
+				fileSystem.deleteFile(file.name);
 				updateFileSelectOptions();
 				onSelectedFileChange();
 			}
@@ -370,8 +372,8 @@ function setupFileGUIHandlers(){
 	fileCreateButton.addEventListener("click", () => {
 		const filename = prompt("Enter the name of the file to create:");
 		if(!filename) return;
-		if(!(filename in persistentFilesystem.files)){
-			persistentFilesystem.getFile(filename, true);
+		if(!fileSystem.hasFile(filename)){
+			fileSystem.createFile(filename);
 		}
 		updateFileSelectOptions(filename);
 		onSelectedFileChange();
@@ -384,9 +386,8 @@ function setupFileGUIHandlers(){
 		reader.onload = e => {
 			const content = e.target?.result?.toString();
 			if(content == null) return;
-			if(persistentFilesystem.getFile(file.name)?.text && !confirm(`Are you sure you want to overwrite the existing file ${file.name}? This action is irreversible.`)) return;
-			const fi = persistentFilesystem.getFile(file.name, true);
-			fi.text = content;
+			if(fileSystem.openFile(file.name)?.text && !confirm(`Are you sure you want to overwrite the existing file ${file.name}? This action is irreversible.`)) return;
+			fileSystem.updateFile(file.name, content);
 			updateFileSelectOptions(file.name);
 			onSelectedFileChange();
 		};
@@ -650,7 +651,7 @@ function executeSoodocode(){
 			}
 			printPrefixed(str);
 		},
-		persistentFilesystem
+		fileSystem
 	);
 	try {
 		if(configs.runtime.display_output_immediately.value) outputDiv.innerHTML = "";
@@ -662,7 +663,7 @@ function executeSoodocode(){
 		Object.assign(window, {
 			symbols, tokens, program, runtime
 		});
-		runtime.fs.makeBackup();
+		fileSystem.makeBackup();
 		console.time("execution");
 		runtime.runProgram(program.nodes);
 		console.timeEnd("execution");
@@ -680,7 +681,7 @@ function executeSoodocode(){
 			lastOutputText = outputText;
 		}
 	} catch(err){
-		runtime.fs.loadBackup();
+		fileSystem.loadBackup();
 		if(err instanceof SoodocodeError){
 			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
 				+ showRange(soodocodeInput.value, err);
@@ -740,9 +741,9 @@ declare global {
 function dumpFunctionsToGlobalScope(){
 	window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
 	Object.assign(window,
-		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, config,
+		lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, config, builtin_functions, files,
 		{
-			persistentFilesystem
+			persistentFilesystem: fileSystem
 		}
 	);
 }
