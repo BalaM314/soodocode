@@ -6,7 +6,7 @@ import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionD
 import { Runtime } from "../../build/runtime.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements.js";
 import { SoodocodeError, crash } from "../../build/utils.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, anyRange, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
 	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
@@ -1006,6 +1006,69 @@ const statementTests = ((data:Record<string, [
 			value: null
 		})
 	],
+	files_open_nonexistent_for_read: [
+		[OpenFileStatement, [
+			"keyword.open_file",
+			["string", `"amogus.txt"`],
+			"keyword.for",
+			"keyword.file_mode.read"
+		]],
+		r => {},
+		"error"
+	],
+	files_open_nonexistent_for_write: [
+		[OpenFileStatement, [
+			"keyword.open_file",
+			["string", `"amogus.txt"`],
+			"keyword.for",
+			"keyword.file_mode.write"
+		]],
+		r => {},
+		r => expect(r.openFiles["amogus.txt"]).toEqual({
+			name: "amogus.txt",
+			mode: "WRITE",
+			openRange: anyRange,
+			text: "",
+		})
+	],
+	files_open_nonexistent_for_append: [
+		[OpenFileStatement, [
+			"keyword.open_file",
+			["string", `"amogus.txt"`],
+			"keyword.for",
+			"keyword.file_mode.append"
+		]],
+		r => {},
+		"error"
+	],
+	files_open_nonexistent_for_random: [
+		[OpenFileStatement, [
+			"keyword.open_file",
+			["string", `"amogus.txt"`],
+			"keyword.for",
+			"keyword.file_mode.random"
+		]],
+		r => {},
+		"error"
+	],
+	files_open_existent_for_read: [
+		[OpenFileStatement, [
+			"keyword.open_file",
+			["string", `"amogus.txt"`],
+			"keyword.for",
+			"keyword.file_mode.read"
+		]],
+		r => r.fs.createFile("amogus.txt"),
+		r => expect(r.openFiles["amogus.txt"]).toEqual({
+			text: "",
+			lines: [],
+			openRange: anyRange,
+			name: "amogus.txt",
+			mode: "READ",
+			lineNumber: 0,
+		})
+	],
+	
 	// TODO fix these tests
 	//running a type statement is no longer valid
 	//a new test block needs to be added that checks the return value of createType()
