@@ -228,6 +228,7 @@ export class Statement implements TextRanged, IFormattable {
 		return invalidMessage != null ? tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length : 10000;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
+		//TODO errorboundary here
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult {
@@ -904,10 +905,11 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 	run(runtime:Runtime){
 		const name = runtime.evaluate(this.filename);
 		const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-		const file = runtime.fs.getFile(name, mode == "WRITE") ?? fail(f.quote`File ${name} does not exist.`, this);
+		const file = runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote`File ${name} does not exist.`, this.filename);
+		if(runtime.openFiles[name]) fail(f.quote`File ${name} has already been opened.`, this.filename);
 		if(mode == "READ"){
 			runtime.openFiles[name] = {
-				file,
+				...file,
 				mode,
 				lines: file.text.split("\n").slice(0, -1), //the last element will be blank, because all lines end with a newline
 				lineNumber: 0,
@@ -916,9 +918,9 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 		} else if(mode == "RANDOM"){
 			fail(`Not yet implemented`, this.mode);
 		} else {//mode == "APPEND" | "WRITE"
-			if(mode == "WRITE") file.text = ""; //Clear the file so it can be overwritten
 			runtime.openFiles[name] = {
-				file,
+				name: file.name,
+				text: mode == "APPEND" ? file.text : "",
 				mode,
 				openRange: this.range,
 			};
@@ -930,9 +932,19 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	run(runtime:Runtime){
 		const name = runtime.evaluate(this.filename);
-		if(runtime.openFiles[name]) runtime.openFiles[name] = undefined;
-		else if(name in runtime.openFiles) fail(f.quote`Cannot close file ${name}, because it has already been closed.`, this);
-		else fail(f.quote`Cannot close file ${name}, because it was never opened.`, this);
+		const openFile = runtime.openFiles[name];
+		if(openFile){
+			if(["WRITE", "APPEND", "RANDOM"].includes(openFile.mode)){
+				//Flush buffered writes to the file system
+				//File must exist because it was opened
+				runtime.fs.updateFile(name, openFile.text);
+			}
+			runtime.openFiles[name] = undefined;
+		} else if(name in runtime.openFiles){
+			fail(f.quote`Cannot close file ${name}, because it has already been closed.`, this);
+		} else {
+			fail(f.quote`Cannot close file ${name}, because it was never opened.`, this);
+		}
 	}
 }
 @statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
@@ -954,7 +966,8 @@ export class WriteFileStatement extends Statement implements IFileStatement {
 	run(runtime:Runtime){
 		const name = runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-		data.file.text += runtime.evaluate(this.data) + "\n";
+		//Note: writes are buffered, and are only saved when the file is closed.
+		data.text += runtime.evaluate(this.data) + "\n";
 	}
 }
 

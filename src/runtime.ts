@@ -8,6 +8,7 @@ This file contains the runtime, which executes the program AST.
 
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
+import { FileSystem, TemporaryFileSystem } from "./files.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual, UntypedNodeValue } from "./runtime-types.js";
@@ -15,31 +16,7 @@ import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, Consta
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 
-export class Files {
-	files: Record<string, File> = Object.create(null);
-	private backupFiles: string | null = null;
-	getFile(filename:string, create:true):File;
-	getFile(filename:string, create?:boolean):File | undefined;
-	getFile(filename:string, create = false):File | undefined {
-		return this.files[filename] ?? (create ? this.files[filename] = {
-			name: filename, text: ""
-		} : undefined);
-	}
-	createFile(filename:string):File {
-		return {
-			name: filename, text: ""
-		};
-	}
-	makeBackup(){
-		this.backupFiles = JSON.stringify(this.files);
-	}
-	canLoadBackup(){
-		return this.backupFiles != null;
-	}
-	loadBackup(){
-		if(this.backupFiles) this.files = JSON.parse(this.backupFiles) as Record<string, File>;
-	}
-}
+
 export type ClassMethodCallInformation = {
 	/** This is the class type that the method is linked to, NOT the class type of the instance. Used to determine what SUPER is. */
 	clazz: ClassVariableType;
@@ -205,6 +182,7 @@ export class Runtime {
 	 **/
 	scopes: VariableScope[] = [];
 	functions: Record<string, FunctionData> = Object.create(null);
+	/** Stores opened files. Once a file is closed, the property value is set to `undefined`. After program execution is complete, the properties are deleted. */
 	openFiles: Record<string, OpenedFile | undefined> = Object.create(null);
 	/** While a class method is executing, this variable is set to data about the class method. */
 	classData: {
@@ -222,7 +200,7 @@ export class Runtime {
 	constructor(
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
-		public fs = new Files(),
+		public fs:FileSystem = new TemporaryFileSystem(),
 	){}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;
