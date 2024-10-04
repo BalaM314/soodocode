@@ -1071,6 +1071,61 @@ NEXT i`,
 []
 ],
 //#endregion
+//#region files
+write_to_new_file: [
+`OPENFILE "test.txt" FOR WRITE
+WRITEFILE "test.txt", "data 1"
+WRITEFILE "test.txt", "data 2"
+WRITEFILE "test.txt", "data 3"
+CLOSEFILE "test.txt"`,
+[]
+],
+write_to_new_file_and_read_data: [
+`OPENFILE "test.txt" FOR WRITE
+WRITEFILE "test.txt", "data 1"
+WRITEFILE "test.txt", "data 2"
+WRITEFILE "test.txt", "data 3"
+CLOSEFILE "test.txt"
+OPENFILE "test.txt" FOR READ
+WHILE NOT EOF("test.txt")
+	DECLARE temp: STRING
+	READFILE "test.txt", temp
+	OUTPUT temp
+ENDWHILE
+CLOSEFILE "test.txt"`,
+["data 1", "data 2", "data 3"]
+],
+write_to_new_file_and_append: [
+`
+PROCEDURE outputFile()
+	OPENFILE "test.txt" FOR READ
+	WHILE NOT EOF("test.txt")
+		DECLARE temp: STRING
+		READFILE "test.txt", temp
+		OUTPUT temp
+	ENDWHILE
+	CLOSEFILE "test.txt"
+ENDPROCEDURE
+
+OPENFILE "test.txt" FOR WRITE
+WRITEFILE "test.txt", "data 1"
+WRITEFILE "test.txt", "data 2"
+WRITEFILE "test.txt", "data 3"
+CLOSEFILE "test.txt"
+
+CALL outputFile()
+
+OPENFILE "test.txt" FOR APPEND
+WRITEFILE "test.txt", "data 4"
+WRITEFILE "test.txt", "data 5"
+WRITEFILE "test.txt", "data 6"
+CLOSEFILE "test.txt"
+
+CALL outputFile()
+`,
+["data 1", "data 2", "data 3", "data 1", "data 2", "data 3", "data 4", "data 5", "data 6"]
+],
+//#endregion
 //#region classes
 parse_class_blank: [
 `CLASS amogus
