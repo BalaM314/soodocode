@@ -34,37 +34,12 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
+import { TemporaryFileSystem } from "./files.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
-export class Files {
-    constructor() {
-        this.files = Object.create(null);
-        this.backupFiles = null;
-    }
-    getFile(filename, create = false) {
-        return this.files[filename] ?? (create ? this.files[filename] = {
-            name: filename, text: ""
-        } : undefined);
-    }
-    createFile(filename) {
-        return {
-            name: filename, text: ""
-        };
-    }
-    makeBackup() {
-        this.backupFiles = JSON.stringify(this.files);
-    }
-    canLoadBackup() {
-        return this.backupFiles != null;
-    }
-    loadBackup() {
-        if (this.backupFiles)
-            this.files = JSON.parse(this.backupFiles);
-    }
-}
 function checkTypeMatch(a, b, range) {
     if (typesEqual(a, b))
         return true;
@@ -242,7 +217,7 @@ let Runtime = (() => {
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
     return _a = class Runtime {
-            constructor(_input, _output, fs = new Files()) {
+            constructor(_input, _output, fs = new TemporaryFileSystem()) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
                 this.fs = fs;
