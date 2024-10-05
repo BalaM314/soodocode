@@ -34,7 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { configs } from "./config.js";
-import { TemporaryFileSystem } from "./files.js";
+import { BrowserFileSystem } from "./files.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
@@ -217,7 +217,7 @@ let Runtime = (() => {
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
     return _a = class Runtime {
-            constructor(_input, _output, fs = new TemporaryFileSystem()) {
+            constructor(_input, _output, fs = new BrowserFileSystem()) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
                 this.fs = fs;
