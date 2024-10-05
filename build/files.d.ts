@@ -1,18 +1,22 @@
 import { File } from "./runtime-types.js";
-export declare abstract class FileSystem {
-    abstract hasFile(filename: string): boolean;
-    abstract openFile(filename: string): File | undefined;
-    abstract openFile(filename: string, create: true): File;
-    abstract openFile(filename: string, create: boolean): File | undefined;
-    abstract createFile(filename: string): void;
-    abstract updateFile(filename: string, newContent: string): void;
-    abstract clearFile(filename: string, newContent: string): void;
-    abstract deleteFile(filename: string): void;
-    abstract listFiles(): string[];
+export interface FileSystem {
+    hasFile(filename: string): boolean;
+    openFile(filename: string): File | undefined;
+    openFile(filename: string, create: true): File;
+    openFile(filename: string, create: boolean): File | undefined;
+    closeFile(filename: string): void;
+    createFile(filename: string): void;
+    updateFile(filename: string, newContent: string): void;
+    clearFile(filename: string, newContent: string): void;
+    deleteFile(filename: string): void;
+    listFiles(): string[];
 }
-export declare class TemporaryFileSystem extends FileSystem {
+export declare class BrowserFileSystem implements FileSystem {
+    useLocalStorage: boolean;
+    static readonly storageKey = "soodocode:files";
     private files;
     private backupFiles;
+    constructor(useLocalStorage?: boolean);
     openFile(filename: string): File | undefined;
     openFile(filename: string, create: true): File;
     openFile(filename: string, create: boolean): File | undefined;
@@ -20,9 +24,11 @@ export declare class TemporaryFileSystem extends FileSystem {
     createFile(filename: string): void;
     updateFile(filename: string, newContent: string): void;
     clearFile(filename: string): void;
+    closeFile(filename: string): void;
     deleteFile(filename: string): void;
     listFiles(): string[];
     makeBackup(): void;
-    canLoadBackup(): boolean;
     loadBackup(): void;
+    private save;
+    private load;
 }

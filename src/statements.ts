@@ -940,6 +940,7 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 				runtime.fs.updateFile(name, openFile.text);
 			}
 			runtime.openFiles[name] = undefined;
+			runtime.fs.closeFile(name);
 		} else if(name in runtime.openFiles){
 			fail(f.quote`Cannot close file ${name}, because it has already been closed.`, this);
 		} else {

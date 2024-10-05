@@ -8,7 +8,7 @@ This file contains the runtime, which executes the program AST.
 
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { Config, configs } from "./config.js";
-import { FileSystem, TemporaryFileSystem } from "./files.js";
+import { FileSystem, BrowserFileSystem } from "./files.js";
 import { Token } from "./lexer-types.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "./parser-types.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual, UntypedNodeValue } from "./runtime-types.js";
@@ -200,7 +200,7 @@ export class Runtime {
 	constructor(
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
-		public fs:FileSystem = new TemporaryFileSystem(),
+		public fs:FileSystem = new BrowserFileSystem(),
 	){}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;
