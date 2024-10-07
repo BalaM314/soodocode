@@ -16,7 +16,7 @@ import { Statement } from "./statements.js";
 import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
 import { configs } from "./config.js";
 const savedProgramKey = "soodocode:savedProgram";
-const fileSystem = new files.BrowserFileSystem();
+const fileSystem = new files.BrowserFileSystem(true);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const headerText = getElement("header-text", HTMLSpanElement);
 const secondFocusableElement = getElement("second-focusable-element", HTMLAnchorElement, "class");

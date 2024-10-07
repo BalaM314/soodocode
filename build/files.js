@@ -1,6 +1,6 @@
 import { crash } from "./utils.js";
 export class BrowserFileSystem {
-    constructor(useLocalStorage = true) {
+    constructor(useLocalStorage) {
         this.useLocalStorage = useLocalStorage;
         this.files = Object.create(null);
         this.backupFiles = null;

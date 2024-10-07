@@ -200,7 +200,7 @@ export class Runtime {
 	constructor(
 		public _input: (message:string, type:VariableType) => string,
 		public _output: (values:TypedValue[]) => void,
-		public fs:FileSystem = new BrowserFileSystem(),
+		public fs:FileSystem = new BrowserFileSystem(false),
 	){}
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;

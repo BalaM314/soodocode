@@ -16,7 +16,7 @@ export declare class BrowserFileSystem implements FileSystem {
     static readonly storageKey = "soodocode:files";
     private files;
     private backupFiles;
-    constructor(useLocalStorage?: boolean);
+    constructor(useLocalStorage: boolean);
     openFile(filename: string): File | undefined;
     openFile(filename: string, create: true): File;
     openFile(filename: string, create: boolean): File | undefined;
