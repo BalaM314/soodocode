@@ -217,7 +217,7 @@ let Runtime = (() => {
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
     return _a = class Runtime {
-            constructor(_input, _output, fs = new BrowserFileSystem()) {
+            constructor(_input, _output, fs = new BrowserFileSystem(false)) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
                 this.fs = fs;
