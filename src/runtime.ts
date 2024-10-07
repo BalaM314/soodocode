@@ -198,7 +198,7 @@ export class Runtime {
 	builtinFunctions = getBuiltinFunctions();
 	statementsExecuted = 0;
 	constructor(
-		public _input: (message:string, type:VariableType) => string,
+		public _input: (message:string, type:VariableType) => string, //TODO change signature
 		public _output: (values:TypedValue[]) => void,
 		public fs:FileSystem = new BrowserFileSystem(false),
 	){}
