@@ -293,23 +293,23 @@ export class ProgramASTNodeGroup extends Array {
         this.hasReturn = true;
         this._simple = false;
     }
-    async preRun(parent) {
+    preRun(parent) {
         this.requiresScope = false;
         this.hasTypesOrConstants = false;
         this.hasReturn = false;
         for (const node of this) {
             if (node instanceof ProgramASTBranchNode) {
                 for (const block of node.nodeGroups) {
-                    await block.preRun();
+                    block.preRun();
                     if (block.hasReturn && node.controlStatements[0].type.propagatesControlFlowInterruptions)
                         this.hasReturn = true;
                 }
                 for (const statement of node.controlStatements) {
-                    await statement.triggerPreRun(this, node);
+                    statement.triggerPreRun(this, node);
                 }
             }
             else {
-                await node.triggerPreRun(this, parent);
+                node.triggerPreRun(this, parent);
             }
         }
         this._simple = !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;

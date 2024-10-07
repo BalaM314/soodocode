@@ -15,7 +15,6 @@ export declare function applyRangeTransformers(text: string, ranges: Array<reado
     start: string,
     end: string
 ]>, transformer?: (char: string) => string): string;
-export declare function sequentialAsyncMap<T, S>(array: T[], func: (item: T, index: number, array: T[]) => Promise<S>): Promise<S[]>;
 export declare function separateArray<T, S extends T>(arr: T[], predicate: (item: T) => item is S): [true: S[], false: T[]];
 export declare function separateArray<T>(arr: T[], predicate: (item: T) => boolean): [true: T[], false: T[]];
 export declare function groupArray<T, const S extends PropertyKey>(arr: T[], predicate: (item: T) => S): Partial<Record<S, T[]>>;
@@ -105,5 +104,4 @@ export declare function getAllPropertyDescriptors(object: Record<PropertyKey, un
 export declare function combineClasses<const Classes extends (new (...args: any[]) => unknown)[]>(...classes: Classes): MixClassesTuple<Classes>;
 export declare function match<K extends PropertyKey, O extends Record<K, unknown>>(value: K, clauses: O): O[K];
 export declare function match<K extends PropertyKey, O extends Partial<Record<K, unknown>>, D>(value: K, clauses: O, defaultValue: D): O[K] | D;
-export declare function delay(time: number): Promise<void>;
 export {};

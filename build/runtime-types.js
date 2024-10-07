@@ -88,8 +88,8 @@ export class TypedNodeValue {
         this.range = this.node.range;
         this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType);
     }
-    async init() {
-        this.value = (await Runtime.evaluateExpr(this.node, this.type))?.value ?? null;
+    init() {
+        this.value = Runtime.evaluateExpr(this.node, this.type)?.value ?? null;
     }
 }
 export class UntypedNodeValue {
@@ -97,8 +97,8 @@ export class UntypedNodeValue {
         this.node = node;
         this.range = this.node.range;
     }
-    async init() {
-        this.value = await Runtime.evaluateExpr(this.node);
+    init() {
+        this.value = Runtime.evaluateExpr(this.node);
     }
 }
 export class BaseVariableType {
@@ -209,14 +209,14 @@ export class ArrayVariableType extends BaseVariableType {
         this.arraySizes = null;
         this.lengthInformation = null;
     }
-    async init(runtime) {
+    init(runtime) {
         if (Array.isArray(this.elementType))
-            this.elementType = await runtime.resolveVariableType(this.elementType);
+            this.elementType = runtime.resolveVariableType(this.elementType);
         if (this.lengthInformationExprs) {
             this.lengthInformation = new Array(this.lengthInformationExprs.length);
             for (const [i, [low_, high_]] of this.lengthInformationExprs.entries()) {
-                const low = (await runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER)).value;
-                const high = (await runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER)).value;
+                const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER).value;
+                const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER).value;
                 if (high < low)
                     fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
                 this.lengthInformation[i] = [low, high];
@@ -302,12 +302,12 @@ export class RecordVariableType extends BaseVariableType {
         this.fields = fields;
         this.directDependencies = new Set();
     }
-    async init(runtime) {
+    init(runtime) {
         for (const [name, [field, range]] of Object.entries(this.fields)) {
             if (Array.isArray(field))
-                this.fields[name][0] = await runtime.resolveVariableType(field);
+                this.fields[name][0] = runtime.resolveVariableType(field);
             else if (field instanceof ArrayVariableType)
-                await field.init(runtime);
+                field.init(runtime);
             this.addDependencies(this.fields[name][0]);
         }
         this.initialized = true;
@@ -373,9 +373,9 @@ export class PointerVariableType extends BaseVariableType {
         this.target = target;
         this.range = range;
     }
-    async init(runtime) {
+    init(runtime) {
         if (Array.isArray(this.target))
-            this.target = await runtime.resolveVariableType(this.target);
+            this.target = runtime.resolveVariableType(this.target);
         this.initialized = true;
     }
     validate() {
@@ -450,9 +450,9 @@ export class SetVariableType extends BaseVariableType {
         this.name = name;
         this.baseType = baseType;
     }
-    async init(runtime) {
+    init(runtime) {
         if (Array.isArray(this.baseType))
-            this.baseType = await runtime.resolveVariableType(this.baseType);
+            this.baseType = runtime.resolveVariableType(this.baseType);
         this.initialized = true;
     }
     fmtText() {
@@ -492,9 +492,9 @@ export class ClassVariableType extends BaseVariableType {
         this.name = this.statement.name.text;
         this.baseClass = null;
     }
-    async init(runtime) {
+    init(runtime) {
         for (const statement of this.propertyStatements) {
-            const type = await runtime.resolveVariableType(statement.varType);
+            const type = runtime.resolveVariableType(statement.varType);
             for (const [name] of statement.variables) {
                 this.properties[name][0] = type;
             }
@@ -519,11 +519,11 @@ export class ClassVariableType extends BaseVariableType {
     getInitValue(runtime) {
         return null;
     }
-    async validate(runtime) {
+    validate(runtime) {
         if (this.baseClass) {
             for (const name of Object.keys(this.baseClass.allMethods)) {
                 if (this.ownMethods[name]) {
-                    await checkClassMethodsCompatible(runtime, this.baseClass.allMethods[name][1].controlStatements[0], this.ownMethods[name].controlStatements[0]);
+                    checkClassMethodsCompatible(runtime, this.baseClass.allMethods[name][1].controlStatements[0], this.ownMethods[name].controlStatements[0]);
                 }
             }
         }
@@ -536,7 +536,7 @@ export class ClassVariableType extends BaseVariableType {
     inherits(other) {
         return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
     }
-    async construct(runtime, args) {
+    construct(runtime, args) {
         const This = this;
         const propertiesInitializer = Object.defineProperties(Object.create(null), Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
                 get() {
@@ -566,7 +566,7 @@ export class ClassVariableType extends BaseVariableType {
         };
         const [clazz, method] = This.allMethods["NEW"]
             ?? fail(f.quote `No constructor was defined for class ${this.name}`, this.statement);
-        await runtime.callClassMethod(method, clazz, data, args);
+        runtime.callClassMethod(method, clazz, data, args);
         for (const key of Object.keys(This.properties)) {
             void propertiesObj[key];
         }
@@ -657,7 +657,7 @@ export function typesAssignable(base, ext) {
 }
 export const checkClassMethodsCompatible = errorBoundary({
     message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})(async function _checkClassMethodsCompatible(runtime, base, derived) {
+})(function _checkClassMethodsCompatible(runtime, base, derived) {
     if (base.accessModifier != derived.accessModifier)
         fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
     if (base.stype != derived.stype)
@@ -667,7 +667,7 @@ export const checkClassMethodsCompatible = errorBoundary({
             fail(`Method should have ${base.args.size} parameter${base.args.size == 1 ? "" : "s"}, but it has ${derived.args.size} parameter${derived.args.size == 1 ? "" : "s"}.`, derived.argsRange);
         for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
             let result;
-            if ((result = typesAssignable(await runtime.resolveVariableType(bType.type), await runtime.resolveVariableType(aType.type))) != true)
+            if ((result = typesAssignable(runtime.resolveVariableType(bType.type), runtime.resolveVariableType(aType.type))) != true)
                 fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + (result ? `: ${result}.` : ""), derived.argsRange);
             if (aType.passMode != bType.passMode)
                 fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
@@ -675,7 +675,7 @@ export const checkClassMethodsCompatible = errorBoundary({
     }
     if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
         let result;
-        if ((result = typesAssignable(await runtime.resolveVariableType(base.returnType), await runtime.resolveVariableType(derived.returnType))) != true)
+        if ((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true)
             fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}` + (result ? `: ${result}.` : ""), derived.returnTypeToken);
     }
 });

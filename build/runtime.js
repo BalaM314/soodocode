@@ -39,7 +39,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, sequentialAsyncMap, shallowCloneOwnProperties, zip } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 function checkTypeMatch(a, b, range) {
     if (typesEqual(a, b))
         return true;
@@ -230,8 +230,8 @@ let Runtime = (() => {
                 this.builtinFunctions = getBuiltinFunctions();
                 this.statementsExecuted = 0;
             }
-            async processArrayAccess(expr, outType) {
-                const _target = await this.evaluateExpr(expr.target, "variable");
+            processArrayAccess(expr, outType) {
+                const _target = this.evaluateExpr(expr.target, "variable");
                 if (!(_target.type instanceof ArrayVariableType))
                     fail(f.quote `Cannot convert variable of type ${_target.type} to an array`, expr.target);
                 const target = _target;
@@ -246,7 +246,7 @@ let Runtime = (() => {
                     fail(`Cannot evaluate expression starting with "array access": \
 ${targetType.lengthInformation.length}-dimensional array requires ${targetType.lengthInformation.length} indices, \
 but found ${expr.indices.length} indices`, expr.indices);
-                const indexes = await sequentialAsyncMap(expr.indices, async (e) => [e, (await this.evaluateExpr(e, PrimitiveVariableType.INTEGER)).value]);
+                const indexes = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER).value]);
                 let invalidIndexIndex;
                 if ((invalidIndexIndex = indexes.findIndex(([_expr, value], index) => value > targetType.lengthInformation[index][1] ||
                     value < targetType.lengthInformation[index][0])) != -1)
@@ -270,7 +270,7 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                     fail(f.text `Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
                 return finishEvaluation(output, targetType.elementType, outType);
             }
-            async processRecordAccess(expr, outType) {
+            processRecordAccess(expr, outType) {
                 if (!(expr.nodes[1] instanceof Token))
                     crash(`Second node in record access expression was not a token`);
                 const property = expr.nodes[1].text;
@@ -289,11 +289,11 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
                 let targetType;
                 let targetValue;
                 if (outType == "variable") {
-                    target = await this.evaluateExpr(expr.nodes[0], "variable");
+                    target = this.evaluateExpr(expr.nodes[0], "variable");
                     ({ type: targetType, value: targetValue } = target);
                 }
                 else {
-                    ({ type: targetType, value: targetValue } = await this.evaluateExpr(expr.nodes[0]));
+                    ({ type: targetType, value: targetValue } = this.evaluateExpr(expr.nodes[0]));
                 }
                 if (targetType instanceof RecordVariableType) {
                     forceType(targetValue);
@@ -370,15 +370,15 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 else
                     fail(f.quote `Cannot access property ${property} on variable of type ${targetType} because it is not a record or class type and cannot have proprties`, expr.nodes[0]);
             }
-            async assignExpr(target, src) {
-                const variable = await this.evaluateExpr(target, "variable");
+            assignExpr(target, src) {
+                const variable = this.evaluateExpr(target, "variable");
                 if (!variable.mutable)
                     fail(f.quote `Cannot assign to constant ${target}`, target);
-                const { type, value } = await this.evaluateUntyped(src, variable.assignabilityType ?? variable.type);
+                const { type, value } = this.evaluateUntyped(src, variable.assignabilityType ?? variable.type);
                 variable.value = value;
                 variable.updateType?.(type);
             }
-            async evaluateExpr(expr, type, _recursive = false) {
+            evaluateExpr(expr, type, _recursive = false) {
                 if (expr == undefined)
                     crash(`expr was ${expr}`);
                 if (expr instanceof Token)
@@ -393,30 +393,30 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                         fail(`Expected this expression to evaluate to a variable, but found a function call, which cannot return a variable.`, expr);
                     if (type == "function")
                         fail(`Expected this expression to evaluate to a function, but found a function call, which cannot return a function.`, expr);
-                    const func = await this.evaluateExpr(expr.functionName, "function");
+                    const func = this.evaluateExpr(expr.functionName, "function");
                     if ("clazz" in func) {
                         if (func.method.type == "class_procedure")
                             fail(f.quote `Expected this expression to return a value, but the function ${expr.functionName} is a procedure which does not return a value`, expr.functionName);
-                        const output = await this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
+                        const output = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
                         return finishEvaluation(output.value, output.type, type);
                     }
                     else if ("name" in func) {
-                        const output = await this.callBuiltinFunction(func, expr.args);
+                        const output = this.callBuiltinFunction(func, expr.args);
                         return finishEvaluation(output.value, output.type, type);
                     }
                     else {
                         if (func.type == "procedure")
                             fail(f.quote `Procedure ${expr.functionName} does not return a value.`, expr.functionName);
                         const statement = func.controlStatements[0];
-                        const output = await this.callFunction(func, expr.args, true);
-                        return finishEvaluation(output, await this.resolveVariableType(statement.returnType), type);
+                        const output = this.callFunction(func, expr.args, true);
+                        return finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
                     }
                 }
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
                     if (type == "variable" || type == "function")
                         fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`, expr);
                     const clazz = this.getClass(expr.className.text, expr.className.range);
-                    const output = await clazz.construct(this, expr.args);
+                    const output = clazz.construct(this, expr.args);
                     return finishEvaluation(output, clazz, type);
                 }
                 if (expr.operator.category == "special") {
@@ -428,32 +428,26 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                                 fail(`Expected this expression to evaluate to a ${type}, but found a referencing expression, which returns a pointer`, expr);
                             if (type && !(type instanceof PointerVariableType))
                                 fail(f.quote `Expected result to be of type ${type}, but the reference operator will return a pointer`, expr);
-                            try {
-                                const variable = await this.evaluateExpr(expr.nodes[0], "variable", true);
-                                const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote `Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
-                                return finishEvaluation(variable, pointerType, type);
+                            const [variable, err] = tryRun(() => this.evaluateExpr(expr.nodes[0], "variable", true));
+                            if (err) {
+                                const target = this.evaluateExpr(expr.nodes[0], type?.target, true);
+                                const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote `Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
+                                if (!configs.pointers.implicit_variable_creation.value)
+                                    rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
+                                return finishEvaluation({
+                                    type: target.type,
+                                    declaration: "dynamic",
+                                    mutable: true,
+                                    value: target.value
+                                }, pointerType, type);
                             }
-                            catch (err) {
-                                if (err instanceof SoodocodeError) {
-                                    const target = await this.evaluateExpr(expr.nodes[0], type?.target, true);
-                                    const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote `Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
-                                    if (!configs.pointers.implicit_variable_creation.value)
-                                        rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
-                                    return finishEvaluation({
-                                        type: target.type,
-                                        declaration: "dynamic",
-                                        mutable: true,
-                                        value: target.value
-                                    }, pointerType, type);
-                                }
-                                else
-                                    throw err;
-                            }
+                            const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote `Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
+                            return finishEvaluation(variable, pointerType, type);
                         }
                         case operators.pointer_dereference: {
                             if (type == "function")
                                 fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`, expr);
-                            const pointerVariable = await this.evaluateExpr(expr.nodes[0], undefined, true);
+                            const pointerVariable = this.evaluateExpr(expr.nodes[0], undefined, true);
                             if (pointerVariable.value == null)
                                 fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
                             if (!(pointerVariable.typeIs(PointerVariableType)))
@@ -480,7 +474,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                     let guessedType = type ?? PrimitiveVariableType.REAL;
                     let value;
                     if (expr.operator.fix == "unary_prefix") {
-                        const operand = await this.evaluateExpr(expr.nodes[0], guessedType, true);
+                        const operand = this.evaluateExpr(expr.nodes[0], guessedType, true);
                         switch (expr.operator) {
                             case operators.negate:
                                 return TypedValue.INTEGER(-operand.value);
@@ -489,12 +483,12 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                     }
                     let left, right;
                     if (expr.operator == operators.add || expr.operator == operators.subtract) {
-                        left = await this.evaluateExpr(expr.nodes[0], undefined, true);
-                        right = await this.evaluateExpr(expr.nodes[1], undefined, true);
+                        left = this.evaluateExpr(expr.nodes[0], undefined, true);
+                        right = this.evaluateExpr(expr.nodes[1], undefined, true);
                     }
                     else {
-                        left = await this.evaluateExpr(expr.nodes[0], guessedType, true);
-                        right = await this.evaluateExpr(expr.nodes[1], guessedType, true);
+                        left = this.evaluateExpr(expr.nodes[0], guessedType, true);
+                        right = this.evaluateExpr(expr.nodes[1], guessedType, true);
                     }
                     if (left.typeIs(EnumeratedVariableType)) {
                         if (type && !(type instanceof EnumeratedVariableType))
@@ -571,7 +565,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     if (type && !type.is("BOOLEAN"))
                         fail(f.quote `Expected this expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a boolean`, expr);
                     if (expr.operator.fix == "unary_prefix") {
-                        const operand = await this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true);
+                        const operand = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true);
                         switch (expr.operator) {
                             case operators.not: {
                                 return TypedValue.BOOLEAN(!operand.value);
@@ -582,8 +576,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     switch (expr.operator) {
                         case operators.equal_to:
                         case operators.not_equal_to: {
-                            const left = await this.evaluateExpr(expr.nodes[0], undefined, true);
-                            const right = await this.evaluateExpr(expr.nodes[1], undefined, true);
+                            const left = this.evaluateExpr(expr.nodes[0], undefined, true);
+                            const right = this.evaluateExpr(expr.nodes[1], undefined, true);
                             const typesMatch = checkTypeMatch(left.type, right.type, expr.operatorToken.range);
                             const is_equal = typesMatch && checkValueEquality(left.type, left.value, right.value, expr.nodes[0].fmtText(), expr.nodes[1].fmtText(), expr.operatorToken.range);
                             return TypedValue.BOOLEAN((() => {
@@ -595,8 +589,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         }
                         case operators.and:
                         case operators.or: {
-                            const left = (await this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true)).value;
-                            const right = (await this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true)).value;
+                            const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.BOOLEAN, true).value;
+                            const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.BOOLEAN, true).value;
                             return TypedValue.BOOLEAN((() => {
                                 switch (expr.operator) {
                                     case operators.and: return left && right;
@@ -608,8 +602,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         case operators.greater_than_equal:
                         case operators.less_than:
                         case operators.less_than_equal: {
-                            const left = (await this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true)).value;
-                            const right = (await this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true)).value;
+                            const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true).value;
+                            const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true).value;
                             return TypedValue.BOOLEAN((() => {
                                 switch (expr.operator) {
                                     case operators.greater_than: return left > right;
@@ -626,8 +620,8 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 if (type?.is("STRING") || expr.operator.category == "string") {
                     if (type && !type.is("STRING"))
                         fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`, expr);
-                    const left = (await this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true)).value;
-                    const right = (await this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true)).value;
+                    const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true).value;
+                    const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true).value;
                     switch (expr.operator) {
                         case operators.string_concatenate:
                             return TypedValue.STRING(left + right);
@@ -703,9 +697,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         throw err;
                 }
             }
-            static async evaluateExpr(expr, type) {
+            static evaluateExpr(expr, type) {
                 try {
-                    return await this.prototype.evaluateExpr.call(Object.setPrototypeOf(shallowCloneOwnProperties(_a.prototype), new Proxy({}, {
+                    return this.prototype.evaluateExpr.call(Object.setPrototypeOf(shallowCloneOwnProperties(_a.prototype), new Proxy({}, {
                         get() { throw _a.NotStatic; },
                     })), expr, type);
                 }
@@ -716,24 +710,24 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         throw err;
                 }
             }
-            async evaluate(value) {
-                return value.value ?? (await this.evaluateExpr(value.node, value.type)).value;
+            evaluate(value) {
+                return value.value ?? this.evaluateExpr(value.node, value.type).value;
             }
-            async evaluateUntyped(value, type) {
+            evaluateUntyped(value, type) {
                 if (value.value != null && type && !typesEqual(value.value.type, type)) {
-                    const result = await this.evaluateExpr(value.node, type);
+                    const result = this.evaluateExpr(value.node, type);
                     value.value = result;
                     return result;
                 }
-                return value.value ?? await this.evaluateExpr(value.node, type);
+                return value.value ?? this.evaluateExpr(value.node, type);
             }
-            async resolveVariableType(type) {
+            resolveVariableType(type) {
                 if (type instanceof PrimitiveVariableType)
                     return type;
                 else if (type instanceof IntegerRangeVariableType)
                     return type;
                 else if (type instanceof ArrayVariableType) {
-                    await type.init(this);
+                    type.init(this);
                     return type;
                 }
                 else
@@ -916,7 +910,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     };
                 crash(f.quote `Cannot clone value of type ${type}`);
             }
-            async assembleScope(func, args) {
+            assembleScope(func, args) {
                 if (func.args.size != args.length)
                     fail(f.quote `Incorrect number of arguments for function ${func.name}`, args);
                 const scope = {
@@ -926,9 +920,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     types: Object.create(null),
                 };
                 for (const [i, [name, { type, passMode }]] of [...func.args.entries()].entries()) {
-                    const rType = await this.resolveVariableType(type);
+                    const rType = this.resolveVariableType(type);
                     if (passMode == "reference") {
-                        const varData = await this.evaluateExpr(args[i], "variable");
+                        const varData = this.evaluateExpr(args[i], "variable");
                         if (!typesEqual(varData.type, rType))
                             fail(f.quote `Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type or change the pass mode to BYVAL.`, args[i]);
                         scope.variables[name] = {
@@ -940,7 +934,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                         };
                     }
                     else {
-                        const { type, value } = await this.evaluateExpr(args[i], rType);
+                        const { type, value } = this.evaluateExpr(args[i], rType);
                         if (type instanceof ArrayVariableType && !type.lengthInformation)
                             crash(f.quote `evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
                         scope.variables[name] = {
@@ -953,12 +947,12 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 }
                 return scope;
             }
-            async callFunction(funcNode, args, requireReturnValue) {
+            callFunction(funcNode, args, requireReturnValue) {
                 const func = funcNode.controlStatements[0];
                 if (func instanceof ProcedureStatement && requireReturnValue)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
-                const scope = await this.assembleScope(func, args);
-                const output = await this.runBlock(funcNode.nodeGroups[0], false, scope);
+                const scope = this.assembleScope(func, args);
+                const output = this.runBlock(funcNode.nodeGroups[0], false, scope);
                 if (func instanceof ProcedureStatement) {
                     return null;
                 }
@@ -968,17 +962,17 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     return output.value;
                 }
             }
-            async callClassMethod(method, clazz, instance, args, requireReturnValue) {
+            callClassMethod(method, clazz, instance, args, requireReturnValue) {
                 const func = method.controlStatements[0];
                 if (func instanceof ClassProcedureStatement && requireReturnValue === true)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
                 if (func instanceof ClassFunctionStatement && requireReturnValue === false && !configs.statements.call_functions.value)
                     fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, undefined);
                 const classScope = instance.type.getScope(this, instance);
-                const methodScope = await this.assembleScope(func, args);
+                const methodScope = this.assembleScope(func, args);
                 const previousClassData = this.classData;
                 this.classData = { instance, method, clazz };
-                const output = await this.runBlock(method.nodeGroups[0], false, classScope, methodScope);
+                const output = this.runBlock(method.nodeGroups[0], false, classScope, methodScope);
                 this.classData = previousClassData;
                 if (func instanceof ClassProcedureStatement) {
                     return null;
@@ -986,10 +980,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 else {
                     if (!output)
                         fail(f.quote `Function ${func.name} did not return a value`, undefined);
-                    return typedValue(await this.resolveVariableType(func.returnType), output.value);
+                    return typedValue(this.resolveVariableType(func.returnType), output.value);
                 }
             }
-            async callBuiltinFunction(fn, args, returnType) {
+            callBuiltinFunction(fn, args, returnType) {
                 if (fn.args.size != args.length)
                     fail(f.quote `Incorrect number of arguments for function ${fn.name}`, undefined);
                 if (!fn.returnType)
@@ -999,19 +993,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 nextArg: for (const [name, { type }] of fn.args.entries()) {
                     const errors = [];
                     for (const possibleType of type) {
-                        try {
-                            const arg = await this.evaluateExpr(args[i], possibleType);
-                            evaluatedArgs.push([arg.value, args[i].range]);
+                        if (tryRunOr(() => {
+                            evaluatedArgs.push([this.evaluateExpr(args[i], possibleType).value, args[i].range]);
                             i++;
+                        }, err => errors.push(err)))
                             continue nextArg;
-                        }
-                        catch (err) {
-                            if (err instanceof SoodocodeError) {
-                                errors.push(err);
-                            }
-                            else
-                                throw err;
-                        }
                     }
                     throw errors.at(-1) ?? crash(`Builtin function ${fn.name} has an argument ${name} that does not accept any types`);
                 }
@@ -1021,7 +1007,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 else
                     return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
             }
-            async runBlock(code, allScopesEmpty, ...scopes) {
+            runBlock(code, allScopesEmpty, ...scopes) {
                 if (code.simple() && allScopesEmpty)
                     return this.runBlockFast(code);
                 this.scopes.push(...scopes);
@@ -1052,24 +1038,23 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     this.currentlyResolvingTypeName = name;
                     if (type instanceof PointerVariableType)
                         this.currentlyResolvingPointerTypeName = name;
-                    await type.init(this);
+                    type.init(this);
                     this.currentlyResolvingPointerTypeName = null;
                 }
                 this.currentlyResolvingTypeName = null;
                 for (const [name, type] of types) {
-                    await type.validate(this);
+                    type.validate(this);
                 }
                 for (const node of others) {
                     this.statementExecuted(node);
                     let result;
                     if (node instanceof Statement) {
-                        result = await node.run(this);
+                        result = node.run(this);
                     }
                     else {
-                        result = await node.controlStatements[0].runBlock(this, node);
+                        result = node.controlStatements[0].runBlock(this, node);
                     }
                     if (result) {
-                        forceType(result);
                         if (result.type == "function_return") {
                             returned = result.value;
                             break;
@@ -1085,15 +1070,14 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     };
                 }
             }
-            async runBlockFast(code) {
+            runBlockFast(code) {
                 this.statementExecuted(code, code.length);
-                for (let i = 0; i < code.length; i++) {
-                    const node = code[i];
+                for (const node of code) {
                     if (node instanceof Statement) {
-                        await node.run(this);
+                        node.run(this);
                     }
                     else {
-                        await node.controlStatements[0].runBlock(this, node);
+                        node.controlStatements[0].runBlock(this, node);
                     }
                 }
             }
@@ -1102,9 +1086,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
                 }
             }
-            async runProgram(code) {
-                await code.preRun();
-                await this.runBlock(code, false, {
+            runProgram(code) {
+                code.preRun();
+                this.runBlock(code, false, {
                     statement: "global",
                     opaque: true,
                     variables: Object.create(null),
