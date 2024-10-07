@@ -351,7 +351,7 @@ export function errorBoundary({predicate = (() => true), message}:Partial<{
 					//Try to find the range
 					if(err.rangeSpecific === undefined) err.rangeSpecific = findRange(args);
 					else if(err.rangeGeneral === undefined && predicate(...args)){
-						const _rangeGeneral = findRange(args);
+						const _rangeGeneral = findRange(args.concat(this));
 						if( //If the general range is unspecified, and when guessed is equal to the specific range, just set it to null
 							_rangeGeneral && err.rangeSpecific && (
 								_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]

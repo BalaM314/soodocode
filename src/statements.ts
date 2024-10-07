@@ -14,7 +14,7 @@ import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArgum
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue, VariableScope, VariableData, ConstantData } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
-import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
 
 //Enable decorator metadata
 if(!Symbol.metadata)
@@ -228,7 +228,6 @@ export class Statement implements TextRanged, IFormattable {
 		return invalidMessage != null ? tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length : 10000;
 	}
 	run(runtime:Runtime):void | StatementExecutionResult {
-		//TODO errorboundary here
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult {
@@ -342,9 +341,15 @@ function statement<TClass extends typeof Statement>(type:StatementType, example:
 					(statements.byStartKeyword[firstToken] ??= []).push(input);
 			}
 		}
+		input.tokens = args as TokenMatcher[];
+
+		// eslint-disable-next-line @typescript-eslint/unbound-method
+		const { run, runBlock } = input.prototype;
+		input.prototype.run = errorBoundary()(run);
+		input.prototype.runBlock = errorBoundary()(runBlock);
+
 		if(statements.byType[type]) crash(`Invalid statement definitions! Statement for type ${type} already registered`);
 		statements.byType[type] = input;
-		input.tokens = args as TokenMatcher[];
 		return input;
 	};
 }
