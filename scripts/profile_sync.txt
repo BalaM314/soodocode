@@ -1,0 +1,553 @@
+
+> soodocode@1.0.0 profile D:\314\soodocode
+> node ./scripts/profiler.js 100000 5
+
+Executing target program...
+2910.1504ms
+1939.0230ms
+1936.5053ms
+2040.5912ms
+2267.7629ms
+Processing profile...
+-----
+Statistical profiling result from isolate-00000194F1E11000-11780-v8.log, (830 ticks, 6 unaccounted, 0 excluded).
+
+ [Shared libraries]:
+   ticks  total  nonlib   name
+    431   51.9%          C:\Users\Balaadithya\AppData\Local\pnpm\node.exe
+     12    1.4%          C:\Windows\SYSTEM32\ntdll.dll
+
+ [JavaScript]:
+   ticks  total  nonlib   name
+     45    5.4%   11.6%  Builtin: GetProperty
+     41    4.9%   10.6%  JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+     28    3.4%    7.2%  JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+     25    3.0%    6.5%  JS: *activeScopes file:///D:/314/soodocode/build/runtime.js:789:26
+     22    2.7%    5.7%  JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+     19    2.3%    4.9%  Builtin: KeyedLoadIC_Megamorphic
+     15    1.8%    3.9%  Builtin: CallFunction_ReceiverIsAny
+     12    1.4%    3.1%  Builtin: LoadIC
+     11    1.3%    2.8%  Builtin: NonPrimitiveToPrimitive_Default
+     11    1.3%    2.8%  Builtin: GeneratorPrototypeNext
+     10    1.2%    2.6%  JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     10    1.2%    2.6%  Builtin: SetProperty
+     10    1.2%    2.6%  Builtin: ArrayFrom
+      9    1.1%    2.3%  Builtin: ArrayIteratorPrototypeNext
+      8    1.0%    2.1%  JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      8    1.0%    2.1%  JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      7    0.8%    1.8%  Builtin: OrdinaryToPrimitive_Number_Inline
+      7    0.8%    1.8%  Builtin: CreateIterResultObject
+      6    0.7%    1.6%  Builtin: LoadICTrampoline
+      6    0.7%    1.6%  Builtin: Equal
+      4    0.5%    1.0%  JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      4    0.5%    1.0%  Builtin: ObjectValues
+      4    0.5%    1.0%  Builtin: ObjectToString
+      4    0.5%    1.0%  Builtin: CEntry_Return1_ArgvOnStack_NoBuiltinExit
+      4    0.5%    1.0%  Builtin: ArraySingleArgumentConstructor_HoleySmi_DisableAllocationSites
+      3    0.4%    0.8%  JS: *typesAssignable file:///D:/314/soodocode/build/runtime-types.js:619:32
+      3    0.4%    0.8%  JS: *finishEvaluation file:///D:/314/soodocode/build/runtime.js:205:26
+      3    0.4%    0.8%  Builtin: StoreIC
+      3    0.4%    0.8%  Builtin: ResumeGeneratorTrampoline
+      3    0.4%    0.8%  Builtin: FastCreateDataProperty
+      2    0.2%    0.5%  JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2    0.2%    0.5%  JS: *typesEqual file:///D:/314/soodocode/build/runtime-types.js:610:27
+      2    0.2%    0.5%  JS: *typedValue file:///D:/314/soodocode/build/runtime-types.js:75:27
+      2    0.2%    0.5%  JS: *set value file:///D:/314/soodocode/build/runtime.js:265:34
+      2    0.2%    0.5%  JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2    0.2%    0.5%  JS: *coerceValue file:///D:/314/soodocode/build/runtime.js:109:21
+      2    0.2%    0.5%  Builtin: ToNumberConvertBigInt
+      2    0.2%    0.5%  Builtin: GeneratorPrototypeReturn
+      2    0.2%    0.5%  Builtin: Equal_Baseline
+      2    0.2%    0.5%  Builtin: CompileLazy
+      2    0.2%    0.5%  Builtin: Call_ReceiverIsAny
+      1    0.1%    0.3%  JS: ~getInitValue file:///D:/314/soodocode/build/runtime-types.js:141:17
+      1    0.1%    0.3%  JS: *typeIs file:///D:/314/soodocode/build/runtime-types.js:18:11
+      1    0.1%    0.3%  Builtin: SubString
+      1    0.1%    0.3%  Builtin: NumberConstructor
+      1    0.1%    0.3%  Builtin: JSEntry
+      1    0.1%    0.3%  Builtin: JSBuiltinsConstructStub
+      1    0.1%    0.3%  Builtin: FastNewFunctionContextFunction
+      1    0.1%    0.3%  Builtin: ConstructFunction
+      1    0.1%    0.3%  Builtin: Call_ReceiverIsNullOrUndefined
+      1    0.1%    0.3%  Builtin: CallFunction_ReceiverIsNotNullOrUndefined
+      1    0.1%    0.3%  Builtin: CallForwardVarargs
+      1    0.1%    0.3%  Builtin: CEntry_Return1_ArgvOnStack_BuiltinExit
+      1    0.1%    0.3%  Builtin: BaselineLeaveFrame
+      1    0.1%    0.3%  Builtin: ArrayConstructorImpl
+
+ [C++]:
+   ticks  total  nonlib   name
+
+ [Summary]:
+   ticks  total  nonlib   name
+    381   45.9%   98.4%  JavaScript
+      0    0.0%    0.0%  C++
+     68    8.2%   17.6%  GC
+    443   53.4%          Shared libraries
+      6    0.7%          Unaccounted
+
+ [C++ entry points]:
+   ticks    cpp   total   name
+
+ [Bottom up (heavy) profile]:
+  Note: percentage shows a share of a particular caller in the total
+  amount of its parent calls.
+  Callers occupying less than 1.0% are not shown.
+
+   ticks parent  name
+    431   51.9%  C:\Users\Balaadithya\AppData\Local\pnpm\node.exe
+    360   83.5%    C:\Users\Balaadithya\AppData\Local\pnpm\node.exe
+    108   30.0%      Builtin: ArrayFrom
+    106   98.1%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+    103   97.2%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     68   66.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     32   31.1%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      3    2.9%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3    2.8%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3  100.0%            JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     99   27.5%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+     87   87.9%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     86   98.9%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     72   83.7%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+     14   16.3%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1    1.1%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+     11   11.1%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     11  100.0%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      7   63.6%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      4   36.4%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1    1.0%        JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     99   27.5%      Builtin: ObjectValues
+     98   99.0%        JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+     88   89.8%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     83   94.3%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      5    5.7%            JS: *evaluate file:///D:/314/soodocode/build/runtime.js:713:21
+     10   10.2%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      9   90.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   10.0%            JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1    1.0%        JS: *getEnumFromValue file:///D:/314/soodocode/build/runtime.js:814:29
+      1  100.0%          JS: ^evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+      1  100.0%            JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     20    5.6%      JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     14   70.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+     14  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      9   64.3%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      5   35.7%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      6   30.0%        JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      6  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      4   66.7%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2   33.3%            JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     11    3.1%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+     10   90.9%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      9   90.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      9  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   10.0%          JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1  100.0%            JS: ~runProgram file:///D:/314/soodocode/build/runtime.js:1089:23
+      1    9.1%        JS: ~replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ~runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1  100.0%            JS: ~runProgram file:///D:/314/soodocode/build/runtime.js:1089:23
+
+     45    5.4%  Builtin: GetProperty
+     22   48.9%    JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+     21   95.5%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     20   95.2%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     20  100.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+     20  100.0%            JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1    4.8%        JS: *evaluate file:///D:/314/soodocode/build/runtime.js:713:21
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1    4.5%      JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     14   31.1%    Builtin: ArrayFrom
+     14  100.0%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+     14  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     11   78.6%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     10   90.9%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1    9.1%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      3   21.4%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      3  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      5   11.1%    JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      4   80.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      3   75.0%        JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      2   66.7%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   33.3%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   25.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   20.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      2    4.4%    JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   50.0%      JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: ^assignExpr file:///D:/314/soodocode/build/runtime.js:373:23
+      1  100.0%          JS: ^run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%            JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   50.0%      JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%        JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%            JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2    4.4%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2  100.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      2  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+
+     41    4.9%  JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+     37   90.2%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     32   86.5%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     32  100.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+     32  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     22   68.8%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     10   31.3%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      5   13.5%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      5  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      3   60.0%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      2   66.7%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   33.3%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   20.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   20.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      3    7.3%    JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2   66.7%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      2  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   50.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1   50.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   33.3%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1    2.4%    JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+
+     28    3.4%  JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+     25   89.3%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     13   52.0%      JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+     13  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+     13  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     10   76.9%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3   23.1%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+     11   44.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+     11  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      9   81.8%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      9  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2   18.2%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      2  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1    4.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%            JS: ~replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3   10.7%    JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      2   66.7%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   33.3%      JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+
+     25    3.0%  JS: *activeScopes file:///D:/314/soodocode/build/runtime.js:789:26
+     21   84.0%    Builtin: GeneratorPrototypeNext
+     21  100.0%      JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+     21  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+     12   57.1%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     12  100.0%            JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      8   38.1%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      8  100.0%            JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1    4.8%          JS: *evaluate file:///D:/314/soodocode/build/runtime.js:713:21
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      3   12.0%    JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+      3  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2   66.7%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      2  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1   33.3%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%            JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1    4.0%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+
+     22    2.7%  JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+     21   95.5%    JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     13   61.9%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+     13  100.0%        JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+     13  100.0%          JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+     13  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      8   38.1%      JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      8  100.0%        JS: ~runProgram file:///D:/314/soodocode/build/runtime.js:1089:23
+      8  100.0%          Script: ~<anonymous> file:///D:/314/soodocode/scripts/target.js:1:1
+      8  100.0%            Builtin: GeneratorPrototypeNext
+      1    4.5%    JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%      JS: ~replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: ^runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%          JS: ~runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1  100.0%            JS: ~runBlock file:///D:/314/soodocode/build/statements.js:883:17
+
+     19    2.3%  Builtin: KeyedLoadIC_Megamorphic
+      9   47.4%    JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+      9  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      5   55.6%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      5  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      5  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      3   33.3%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2   66.7%          JS: *run file:///D:/314/soodocode/build/statements.js:684:12
+      2  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   33.3%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   11.1%        JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      9   47.4%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      6   66.7%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      6  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      4   66.7%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      4  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2   33.3%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      2  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3   33.3%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3  100.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      3  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      3  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1    5.3%    JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+
+     15    1.8%  Builtin: CallFunction_ReceiverIsAny
+      4   26.7%    JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      3   75.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      3  100.0%        JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      2   66.7%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   33.3%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   25.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      4   26.7%    JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+      4  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      4  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      4  100.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      4  100.0%            JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      4   26.7%    Builtin: CEntry_Return1_ArgvOnStack_NoBuiltinExit
+      4  100.0%      JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      4  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      4  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3   75.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   25.0%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1    6.7%    JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ~runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1  100.0%            JS: ~runProgram file:///D:/314/soodocode/build/runtime.js:1089:23
+      1    6.7%    JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%            JS: ~runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1    6.7%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+
+     12    1.4%  C:\Windows\SYSTEM32\ntdll.dll
+      4   33.3%    C:\Users\Balaadithya\AppData\Local\pnpm\node.exe
+      1   25.0%      JS: ~splitRoot node:fs:2581:33
+      1  100.0%        JS: ~realpathSync node:fs:2629:22
+      1  100.0%          JS: ~toRealPath node:internal/modules/helpers:61:20
+      1  100.0%            JS: ~Module._findPath node:internal/modules/cjs/loader:689:28
+      1   25.0%      JS: ~expr file:///D:/314/soodocode/build/statements.js:111:13
+      1  100.0%        JS: ~exprT file:///D:/314/soodocode/build/statements.js:123:14
+      1  100.0%          JS: ~_classThis file:///D:/314/soodocode/build/statements.js:1090:20
+      1  100.0%            JS: ~_classThis file:///D:/314/soodocode/build/statements.js:1188:20
+      1   25.0%      JS: ~Socket node:net:359:16
+      1  100.0%        JS: ~WriteStream node:tty:88:21
+      1  100.0%          JS: ~createWritableStdioStream node:internal/bootstrap/switches/is_main_thread:50:35
+      1  100.0%            JS: ~getStderr node:internal/bootstrap/switches/is_main_thread:173:19
+      1   25.0%      JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1    8.3%    JS: ^compileForInternalLoader node:internal/bootstrap/realm:384:27
+      1  100.0%      JS: ^requireBuiltin node:internal/bootstrap/realm:421:24
+      1  100.0%        JS: ~createWritableStdioStream node:internal/bootstrap/switches/is_main_thread:50:35
+      1  100.0%          JS: ~getStderr node:internal/bootstrap/switches/is_main_thread:173:19
+      1  100.0%            JS: ~refresh node:internal/util/colors:25:10
+
+     12    1.4%  Builtin: LoadIC
+      5   41.7%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      5  100.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      5  100.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      5  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      5  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      2   16.7%    JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   50.0%      JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%        JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%            JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   50.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2   16.7%    JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2  100.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      2  100.0%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      2   16.7%    JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1   50.0%      JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   50.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1    8.3%    Builtin: ArrayFrom
+      1  100.0%      JS: ~getInitValue file:///D:/314/soodocode/build/runtime-types.js:253:17
+      1  100.0%        JS: ^run file:///D:/314/soodocode/build/statements.js:372:12
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+
+     11    1.3%  Builtin: NonPrimitiveToPrimitive_Default
+     10   90.9%    JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+      9   90.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      9  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      9  100.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      9  100.0%            JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   10.0%      JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1    9.1%    JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+
+     11    1.3%  Builtin: GeneratorPrototypeNext
+     10   90.9%    JS: *evaluateToken file:///D:/314/soodocode/build/runtime.js:635:26
+     10  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      8   80.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      6   75.0%          JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      6  100.0%            JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2   25.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      2  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2   20.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      2  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   50.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1   50.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1    9.1%    JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%          JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+
+     10    1.2%  JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      4   40.0%    JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      4  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      3   75.0%        JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      3  100.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      3  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   25.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      3   30.0%    JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2   66.7%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      2  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   50.0%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   50.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   33.3%      JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%        JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%          JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      2   20.0%    JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      2  100.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2  100.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   50.0%          JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      1  100.0%            JS: ~runProgram file:///D:/314/soodocode/build/runtime.js:1089:23
+      1   50.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   10.0%    JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+
+     10    1.2%  Builtin: SetProperty
+     10  100.0%    Builtin: ArrayFrom
+     10  100.0%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      9   90.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      7   77.8%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      7  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2   22.2%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      2  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   10.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+
+     10    1.2%  Builtin: ArrayFrom
+      9   90.0%    JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      9  100.0%      JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      7   77.8%        JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      6   85.7%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      6  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   14.3%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      2   22.2%        JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      2  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   10.0%    JS: *map file:///D:/314/soodocode/build/utils.js:570:8
+      1  100.0%      JS: ^processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      1  100.0%        JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ^evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1  100.0%            JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+
+      9    1.1%  Builtin: ArrayIteratorPrototypeNext
+      5   55.6%    JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      5  100.0%      JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      3   60.0%        JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      3  100.0%          JS: ~runProgram file:///D:/314/soodocode/build/runtime.js:1089:23
+      3  100.0%            Script: ~<anonymous> file:///D:/314/soodocode/scripts/target.js:1:1
+      2   40.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      2  100.0%          JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      2  100.0%            JS: ^runBlock file:///D:/314/soodocode/build/runtime.js:1010:21
+      2   22.2%    JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      2  100.0%      JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+      1   50.0%        JS: ^replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: ~replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: ^runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      1   50.0%        JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%          JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1  100.0%            JS: *runBlockFast file:///D:/314/soodocode/build/runtime.js:1073:25
+      2   22.2%    Builtin: ArrayFrom
+      2  100.0%      JS: *processArrayAccess file:///D:/314/soodocode/build/runtime.js:233:31
+      2  100.0%        JS: *evaluateExpr file:///D:/314/soodocode/build/runtime.js:381:25
+      1   50.0%          JS: *runBlock file:///D:/314/soodocode/build/statements.js:883:17
+      1  100.0%            JS: *replacedFunction file:///D:/314/soodocode/build/utils.js:281:42
+      1   50.0%          JS: *run file:///D:/314/soodocode/build/statements.js:615:12
+      1  100.0%            JS: *runBlock file:///D:/314/soodocode/build/statements.js:1107:17
+
+
+-----
+Done
