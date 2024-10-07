@@ -32,7 +32,7 @@ export class BrowserFileSystem implements FileSystem {
 	private files: Record<string, File> = Object.create(null);
 	private backupFiles: string | null = null;
 	constructor(
-		public useLocalStorage = true
+		public useLocalStorage:boolean
 	){
 		if(useLocalStorage) this.load();
 	}
