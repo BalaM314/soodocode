@@ -43,7 +43,7 @@ import { ExpressionASTFunctionCallNode, ExpressionASTNodes, ExpressionASTTypeNod
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, TypedNodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UntypedNodeValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { Abstract, combineClasses, crash, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 if (!Symbol.metadata)
     Object.defineProperty(Symbol, "metadata", {
         writable: false,
@@ -326,10 +326,13 @@ function statement(type, example, ...args) {
                     ((_g = statements.byStartKeyword)[firstToken] ?? (_g[firstToken] = [])).push(input);
             }
         }
+        input.tokens = args;
+        const { run, runBlock } = input.prototype;
+        input.prototype.run = errorBoundary()(run);
+        input.prototype.runBlock = errorBoundary()(runBlock);
         if (statements.byType[type])
             crash(`Invalid statement definitions! Statement for type ${type} already registered`);
         statements.byType[type] = input;
-        input.tokens = args;
         return input;
     };
 }
