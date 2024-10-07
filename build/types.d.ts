@@ -1,3 +1,4 @@
+export type MaybePromise<T> = T | Promise<T>;
 export type ClassProperties<T extends object, K extends keyof T = keyof T, NonFunctionKeys extends keyof T = K extends unknown ? T[K] extends (...args: any[]) => unknown ? never : K : never> = Pick<T, NonFunctionKeys>;
 export interface TagFunction<Tin = string, Tout = string> {
     (stringChunks: readonly string[], ...varChunks: readonly Tin[]): Tout;

@@ -1,28 +1,29 @@
 import { File } from "./runtime-types.js";
+import type { MaybePromise } from "./types.js";
 import { crash } from "./utils.js";
 
 /** Represents a file system that Soodocode can interact with. */
 export interface FileSystem {
 	/** Returns whether or not a File with the specified name exists. */
-	hasFile(filename:string):boolean;
+	hasFile(filename:string):MaybePromise<boolean>;
 	/** Gets a File. Returns undefined if it does not exist. */
-	openFile(filename:string):File | undefined;
+	openFile(filename:string):MaybePromise<File | undefined>;
 	/** Gets a File. If it does not exist, creates a new empty file. */
-	openFile(filename:string, create:true):File;
+	openFile(filename:string, create:true):MaybePromise<File>;
 	/** Gets a File. */
-	openFile(filename:string, create:boolean):File | undefined;
+	openFile(filename:string, create:boolean):MaybePromise<File | undefined>;
 	/** Call this to tell the filesystem to close the underlying file handle (if necessary). */
-	closeFile(filename:string):void;
+	closeFile(filename:string):MaybePromise<void>;
 	/** Creates a new File. Throws an error if it already exists. */
-	createFile(filename:string):void;
+	createFile(filename:string):MaybePromise<void>;
 	/** Changes the content of an existing file. Creates the file if it does not exist. */
-	updateFile(filename:string, newContent:string):void;
+	updateFile(filename:string, newContent:string):MaybePromise<void>;
 	/** Clears the content of (pr truncates) an existing file. Throws an error if it does not exist. */
-	clearFile(filename:string, newContent:string):void;
+	clearFile(filename:string, newContent:string):MaybePromise<void>;
 	/** Deletes an existing file. Throws an error if it does not exist. */
-	deleteFile(filename:string):void;
+	deleteFile(filename:string):MaybePromise<void>;
 	/** Returns the list of all filenames. */
-	listFiles():string[];
+	listFiles():MaybePromise<string[]>;
 }
 
 /** A file system that stores all the data about its files in a Javascript object, optionally saving it to local storage. Supports creating backups. */

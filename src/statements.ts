@@ -13,8 +13,8 @@ import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, Exp
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue, VariableScope, VariableData, ConstantData } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import type { IFormattable, TextRange, TextRanged } from "./types.js";
-import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
+import type { IFormattable, MaybePromise, TextRange, TextRanged } from "./types.js";
+import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, sequentialAsyncMap, splitTokensOnComma } from "./utils.js";
 
 //Enable decorator metadata
 if(!Symbol.metadata)
@@ -227,10 +227,10 @@ export class Statement implements TextRanged, IFormattable {
 	static tokensSortScore({tokens, invalidMessage}:typeof Statement = this):number {
 		return invalidMessage != null ? tokens.filter(t => [".*" , ".+" , "expr+" , "type+"].includes(t)).length * 100 - tokens.length : 10000;
 	}
-	run(runtime:Runtime):void | StatementExecutionResult {
+	run(runtime:Runtime):MaybePromise<void | StatementExecutionResult> {
 		crash(`Missing runtime implementation for statement ${this.stype}`);
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode):void | StatementExecutionResult {
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode):MaybePromise<void | StatementExecutionResult> {
 		if(this.category == "block")
 			crash(`Missing runtime implementation for block statement ${this.stype}`);
 		else
@@ -245,7 +245,7 @@ export class Statement implements TextRanged, IFormattable {
 	 * Must tell the group if this statement requires a scope, or is a type statement, or interrupts control flow by returning, even if recursively.
 	 * The default implementation tries to evaluate evaluatable fields.
 	 **/
-	preRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
+	async preRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
 		if(this.type.requiresScope) group.requiresScope = true;
 		if(this instanceof TypeStatement || this instanceof ConstantStatement) group.hasTypesOrConstants = true;
 		if(this.type.interruptsControlFlow) group.hasReturn = true;
@@ -254,11 +254,11 @@ export class Statement implements TextRanged, IFormattable {
 			//Safety: checked in the decorator
 			const nodeValue = (this as never as Record<typeof field, NodeValue>)[field];
 			if(!(nodeValue instanceof TypedNodeValue || nodeValue instanceof UntypedNodeValue)) crash(`Decorated invalid field ${field}`);
-			nodeValue.init();
+			await nodeValue.init();
 		}
 	}
-	triggerPreRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
-		if(!this.preRunDone) this.preRun(group, node);
+	async triggerPreRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
+		if(!this.preRunDone) await this.preRun(group, node);
 		this.preRunDone = true;
 	}
 }
@@ -396,8 +396,8 @@ export class DeclareStatement extends Statement {
 	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokens(1, -2), this.token(-2)
 	).map(t => [t.text, t] as [string, Token]);
-	run(runtime:Runtime){
-		const varType = runtime.resolveVariableType(this.varType);
+	async run(runtime:Runtime){
+		const varType = await runtime.resolveVariableType(this.varType);
 		if(varType instanceof SetVariableType) fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.nodes.at(-1));
 		for(const [variable, token] of this.variables){
 			runtime.defineVariable(variable, {
@@ -505,10 +505,10 @@ export class AssignmentStatement extends Statement {
 		if(this.target instanceof Token && isLiteral(this.target.type))
 			fail(f.quote`Cannot assign to literal token ${this.target}`, this.target, this);
 	}
-	run(runtime:Runtime){
+	async run(runtime:Runtime){
 		//Handle auto declaration for class variables
 		if(this.target instanceof Token && !runtime.getVariable(this.target.text)){
-			const {type, value} = runtime.evaluateUntyped(this.expression);
+			const {type, value} = await runtime.evaluateUntyped(this.expression);
 			if(type instanceof ClassVariableType){
 				if(configs.statements.auto_declare_classes.value){
 					runtime.getCurrentScope().variables[this.target.text] = {
@@ -518,7 +518,7 @@ export class AssignmentStatement extends Statement {
 			} else runtime.handleNonexistentVariable(this.target.text, this.target);
 		}
 
-		runtime.assignExpr(this.target, this.expression);
+		await runtime.assignExpr(this.target, this.expression);
 	}
 }
 @statement("illegal.assignment", "x = 5", "#", "expr+", "operator.equal_to", "expr+")
@@ -530,17 +530,17 @@ export class AssignmentBadStatement extends Statement {
 export class OutputStatement extends Statement {
 	outMessage = splitTokensOnComma(this.nodes.slice(1) as RangeArray<Token>)
 		.map(n => new UntypedNodeValue(parseExpression(n)));
-	run(runtime:Runtime){
-		runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
+	async run(runtime:Runtime){
+		await runtime._output(await sequentialAsyncMap(this.outMessage, expr => runtime.evaluateUntyped(expr)));
 	}
 }
 @statement("input", "INPUT y", "keyword.input", "name")
 export class InputStatement extends Statement {
 	name = this.token(1).text;
-	run(runtime:Runtime){
+	async run(runtime:Runtime){
 		const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.nodes[1].range);
 		if(!variable.mutable) fail(`Cannot INPUT ${this.name} because it is a constant`, this.nodes[1]);
-		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
+		const input = await runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
 		switch(variable.type){
 			case PrimitiveVariableType.BOOLEAN:
 				variable.value = input.toLowerCase() != "false"; break;
@@ -572,7 +572,7 @@ export class InputStatement extends Statement {
 export class ReturnStatement extends Statement {
 	static interruptsControlFlow = true;
 	@evaluate expression = this.exprT(1);
-	run(runtime:Runtime){
+	async run(runtime:Runtime){
 		const fn = runtime.getCurrentFunction();
 		if(!fn) fail(`RETURN is only valid within a function.`, this);
 		let type;
@@ -586,23 +586,23 @@ export class ReturnStatement extends Statement {
 		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type)).value
+			value: (await runtime.evaluateUntyped(this.expression, await runtime.resolveVariableType(type))).value
 		};
 	}
 }
 @statement("call", "CALL Func(5)", "keyword.call", "expr+")
 export class CallStatement extends Statement {
 	func = this.expr(1, [ExpressionASTFunctionCallNode], `CALL can only be used to call functions or procedures`);
-	run(runtime:Runtime){
-		const func = runtime.evaluateExpr(this.func.functionName, "function");
+	async run(runtime:Runtime){
+		const func = await runtime.evaluateExpr(this.func.functionName, "function");
 		if("clazz" in func){
 			//Class method
-			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
+			await runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
 			if(func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
 				fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, this.func);
-			runtime.callFunction(func, this.func.args);
+			await runtime.callFunction(func, this.func.args);
 		}
 	}
 }
@@ -617,14 +617,14 @@ export class EndBadStatement extends Statement {
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
 export class IfStatement extends Statement {
 	@evaluate condition = this.exprT(1, "BOOLEAN");
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"if">){
+	async runBlock(runtime:Runtime, node:ProgramASTBranchNode<"if">){
 		const scope:VariableScope = {
 			statement: this,
 			opaque: false,
 			variables: Object.create(null),
 			types: Object.create(null),
 		};
-		if(runtime.evaluate(this.condition)){
+		if(await runtime.evaluate(this.condition)){
 			return runtime.runBlock(node.nodeGroups[0], true, scope);
 		} else if(node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]){
 			return runtime.runBlock(node.nodeGroups[1], true, scope);
@@ -651,8 +651,8 @@ export class SwitchStatement extends Statement {
 			s instanceof CaseBranchStatement && s.value.type == "keyword.otherwise" && i != arr.length - 1)
 		) fail(`OTHERWISE case branch must be the last case branch`, err);
 	}
-	runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode<"switch">):void | StatementExecutionResult {
-		const { type:switchType, value:switchValue } = runtime.evaluateUntyped(this.expression);
+	async runBlock(runtime:Runtime, {controlStatements, nodeGroups}:ProgramASTBranchNode<"switch">):Promise<void | StatementExecutionResult> {
+		const { type:switchType, value:switchValue } = await runtime.evaluateUntyped(this.expression);
 		for(const [i, statement] of controlStatements.entries()){
 			if(i == 0) continue;
 			//skip the first one as that is the switch statement
@@ -663,13 +663,12 @@ export class SwitchStatement extends Statement {
 					crash(`OTHERWISE case branch must be the last case branch`);
 
 				if(statement.branchMatches(switchType, switchValue)){
-					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
+					return runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
 						statement: this,
 						opaque: false,
 						variables: Object.create(null),
 						types: Object.create(null),
 					});
-					break;
 				}
 			} else {
 				console.error(controlStatements, nodeGroups);
@@ -716,21 +715,21 @@ export class ForStatement extends Statement {
 	@evaluate from = this.exprT(3, "INTEGER");
 	@evaluate to = this.exprT(5, "INTEGER");
 	empty?:boolean;
-	preRun(group:ProgramASTNodeGroup, node:ProgramASTBranchNode<"for">){
-		super.preRun(group, node);
+	async preRun(group:ProgramASTNodeGroup, node:ProgramASTBranchNode<"for">){
+		await super.preRun(group, node);
 		this.empty = node.nodeGroups[0].length == 0;
 		const endStatement = node.controlStatements[1];
 		if(endStatement.name.text !== this.name)
 			fail(f.quote`Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name.text}`, endStatement.name);
 	}
-	getStep(runtime:Runtime):number {
-		return 1;
+	getStep(runtime:Runtime):Promise<number> {
+		return Promise.resolve(1);
 	}
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
+	async runBlock(runtime:Runtime, node:ProgramASTBranchNode<"for">){
 
-		const from = BigInt(runtime.evaluate(this.from));
-		const to = BigInt(runtime.evaluate(this.to));
-		const _step = this.getStep(runtime), step = BigInt(_step);
+		const from = BigInt(await runtime.evaluate(this.from));
+		const to = BigInt(await runtime.evaluate(this.to));
+		const _step = await this.getStep(runtime), step = BigInt(_step);
 		const direction = Math.sign(_step);
 		if(direction == 0)
 			fail(`Invalid FOR statement: step cannot be zero`, (this as never as ForStepStatement).step);
@@ -769,13 +768,13 @@ export class ForStatement extends Statement {
 				i += step
 			){
 				variable.value = Number(i);
-				runtime.runBlockFast(node.nodeGroups[0]);
+				await runtime.runBlockFast(node.nodeGroups[0]);
 			}
 			runtime.scopes.pop();
 		} else {
 			for(let i = from; direction == 1 ? i <= to : i >= to; i += step){
 				variable.value = Number(i);
-				const result = runtime.runBlock(node.nodeGroups[0], false, {
+				const result = await runtime.runBlock(node.nodeGroups[0], false, {
 					statement: this,
 					opaque: false,
 					//Set the loop variable in the loop scope
@@ -792,8 +791,8 @@ export class ForStatement extends Statement {
 @statement("for.step", "FOR x <- 1 TO 20 STEP 2", "block", "keyword.for", "name", "operator.assignment", "expr+", "keyword.to", "expr+", "keyword.step", "expr+")
 export class ForStepStatement extends ForStatement {
 	@evaluate step = this.exprT(7, "INTEGER");
-	getStep(runtime:Runtime):number {
-		return runtime.evaluate(this.step);
+	async getStep(runtime:Runtime):Promise<number> {
+		return await runtime.evaluate(this.step);
 	}
 }
 @statement("for.end", "NEXT i", "block_end", "keyword.for_end", "name")
@@ -811,14 +810,14 @@ export class ForEndBadStatement extends Statement {
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
 export class WhileStatement extends Statement {
 	@evaluate condition = this.exprT(1, "BOOLEAN");
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"while">){
+	async runBlock(runtime:Runtime, node:ProgramASTBranchNode<"while">){
 		
 		//Register the execution of an infinite amount of statements if the condition is constant true
 		if(node.nodeGroups[0].length == 0 && this.condition.value === true)
 			runtime.statementExecuted(this, Infinity);
 
-		while(runtime.evaluate(this.condition)){
-			const result = runtime.runBlock(node.nodeGroups[0], true, {
+		while(await runtime.evaluate(this.condition)){
+			const result = await runtime.runBlock(node.nodeGroups[0], true, {
 				statement: this,
 				opaque: false,
 				variables: Object.create(null),
@@ -830,20 +829,20 @@ export class WhileStatement extends Statement {
 }
 @statement("dowhile", "REPEAT", "block", "keyword.dowhile")
 export class DoWhileStatement extends Statement {
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
+	async runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
 		//Register the execution of an infinite amount of statements if the condition is constant false
 		if(node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === false)
 			runtime.statementExecuted(this, Infinity);
 
 		do {
-			const result = runtime.runBlock(node.nodeGroups[0], true, {
+			const result = await runtime.runBlock(node.nodeGroups[0], true, {
 				statement: this,
 				opaque: false,
 				variables: Object.create(null),
 				types: Object.create(null),
 			});
 			if(result) return result;
-		} while(!runtime.evaluate(node.controlStatements[1].condition));
+		} while(!await runtime.evaluate(node.controlStatements[1].condition));
 		//Inverted, the pseudocode statement is "until"
 	}
 }
@@ -907,10 +906,10 @@ interface IFileStatement {
 export class OpenFileStatement extends Statement implements IFileStatement {
 	mode = this.token(3);
 	@evaluate filename = this.exprT(1, "STRING");
-	run(runtime:Runtime){
-		const name = runtime.evaluate(this.filename);
+	async run(runtime:Runtime){
+		const name = await runtime.evaluate(this.filename);
 		const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-		const file = runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote`File ${name} does not exist.`, this.filename);
+		const file = await runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote`File ${name} does not exist.`, this.filename);
 		if(runtime.openFiles[name]) fail(f.quote`File ${name} has already been opened.`, this.filename);
 		if(mode == "READ"){
 			runtime.openFiles[name] = {
@@ -935,17 +934,17 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 @statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
 export class CloseFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
-	run(runtime:Runtime){
-		const name = runtime.evaluate(this.filename);
+	async run(runtime:Runtime){
+		const name = await runtime.evaluate(this.filename);
 		const openFile = runtime.openFiles[name];
 		if(openFile){
 			if(["WRITE", "APPEND", "RANDOM"].includes(openFile.mode)){
 				//Flush buffered writes to the file system
 				//File must exist because it was opened
-				runtime.fs.updateFile(name, openFile.text);
+				await runtime.fs.updateFile(name, openFile.text);
 			}
 			runtime.openFiles[name] = undefined;
-			runtime.fs.closeFile(name);
+			await runtime.fs.closeFile(name);
 		} else if(name in runtime.openFiles){
 			fail(f.quote`Cannot close file ${name}, because it has already been closed.`, this);
 		} else {
@@ -957,11 +956,11 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 export class ReadFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	output = this.expr(3);
-	run(runtime:Runtime){
-		const name = runtime.evaluate(this.filename);
+	async run(runtime:Runtime){
+		const name = await runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
 		if(data.lineNumber >= data.lines.length) fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
-		const output = runtime.evaluateExpr(this.output, "variable");
+		const output = await runtime.evaluateExpr(this.output, "variable");
 		output.value = data.lines[data.lineNumber ++];
 	}
 }
@@ -969,11 +968,11 @@ export class ReadFileStatement extends Statement implements IFileStatement {
 export class WriteFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	@evaluate data = this.exprT(3, "STRING");
-	run(runtime:Runtime){
-		const name = runtime.evaluate(this.filename);
+	async run(runtime:Runtime){
+		const name = await runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
 		//Note: writes are buffered, and are only saved when the file is closed.
-		data.text += runtime.evaluate(this.data) + "\n";
+		data.text += await runtime.evaluate(this.data) + "\n";
 	}
 }
 
@@ -981,10 +980,10 @@ export class WriteFileStatement extends Statement implements IFileStatement {
 export class SeekStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	@evaluate index = this.exprT(3, "INTEGER");
-	run(runtime:Runtime){
-		const index = runtime.evaluate(this.index);
+	async run(runtime:Runtime){
+		const index = await runtime.evaluate(this.index);
 		if(index < 0) fail(`SEEK index must be positive`, this.index);
-		const name = runtime.evaluate(this.filename);
+		const name = await runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
 		fail(`Not yet implemented`, this);
 	}
@@ -993,8 +992,8 @@ export class SeekStatement extends Statement implements IFileStatement {
 export class GetRecordStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	variable = this.expr(3);
-	run(runtime:Runtime){
-		const name = runtime.evaluate(this.filename);
+	async run(runtime:Runtime){
+		const name = await runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
 		const variable = runtime.evaluateExpr(this.variable, "variable");
 		fail(`Not yet implemented`, this);
@@ -1004,10 +1003,10 @@ export class GetRecordStatement extends Statement implements IFileStatement {
 export class PutRecordStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	variable = this.expr(3);
-	run(runtime:Runtime){
-		const name = runtime.evaluate(this.filename);
+	async run(runtime:Runtime){
+		const name = await runtime.evaluate(this.filename);
 		const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
-		const { type, value } = runtime.evaluateExpr(this.variable);
+		const { type, value } = await runtime.evaluateExpr(this.variable);
 		fail(`Not yet implemented`, this);
 	}
 }
@@ -1110,8 +1109,8 @@ export class ClassProcedureStatement extends combineClasses(ProcedureStatement, 
 	constructor(tokens:RangeArray<Token>){
 		super(tokens, 1);
 	}
-	preRun(group:ProgramASTNodeGroup, node:ProgramASTBranchNode<"class_procedure">){
-		super.preRun(group, node);
+	async preRun(group:ProgramASTNodeGroup, node:ProgramASTBranchNode<"class_procedure">){
+		await super.preRun(group, node);
 		if(this.name == "NEW" && this.accessModifier == "private")
 			fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
 		//TODO can they actually be run from subclasses?

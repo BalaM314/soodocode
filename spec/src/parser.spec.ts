@@ -3548,37 +3548,37 @@ describe("parseFunctionArguments", () => {
 
 describe("ArrayTypeData", () => {
 	const runtime = new Runtime(() => impossible(), () => {});
-	it(`should generate correct data`, () => {
+	it(`should generate correct data`, async () => {
 		const data1 = arrayType([[0, 9]], PrimitiveVariableType.BOOLEAN);
-		data1.init(runtime);
+		await data1.init(runtime);
 		expect(data1.arraySizes).toEqual([10]);
 		expect(data1.totalLength).toEqual(10);
 		const data2 = arrayType([[1, 15]], PrimitiveVariableType.STRING);
-		data2.init(runtime);
+		await data2.init(runtime);
 		expect(data2.arraySizes).toEqual([15]);
 		expect(data2.totalLength).toEqual(15);
 		const data3 = arrayType([[0, 9], [0, 19]], PrimitiveVariableType.BOOLEAN);
-		data3.init(runtime);
+		await data3.init(runtime);
 		expect(data3.arraySizes).toEqual([10, 20]);
 		expect(data3.totalLength).toEqual(200);
 		const data4 = arrayType([[1, 10], [1, 15]], PrimitiveVariableType.DATE);
-		data4.init(runtime);
+		await data4.init(runtime);
 		expect(data4.arraySizes).toEqual([10, 15]);
 		expect(data4.totalLength).toEqual(150);
 		const data5 = arrayType([[0, 9], [1, 15], [0, 20]], PrimitiveVariableType.INTEGER);
-		data5.init(runtime);
+		await data5.init(runtime);
 		expect(data5.arraySizes).toEqual([10, 15, 21]);
 		expect(data5.totalLength).toEqual(3150);
 	});
-	it(`should handle correct inputs`, () => {
-		expect(() => arrayType([[0, 0]], PrimitiveVariableType.CHAR).init(runtime)).not.toThrow();
-		expect(() => arrayType([[5, 5]], PrimitiveVariableType.CHAR).init(runtime)).not.toThrow();
+	it(`should handle correct inputs`, async () => {
+		await expectAsync(arrayType([[0, 0]], PrimitiveVariableType.CHAR).init(runtime)).not.toBeRejected();
+		await expectAsync(arrayType([[5, 5]], PrimitiveVariableType.CHAR).init(runtime)).not.toBeRejected();
 	});
-	it(`should handle incorrect inputs`, () => {
-		expect(() => arrayType([[0, -1]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => arrayType([[2, 1]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => arrayType([[0, 10.5]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
-		expect(() => arrayType([[0, 1], [0, 10.5]], PrimitiveVariableType.CHAR).init(runtime)).toThrowMatching(t => t instanceof SoodocodeError);
+	it(`should handle incorrect inputs`, async () => {
+		await expectAsync(arrayType([[0, -1]], PrimitiveVariableType.CHAR).init(runtime)).toBeRejectedWithError(SoodocodeError);
+		await expectAsync(arrayType([[2, 1]], PrimitiveVariableType.CHAR).init(runtime)).toBeRejectedWithError(SoodocodeError);
+		await expectAsync(arrayType([[0, 10.5]], PrimitiveVariableType.CHAR).init(runtime)).toBeRejectedWithError(SoodocodeError);
+		await expectAsync(arrayType([[0, 1], [0, 10.5]], PrimitiveVariableType.CHAR).init(runtime)).toBeRejectedWithError(SoodocodeError);
 	});
 });
 

@@ -290,7 +290,7 @@ function setupEventHandlers(){
 	getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
 		filesDialog.showModal();
 	});
-	executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
+	executeSoodocodeButton.addEventListener("click", () => void executeSoodocode());
 	dumpTokensButton.addEventListener("click", displayAST);
 }
 
@@ -520,7 +520,7 @@ function setupTextEditor(){
 			}
 		} else if(e.key == "Enter" && e.ctrlKey){
 			e.preventDefault();
-			executeSoodocode();
+			void executeSoodocode();
 		} else if(e.key == "\\" && e.ctrlKey){
 			displayAST();
 		}
@@ -636,7 +636,7 @@ ${displayProgram(program)}`;
 }
 
 let lastOutputText:string = "";
-function executeSoodocode(){
+async function executeSoodocode(){
 	const noOutput = `<span style="color: lightgray;">&lt;no output&gt;</span>`;
 	const output:string[] = [];
 	const runtime = new Runtime(
@@ -665,7 +665,7 @@ function executeSoodocode(){
 		});
 		fileSystem.makeBackup();
 		console.time("execution");
-		runtime.runProgram(program.nodes);
+		await runtime.runProgram(program.nodes);
 		console.timeEnd("execution");
 		updateFileSelectOptions();
 		onSelectedFileChange();
