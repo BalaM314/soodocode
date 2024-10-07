@@ -41,7 +41,7 @@ export const symbolTypeData = [
     [".", "punctuation.period"],
     [" ", "space"],
     ["\t", "space"],
-    [/\n+/, "newline"],
+    [/[\r\n]+/, "newline"],
     [["isNumber"], "numeric_fragment"],
     [["isAlphanumeric"], "word"],
     [/^./u, "unknown"],
