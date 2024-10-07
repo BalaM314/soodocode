@@ -1,0 +1,41 @@
+{
+	"name": "soodocode-cli",
+	"version": "1.0.0",
+	"description": "CLI frontend for soodocode",
+	"main": "build/cli.js",
+	"bin": {
+		"soodocode": "build/cli.js"
+	},
+	"scripts": {
+		"build": "tsc -b",
+		"dev": "tsc -w"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/BalaM314/soodocode.git"
+	},
+	"keywords": [
+		"cambridge",
+		"pseudocode",
+		"runtime",
+		"igcse",
+		"as-a-levels"
+	],
+	"author": "BalaM314",
+	"license": "GPL-3.0-or-later",
+	"bugs": {
+		"url": "https://github.com/BalaM314/soodocode/issues"
+	},
+	"homepage": "https://github.com/BalaM314/soodocode/cli/#readme",
+	"devDependencies": {
+		"@eslint/js": "^9.0.0",
+		"@types/node": "^18.15.11",
+		"eslint": "^9.0.0",
+		"typescript": "^5.5.4",
+		"typescript-eslint": "^8.3.0"
+	},
+	"dependencies": {
+		"cli-app": "github:BalaM314/cli-app"
+	},
+	"type": "module"
+}
