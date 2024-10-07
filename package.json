@@ -5,7 +5,9 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "tsc -b spec && jasmine",
-		"profile": "node ./scripts/profiler.js 100000 5"
+		"profile": "node ./scripts/profiler.js 100000 5",
+		"build": "tsc -b src",
+		"dev": "tsc -p src -w"
 	},
 	"repository": {
 		"type": "git",

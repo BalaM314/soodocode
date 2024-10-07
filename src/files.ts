@@ -93,12 +93,17 @@ export class BrowserFileSystem implements FileSystem {
 		}
 	}
 	private save(key = BrowserFileSystem.storageKey){
-		localStorage.setItem(key, JSON.stringify(this.files));
+		localStorage.setItem(key, JSON.stringify(Object.fromEntries(Object.entries(this.files).map(([name, file]) => [name, file.text]))));
 	}
 	private load(key = BrowserFileSystem.storageKey){
 		const rawData = localStorage.getItem(key);
 		if(!rawData) return;
-		const parsedData = JSON.parse(rawData) as unknown;
+		let parsedData;
+		try {
+			parsedData = JSON.parse(rawData) as unknown;
+		} catch {
+			return;
+		}
 		if(typeof parsedData != "object" || !parsedData) return;
 		this.files = Object.fromEntries(Object.entries(parsedData as Record<string, unknown>).filter((entry):entry is [string, string] =>
 			typeof entry[0] == "string" && typeof entry[1] == "string"
