@@ -5,6 +5,8 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains global type definitions.
 */
 
+export type MaybePromise<T> = T | Promise<T>;
+
 export type ClassProperties<
 	T extends object,
 	K extends keyof T = keyof T,

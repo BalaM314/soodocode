@@ -11,7 +11,7 @@ import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, 
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
-import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
+import type { BoxPrimitive, IFormattable, MaybePromise, RangeAttached, TextRange } from "./types.js";
 import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, match, RangeArray, zip } from "./utils.js";
 
 /** Maps a pseudocode VariableType to the type used to represent it in TS. */
@@ -159,7 +159,7 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 export interface NodeValue {
 	node: ExpressionASTNode;
 	value: VariableValue | TypedValue | null | undefined;
-	init():void;
+	init():MaybePromise<void>;
 }
 export class TypedNodeValue<
 	T extends ExpressionASTNode = ExpressionASTNode,
@@ -175,8 +175,8 @@ export class TypedNodeValue<
 	){
 		this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType) as Type;
 	}
-	init(){
-		this.value = (Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
+	async init(){
+		this.value = (await Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
 	}
 }
 export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implements NodeValue {
@@ -185,15 +185,15 @@ export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implement
 	){}
 	range = this.node.range;
 	value: TypedValue | null | undefined;
-	init(){
-		this.value = Runtime.evaluateExpr(this.node);
+	async init(){
+		this.value = await Runtime.evaluateExpr(this.node);
 	}
 }
 
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
-	abstract init(runtime:Runtime):void;
-	validate(runtime:Runtime){}
+	abstract init(runtime:Runtime):MaybePromise<void>;
+	validate(runtime:Runtime):MaybePromise<void>{}
 	is(...type:PrimitiveVariableTypeName[]) {
 		return false;
 	}
@@ -304,14 +304,14 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
 		public range: TextRange,
 	){super();}
-	init(runtime:Runtime){
+	async init(runtime:Runtime){
 		if(Array.isArray(this.elementType))
-			this.elementType = runtime.resolveVariableType(this.elementType);
+			this.elementType = await runtime.resolveVariableType(this.elementType);
 		if(this.lengthInformationExprs){
 			this.lengthInformation = new Array(this.lengthInformationExprs.length);
 			for(const [i, [low_, high_]] of this.lengthInformationExprs.entries()){
-				const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER).value;
-				const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER).value;
+				const low = (await runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER)).value;
+				const high = (await runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER)).value;
 				if(high < low)
 					fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
 				this.lengthInformation[i] = [low, high];
@@ -402,12 +402,12 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		public name: string,
 		public fields: Record<string, [type:(Init extends true ? never : UnresolvedVariableType) | VariableType, range:TextRange]>,
 	){super();}
-	init(runtime:Runtime){
+	async init(runtime:Runtime){
 		for(const [name, [field, range]] of Object.entries(this.fields)){
 			if(Array.isArray(field))
-				this.fields[name][0] = runtime.resolveVariableType(field);
+				this.fields[name][0] = await runtime.resolveVariableType(field);
 			else if(field instanceof ArrayVariableType)
-				field.init(runtime);
+				await field.init(runtime);
 			this.addDependencies(this.fields[name][0] as VariableType);
 		}
 		(this as RecordVariableType<true>).initialized = true;
@@ -486,8 +486,8 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		public target: (Init extends true ? never : UnresolvedVariableType) | VariableType,
 		public range: TextRange
 	){super();}
-	init(runtime:Runtime){
-		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
+	async init(runtime:Runtime){
+		if(Array.isArray(this.target)) this.target = await runtime.resolveVariableType(this.target);
 		(this as PointerVariableType<true>).initialized = true;
 	}
 	validate(){
@@ -558,8 +558,8 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 		public name: string,
 		public baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType,
 	){super();}
-	init(runtime:Runtime){
-		if(Array.isArray(this.baseType)) this.baseType = runtime.resolveVariableType(this.baseType);
+	async init(runtime:Runtime){
+		if(Array.isArray(this.baseType)) this.baseType = await runtime.resolveVariableType(this.baseType);
 		(this as SetVariableType<true>).initialized = true;
 	}
 	fmtText():string {
@@ -602,9 +602,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public allMethods: Record<string, [source:ClassVariableType<Init extends true ? true : boolean>, data:ClassMethodData]> = Object.create(null) as never,
 		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
-	init(runtime:Runtime){
+	async init(runtime:Runtime){
 		for(const statement of this.propertyStatements){
-			const type = runtime.resolveVariableType(statement.varType);
+			const type = await runtime.resolveVariableType(statement.varType);
 			for(const [name] of statement.variables){
 				this.properties[name][0] = type;
 			}
@@ -630,11 +630,11 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	getInitValue(runtime:Runtime):VariableValue | null {
 		return null;
 	}
-	validate(runtime:Runtime){
+	async validate(runtime:Runtime){
 		if(this.baseClass){
 			for(const name of Object.keys(this.baseClass.allMethods)){
 				if(this.ownMethods[name]){
-					checkClassMethodsCompatible(
+					await checkClassMethodsCompatible(
 						runtime,
 						this.baseClass.allMethods[name][1].controlStatements[0],
 						this.ownMethods[name].controlStatements[0],
@@ -650,7 +650,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	inherits(other:ClassVariableType):boolean {
 		return this.baseClass != null && (other == this.baseClass || this.baseClass.inherits(other));
 	}
-	construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
+	async construct(runtime:Runtime, args:RangeArray<ExpressionASTNode>){
 		//Behold, the power of javascript!
 
 		//CLASS Foo
@@ -708,7 +708,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		//Call constructor
 		const [clazz, method] = This.allMethods["NEW"]
 			?? fail(f.quote`No constructor was defined for class ${this.name}`, this.statement);
-		runtime.callClassMethod(method, clazz, data, args);
+		await runtime.callClassMethod(method, clazz, data, args);
 		//Access all the properties to initialize them if they havent been initialized yet
 		for(const key of Object.keys(This.properties)){
 			void propertiesObj[key];
@@ -821,7 +821,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 
 export const checkClassMethodsCompatible = errorBoundary({
 	message: (base:ClassMethodStatement, derived:ClassMethodStatement) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})(function _checkClassMethodsCompatible(runtime:Runtime, base:ClassMethodStatement, derived:ClassMethodStatement){
+})(async function _checkClassMethodsCompatible(runtime:Runtime, base:ClassMethodStatement, derived:ClassMethodStatement){
 
 	if(base.accessModifier != derived.accessModifier)
 		fail(f.text`Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
@@ -837,7 +837,7 @@ export const checkClassMethodsCompatible = errorBoundary({
 			//Changing the name is fine
 			let result;
 			//TODO cache the resolved type, store it in the class somehow, resolve these types at 2nd pass
-			if((result = typesAssignable(runtime.resolveVariableType(bType.type), runtime.resolveVariableType(aType.type))) != true) //parameter types are contravariant
+			if((result = typesAssignable(await runtime.resolveVariableType(bType.type), await runtime.resolveVariableType(aType.type))) != true) //parameter types are contravariant
 				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + (result ? `: ${result}.` : ""), derived.argsRange);
 			if(aType.passMode != bType.passMode)
 				fail(f.quote`Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
@@ -846,7 +846,7 @@ export const checkClassMethodsCompatible = errorBoundary({
 
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
 		let result;
-		if((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true) //return type is covariant
+		if((result = typesAssignable(await runtime.resolveVariableType(base.returnType), await runtime.resolveVariableType(derived.returnType))) != true) //return type is covariant
 			fail(f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}` + (result ? `: ${result}.` : ""), derived.returnTypeToken);
 	}
 });

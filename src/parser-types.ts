@@ -434,7 +434,7 @@ export class ProgramASTNodeGroup extends Array<ProgramASTNode> {
 	hasTypesOrConstants = true;
 	hasReturn = true;
 	private _simple = false;
-	preRun(parent?:ProgramASTBranchNode){
+	async preRun(parent?:ProgramASTBranchNode){
 		this.requiresScope = false;
 		this.hasTypesOrConstants = false;
 		this.hasReturn = false;
@@ -442,7 +442,7 @@ export class ProgramASTNodeGroup extends Array<ProgramASTNode> {
 		for(const node of this){
 			if(node instanceof ProgramASTBranchNode){
 				for(const block of node.nodeGroups){
-					block.preRun();
+					await block.preRun();
 					//this {
 					//	IF x < 5 THEN
 					//		RETURN 5
@@ -453,10 +453,10 @@ export class ProgramASTNodeGroup extends Array<ProgramASTNode> {
 					if(block.hasReturn && node.controlStatements[0].type.propagatesControlFlowInterruptions) this.hasReturn = true;
 				}
 				for(const statement of node.controlStatements){
-					statement.triggerPreRun(this, node); //UNSOUND
+					await statement.triggerPreRun(this, node); //UNSOUND
 				}
 			} else {
-				node.triggerPreRun(this, parent);
+				await node.triggerPreRun(this, parent);
 			}
 		}
 		this._simple = !this.requiresScope && !this.hasTypesOrConstants && !this.hasReturn;

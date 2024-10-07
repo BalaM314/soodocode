@@ -140,6 +140,14 @@ export function applyRangeTransformers(
 	return chars.join("");
 }
 
+export async function sequentialAsyncMap<T, S>(array:T[], func:(item:T, index:number, array:T[]) => Promise<S>):Promise<S[]> {
+	const out = new Array<S>(array.length);
+	for(let i = 0; i < array.length; i ++){
+		out[i] = await func(array[i], i, array);
+	}
+	return out;
+}
+
 export function separateArray<T, S extends T>(arr:T[], predicate:(item:T) => item is S):[true: S[], false: T[]];
 export function separateArray<T>(arr:T[], predicate:(item:T) => boolean):[true: T[], false: T[]];
 export function separateArray<T>(arr:T[], predicate:(item:T) => boolean):[true: T[], false: T[]] {
@@ -329,6 +337,7 @@ export function Abstract<TClass extends new (...args:any[]) => {}>(input:TClass,
 
 /**
  * Decorator to apply an error boundary to functions.
+ * Also applies the error boundary to async functions.
  * @param predicate General range is set if this returns true.
  */
 //TODO partially remove this
@@ -339,9 +348,7 @@ export function errorBoundary({predicate = (() => true), message}:Partial<{
 	return function decorator<T extends (...args:any[]) => unknown>(func:T, _ctx?:ClassMethodDecoratorContext):T {
 		const name = func.name.startsWith("_") ? `wrapped${func.name}` : `wrapped_${func.name}`;
 		const replacedFunction = {[name](this:ThisParameterType<T>, ...args:Parameters<T>){
-			try {
-				return func.apply(this, args);
-			} catch(err){
+			const handleError = (err:unknown) => {
 				if(err instanceof SoodocodeError){
 					if(message && !err.modified){
 						err.message = message(...args) + err.message;
@@ -362,6 +369,13 @@ export function errorBoundary({predicate = (() => true), message}:Partial<{
 					err.modified = true;
 				}
 				throw err;
+			};
+			try {
+				const result = func.apply(this, args);
+				if(result instanceof Promise) return result.catch(handleError);
+				else return result;
+			} catch(err){
+				handleError(err);
 			}
 		}}[name];
 		Object.defineProperty(replacedFunction, "name", { value: name });

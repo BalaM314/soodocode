@@ -1971,7 +1971,7 @@ describe("runtime's token evaluator", () => {
 type expect_ = <T>(actual: T) => jasmine.Matchers<T>;
 describe("runtime's expression evaluator", () => {
 	for(const [name, expression, requestedType, output, setup] of expressionTests){
-		it(`should produce the expected output for ${name}`, () => {
+		it(`should produce the expected output for ${name}`, async () => {
 			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
 				statement: "global",
@@ -1981,10 +1981,9 @@ describe("runtime's expression evaluator", () => {
 			});
 			setup(runtime);
 			if(output[0] == "error"){
-				(expect as expect_)(() => runtime.evaluateExpr(expression, requestedType ?? undefined))
-					.toThrowMatching(e => e instanceof SoodocodeError);
+				await expectAsync(runtime.evaluateExpr(expression, requestedType ?? undefined)).toBeRejectedWithError(SoodocodeError);
 			} else {
-				const {type, value} = runtime.evaluateExpr(expression, requestedType ?? undefined);
+				const {type, value} = await runtime.evaluateExpr(expression, requestedType ?? undefined);
 				expect(type).toEqual(output[0]);
 				expect(value).toEqual(output[1]);
 			}
@@ -1994,11 +1993,11 @@ describe("runtime's expression evaluator", () => {
 
 describe("runtime's statement executor", () => {
 	for(const [name, statement, setup, test, inputs] of statementTests){
-		it(`should produce the expected output for ${name}`, () => {
+		it(`should produce the expected output for ${name}`, async () => {
 			let output:string | null = null;
 			const runtime = new Runtime(
 				() => inputs.shift() ?? crash(`Program required input, but none was available`),
-				message => output = message.map(x => x.asString()).join("")
+				message => { output = message.map(x => x.asString()).join(""); }
 			);
 			runtime.scopes.push({
 				statement: "global",
@@ -2008,9 +2007,9 @@ describe("runtime's statement executor", () => {
 			});
 			setup(runtime);
 			if(test == "error"){
-				expect(() => statement.run(runtime)).toThrowMatching(e => e instanceof SoodocodeError);
+				await expectAsync(statement.run(runtime)).toBeRejectedWithError(SoodocodeError);
 			} else {
-				const result = statement.run(runtime);
+				const result = await statement.run(runtime);
 				test(runtime, result, output);
 			}
 		});
@@ -2019,16 +2018,16 @@ describe("runtime's statement executor", () => {
 
 describe("runtime's program execution", () => {
 	for(const [name, program, output, inputs] of programTests){
-		it(`should produce the expected output for ${name}`, () => {
+		it(`should produce the expected output for ${name}`, async () => {
 			const outputs:string[] = [];
 			const runtime = new Runtime(
 				() => inputs.shift() ?? crash(`Program required input, but none was available`),
-				values => outputs.push(values.map(x => x.asString()).join(""))
+				values => { outputs.push(values.map(x => x.asString()).join("")); }
 			);
 			if(Array.isArray(output)){
-				expect(() => runtime.runProgram(program.nodes)).toThrowMatching(e => e instanceof SoodocodeError);
+				await expectAsync(runtime.runProgram(program.nodes)).toBeRejectedWithError(SoodocodeError);
 			} else {
-				runtime.runProgram(program.nodes);
+				await runtime.runProgram(program.nodes);
 				expect(outputs.join("\n")).toEqual(output);
 			}
 		});

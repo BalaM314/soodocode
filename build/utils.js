@@ -91,6 +91,13 @@ export function applyRangeTransformers(text, ranges, transformer = (x => x)) {
     }
     return chars.join("");
 }
+export async function sequentialAsyncMap(array, func) {
+    const out = new Array(array.length);
+    for (let i = 0; i < array.length; i++) {
+        out[i] = await func(array[i], i, array);
+    }
+    return out;
+}
 export function separateArray(arr, predicate) {
     const a = [];
     const b = [];
@@ -279,10 +286,7 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
     return function decorator(func, _ctx) {
         const name = func.name.startsWith("_") ? `wrapped${func.name}` : `wrapped_${func.name}`;
         const replacedFunction = { [name](...args) {
-                try {
-                    return func.apply(this, args);
-                }
-                catch (err) {
+                const handleError = (err) => {
                     if (err instanceof SoodocodeError) {
                         if (message && !err.modified) {
                             err.message = message(...args) + err.message;
@@ -302,6 +306,16 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
                         err.modified = true;
                     }
                     throw err;
+                };
+                try {
+                    const result = func.apply(this, args);
+                    if (result instanceof Promise)
+                        return result.catch(handleError);
+                    else
+                        return result;
+                }
+                catch (err) {
+                    handleError(err);
                 }
             } }[name];
         Object.defineProperty(replacedFunction, "name", { value: name });

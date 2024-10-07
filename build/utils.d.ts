@@ -15,6 +15,7 @@ export declare function applyRangeTransformers(text: string, ranges: Array<reado
     start: string,
     end: string
 ]>, transformer?: (char: string) => string): string;
+export declare function sequentialAsyncMap<T, S>(array: T[], func: (item: T, index: number, array: T[]) => Promise<S>): Promise<S[]>;
 export declare function separateArray<T, S extends T>(arr: T[], predicate: (item: T) => item is S): [true: S[], false: T[]];
 export declare function separateArray<T>(arr: T[], predicate: (item: T) => boolean): [true: T[], false: T[]];
 export declare function groupArray<T, const S extends PropertyKey>(arr: T[], predicate: (item: T) => S): Partial<Record<S, T[]>>;

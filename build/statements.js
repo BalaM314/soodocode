@@ -43,7 +43,7 @@ import { ExpressionASTFunctionCallNode, ExpressionASTNodes, ExpressionASTTypeNod
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, TypedNodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UntypedNodeValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, sequentialAsyncMap, splitTokensOnComma } from "./utils.js";
 if (!Symbol.metadata)
     Object.defineProperty(Symbol, "metadata", {
         writable: false,
@@ -209,7 +209,7 @@ let Statement = (() => {
             else
                 crash(`Cannot run statement ${this.stype} as a block, because it is not a block statement`);
         }
-        preRun(group, node) {
+        async preRun(group, node) {
             if (this.type.requiresScope)
                 group.requiresScope = true;
             if (this instanceof TypeStatement || this instanceof ConstantStatement)
@@ -220,12 +220,12 @@ let Statement = (() => {
                 const nodeValue = this[field];
                 if (!(nodeValue instanceof TypedNodeValue || nodeValue instanceof UntypedNodeValue))
                     crash(`Decorated invalid field ${field}`);
-                nodeValue.init();
+                await nodeValue.init();
             }
         }
-        triggerPreRun(group, node) {
+        async triggerPreRun(group, node) {
             if (!this.preRunDone)
-                this.preRun(group, node);
+                await this.preRun(group, node);
             this.preRunDone = true;
         }
     };
@@ -369,8 +369,8 @@ let DeclareStatement = (() => {
             this.varType = processTypeData(this.expr(-1, "type"));
             this.variables = getUniqueNamesFromCommaSeparatedTokenList(this.tokens(1, -2), this.token(-2)).map(t => [t.text, t]);
         }
-        run(runtime) {
-            const varType = runtime.resolveVariableType(this.varType);
+        async run(runtime) {
+            const varType = await runtime.resolveVariableType(this.varType);
             if (varType instanceof SetVariableType)
                 fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.nodes.at(-1));
             for (const [variable, token] of this.variables) {
@@ -612,9 +612,9 @@ let AssignmentStatement = (() => {
             if (this.target instanceof Token && isLiteral(this.target.type))
                 fail(f.quote `Cannot assign to literal token ${this.target}`, this.target, this);
         }
-        run(runtime) {
+        async run(runtime) {
             if (this.target instanceof Token && !runtime.getVariable(this.target.text)) {
-                const { type, value } = runtime.evaluateUntyped(this.expression);
+                const { type, value } = await runtime.evaluateUntyped(this.expression);
                 if (type instanceof ClassVariableType) {
                     if (configs.statements.auto_declare_classes.value) {
                         runtime.getCurrentScope().variables[this.target.text] = {
@@ -627,7 +627,7 @@ let AssignmentStatement = (() => {
                 else
                     runtime.handleNonexistentVariable(this.target.text, this.target);
             }
-            runtime.assignExpr(this.target, this.expression);
+            await runtime.assignExpr(this.target, this.expression);
         }
     };
     __setFunctionName(_classThis, "AssignmentStatement");
@@ -681,8 +681,8 @@ let OutputStatement = (() => {
             this.outMessage = splitTokensOnComma(this.nodes.slice(1))
                 .map(n => new UntypedNodeValue(parseExpression(n)));
         }
-        run(runtime) {
-            runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
+        async run(runtime) {
+            await runtime._output(await sequentialAsyncMap(this.outMessage, expr => runtime.evaluateUntyped(expr)));
         }
     };
     __setFunctionName(_classThis, "OutputStatement");
@@ -707,11 +707,11 @@ let InputStatement = (() => {
             super(...arguments);
             this.name = this.token(1).text;
         }
-        run(runtime) {
+        async run(runtime) {
             const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.nodes[1].range);
             if (!variable.mutable)
                 fail(`Cannot INPUT ${this.name} because it is a constant`, this.nodes[1]);
-            const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
+            const input = await runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
             switch (variable.type) {
                 case PrimitiveVariableType.BOOLEAN:
                     variable.value = input.toLowerCase() != "false";
@@ -769,7 +769,7 @@ let ReturnStatement = (() => {
     let _expression_initializers = [];
     let _expression_extraInitializers = [];
     var ReturnStatement = _classThis = class extends _classSuper {
-        run(runtime) {
+        async run(runtime) {
             const fn = runtime.getCurrentFunction();
             if (!fn)
                 fail(`RETURN is only valid within a function.`, this);
@@ -787,7 +787,7 @@ let ReturnStatement = (() => {
             }
             return {
                 type: "function_return",
-                value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type)).value
+                value: (await runtime.evaluateUntyped(this.expression, await runtime.resolveVariableType(type))).value
             };
         }
         constructor() {
@@ -823,17 +823,17 @@ let CallStatement = (() => {
             super(...arguments);
             this.func = this.expr(1, [ExpressionASTFunctionCallNode], `CALL can only be used to call functions or procedures`);
         }
-        run(runtime) {
-            const func = runtime.evaluateExpr(this.func.functionName, "function");
+        async run(runtime) {
+            const func = await runtime.evaluateExpr(this.func.functionName, "function");
             if ("clazz" in func) {
-                runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
+                await runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
             }
             else {
                 if ("name" in func)
                     fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
                 if (func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
                     fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, this.func);
-                runtime.callFunction(func, this.func.args);
+                await runtime.callFunction(func, this.func.args);
             }
         }
     };
@@ -880,14 +880,14 @@ let IfStatement = (() => {
     let _condition_initializers = [];
     let _condition_extraInitializers = [];
     var IfStatement = _classThis = class extends _classSuper {
-        runBlock(runtime, node) {
+        async runBlock(runtime, node) {
             const scope = {
                 statement: this,
                 opaque: false,
                 variables: Object.create(null),
                 types: Object.create(null),
             };
-            if (runtime.evaluate(this.condition)) {
+            if (await runtime.evaluate(this.condition)) {
                 return runtime.runBlock(node.nodeGroups[0], true, scope);
             }
             else if (node.controlStatements[1] instanceof ElseStatement && node.nodeGroups[1]) {
@@ -957,8 +957,8 @@ let SwitchStatement = (() => {
             if (err = controlStatements.slice(1, -1).find((s, i, arr) => s instanceof CaseBranchStatement && s.value.type == "keyword.otherwise" && i != arr.length - 1))
                 fail(`OTHERWISE case branch must be the last case branch`, err);
         }
-        runBlock(runtime, { controlStatements, nodeGroups }) {
-            const { type: switchType, value: switchValue } = runtime.evaluateUntyped(this.expression);
+        async runBlock(runtime, { controlStatements, nodeGroups }) {
+            const { type: switchType, value: switchValue } = await runtime.evaluateUntyped(this.expression);
             for (const [i, statement] of controlStatements.entries()) {
                 if (i == 0)
                     continue;
@@ -969,13 +969,12 @@ let SwitchStatement = (() => {
                     if (caseToken.type == "keyword.otherwise" && i != controlStatements.length - 2)
                         crash(`OTHERWISE case branch must be the last case branch`);
                     if (statement.branchMatches(switchType, switchValue)) {
-                        runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
+                        return runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
                             statement: this,
                             opaque: false,
                             variables: Object.create(null),
                             types: Object.create(null),
                         });
-                        break;
                     }
                 }
                 else {
@@ -1094,20 +1093,20 @@ let ForStatement = (() => {
             this.to = (__runInitializers(this, _from_extraInitializers), __runInitializers(this, _to_initializers, this.exprT(5, "INTEGER")));
             this.empty = __runInitializers(this, _to_extraInitializers);
         }
-        preRun(group, node) {
-            super.preRun(group, node);
+        async preRun(group, node) {
+            await super.preRun(group, node);
             this.empty = node.nodeGroups[0].length == 0;
             const endStatement = node.controlStatements[1];
             if (endStatement.name.text !== this.name)
                 fail(f.quote `Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name.text}`, endStatement.name);
         }
         getStep(runtime) {
-            return 1;
+            return Promise.resolve(1);
         }
-        runBlock(runtime, node) {
-            const from = BigInt(runtime.evaluate(this.from));
-            const to = BigInt(runtime.evaluate(this.to));
-            const _step = this.getStep(runtime), step = BigInt(_step);
+        async runBlock(runtime, node) {
+            const from = BigInt(await runtime.evaluate(this.from));
+            const to = BigInt(await runtime.evaluate(this.to));
+            const _step = await this.getStep(runtime), step = BigInt(_step);
             const direction = Math.sign(_step);
             if (direction == 0)
                 fail(`Invalid FOR statement: step cannot be zero`, this.step);
@@ -1136,14 +1135,14 @@ let ForStatement = (() => {
                 runtime.scopes.push(scope);
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
                     variable.value = Number(i);
-                    runtime.runBlockFast(node.nodeGroups[0]);
+                    await runtime.runBlockFast(node.nodeGroups[0]);
                 }
                 runtime.scopes.pop();
             }
             else {
                 for (let i = from; direction == 1 ? i <= to : i >= to; i += step) {
                     variable.value = Number(i);
-                    const result = runtime.runBlock(node.nodeGroups[0], false, {
+                    const result = await runtime.runBlock(node.nodeGroups[0], false, {
                         statement: this,
                         opaque: false,
                         variables: Object.setPrototypeOf({
@@ -1182,8 +1181,8 @@ let ForStepStatement = (() => {
     let _step_initializers = [];
     let _step_extraInitializers = [];
     var ForStepStatement = _classThis = class extends _classSuper {
-        getStep(runtime) {
-            return runtime.evaluate(this.step);
+        async getStep(runtime) {
+            return await runtime.evaluate(this.step);
         }
         constructor() {
             super(...arguments);
@@ -1263,11 +1262,11 @@ let WhileStatement = (() => {
     let _condition_initializers = [];
     let _condition_extraInitializers = [];
     var WhileStatement = _classThis = class extends _classSuper {
-        runBlock(runtime, node) {
+        async runBlock(runtime, node) {
             if (node.nodeGroups[0].length == 0 && this.condition.value === true)
                 runtime.statementExecuted(this, Infinity);
-            while (runtime.evaluate(this.condition)) {
-                const result = runtime.runBlock(node.nodeGroups[0], true, {
+            while (await runtime.evaluate(this.condition)) {
+                const result = await runtime.runBlock(node.nodeGroups[0], true, {
                     statement: this,
                     opaque: false,
                     variables: Object.create(null),
@@ -1303,11 +1302,11 @@ let DoWhileStatement = (() => {
     let _classThis;
     let _classSuper = Statement;
     var DoWhileStatement = _classThis = class extends _classSuper {
-        runBlock(runtime, node) {
+        async runBlock(runtime, node) {
             if (node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === false)
                 runtime.statementExecuted(this, Infinity);
             do {
-                const result = runtime.runBlock(node.nodeGroups[0], true, {
+                const result = await runtime.runBlock(node.nodeGroups[0], true, {
                     statement: this,
                     opaque: false,
                     variables: Object.create(null),
@@ -1315,7 +1314,7 @@ let DoWhileStatement = (() => {
                 });
                 if (result)
                     return result;
-            } while (!runtime.evaluate(node.controlStatements[1].condition));
+            } while (!await runtime.evaluate(node.controlStatements[1].condition));
         }
     };
     __setFunctionName(_classThis, "DoWhileStatement");
@@ -1439,10 +1438,10 @@ let OpenFileStatement = (() => {
     let _filename_initializers = [];
     let _filename_extraInitializers = [];
     var OpenFileStatement = _classThis = class extends _classSuper {
-        run(runtime) {
-            const name = runtime.evaluate(this.filename);
+        async run(runtime) {
+            const name = await runtime.evaluate(this.filename);
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-            const file = runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this.filename);
+            const file = await runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this.filename);
             if (runtime.openFiles[name])
                 fail(f.quote `File ${name} has already been opened.`, this.filename);
             if (mode == "READ") {
@@ -1496,15 +1495,15 @@ let CloseFileStatement = (() => {
     let _filename_initializers = [];
     let _filename_extraInitializers = [];
     var CloseFileStatement = _classThis = class extends _classSuper {
-        run(runtime) {
-            const name = runtime.evaluate(this.filename);
+        async run(runtime) {
+            const name = await runtime.evaluate(this.filename);
             const openFile = runtime.openFiles[name];
             if (openFile) {
                 if (["WRITE", "APPEND", "RANDOM"].includes(openFile.mode)) {
-                    runtime.fs.updateFile(name, openFile.text);
+                    await runtime.fs.updateFile(name, openFile.text);
                 }
                 runtime.openFiles[name] = undefined;
-                runtime.fs.closeFile(name);
+                await runtime.fs.closeFile(name);
             }
             else if (name in runtime.openFiles) {
                 fail(f.quote `Cannot close file ${name}, because it has already been closed.`, this);
@@ -1547,12 +1546,12 @@ let ReadFileStatement = (() => {
             this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
             this.output = (__runInitializers(this, _filename_extraInitializers), this.expr(3));
         }
-        run(runtime) {
-            const name = runtime.evaluate(this.filename);
+        async run(runtime) {
+            const name = await runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
             if (data.lineNumber >= data.lines.length)
                 fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
-            const output = runtime.evaluateExpr(this.output, "variable");
+            const output = await runtime.evaluateExpr(this.output, "variable");
             output.value = data.lines[data.lineNumber++];
         }
     };
@@ -1582,10 +1581,10 @@ let WriteFileStatement = (() => {
     let _data_initializers = [];
     let _data_extraInitializers = [];
     var WriteFileStatement = _classThis = class extends _classSuper {
-        run(runtime) {
-            const name = runtime.evaluate(this.filename);
+        async run(runtime) {
+            const name = await runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["WRITE", "APPEND"], `Writing to a file with WRITEFILE`);
-            data.text += runtime.evaluate(this.data) + "\n";
+            data.text += await runtime.evaluate(this.data) + "\n";
         }
         constructor() {
             super(...arguments);
@@ -1622,11 +1621,11 @@ let SeekStatement = (() => {
     let _index_initializers = [];
     let _index_extraInitializers = [];
     var SeekStatement = _classThis = class extends _classSuper {
-        run(runtime) {
-            const index = runtime.evaluate(this.index);
+        async run(runtime) {
+            const index = await runtime.evaluate(this.index);
             if (index < 0)
                 fail(`SEEK index must be positive`, this.index);
-            const name = runtime.evaluate(this.filename);
+            const name = await runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["RANDOM"], `SEEK statement`);
             fail(`Not yet implemented`, this);
         }
@@ -1667,8 +1666,8 @@ let GetRecordStatement = (() => {
             this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
             this.variable = (__runInitializers(this, _filename_extraInitializers), this.expr(3));
         }
-        run(runtime) {
-            const name = runtime.evaluate(this.filename);
+        async run(runtime) {
+            const name = await runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["RANDOM"], `GETRECORD statement`);
             const variable = runtime.evaluateExpr(this.variable, "variable");
             fail(`Not yet implemented`, this);
@@ -1702,10 +1701,10 @@ let PutRecordStatement = (() => {
             this.filename = __runInitializers(this, _filename_initializers, this.exprT(1, "STRING"));
             this.variable = (__runInitializers(this, _filename_extraInitializers), this.expr(3));
         }
-        run(runtime) {
-            const name = runtime.evaluate(this.filename);
+        async run(runtime) {
+            const name = await runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["RANDOM"], `PUTRECORD statement`);
-            const { type, value } = runtime.evaluateExpr(this.variable);
+            const { type, value } = await runtime.evaluateExpr(this.variable);
             fail(`Not yet implemented`, this);
         }
     };
@@ -1881,8 +1880,8 @@ let ClassProcedureStatement = (() => {
             super(tokens, 1);
             this.methodKeywordToken = this.token(1);
         }
-        preRun(group, node) {
-            super.preRun(group, node);
+        async preRun(group, node) {
+            await super.preRun(group, node);
             if (this.name == "NEW" && this.accessModifier == "private")
                 fail(`Constructors cannot be private, because running private constructors is impossible`, this.accessModifierToken);
         }

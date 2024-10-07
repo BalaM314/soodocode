@@ -2090,19 +2090,19 @@ x.array <- sussy`,
 
 describe("soodocode", () => {
 	for(const [name, [code, expectedOutput, inputs]] of Object.entries(fullTests)){
-		it(`should produce the expected output for ${name}`, () => {
+		it(`should produce the expected output for ${name}`, async () => {
 			const outputs:string[] = [];
 			const runtime = new Runtime(
 				() => inputs?.shift() ?? crash(`Program required input, but none was available`),
-				t => outputs.push(t.map(x => x.asString()).join(""))
+				t => { outputs.push(t.map(x => x.asString()).join("")); }
 			);
 			if(Array.isArray(expectedOutput)){
-				runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
+				await runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
 				expect(outputs).toEqual(expectedOutput);
 			} else {
 				let err;
 				try {
-					runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
+					await runtime.runProgram(parse(tokenize(symbolize(code))).nodes);
 					crash(`Execution did not throw an error`);
 				} catch(e){ err = e; }
 				if(!(err instanceof SoodocodeError)) throw err;
