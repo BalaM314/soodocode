@@ -55,7 +55,7 @@ function jsSieve(limit:number){
  
 for(let i = 0; i < count; i ++){
 	performance.mark("execution");
-	runtime.runProgram(program.nodes);
+	await runtime.runProgram(program.nodes);
 	// console.log(jsSieve(100_000).join("\n").length);
 	console.log(performance.measure("execution", "execution").duration.toFixed(4) + "ms");
 }

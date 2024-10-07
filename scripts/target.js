@@ -47,6 +47,6 @@ function jsSieve(limit) {
 }
 for (let i = 0; i < count; i++) {
     performance.mark("execution");
-    runtime.runProgram(program.nodes);
+    await runtime.runProgram(program.nodes);
     console.log(performance.measure("execution", "execution").duration.toFixed(4) + "ms");
 }

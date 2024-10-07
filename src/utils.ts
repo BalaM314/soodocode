@@ -749,3 +749,9 @@ export function match<K extends PropertyKey, O extends Partial<Record<K, unknown
 export function match(value:PropertyKey, clauses:Record<PropertyKey, unknown>, defaultValue?:unknown):unknown {
 	return value in clauses ? clauses[value] : defaultValue;
 }
+
+export function delay(time:number){
+	return new Promise<void>((resolve, reject) => {
+		setTimeout(() => resolve(), time);
+	});
+}

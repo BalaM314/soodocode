@@ -13,7 +13,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText, delay } from "./utils.js";
 import { configs } from "./config.js";
 const savedProgramKey = "soodocode:savedProgram";
 const fileSystem = new files.BrowserFileSystem(true);
@@ -517,12 +517,12 @@ let lastOutputText = "";
 async function executeSoodocode() {
     const noOutput = `<span style="color: lightgray;">&lt;no output&gt;</span>`;
     const output = [];
-    const runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), m => {
+    const runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), async (m) => {
         const str = m.map(x => x.asHTML(false)).join(" ");
         output.push(str);
         if (configs.runtime.display_output_immediately.value) {
             outputDiv.innerHTML += str + "\n";
-            console.log("now");
+            await delay(0);
         }
         printPrefixed(str);
     }, fileSystem);

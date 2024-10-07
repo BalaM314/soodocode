@@ -20,7 +20,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
+import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText, delay } from "./utils.js";
 import { configs } from "./config.js";
 
 const savedProgramKey = "soodocode:savedProgram";
@@ -641,13 +641,12 @@ async function executeSoodocode(){
 	const output:string[] = [];
 	const runtime = new Runtime(
 		(msg) => prompt(msg) ?? fail("User did not input a value", undefined),
-		m => {
+		async m => {
 			const str = m.map(x => x.asHTML(false)).join(" ");
 			output.push(str);
 			if(configs.runtime.display_output_immediately.value){
 				outputDiv.innerHTML += str + "\n";
-				//Does not work, TODO asyncify
-				console.log("now");
+				await delay(0);
 			}
 			printPrefixed(str);
 		},

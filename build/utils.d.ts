@@ -105,4 +105,5 @@ export declare function getAllPropertyDescriptors(object: Record<PropertyKey, un
 export declare function combineClasses<const Classes extends (new (...args: any[]) => unknown)[]>(...classes: Classes): MixClassesTuple<Classes>;
 export declare function match<K extends PropertyKey, O extends Record<K, unknown>>(value: K, clauses: O): O[K];
 export declare function match<K extends PropertyKey, O extends Partial<Record<K, unknown>>, D>(value: K, clauses: O, defaultValue: D): O[K] | D;
+export declare function delay(time: number): Promise<void>;
 export {};

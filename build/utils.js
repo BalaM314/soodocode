@@ -619,3 +619,8 @@ export function combineClasses(...classes) {
 export function match(value, clauses, defaultValue) {
     return value in clauses ? clauses[value] : defaultValue;
 }
+export function delay(time) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => resolve(), time);
+    });
+}
