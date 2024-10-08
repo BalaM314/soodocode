@@ -612,6 +612,32 @@ OUTPUT Factorial(5)
 `,
 ["120"]
 ],
+return_from_blocks_in_function: [
+`FUNCTION amoamogus() RETURNS INTEGER
+	IF FALSE THEN
+		DECLARE arr: ARRAY[1:1] OF INTEGER
+		OUTPUT arr[2]
+	ELSE
+		FOR _ <- 1 TO 3 STEP 2
+			DECLARE flag: BOOLEAN
+			flag <- TRUE
+			WHILE flag
+				flag <- FALSE
+				REPEAT
+					CASE OF 1
+						1:
+							RETURN 5
+							DECLARE arr: ARRAY[1:1] OF INTEGER
+							OUTPUT arr[2]
+					ENDCASE
+				UNTIL TRUE
+			ENDWHILE
+		NEXT _
+	ENDIF
+ENDFUNCTION
+OUTPUT amoamogus()`,
+["5"]
+],
 //#endregion
 //#region enums
 parse_enum: [
