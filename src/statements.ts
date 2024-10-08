@@ -663,13 +663,12 @@ export class SwitchStatement extends Statement {
 					crash(`OTHERWISE case branch must be the last case branch`);
 
 				if(statement.branchMatches(switchType, switchValue)){
-					runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
+					return runtime.runBlock(nodeGroups[i] ?? crash(`Missing node group in switch block`), true, {
 						statement: this,
 						opaque: false,
 						variables: Object.create(null),
 						types: Object.create(null),
 					});
-					break;
 				}
 			} else {
 				console.error(controlStatements, nodeGroups);
