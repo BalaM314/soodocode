@@ -490,7 +490,7 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 
-export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"]; //TODO new is not an expression leaf node...
+export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
 
 /** Parses the provided token as an expression leaf node. Examples: number, string, variable name */
 export function parseExpressionLeafNode(token:Token, allowSuper = false, allowNew = false):ExpressionASTLeafNode {

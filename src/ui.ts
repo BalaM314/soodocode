@@ -151,7 +151,6 @@ export function generateConfigsDialog():HTMLElement {
 			const gridItem = document.createElement("div");
 			gridItem.classList.add("settings-grid-item");
 			const label = document.createElement("label");
-			//TODO save configs
 			const input = document.createElement("input");
 			input.name = id;
 			if(typeof config.value == "boolean"){
