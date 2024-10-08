@@ -314,5 +314,5 @@ export function loadConfigs(){
 				}
 			}
 		}
-	} catch {}
+	} catch { /* ignore */ }
 }
