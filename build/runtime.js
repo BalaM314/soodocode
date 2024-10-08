@@ -111,6 +111,7 @@ function coerceValue(value, from, to, range) {
     if ((assignabilityError = typesAssignable(to, from)) === true)
         return value;
     let disabledConfig = null;
+    let helpMessage = null;
     if (from.is("INTEGER") && to.is("REAL"))
         return value;
     if (from.is("REAL") && to.is("INTEGER")) {
@@ -182,6 +183,8 @@ function coerceValue(value, from, to, range) {
                 disabledConfig = configs.coercion.enums_to_string;
         }
     }
+    if ((from.is("INTEGER", "REAL") || from instanceof IntegerRangeVariableType) && to.is("BOOLEAN"))
+        helpMessage = `to check if this number is non-zero, add "\xA0<>\xA00" after this expression`;
     if (from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))) {
         if (configs.coercion.enums_to_integer.value)
             return from.values.indexOf(value);
@@ -200,7 +203,8 @@ function coerceValue(value, from, to, range) {
             assignabilityError = f.quote `Value ${v} is not an integer`;
     }
     fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` :
-        disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""), range);
+        disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` :
+            helpMessage ? `\nhelp: ${helpMessage}` : ""), range);
 }
 function finishEvaluation(value, from, to) {
     if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
@@ -378,7 +382,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                 variable.value = value;
                 variable.updateType?.(type);
             }
-            evaluateExpr(expr, type, _recursive = false) {
+            evaluateExpr(expr, type, recursive = false) {
                 if (expr == undefined)
                     crash(`expr was ${expr}`);
                 if (expr instanceof Token)

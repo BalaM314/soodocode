@@ -107,6 +107,7 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	let assignabilityError;
 	if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
 	let disabledConfig:Config<unknown, true> | null = null;
+	let helpMessage:string | null = null;
 	if(from.is("INTEGER") && to.is("REAL")) return value as never;
 	if(from.is("REAL") && to.is("INTEGER")){
 		forceType<VariableTypeMapping<PrimitiveVariableType<"REAL">>>(value);
@@ -152,6 +153,8 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 			else disabledConfig = configs.coercion.enums_to_string;
 		}
 	}
+	if((from.is("INTEGER", "REAL") || from instanceof IntegerRangeVariableType) && to.is("BOOLEAN"))
+		helpMessage = `to check if this number is non-zero, add "\xA0<>\xA00" after this expression`;
 	if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
 		if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
 		else disabledConfig = configs.coercion.enums_to_integer;
@@ -165,7 +168,8 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	}
 	fail(f.quote`Cannot coerce value of type ${from} to ${to}` + (
 		assignabilityError ? `: ${assignabilityError}.` :
-		disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` : ""
+		disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` :
+		helpMessage ? `\nhelp: ${helpMessage}` : ""
 	), range);
 }
 function finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
@@ -386,7 +390,7 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 		predicate: (_expr, _type, recursive) => !recursive,
 		message: () => `Cannot evaluate expression "$rc": `
 	})
-	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function", _recursive = false):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
+	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function", recursive = false):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(expr == undefined) crash(`expr was ${expr as null | undefined}`);
 
 		if(expr instanceof Token)
