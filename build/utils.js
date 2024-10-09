@@ -359,7 +359,11 @@ export class SoodocodeError extends Error {
             const underlineLine = `${" ".repeat(lineNumber.length)} | ${" ".repeat(startOfLine.length)}${"~".repeat(rangeText.length)}`;
             return [formattedPreviousLine, errorLine, underlineLine];
         })();
-        return lines.filter(Boolean).map(l => "\t" + l).join("\n");
+        const formattedText = lines.filter(Boolean).map(l => "\t" + l).join("\n");
+        if (html)
+            return `<span class="code-display">${formattedText}</span>`;
+        else
+            return formattedText;
     }
     static getString(message) {
         if (typeof message == "string")

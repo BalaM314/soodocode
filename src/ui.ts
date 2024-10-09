@@ -544,10 +544,12 @@ function flashOutputDiv(){
 }
 
 function displayAST(){
+	outputDiv.classList.remove("state-error", "state-success");
 	try {
 		const symbols = lexer.symbolize(soodocodeInput.value);
 		const tokens = lexer.tokenize(symbols);
 		const program = parser.parse(tokens);
+
 		outputDiv.innerHTML = `\
 <!--<h2>Symbols</h2>\
 <div class="display-scroller">
@@ -573,8 +575,10 @@ ${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span styl
 </div>
 <h2>Statements</h2>
 ${displayProgram(program)}`;
-	} catch (err) {
-		if (err instanceof SoodocodeError) {
+		outputDiv.classList.add("state-success");
+	} catch(err){
+		outputDiv.classList.add("state-error");
+		if(err instanceof SoodocodeError){
 			outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
 		} else {
 			outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
@@ -601,6 +605,7 @@ function executeSoodocode(){
 		},
 		fileSystem
 	);
+	outputDiv.classList.remove("state-error", "state-success");
 	try {
 		if(configs.runtime.display_output_immediately.value) outputDiv.innerHTML = "";
 		console.time("parsing");
@@ -618,6 +623,7 @@ function executeSoodocode(){
 		updateFileSelectOptions();
 		onSelectedFileChange();
 
+		outputDiv.classList.add("state-success");
 		if(configs.runtime.display_output_immediately.value){
 			if(outputDiv.innerText.trim().length == 0) outputDiv.innerHTML = noOutput;
 			if(outputDiv.innerHTML == lastOutputText) flashOutputDiv();
@@ -630,6 +636,7 @@ function executeSoodocode(){
 		}
 	} catch(err){
 		fileSystem.loadBackup();
+		outputDiv.classList.add("state-error");
 		if(err instanceof SoodocodeError){
 			outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
 		} else if(["too much recursion", "Maximum call stack size exceeded"].includes((err as Record<string, unknown>)?.message)){
