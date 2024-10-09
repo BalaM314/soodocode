@@ -430,6 +430,7 @@ function flashOutputDiv() {
     outputDiv.style.animationName = "highlight-output-div";
 }
 function displayAST() {
+    outputDiv.classList.remove("state-error", "state-success");
     try {
         const symbols = lexer.symbolize(soodocodeInput.value);
         const tokens = lexer.tokenize(symbols);
@@ -459,8 +460,10 @@ ${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span styl
 </div>
 <h2>Statements</h2>
 ${displayProgram(program)}`;
+        outputDiv.classList.add("state-success");
     }
     catch (err) {
+        outputDiv.classList.add("state-error");
         if (err instanceof SoodocodeError) {
             outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
         }
@@ -483,6 +486,7 @@ function executeSoodocode() {
         }
         printPrefixed(str);
     }, fileSystem);
+    outputDiv.classList.remove("state-error", "state-success");
     try {
         if (configs.runtime.display_output_immediately.value)
             outputDiv.innerHTML = "";
@@ -500,6 +504,7 @@ function executeSoodocode() {
         console.timeEnd("execution");
         updateFileSelectOptions();
         onSelectedFileChange();
+        outputDiv.classList.add("state-success");
         if (configs.runtime.display_output_immediately.value) {
             if (outputDiv.innerText.trim().length == 0)
                 outputDiv.innerHTML = noOutput;
@@ -517,6 +522,7 @@ function executeSoodocode() {
     }
     catch (err) {
         fileSystem.loadBackup();
+        outputDiv.classList.add("state-error");
         if (err instanceof SoodocodeError) {
             outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
         }
