@@ -1441,7 +1441,7 @@ let OpenFileStatement = (() => {
         run(runtime) {
             const name = runtime.evaluate(this.filename);
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-            const file = runtime.fs.openFile(name, mode == "WRITE") ?? fail(f.quote `File ${name} does not exist.`, this.filename);
+            const file = runtime.fs.openFile(name, ["WRITE", "APPEND"].includes(mode)) ?? fail(f.quote `File ${name} does not exist.`, this.filename);
             if (runtime.openFiles[name])
                 fail(f.quote `File ${name} has already been opened.`, this.filename);
             if (mode == "READ") {

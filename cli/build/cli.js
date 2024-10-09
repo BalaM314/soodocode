@@ -1,43 +1,69 @@
 import { Application, ApplicationError } from "cli-app";
-import * as fs from "node:fs/promises";
-import { symbolize, tokenize, parse, Runtime, SoodocodeError, parseError, configs } from "../../build/index.js";
+import fs from "node:fs";
+import fsP from "node:fs/promises";
+import { symbolize, tokenize, parse, Runtime, SoodocodeError, parseError, configs, fail as scFail, f, crash } from "../../build/index.js";
+import path from "node:path";
 function fail(message) {
     throw new ApplicationError(message);
 }
 class NodeJSFileSystem {
     rootDirectory;
-    constructor(rootDirectory = process.cwd()) {
+    encoding;
+    fileDescriptors = {};
+    constructor(rootDirectory = process.cwd(), encoding = "utf-8") {
         this.rootDirectory = rootDirectory;
+        this.encoding = encoding;
+    }
+    resolveSafe(filename) {
+        const filepath = path.resolve(this.rootDirectory, filename);
+        if (!filepath.startsWith(this.rootDirectory))
+            scFail(f.quote `Cannot access file ${filepath}: it is not inside the directory ${this.rootDirectory}\nhelp: change the working directory and try again`, undefined);
+        return filepath;
+    }
+    descriptor(filename) {
+        return this.fileDescriptors[this.resolveSafe(filename)] ?? crash(`Missing file descriptor`);
     }
     hasFile(filename) {
-        throw new Error("Method not implemented.");
+        return fs.existsSync(this.resolveSafe(filename));
     }
-    openFile(filename, create) {
-        throw new Error("Method not implemented.");
+    openFile(filename, create = false) {
+        const filepath = this.resolveSafe(filename);
+        if (!fs.existsSync(filepath) && !create)
+            return undefined;
+        this.fileDescriptors[filepath] = fs.openSync(filepath, fs.constants.O_RDWR | fs.constants.O_CREAT);
+        return {
+            name: filename,
+            text: fs.readFileSync(filepath, this.encoding)
+        };
     }
     closeFile(filename) {
-        throw new Error("Method not implemented.");
+        fs.closeSync(this.descriptor(filename));
     }
     createFile(filename) {
-        throw new Error("Method not implemented.");
+        this.openFile(filename, true);
     }
     updateFile(filename, newContent) {
-        throw new Error("Method not implemented.");
+        fs.writeFileSync(this.descriptor(filename), newContent, this.encoding);
     }
-    clearFile(filename, newContent) {
-        throw new Error("Method not implemented.");
+    clearFile(filename) {
+        fs.writeFileSync(this.descriptor(filename), "", this.encoding);
     }
     deleteFile(filename) {
-        throw new Error("Method not implemented.");
+        const filepath = this.resolveSafe(filename);
+        try {
+            this.closeFile(filepath);
+        }
+        catch { }
+        fs.unlinkSync(filepath);
     }
     listFiles() {
-        throw new Error("Method not implemented.");
+        return fs.readdirSync(this.rootDirectory);
     }
 }
 const soodocode = new Application("soodocode", "CLI interface for the Soodocode runtime");
 soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
     const filename = opts.positionalArgs[0];
-    const data = await fs.readFile(filename, "utf-8")
+    const data = await fsP.readFile(filename, "utf-8")
         .catch(() => fail(`Failed to read the file "${filename}"`));
     const runtime = new Runtime(function input(message, type) {
         throw new Error(`not yet implemented`);
