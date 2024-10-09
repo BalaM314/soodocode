@@ -34,15 +34,28 @@ export declare function getRange(input: TextRangeLike): TextRange;
 export declare function getRange(input?: TextRangeLike): TextRange | undefined;
 export declare function getRange(input?: TextRangeLike | null): TextRange | undefined | null;
 export declare function findRange(args: unknown[]): TextRange | undefined;
+export declare function array<T>(input: T | T[]): T[];
+type ErrorMessageLine = string | Array<string | TextRangeLike>;
+type ErrorMessage = string | {
+    summary: ErrorMessageLine;
+    elaboration?: string | ErrorMessageLine[];
+    context?: string | ErrorMessageLine[];
+    help?: string | ErrorMessageLine[];
+};
 export declare class SoodocodeError extends Error {
+    richMessage: ErrorMessage;
     rangeSpecific?: (TextRange | null) | undefined;
     rangeGeneral?: (TextRange | null) | undefined;
     rangeOther?: TextRange | undefined;
     modified: boolean;
-    constructor(message: string, rangeSpecific?: (TextRange | null) | undefined, rangeGeneral?: (TextRange | null) | undefined, rangeOther?: TextRange | undefined);
-    formatMessage(text: string): string;
+    constructor(richMessage: ErrorMessage, rangeSpecific?: (TextRange | null) | undefined, rangeGeneral?: (TextRange | null) | undefined, rangeOther?: TextRange | undefined);
+    formatMessage(sourceCode: string): string;
+    formatMessageHTML(sourceCode: string): string;
+    adjustRanges(text: string): void;
+    showRange(text: string, html: boolean): string;
+    static getString(message: ErrorMessage): string;
 }
-export declare function fail(message: string, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;
+export declare function fail(message: ErrorMessage, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;
 export declare function rethrow(error: SoodocodeError, msg: (old: string) => string): void;
 export declare function crash(message: string, ...extra: unknown[]): never;
 export declare function impossible(): never;
@@ -52,6 +65,9 @@ export declare function errorBoundary({ predicate, message }?: Partial<{
     message(...args: any[]): string;
 }>): <T extends (...args: any[]) => unknown>(func: T, _ctx?: ClassMethodDecoratorContext) => T;
 export declare function escapeHTML(input?: string): string;
+export declare function span<const T extends string>(input: string, className: T): string extends T ? {
+    _err: "Style must be a string literal";
+} : string;
 export declare function parseError(thing: unknown): string;
 type Iterators<T extends unknown[]> = {
     [P in keyof T]: Iterator<T[P]>;
