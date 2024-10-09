@@ -197,6 +197,9 @@ export abstract class BaseVariableType implements IFormattable {
 	is(...type:PrimitiveVariableTypeName[]) {
 		return false;
 	}
+	isInteger(){
+		return false;
+	}
 	abstract fmtDebug():string;
 	/** If not implemented, defaults to `"${fmtText()}"` */
 	fmtQuoted(){
@@ -235,6 +238,9 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	is<T extends PrimitiveVariableTypeName>(...type:T[]):this is PrimitiveVariableType<T> {
 		return type.includes(this.name);
 	}
+	isInteger(){
+		return this.name == "INTEGER";
+	}
 	static valid(input:string):input is PrimitiveVariableTypeName {
 		return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
 	}
@@ -272,6 +278,9 @@ export class IntegerRangeVariableType extends BaseVariableType {
 			if(!this.possible()) fail(f.quote`Cannot initialize variable of type ${this}`, this.range);
 			return this.low;
 		} else return null;
+	}
+	isInteger(){
+		return true;
 	}
 	fmtText(){
 		return `${this.low}..${this.high}`;

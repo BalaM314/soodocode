@@ -112,8 +112,8 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
 	let disabledConfig:Config<unknown, true> | null = null;
 	let helpMessage:string | null = null;
-	if(from.is("INTEGER") && to.is("REAL")) return value as never;
-	if(from.is("REAL") && to.is("INTEGER")){
+	if(from.isInteger() && to.is("REAL", "INTEGER")) return value as never;
+	if(from.is("REAL") && to.isInteger()){
 		forceType<VariableTypeMapping<PrimitiveVariableType<"REAL">>>(value);
 		if(configs.coercion.real_to_int.value){
 			if(Number.isInteger(value)) return value as never;
@@ -136,8 +136,8 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 		if(from.is("BOOLEAN")){
 			if(configs.coercion.booleans_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase() as never;
 			else disabledConfig = configs.coercion.booleans_to_string;
-		} else if(from.is("INTEGER") || from.is("REAL")){
-			if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
+		} else if(from.isInteger() || from.is("REAL")){
+			if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL"> | IntegerRangeVariableType>).toString() as never;
 			else disabledConfig = configs.coercion.numbers_to_string;
 		} else if(from.is("CHAR")){
 			if(configs.coercion.char_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>).toString() as never;
@@ -157,7 +157,7 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 			else disabledConfig = configs.coercion.enums_to_string;
 		}
 	}
-	if((from.is("INTEGER", "REAL") || from instanceof IntegerRangeVariableType) && to.is("BOOLEAN"))
+	if(from.isInteger() || from.is("REAL") && to.is("BOOLEAN"))
 		helpMessage = `to check if this number is non-zero, add "\xA0<>\xA00" after this expression`;
 	if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
 		if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
