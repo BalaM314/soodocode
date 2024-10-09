@@ -118,7 +118,7 @@ function coerceValue(value, from, to, range) {
     let helpMessage = null;
     if (from.isInteger() && to.is("REAL", "INTEGER"))
         return value;
-    if (from.is("REAL") && to.isInteger()) {
+    if (from.is("REAL") && to.is("INTEGER")) {
         forceType(value);
         if (configs.coercion.real_to_int.value) {
             if (Number.isInteger(value))
