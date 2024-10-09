@@ -537,56 +537,6 @@ function printPrefixed(value:unknown){
 	console.log(`%c[Runtime]`, `color: lime;`, value);
 }
 
-/** Must escape HTML special chars from user input. */
-export function showRange(text:string, error:SoodocodeError):string {
-	if(!error.rangeGeneral && !error.rangeSpecific) return ``; //can't show anything
-	
-	if(error.rangeSpecific){
-		if(error.rangeSpecific[0] == error.rangeSpecific[1]){
-			//Expand the range forward by one if it has a size of zero
-			error.rangeSpecific[1] ++;
-		}
-		if(error.rangeSpecific[1] - error.rangeSpecific[0] == 1){
-			//Move back the range if it only contains a newline, or nothing
-			const specificText = text.slice(...error.rangeSpecific);
-			if(specificText == "" || specificText == "\n")
-				error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
-		}
-	}
-	if(error.rangeGeneral && error.rangeSpecific){
-		//If the specific range is one character after the end of the general range, expand the general range
-		if(
-			error.rangeSpecific[1] - error.rangeSpecific[0] == 1 &&
-			error.rangeGeneral[1] == error.rangeSpecific[0]
-		) error.rangeGeneral[1] ++;
-	}
-
-	const outerRange = utils.getTotalRange([error.rangeGeneral, error.rangeSpecific].filter(Boolean));
-	const beforeText = text.slice(0, outerRange[0]);
-	const rangeText = text.slice(...outerRange);
-	const beforeLines = beforeText.split("\n");
-	const lineNumber = beforeLines.length.toString();
-	const formattedPreviousLine = beforeLines.at(-2)
-		? `${" ".repeat(lineNumber.length)} | ${escapeHTML(beforeLines.at(-2))}\n`
-		: "";
-	const startOfLine = beforeLines.at(-1)!;
-	/** Might not be from the same line as startOfLine */
-	const restOfLine = text.slice(outerRange[1]).split("\n")[0];
-	const formattedRangeText = applyRangeTransformers(rangeText, [
-		error.rangeGeneral && [
-			error.rangeGeneral.map(n => n - outerRange[0]), //Everything before outerRange[0] was sliced off, so subtract that
-			`<span class="error-range-outer">`, "</span>",
-		] as const,
-		error.rangeSpecific && [
-			error.rangeSpecific.map(n => n - outerRange[0]), //Everything before outerRange[0] was sliced off, so subtract that
-			`<span class="error-range-inner">`, "</span>",
-		] as const,
-	].filter(Boolean), escapeHTML);
-	return `
-${formattedPreviousLine}\
-${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
-}
-
 function flashOutputDiv(){
 	outputDiv.style.animationName = "";
 	void outputDiv.offsetHeight; //reflow
@@ -625,8 +575,7 @@ ${tokens.tokens.map(t => `<tr><td>${escapeHTML(t.text).replace('\n', `<span styl
 ${displayProgram(program)}`;
 	} catch (err) {
 		if (err instanceof SoodocodeError) {
-			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
-				+ showRange(soodocodeInput.value, err);
+			outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
 		} else {
 			outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
 		}
@@ -682,8 +631,7 @@ function executeSoodocode(){
 	} catch(err){
 		fileSystem.loadBackup();
 		if(err instanceof SoodocodeError){
-			outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
-				+ showRange(soodocodeInput.value, err);
+			outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
 		} else if(["too much recursion", "Maximum call stack size exceeded"].includes((err as Record<string, unknown>)?.message)){
 			outputDiv.innerHTML = `<span class="error-message">Maximum call stack size exceeded\nhelp: make sure your recursive functions can reach their base case</span>`;
 		} else {

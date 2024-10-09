@@ -240,16 +240,131 @@ export function findRange(args) {
     }
     return undefined;
 }
+export function array(input) {
+    if (Array.isArray(input))
+        return input;
+    else
+        return [input];
+}
+function formatErrorLine(line, sourceCode) {
+    return typeof line == "string" ? line : line.map(chunk => typeof chunk == "string" ? chunk :
+        sourceCode.slice(...getRange(chunk))).join("");
+}
 export class SoodocodeError extends Error {
-    constructor(message, rangeSpecific, rangeGeneral, rangeOther) {
-        super(message);
+    constructor(richMessage, rangeSpecific, rangeGeneral, rangeOther) {
+        super(SoodocodeError.getString(richMessage));
+        this.richMessage = richMessage;
         this.rangeSpecific = rangeSpecific;
         this.rangeGeneral = rangeGeneral;
         this.rangeOther = rangeOther;
         this.modified = false;
     }
-    formatMessage(text) {
-        return this.message.replace("$rc", this.rangeOther ? text.slice(...this.rangeOther) : `<empty>`);
+    formatMessage(sourceCode) {
+        if (typeof this.richMessage == "string") {
+            return this.richMessage.replace("$rc", this.rangeOther ? sourceCode.slice(...this.rangeOther) : `<empty>`) + "\n\n" + this.showRange(sourceCode, false);
+        }
+        else {
+            let output = "";
+            output += formatErrorLine(this.richMessage.summary, sourceCode) + "\n";
+            if (this.richMessage.elaboration) {
+                output += array(this.richMessage.elaboration).map(line => "\t" + formatErrorLine(line, sourceCode) + "\n").join("");
+                output += "\n";
+            }
+            if (this.richMessage.context) {
+                output += array(this.richMessage.context).map(line => "\t" + formatErrorLine(line, sourceCode) + "\n").join("");
+                output += "\n";
+            }
+            if (this.richMessage.help) {
+                output += array(this.richMessage.help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n");
+            }
+            output += "\n\n" + this.showRange(sourceCode, false);
+            return output;
+        }
+    }
+    formatMessageHTML(sourceCode) {
+        if (typeof this.richMessage == "string") {
+            return span(this.richMessage.replace("$rc", this.rangeOther ? sourceCode.slice(...this.rangeOther) : `<empty>`), "error-message") + "\n\n" + this.showRange(sourceCode, true);
+        }
+        else {
+            let output = "";
+            output += span(formatErrorLine(this.richMessage.summary, sourceCode), "error-message") + "\n";
+            if (this.richMessage.elaboration) {
+                output += array(this.richMessage.elaboration).map(line => "  &bull; " + span(formatErrorLine(line, sourceCode), "error-message-elaboration") + "\n").join("");
+                output += "\n";
+            }
+            if (this.richMessage.context) {
+                output += array(this.richMessage.context).map(line => "\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n").join("");
+                output += "\n";
+            }
+            if (this.richMessage.help) {
+                output += array(this.richMessage.help).map(line => span(`help: ${formatErrorLine(line, sourceCode)}`, "error-message-help")).join("\n");
+            }
+            output += "\n\n" + this.showRange(sourceCode, true);
+            return output;
+        }
+    }
+    adjustRanges(text) {
+        if (this.rangeSpecific) {
+            if (this.rangeSpecific[0] == this.rangeSpecific[1]) {
+                this.rangeSpecific[1]++;
+            }
+            if (this.rangeSpecific[1] - this.rangeSpecific[0] == 1) {
+                const specificText = text.slice(...this.rangeSpecific);
+                if (specificText == "" || specificText == "\n")
+                    this.rangeSpecific = this.rangeSpecific.map(n => n - 1);
+            }
+        }
+        if (this.rangeGeneral && this.rangeSpecific) {
+            if (this.rangeSpecific[1] - this.rangeSpecific[0] == 1 &&
+                this.rangeGeneral[1] == this.rangeSpecific[0])
+                this.rangeGeneral[1]++;
+        }
+    }
+    showRange(text, html) {
+        if (!this.rangeGeneral && !this.rangeSpecific)
+            return ``;
+        this.adjustRanges(text);
+        let outerRange;
+        if (html) {
+            outerRange = getTotalRange([this.rangeGeneral, this.rangeSpecific].filter(Boolean));
+        }
+        else {
+            outerRange = this.rangeSpecific ?? this.rangeGeneral;
+        }
+        const beforeText = text.slice(0, outerRange[0]);
+        const rangeText = text.slice(...outerRange);
+        const beforeLines = beforeText.split("\n");
+        const lineNumber = beforeLines.length.toString();
+        const previousLineNumber = (beforeLines.length - 1).toString().padStart(lineNumber.length, " ");
+        const previousLine = beforeLines.at(-2);
+        const startOfLine = beforeLines.at(-1);
+        const restOfLine = text.slice(outerRange[1]).split("\n")[0];
+        const lines = html ? (() => {
+            const formattedRangeText = applyRangeTransformers(rangeText, [
+                this.rangeGeneral && [
+                    this.rangeGeneral.map(n => n - outerRange[0]),
+                    `<span class="error-range-outer">`, "</span>",
+                ],
+                this.rangeSpecific && [
+                    this.rangeSpecific.map(n => n - outerRange[0]),
+                    `<span class="error-range-inner">`, "</span>",
+                ],
+            ].filter(Boolean), escapeHTML);
+            const formattedPreviousLine = previousLine && `${previousLineNumber} | ${escapeHTML(previousLine)}`;
+            const errorLine = `${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}${escapeHTML(restOfLine)}`;
+            return [formattedPreviousLine, errorLine];
+        })() : (() => {
+            const formattedPreviousLine = previousLine && `${previousLineNumber} | ${previousLine}`;
+            const errorLine = `${lineNumber} | ${startOfLine}${rangeText}${restOfLine}`;
+            const underlineLine = `${" ".repeat(lineNumber.length)} | ${" ".repeat(startOfLine.length)}${"~".repeat(rangeText.length)}`;
+            return [formattedPreviousLine, errorLine, underlineLine];
+        })();
+        return lines.filter(Boolean).map(l => "\t" + l).join("\n");
+    }
+    static getString(message) {
+        if (typeof message == "string")
+            return message;
+        return typeof message.summary == "string" ? message.summary : message.summary.map(chunk => typeof chunk == "string" ? chunk : "<...>").join("");
     }
 }
 export function fail(message, rangeSpecific, rangeGeneral, rangeOther) {
@@ -313,6 +428,9 @@ export function escapeHTML(input) {
     if (input == undefined)
         return "";
     return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+export function span(input, className) {
+    return `<span class="${className}">${escapeHTML(input)}</span>`;
 }
 export function parseError(thing) {
     if (thing instanceof Error) {

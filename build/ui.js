@@ -13,7 +13,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
+import { SoodocodeError, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
 import { configs } from "./config.js";
 const savedProgramKey = "soodocode:savedProgram";
 const fileSystem = new files.BrowserFileSystem(true);
@@ -424,48 +424,6 @@ function setupTextEditor() {
 function printPrefixed(value) {
     console.log(`%c[Runtime]`, `color: lime;`, value);
 }
-export function showRange(text, error) {
-    if (!error.rangeGeneral && !error.rangeSpecific)
-        return ``;
-    if (error.rangeSpecific) {
-        if (error.rangeSpecific[0] == error.rangeSpecific[1]) {
-            error.rangeSpecific[1]++;
-        }
-        if (error.rangeSpecific[1] - error.rangeSpecific[0] == 1) {
-            const specificText = text.slice(...error.rangeSpecific);
-            if (specificText == "" || specificText == "\n")
-                error.rangeSpecific = error.rangeSpecific.map(n => n - 1);
-        }
-    }
-    if (error.rangeGeneral && error.rangeSpecific) {
-        if (error.rangeSpecific[1] - error.rangeSpecific[0] == 1 &&
-            error.rangeGeneral[1] == error.rangeSpecific[0])
-            error.rangeGeneral[1]++;
-    }
-    const outerRange = utils.getTotalRange([error.rangeGeneral, error.rangeSpecific].filter(Boolean));
-    const beforeText = text.slice(0, outerRange[0]);
-    const rangeText = text.slice(...outerRange);
-    const beforeLines = beforeText.split("\n");
-    const lineNumber = beforeLines.length.toString();
-    const formattedPreviousLine = beforeLines.at(-2)
-        ? `${" ".repeat(lineNumber.length)} | ${escapeHTML(beforeLines.at(-2))}\n`
-        : "";
-    const startOfLine = beforeLines.at(-1);
-    const restOfLine = text.slice(outerRange[1]).split("\n")[0];
-    const formattedRangeText = applyRangeTransformers(rangeText, [
-        error.rangeGeneral && [
-            error.rangeGeneral.map(n => n - outerRange[0]),
-            `<span class="error-range-outer">`, "</span>",
-        ],
-        error.rangeSpecific && [
-            error.rangeSpecific.map(n => n - outerRange[0]),
-            `<span class="error-range-inner">`, "</span>",
-        ],
-    ].filter(Boolean), escapeHTML);
-    return `
-${formattedPreviousLine}\
-${lineNumber} | ${escapeHTML(startOfLine)}${formattedRangeText}</span>${escapeHTML(restOfLine)}`;
-}
 function flashOutputDiv() {
     outputDiv.style.animationName = "";
     void outputDiv.offsetHeight;
@@ -504,8 +462,7 @@ ${displayProgram(program)}`;
     }
     catch (err) {
         if (err instanceof SoodocodeError) {
-            outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
-                + showRange(soodocodeInput.value, err);
+            outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
         }
         else {
             outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
@@ -561,8 +518,7 @@ function executeSoodocode() {
     catch (err) {
         fileSystem.loadBackup();
         if (err instanceof SoodocodeError) {
-            outputDiv.innerHTML = `<span class="error-message">${escapeHTML(err.formatMessage(soodocodeInput.value))}</span>\n`
-                + showRange(soodocodeInput.value, err);
+            outputDiv.innerHTML = err.formatMessageHTML(soodocodeInput.value);
         }
         else if (["too much recursion", "Maximum call stack size exceeded"].includes(err?.message)) {
             outputDiv.innerHTML = `<span class="error-message">Maximum call stack size exceeded\nhelp: make sure your recursive functions can reach their base case</span>`;
