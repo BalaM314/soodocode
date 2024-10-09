@@ -2,7 +2,6 @@ import * as parserTypes from "./parser-types.js";
 import { ExpressionASTNode, ExpressionASTNodeExt, ProgramAST, ProgramASTNode } from "./parser-types.js";
 import { Runtime } from "./runtime.js";
 import { Statement } from "./statements.js";
-import { SoodocodeError } from "./utils.js";
 export declare function getElement<T extends typeof HTMLElement>(id: string, type: T, mode?: "id" | "class"): T["prototype"];
 export declare function flattenTree(program: parserTypes.ProgramASTNodeGroup): (readonly [depth: number, statement: Statement])[];
 export declare function displayExpressionHTML(node: ExpressionASTNodeExt, expand?: boolean, format?: boolean): string;
@@ -11,7 +10,6 @@ export declare function displayStatement(statement: Statement): string;
 export declare function generateConfigsDialog(): HTMLElement;
 export declare function evaluateExpressionDemo(node: ExpressionASTNode): number;
 export declare function download(filename: string, data: BlobPart): void;
-export declare function showRange(text: string, error: SoodocodeError): string;
 declare global {
     var runtime: Runtime;
 }

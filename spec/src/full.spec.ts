@@ -2132,7 +2132,7 @@ describe("soodocode", () => {
 					crash(`Execution did not throw an error`);
 				} catch(e){ err = e; }
 				if(!(err instanceof SoodocodeError)) throw err;
-				expect(err.message).toContain(expectedOutput);
+				expect(err.formatMessage(code)).toContain(expectedOutput);
 			}
 		});
 	}
