@@ -116,9 +116,9 @@ function coerceValue(value, from, to, range) {
         return value;
     let disabledConfig = null;
     let helpMessage = null;
-    if (from.is("INTEGER") && to.is("REAL"))
+    if (from.isInteger() && to.is("REAL", "INTEGER"))
         return value;
-    if (from.is("REAL") && to.is("INTEGER")) {
+    if (from.is("REAL") && to.isInteger()) {
         forceType(value);
         if (configs.coercion.real_to_int.value) {
             if (Number.isInteger(value))
@@ -150,7 +150,7 @@ function coerceValue(value, from, to, range) {
             else
                 disabledConfig = configs.coercion.booleans_to_string;
         }
-        else if (from.is("INTEGER") || from.is("REAL")) {
+        else if (from.isInteger() || from.is("REAL")) {
             if (configs.coercion.numbers_to_string.value)
                 return value.toString();
             else
@@ -187,7 +187,7 @@ function coerceValue(value, from, to, range) {
                 disabledConfig = configs.coercion.enums_to_string;
         }
     }
-    if ((from.is("INTEGER", "REAL") || from instanceof IntegerRangeVariableType) && to.is("BOOLEAN"))
+    if (from.isInteger() || from.is("REAL") && to.is("BOOLEAN"))
         helpMessage = `to check if this number is non-zero, add "\xA0<>\xA00" after this expression`;
     if (from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))) {
         if (configs.coercion.enums_to_integer.value)

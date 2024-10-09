@@ -106,6 +106,9 @@ export class BaseVariableType {
     is(...type) {
         return false;
     }
+    isInteger() {
+        return false;
+    }
     fmtQuoted() {
         return `"${this.fmtText()}"`;
     }
@@ -128,6 +131,9 @@ export class PrimitiveVariableType extends BaseVariableType {
     }
     is(...type) {
         return type.includes(this.name);
+    }
+    isInteger() {
+        return this.name == "INTEGER";
     }
     static valid(input) {
         return input == "INTEGER" || input == "REAL" || input == "STRING" || input == "CHAR" || input == "BOOLEAN" || input == "DATE";
@@ -178,6 +184,9 @@ export class IntegerRangeVariableType extends BaseVariableType {
         }
         else
             return null;
+    }
+    isInteger() {
+        return true;
     }
     fmtText() {
         return `${this.low}..${this.high}`;

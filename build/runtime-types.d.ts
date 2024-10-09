@@ -55,6 +55,7 @@ export declare abstract class BaseVariableType implements IFormattable {
     abstract init(runtime: Runtime): void;
     validate(runtime: Runtime): void;
     is(...type: PrimitiveVariableTypeName[]): boolean;
+    isInteger(): boolean;
     abstract fmtDebug(): string;
     fmtQuoted(): string;
     abstract fmtText(): string;
@@ -75,6 +76,7 @@ export declare class PrimitiveVariableType<T extends PrimitiveVariableTypeName =
     fmtText(): T;
     fmtShort(): T;
     is<T extends PrimitiveVariableTypeName>(...type: T[]): this is PrimitiveVariableType<T>;
+    isInteger(): boolean;
     static valid(input: string): input is PrimitiveVariableTypeName;
     static get(type: PrimitiveVariableTypeName): PrimitiveVariableType;
     static get(type: string): PrimitiveVariableType | undefined;
@@ -89,6 +91,7 @@ export declare class IntegerRangeVariableType extends BaseVariableType {
     init(runtime: Runtime): void;
     possible(): boolean;
     getInitValue(runtime: Runtime, requireInit: boolean): number | null;
+    isInteger(): boolean;
     fmtText(): string;
     fmtDebug(): string;
     asString(value: VariableTypeMapping<this>): string;
