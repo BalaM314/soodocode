@@ -17,6 +17,7 @@ This file contains CSS styles for the webpage.
 	--program-block-accent-color: #0FF6;
 	--program-expression-outline-color: #0FF8;
 	--program-expression-background-color: #0FF2;
+	--output-div-border-color: green;
 
 	/* settings */
 	font-family: sans-serif;
@@ -169,7 +170,7 @@ td, th {
 	max-width: calc(100% - 40px);
 	min-height: 50px;
 	background-color: black;
-	border: 2px dashed green;
+	border: 2px dashed var(--output-div-border-color);
 	font-family: 'Courier New', Courier, monospace;
 	white-space: pre-wrap;
 	overflow-wrap: break-word;
@@ -180,6 +181,12 @@ td, th {
 	animation-fill-mode: both;
 	tab-size: 4;
 	/* animation-name: flash-output; */
+}
+.output-div.state-success {
+	--output-div-border-color: green;
+}
+.output-div.state-error {
+	--output-div-border-color: #F22;
 }
 
 .sth-number {
@@ -215,6 +222,7 @@ td, th {
 
 .error-range-inner {
 	text-decoration: underline wavy red;
+	text-underline-offset: 1.5px;
 }
 .error-range-outer {
 	background-color: #FF03;
