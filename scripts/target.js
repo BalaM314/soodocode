@@ -30,7 +30,7 @@ NEXT n
 
 OUTPUT "There are ", primeCount, " primes in the range 2-", limit
 `)));
-const runtime = new sc.Runtime(() => sc.crash("No input in perf test runtime"), () => { });
+const runtime = new sc.Runtime(() => sc.crash("No input in perf test runtime"), () => { }, new sc.BrowserFileSystem(false));
 sc.configs.statements.max_statements.value = 10000000;
 function jsSieve(limit) {
     let primeCount = 0;
@@ -45,8 +45,12 @@ function jsSieve(limit) {
     }
     return isPrime;
 }
+let times = [];
 for (let i = 0; i < count; i++) {
     performance.mark("execution");
     runtime.runProgram(program.nodes);
-    console.log(performance.measure("execution", "execution").duration.toFixed(4) + "ms");
+    const duration = performance.measure("execution", "execution").duration;
+    times.push(duration);
+    console.log(duration.toFixed(4) + "ms");
 }
+console.log("Average: " + (times.reduce((a, b) => a + b, 0) / times.length).toFixed(4) + "ms");

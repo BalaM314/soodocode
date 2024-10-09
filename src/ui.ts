@@ -598,7 +598,7 @@ function executeSoodocode(){
 			output.push(str);
 			if(configs.runtime.display_output_immediately.value){
 				outputDiv.innerHTML += str + "\n";
-				//Does not work, TODO asyncify
+				//Does not work
 				console.log("now");
 			}
 			printPrefixed(str);
