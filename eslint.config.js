@@ -29,10 +29,7 @@ export default tseslint.config(
 					flatTernaryExpressions: true
 				}
 			],
-			"linebreak-style": [
-				"error",
-				"windows"
-			],
+			"linebreak-style": "off",
 			"semi": [
 				"error",
 				"always"
