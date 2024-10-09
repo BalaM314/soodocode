@@ -113,7 +113,7 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	let disabledConfig:Config<unknown, true> | null = null;
 	let helpMessage:string | null = null;
 	if(from.isInteger() && to.is("REAL", "INTEGER")) return value as never;
-	if(from.is("REAL") && to.isInteger()){
+	if(from.is("REAL") && to.is("INTEGER")){
 		forceType<VariableTypeMapping<PrimitiveVariableType<"REAL">>>(value);
 		if(configs.coercion.real_to_int.value){
 			if(Number.isInteger(value)) return value as never;
