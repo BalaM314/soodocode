@@ -413,9 +413,7 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
                             err.rangeSpecific = findRange(args);
                         else if (err.rangeGeneral === undefined && predicate(...args)) {
                             const _rangeGeneral = findRange(args.concat(this));
-                            if (_rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1]))
-                                err.rangeGeneral = null;
-                            else
+                            if (!(_rangeGeneral && err.rangeSpecific && (_rangeGeneral[0] == err.rangeSpecific[0] && _rangeGeneral[1] == err.rangeSpecific[1])))
                                 err.rangeGeneral = _rangeGeneral;
                         }
                         err.modified = true;
