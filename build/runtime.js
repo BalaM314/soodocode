@@ -52,20 +52,30 @@ function checkTypeMatch(a, b, range) {
             fail({
                 summary: f.short `Cannot test for equality between types ${a} and ${b}`,
                 elaboration: `the comparison will always return FALSE because the types do not overlap`,
-                help: `to make this comparison always return FALSE, enable the config "${configs.equality_checks.allow_different_types.name}"`,
+                help: {
+                    message: `to make this comparison always return FALSE`,
+                    config: configs.equality_checks.allow_different_types,
+                    value: true,
+                }
             }, range);
     }
     if ((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))) {
         if (configs.equality_checks.coerce_int_real.value)
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
-            fail(f.short `Cannot test for equality between types ${a} and ${b}\nhelp: to allow this, enable the config "${configs.equality_checks.coerce_int_real.name}"`, range);
+            fail({
+                summary: f.short `Cannot test for equality between types ${a} and ${b}`,
+                help: `to allow this, enable the config "${configs.equality_checks.coerce_int_real.name}"`
+            }, range);
     }
     if ((a.is("STRING") && b.is("CHAR")) || (b.is("CHAR") && a.is("STRING"))) {
         if (configs.equality_checks.coerce_string_char.value)
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
-            fail(f.short `Cannot test for equality between types ${a} and ${b}\nhelp: to allow this, enable the config "${configs.equality_checks.coerce_string_char.name}"`, range);
+            fail({
+                summary: f.short `Cannot test for equality between types ${a} and ${b}`,
+                help: `to allow this, enable the config "${configs.equality_checks.coerce_string_char.name}"`
+            }, range);
     }
     if (a instanceof ArrayVariableType && b instanceof ArrayVariableType &&
         checkTypeMatch(a.elementType, b.elementType, range)) {
