@@ -135,10 +135,9 @@ ${statement.nodes.map(t => t instanceof Token ? escapeHTML(t.text) : `<span clas
 	);
 }
 
-export function generateConfigsDialog():HTMLElement {
+export function generateConfigsDialog(){
 	// Behold, the Document Object Model!
-	const wrapper = document.createElement("div");
-	wrapper.id = "settings-dialog-inner";
+	const wrapper = getElement("settings-dialog-inner", HTMLDivElement);
 
 	for(const [sectionName, section] of Object.entries(configs)){
 		const header = document.createElement("span");
@@ -205,7 +204,13 @@ export function generateConfigsDialog():HTMLElement {
 		wrapper.append(settingsGrid);
 	}
 
-	return wrapper;
+	getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
+		if(confirm(`Are you sure you want to restore all settings to their default values?`)){
+			config.resetToDefaults();
+			config.saveConfigs();
+		}
+	});
+
 }
 
 
@@ -707,7 +712,7 @@ function main(){
 	setupEventHandlers();
 	setupAutosave();
 	setupFileGUI();
-	settingsDialog.append(generateConfigsDialog());
+	generateConfigsDialog();
 	setupTextEditor();
 	setupHeaderEasterEgg();
 	dumpFunctionsToGlobalScope();
