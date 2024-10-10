@@ -138,6 +138,7 @@ ${statement.nodes.map(t => t instanceof Token ? escapeHTML(t.text) : `<span clas
 export function generateConfigsDialog(){
 	// Behold, the Document Object Model!
 	const wrapper = getElement("settings-dialog-inner", HTMLDivElement);
+	wrapper.innerHTML = "";
 
 	for(const [sectionName, section] of Object.entries(configs)){
 		const header = document.createElement("span");
@@ -203,13 +204,6 @@ export function generateConfigsDialog(){
 		}
 		wrapper.append(settingsGrid);
 	}
-
-	getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
-		if(confirm(`Are you sure you want to restore all settings to their default values?`)){
-			config.resetToDefaults();
-			config.saveConfigs();
-		}
-	});
 
 }
 
@@ -289,7 +283,15 @@ function setupEventHandlers(){
 		};
 	};
 	getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+		generateConfigsDialog(); //update before showing
 		settingsDialog.showModal();
+	});
+	getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
+		if(confirm(`Are you sure you want to restore all settings to their default values?`)){
+			config.resetToDefaults();
+			generateConfigsDialog();
+			config.saveConfigs();
+		}
 	});
 	getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
 		filesDialog.showModal();

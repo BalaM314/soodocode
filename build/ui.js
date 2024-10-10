@@ -109,6 +109,7 @@ ${statement.nodes.map(t => t instanceof Token ? escapeHTML(t.text) : `<span clas
 }
 export function generateConfigsDialog() {
     const wrapper = getElement("settings-dialog-inner", HTMLDivElement);
+    wrapper.innerHTML = "";
     for (const [sectionName, section] of Object.entries(configs)) {
         const header = document.createElement("span");
         header.classList.add("settings-section-header");
@@ -182,12 +183,6 @@ export function generateConfigsDialog() {
         }
         wrapper.append(settingsGrid);
     }
-    getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
-        if (confirm(`Are you sure you want to restore all settings to their default values?`)) {
-            config.resetToDefaults();
-            config.saveConfigs();
-        }
-    });
 }
 export function evaluateExpressionDemo(node) {
     if (node instanceof Token) {
@@ -269,7 +264,15 @@ function setupEventHandlers() {
         };
     };
     getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+        generateConfigsDialog();
         settingsDialog.showModal();
+    });
+    getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
+        if (confirm(`Are you sure you want to restore all settings to their default values?`)) {
+            config.resetToDefaults();
+            generateConfigsDialog();
+            config.saveConfigs();
+        }
     });
     getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
         filesDialog.showModal();
