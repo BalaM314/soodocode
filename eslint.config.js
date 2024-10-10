@@ -1,5 +1,6 @@
 // @ts-check
 
+import { URL, fileURLToPath } from "url";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
@@ -13,7 +14,7 @@ export default tseslint.config(
 		languageOptions: {
 			parserOptions: {
 				project: ["./src/tsconfig.json", "./spec/tsconfig.json", "./scripts/tsconfig.json", "./cli/tsconfig.json"],
-				tsconfigRootDir: import.meta.dirname,
+				tsconfigRootDir: fileURLToPath(new URL(".", import.meta.url)),
 			}
 		},
 		rules: {
