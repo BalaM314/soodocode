@@ -45,7 +45,7 @@ function jsSieve(limit) {
     }
     return isPrime;
 }
-let times = [];
+const times = [];
 for (let i = 0; i < count; i++) {
     performance.mark("execution");
     runtime.runProgram(program.nodes);
