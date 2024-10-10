@@ -299,14 +299,13 @@ export class SoodocodeError extends Error {
             output += span(formatErrorLine(this.richMessage.summary, sourceCode), "error-message") + "\n";
             if (this.richMessage.elaboration) {
                 output += array(this.richMessage.elaboration).map(line => "  &bull; " + span(formatErrorLine(line, sourceCode), "error-message-elaboration") + "\n").join("");
-                output += "\n";
             }
             if (this.richMessage.context) {
                 output += array(this.richMessage.context).map(line => "\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n").join("");
-                output += "\n";
             }
             const { help } = this.richMessage;
             if (help) {
+                output += "\n";
                 if (Array.isArray(help) || typeof help === "string") {
                     output += span(array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n"), "error-message-help");
                 }
@@ -322,14 +321,16 @@ export class SoodocodeError extends Error {
                         };
                     const buttonAttributes = `class="error-message-help-clickable" onclick="currentConfigModificationFunc?.();this.classList.add('error-message-help-clicked');"`;
                     output += (`<span class="error-message-help">\
-help: ${escapeHTML(help.message ?? `To allow this`)}, \
+help: ${escapeHTML(help.message ?? `to allow this`)}, \
 <span ${shouldCreateButton ? buttonAttributes : ""}>${escapeHTML(help.value === true ? `enable the config "${help.config.name}"` :
                         help.value === false ? `disable the config "${help.config.name}"` :
                             ["increase", "decrease"].includes(help.value) ? `${help.value} the value of the config "${help.config.name}"` :
                                 `change the config "${help.config.name}" to ${String(help.value)}`)}</span></span>`);
+                    output += "\n";
                 }
             }
-            output += "\n\n" + this.showRange(sourceCode, true);
+            output += "\n";
+            output += this.showRange(sourceCode, true);
             return output;
         }
     }
@@ -488,6 +489,16 @@ export function* zip(...iters) {
         yield values.map(v => v.value);
     }
 }
+export function weave(...arrays) {
+    const out = [];
+    for (let j = 0;; j++) {
+        for (let i = 0; i < arrays.length; i++) {
+            if (j >= arrays[i].length)
+                return out;
+            out.push(arrays[i][j]);
+        }
+    }
+}
 export function* withRemaining(items) {
     for (let i = 0; i < items.length; i++) {
         yield [items[i], items.slice(i + 1)];
@@ -556,6 +567,18 @@ export const f = {
     short: tagProcessor(formatShort),
     quote: tagProcessor(formatQuoted),
     debug: tagProcessor(formatDebug),
+    quoteRange(stringChunks, ...varChunks) {
+        return weave(stringChunks.map((chunk, i) => {
+            if (varChunks.length == 0)
+                return chunk;
+            if (i == 0)
+                return chunk + `"`;
+            else if (i == varChunks.length)
+                return `"` + chunk;
+            else
+                return `"${chunk}"`;
+        }), varChunks);
+    },
 };
 export function forceType(input) { }
 export function isKey(record, key) {

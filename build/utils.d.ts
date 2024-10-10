@@ -82,6 +82,7 @@ type Iterators<T extends unknown[]> = {
     [P in keyof T]: Iterator<T[P]>;
 };
 export declare function zip<T extends unknown[]>(...iters: Iterators<T>): IterableIterator<T>;
+export declare function weave<T>(...arrays: ReadonlyArray<ReadonlyArray<T>>): T[];
 export declare function withRemaining<T>(items: T[]): IterableIterator<[T, T[]]>;
 export declare function tagProcessor<T>(transformer: (chunk: T, index: number, allStringChunks: readonly string[], allVarChunks: readonly T[]) => string): TagFunction<T, string>;
 export type Formattable = IFormattable | IFormattable[] | string | Exclude<UnresolvedVariableType, IFormattable> | String | Number | Boolean | number | boolean;
@@ -90,6 +91,7 @@ export declare const f: {
     short: TagFunction<Formattable, string>;
     quote: TagFunction<Formattable, string>;
     debug: TagFunction<Formattable, string>;
+    quoteRange(stringChunks: readonly string[], ...varChunks: readonly (string | TextRangeLike)[]): (string | TextRangeLike)[];
 };
 export declare function forceType<T>(input: unknown): asserts input is T;
 export declare function isKey<T extends Record<PropertyKey, unknown>>(record: T, key: PropertyKey): key is keyof T;
