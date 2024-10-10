@@ -274,8 +274,17 @@ export class SoodocodeError extends Error {
                 output += array(this.richMessage.context).map(line => "\t" + formatErrorLine(line, sourceCode) + "\n").join("");
                 output += "\n";
             }
-            if (this.richMessage.help) {
-                output += array(this.richMessage.help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n");
+            const { help } = this.richMessage;
+            if (help) {
+                if (Array.isArray(help) || typeof help === "string") {
+                    output += array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n");
+                }
+                else {
+                    output += `help: ${help.message ?? `To allow this`}, ${help.value === true ? `enable the config "${help.config.name}"` :
+                        help.value === false ? `disable the config "${help.config.name}"` :
+                            ["increase", "decrease"].includes(help.value) ? `${help.value} the value of the config "${help.config.name}"` :
+                                `change the config "${help.config.name}" to ${String(help.value)}`}`;
+                }
             }
             output += "\n\n" + this.showRange(sourceCode, false);
             return output;
@@ -296,8 +305,29 @@ export class SoodocodeError extends Error {
                 output += array(this.richMessage.context).map(line => "\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n").join("");
                 output += "\n";
             }
-            if (this.richMessage.help) {
-                output += array(this.richMessage.help).map(line => span(`help: ${formatErrorLine(line, sourceCode)}`, "error-message-help")).join("\n");
+            const { help } = this.richMessage;
+            if (help) {
+                if (Array.isArray(help) || typeof help === "string") {
+                    output += span(array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n"), "error-message-help");
+                }
+                else {
+                    const shouldCreateButton = typeof help.value !== "string";
+                    if (shouldCreateButton)
+                        globalThis.currentConfigModificationFunc = () => {
+                            help.config.value = help.value;
+                            globalThis.currentConfigModificationFunc = () => {
+                                document.getElementById("execute-soodocode-button")?.click();
+                                globalThis.currentConfigModificationFunc = undefined;
+                            };
+                        };
+                    const buttonAttributes = `class="error-message-help-clickable" onclick="currentConfigModificationFunc?.();this.classList.add('error-message-help-clicked');"`;
+                    output += (`<span class="error-message-help">\
+help: ${escapeHTML(help.message ?? `To allow this`)}, \
+<span ${shouldCreateButton ? buttonAttributes : ""}>${escapeHTML(help.value === true ? `enable the config "${help.config.name}"` :
+                        help.value === false ? `disable the config "${help.config.name}"` :
+                            ["increase", "decrease"].includes(help.value) ? `${help.value} the value of the config "${help.config.name}"` :
+                                `change the config "${help.config.name}" to ${String(help.value)}`)}</span></span>`);
+                }
             }
             output += "\n\n" + this.showRange(sourceCode, true);
             return output;

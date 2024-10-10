@@ -1,3 +1,4 @@
+import { Config } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import type { TokenMatcher } from "./parser-types.js";
 import type { UnresolvedVariableType } from "./runtime-types.js";
@@ -36,12 +37,20 @@ export declare function getRange(input?: TextRangeLike | null): TextRange | unde
 export declare function findRange(args: unknown[]): TextRange | undefined;
 export declare function array<T>(input: T | T[]): T[];
 type ErrorMessageLine = string | Array<string | TextRangeLike>;
+type ConfigSuggestion<T> = {
+    message?: string;
+    config: Config<T, boolean>;
+    value: T extends number ? "increase" | "decrease" : T;
+};
 type ErrorMessage = string | {
     summary: ErrorMessageLine;
     elaboration?: string | ErrorMessageLine[];
     context?: string | ErrorMessageLine[];
-    help?: string | ErrorMessageLine[];
+    help?: string | ErrorMessageLine[] | ConfigSuggestion<unknown>;
 };
+declare global {
+    var currentConfigModificationFunc: (() => void) | undefined;
+}
 export declare class SoodocodeError extends Error {
     richMessage: ErrorMessage;
     rangeSpecific?: (TextRange | null) | undefined;
