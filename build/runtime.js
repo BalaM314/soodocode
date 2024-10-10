@@ -45,27 +45,24 @@ function checkTypeMatch(a, b, range) {
         return true;
     if ((a.is("INTEGER") && b instanceof IntegerRangeVariableType) || (a instanceof IntegerRangeVariableType && b.is("INTEGER")))
         return true;
+    const errorSummary = f.quote `Cannot test for equality between types ${a} and ${b}`;
+    let elaboration = undefined;
     if (a instanceof IntegerRangeVariableType && b instanceof IntegerRangeVariableType) {
         if (a.overlaps(b))
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
-            fail({
-                summary: f.short `Cannot test for equality between types ${a} and ${b}`,
-                elaboration: `the comparison will always return FALSE because the types do not overlap`,
-                help: {
-                    message: `to make this comparison always return FALSE`,
-                    config: configs.equality_checks.allow_different_types,
-                    value: true,
-                }
-            }, range);
+            elaboration = `the comparison will always return FALSE because the types do not overlap`;
     }
     if ((a.is("INTEGER") && b.is("REAL")) || (b.is("REAL") && a.is("INTEGER"))) {
         if (configs.equality_checks.coerce_int_real.value)
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
             fail({
-                summary: f.short `Cannot test for equality between types ${a} and ${b}`,
-                help: `to allow this, enable the config "${configs.equality_checks.coerce_int_real.name}"`
+                summary: errorSummary,
+                help: {
+                    config: configs.equality_checks.coerce_int_real,
+                    value: true,
+                }
             }, range);
     }
     if ((a.is("STRING") && b.is("CHAR")) || (b.is("CHAR") && a.is("STRING"))) {
@@ -73,8 +70,11 @@ function checkTypeMatch(a, b, range) {
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
             fail({
-                summary: f.short `Cannot test for equality between types ${a} and ${b}`,
-                help: `to allow this, enable the config "${configs.equality_checks.coerce_string_char.name}"`
+                summary: errorSummary,
+                help: {
+                    config: configs.equality_checks.coerce_string_char,
+                    value: true,
+                }
             }, range);
     }
     if (a instanceof ArrayVariableType && b instanceof ArrayVariableType &&
@@ -82,10 +82,25 @@ function checkTypeMatch(a, b, range) {
         if (configs.equality_checks.coerce_arrays.value)
             return true;
         else if (!configs.equality_checks.allow_different_types.value)
-            fail(f.short `Cannot test for equality between types ${a} and ${b}\n${configs.equality_checks.coerce_arrays.errorHelp}`, range);
+            fail({
+                summary: errorSummary,
+                elaboration: `these types have different lengths`,
+                help: {
+                    config: configs.equality_checks.coerce_arrays,
+                    value: true
+                }
+            }, range);
     }
     if (!configs.equality_checks.allow_different_types.value)
-        fail(f.short `Cannot test for equality between types ${a} and ${b}\n${configs.equality_checks.allow_different_types.errorHelp}`, range);
+        fail({
+            summary: errorSummary,
+            elaboration,
+            help: {
+                message: `to make this comparison always return FALSE`,
+                config: configs.equality_checks.allow_different_types,
+                value: true
+            }
+        }, range);
     return false;
 }
 function checkValueEquality(type, a, b, aPath, bPath, range) {
@@ -197,7 +212,7 @@ function coerceValue(value, from, to, range) {
                 disabledConfig = configs.coercion.enums_to_string;
         }
     }
-    if (from.isInteger() || from.is("REAL") && to.is("BOOLEAN"))
+    if ((from.isInteger() || from.is("REAL")) && to.is("BOOLEAN"))
         helpMessage = `to check if this number is non-zero, add "\xA0<>\xA00" after this expression`;
     if (from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))) {
         if (configs.coercion.enums_to_integer.value)
@@ -216,9 +231,14 @@ function coerceValue(value, from, to, range) {
         else
             assignabilityError = f.quote `Value ${v} is not an integer`;
     }
-    fail(f.quote `Cannot coerce value of type ${from} to ${to}` + (assignabilityError ? `: ${assignabilityError}.` :
-        disabledConfig ? `\nhelp: enable the config "${disabledConfig.name}" to allow this` :
-            helpMessage ? `\nhelp: ${helpMessage}` : ""), range);
+    fail({
+        summary: f.quote `Cannot coerce value of type ${from} to ${to}`,
+        elaboration: assignabilityError,
+        help: disabledConfig ? {
+            config: disabledConfig,
+            value: true
+        } : (helpMessage ?? undefined)
+    }, range);
 }
 function finishEvaluation(value, from, to) {
     if (to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
@@ -251,7 +271,10 @@ let Runtime = (() => {
             processArrayAccess(expr, outType) {
                 const _target = this.evaluateExpr(expr.target, "variable");
                 if (!(_target.type instanceof ArrayVariableType))
-                    fail(f.quote `Cannot convert variable of type ${_target.type} to an array`, expr.target);
+                    fail({
+                        summary: f.quoteRange `Variable ${expr.target} is not an array`,
+                        elaboration: f.quote `Indexing notation can only be used on arrays, but the variable is of type ${_target.type}`
+                    }, expr.target);
                 const target = _target;
                 const targetType = target.type;
                 if (!targetType.lengthInformation)
