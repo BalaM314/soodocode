@@ -257,3 +257,8 @@ export function loadConfigs() {
     }
     catch { }
 }
+export function resetToDefaults() {
+    for (const config of Object.values(configs).map(c => Object.values(c)).flat()) {
+        config.value = config.defaultValue;
+    }
+}
