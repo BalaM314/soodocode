@@ -16,7 +16,7 @@ import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, Consta
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 
-
+/** A class method, wrapped together with the information needed to call it. */
 export type ClassMethodCallInformation = {
 	/** This is the class type that the method is linked to, NOT the class type of the instance. Used to determine what SUPER is. */
 	clazz: ClassVariableType;
@@ -27,7 +27,7 @@ export type ClassMethodCallInformation = {
 /**
  * Compares two types to see if they are suitable for equality checking.
  * Returns true if they are equal, false if they are not equal but the config to allow comparions is set,
- * and throws an error otherwise.
+ * and fails otherwise.
  **/
 function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean {
 	if(typesEqual(a, b)) return true;
@@ -91,7 +91,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 }
 
 /**
- * Compares two values to see if they are equal. May throw an error depending on configs. Assumes the types are compatible.
+ * Compares two values of the same type to see if they are equal.
  **/
 function checkValueEquality<T extends VariableType>(type:T, a:VariableTypeMapping<T> | null, b:VariableTypeMapping<T> | null, aPath:string, bPath:string, range:TextRange):boolean {
 	if(a === null && b === null) return true;
@@ -130,6 +130,7 @@ function checkValueEquality<T extends VariableType>(type:T, a:VariableTypeMappin
 	return false;
 }
 
+/** Coerces a value of one type to another type. Fails if the conversion is not possible. */
 function coerceValue<T extends VariableType, S extends VariableType>(value:VariableTypeMapping<T>, from:T, to:S, range?:TextRangeLike):VariableTypeMapping<S> {
 	//typescript really hates this function, beware
 
@@ -204,6 +205,8 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 		} : (helpMessage ?? undefined)
 	}, range);
 }
+
+/** Finishes evaluating an expression or function call by ensuring the evaluation result is of the specified type. Also handles specifying generic array types. */
 function finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
 	if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
 		return typedValue(from, coerceValue(value, from, to)); //don't have a varlength array as the output type
@@ -211,18 +214,28 @@ function finishEvaluation(value:VariableValue, from:VariableType, to:VariableTyp
 	else return typedValue(from, value);
 }
 
+/** Handles all the state necessary to run a parsed program. */
 export class Runtime {
 	/**
 	 * Stores the current list of scopes.
 	 * If this is manually modified, Runtime.variableCache needs to be handled.
 	 **/
 	scopes: VariableScope[] = [];
+	/** Stores all declared functions. Functions definitions are global. */
 	functions: Record<string, FunctionData> = Object.create(null);
-	/** Stores opened files. Once a file is closed, the property value is set to `undefined`. After program execution is complete, the properties are deleted. */
+	/**
+	 * Stores opened files.
+	 * Once a file is closed, the property value is set to `undefined`.
+	 * After program execution is complete, the properties are deleted,
+	 * and a check is made to ensure that all files have been closed.
+	 */
 	openFiles: Record<string, OpenedFile | undefined> = Object.create(null);
 	/** While a class method is executing, this variable is set to data about the class method. */
 	classData: {
-		/** This is the class type that the method is linked to, NOT the class type of the instance. Used to determine what SUPER is. */
+		/**
+		 * This is the class type that the method is linked to, NOT the class type of the instance.
+		 * Used to determine what SUPER is.
+		 */
 		clazz:ClassVariableType;
 		instance:VariableTypeMapping<ClassVariableType>;
 		method:ClassMethodData;
@@ -232,14 +245,24 @@ export class Runtime {
 	/** While a pointer type is being resolved, this variable is set to the name of the type. */
 	currentlyResolvingPointerTypeName: string | null = null;
 	builtinFunctions = getBuiltinFunctions();
+	/** Stores the total number of statements executed. Used for the statement limits check. */
 	statementsExecuted = 0;
 	constructor(
 		public _input: (message:string, type:VariableType) => string, //TODO change signature
 		public _output: (values:TypedValue[]) => void,
+		/**
+		 * Uses dependency injection.
+		 * Defaults to a browser file system, but can also be set to a nodejs runtime.
+		 * Writes are buffered: the file system's update method is only called when closing a file,
+		 * so blocking the thread on writing a file is fine.
+		 */
 		public fs:FileSystem = new BrowserFileSystem(false),
 	){}
+	/** Processes an array access expression, optionally specifying the type. */
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;
+	/** Processes an array access expression, evaluating it as a variable. */
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType:"variable"):VariableData;
+	/** Loose overload */
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):TypedValue | VariableData;
 	@errorBoundary()
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType | "variable"):TypedValue | VariableData | void {
@@ -298,11 +321,11 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 		if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
 		return finishEvaluation(output, targetType.elementType, outType);
 	}
-	/* get a property, optionally specifying type */
+	/* Processes a property access expression, optionally specifying type */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType):TypedValue;
-	/* get a property as a variable (so it can be written to) */
+	/* Processes a property access expression, evaluating it as a variable (so it can be written to) */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType:"variable"):VariableData | ConstantData;
-	/* get a property as a function */
+	/* Processes a property access expression, evaluating it as a function */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType:"function"):ClassMethodCallInformation;
 	/* loose overload */
 	processRecordAccess(expr:ExpressionASTBranchNode, outType?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | ClassMethodCallInformation;
@@ -415,16 +438,22 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`,
 		variable.value = value;
 		variable.updateType?.(type);
 	}
+	/** Evaluates an expression. */
 	evaluateExpr(expr:ExpressionAST):TypedValue;
 	evaluateExpr(expr:ExpressionAST, undefined:undefined, recursive:boolean):TypedValue;
+	/** Evaluates an expression, expecting it to be a (writable) variable. */
 	evaluateExpr(expr:ExpressionAST, type:"variable", recursive?:boolean):VariableData | ConstantData;
+	/** Evaluates an expression, expecting it to be a function. */
 	evaluateExpr(expr:ExpressionAST, type:"function", recursive?:boolean):FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
+	/** Evaluates an expression, expecting it to be of a specified type. */
 	evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T, recursive?:boolean):TypedValue<T extends undefined ? VariableType : T & {}>
+	/** Evaluates an expression, loose overload */
 	evaluateExpr<T extends VariableType | undefined | "variable">(expr:ExpressionAST, type:T, recursive?:boolean):VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>
 	@errorBoundary({
 		predicate: (_expr, _type, recursive) => !recursive,
 		message: () => `Cannot evaluate expression "$rc": `
 	})
+	/** Main expression evaluation function. Uses recursion to evaluate the expression AST. */
 	evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function", recursive = false):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(expr == undefined) crash(`expr was ${expr as null | undefined}`);
 
@@ -675,9 +704,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		expr.operator.category satisfies never;
 		impossible();
 	}
+	/** Evaluates an expression leaf node. */
 	evaluateToken(token:Token):TypedValue;
+	/** Evaluates an expression leaf node, expecting it to be a (writable) variable. */
 	evaluateToken(token:Token, type:"variable"):VariableData | ConstantData;
+	/** Evaluates an expression leaf node, expecting it to be a function. */
 	evaluateToken(token:Token, type:"function"):FunctionData | BuiltinFunctionData;
+	/** Evaluates an expression leaf node, expecting it to be of a specific type. */
 	evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
 	evaluateToken(token:Token, type?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(token.type == "name"){
@@ -724,8 +757,19 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			default: fail(f.quote`Cannot evaluate token ${token}`, token);
 		}
 	}
+	/** Special value used to catch errors caused by needing to access the value of "this" */
 	static NotStatic = Symbol("not static");
+	/**
+	 * Evaluates a token statically.
+	 * Fails if the evaluation needs access to data stored in a Runtime,
+	 * for example, if it needs to read the value of a variable, or call a function.
+	 */
 	static evaluateToken(token:Token):TypedValue | null;
+	/**
+	 * Evaluates a token statically.
+	 * Fails if the evaluation needs access to data stored in a Runtime,
+	 * for example, if it needs to read the value of a variable, or call a function.
+	 */
 	static evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
 	static evaluateToken(token:Token, type?:VariableType):TypedValue | null {
 		//major shenanigans
@@ -739,9 +783,29 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			else throw err;
 		}
 	}
+	/**
+	 * Evaluates an expression statically.
+	 * Fails if the evaluation needs access to data stored in a Runtime,
+	 * for example, if it needs to read the value of a variable, or call a function.
+	 */
 	static evaluateExpr(expr:ExpressionAST):TypedValue | null;
+	/**
+	 * Evaluates an expression statically.
+	 * Fails if the evaluation needs access to data stored in a Runtime,
+	 * for example, if it needs to read the value of a variable, or call a function.
+	 */
 	static evaluateExpr<T extends VariableType>(expr:ExpressionAST, type:T):TypedValue<T> | null;
+	/**
+	 * Evaluates an expression statically.
+	 * Fails if the evaluation needs access to data stored in a Runtime,
+	 * for example, if it needs to read the value of a variable, or call a function.
+	 */
 	static evaluateExpr<T extends VariableType | undefined>(expr:ExpressionAST, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
+	/**
+	 * Evaluates an expression statically.
+	 * Fails if the evaluation needs access to data stored in a Runtime,
+	 * for example, if it needs to read the value of a variable, or call a function.
+	 */
 	static evaluateExpr<T extends VariableType | undefined | "variable">(expr:ExpressionAST, type:T, recursive?:boolean):VariableData | ConstantData | TypedValue<T extends (undefined | "variable") ? VariableType : T & {}>
 	static evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable"):VariableData | ConstantData | TypedValue | null {
 		try {
@@ -757,6 +821,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			else throw err;
 		}
 	}
+	/** Helper function to evaluate a {@link TypedNodeValue} */
 	evaluate<
 		T extends ExpressionASTNode,
 		InputType extends PrimitiveVariableTypeName | VariableType,
@@ -764,7 +829,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 	>(value:TypedNodeValue<T, InputType, Type>):VariableTypeMapping<Type> {
 		return value.value ?? (this.evaluateExpr(value.node, value.type) as TypedValue_<Type>).value;
 	}
+	/** Helper function to evaluate an {@link UntypedNodeValue} */
 	evaluateUntyped(expr:UntypedNodeValue):TypedValue;
+	/** Helper function to evaluate an {@link UntypedNodeValue}, with a known type. */
 	evaluateUntyped<Type extends VariableType>(expr:UntypedNodeValue, type:Type):TypedValue<Type>;
 	evaluateUntyped(value:UntypedNodeValue, type?:VariableType){
 		if(value.value != null && type && !typesEqual(value.value.type, type)){
@@ -778,6 +845,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		return value.value ?? this.evaluateExpr(value.node, type);
 	}
+	/** Resolves an {@link UnresolvedVariableType} using the currently known types. */
 	resolveVariableType(type:UnresolvedVariableType):VariableType {
 		if(type instanceof PrimitiveVariableType) return type;
 		else if(type instanceof IntegerRangeVariableType) return type;
@@ -786,9 +854,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			return type as never as ArrayVariableType<true>;
 		} else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
 	}
-	/**
-	 * Called when a class doesn't exist, used to check for capitalization and typos.
-	 */
+	/** Called when a class doesn't exist; used to check for capitalization and typos. */
 	handleNonexistentClass(name:string, range:TextRangeLike):never {
 		const allClasses:(readonly [string, ClassVariableType])[] =
 			[...this.activeScopes()].flatMap(s =>
@@ -806,9 +872,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		fail(f.quote`Class ${name} does not exist`, range);
 	}
-	/**
-	 * Called when a type doesn't exist, used to check for capitalization and typos.
-	 */
+	/** Called when a type doesn't exist; used to check for capitalization and typos. */
 	handleNonexistentType(name:string, range:TextRangeLike):never {
 		const allTypes:(readonly [string, VariableType])[] = [
 			...[...this.activeScopes()].flatMap(s => Object.entries(s.types)),
@@ -826,6 +890,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		fail(f.quote`Type ${name} does not exist`, range);
 	}
+	/** Called when a function doesn't exist; used to check for capitalization and typos. */
 	handleNonexistentFunction(name:string, range:TextRangeLike):never {
 		const allFunctions:(readonly [string, FunctionData | BuiltinFunctionData])[] = [
 			...Object.entries(this.functions),
@@ -841,6 +906,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		fail(f.quote`Function ${name} does not exist`, range);
 	}
+	/** Called when a variable doesn't exist; used to check for capitalization and typos. */
 	handleNonexistentVariable(name:string, range:TextRangeLike):never {
 		const allVariables:string[] = [
 			...[...this.activeScopes()].flatMap(s => Object.keys(s.variables)),
@@ -853,6 +919,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		fail(f.quote`Variable ${name} does not exist`, range);
 	}
+	//TODO remove, generator performance sucks
 	*activeScopes(){
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			yield this.scopes[i];
@@ -892,9 +959,11 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		}
 		return null;
 	}
+	/** Returns the current active scope. Used for defining new variables or types. */
 	getCurrentScope():VariableScope {
 		return this.scopes.at(-1) ?? crash(`No scope?`);
 	}
+	/** Checks if accessing the private members of a class is allowed based on the current scope chain. */
 	canAccessClass(clazz:ClassVariableType):boolean {
 		for(const { statement } of this.scopes.slice().reverse()){
 			if(statement instanceof ClassStatement)
@@ -945,12 +1014,17 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		else
 			return this.functions[scope.statement.name] ?? crash(`Function ${scope.statement.name} does not exist`);
 	}
+	/** Makes a copy of a value, so that subsequent mutations will not affect the original. Used for passing arguments BYVAL. */
 	cloneValue<T extends VariableType>(type:T, value:VariableTypeMapping<T> | null):VariableTypeMapping<T> | null {
+		//Many casts due to TS generic return handling
 		if(value == null) return value;
+		//JS Primitives
 		if(typeof value == "string") return value;
 		if(typeof value == "number") return value;
 		if(typeof value == "boolean") return value;
+		//DATE
 		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
+		//ARRAY types
 		if(Array.isArray(value)) return value.slice().map(v =>
 			this.cloneValue((type as ArrayVariableType).elementType ?? crash(`Cannot clone value in an array of unknown type`), v)
 		) as VariableTypeMapping<T>;
@@ -967,6 +1041,7 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 		} satisfies VariableTypeMapping<ClassVariableType> as VariableTypeMapping<ClassVariableType> as VariableTypeMapping<T>;
 		crash(f.quote`Cannot clone value of type ${type}`);
 	}
+	/** Evaluates arguments and assembles the scope required for calling a function or procedure. */
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:RangeArray<ExpressionAST>){
 		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
 		const scope:VariableScope = {
@@ -1151,12 +1226,13 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			}
 		}
 	}
+	/** Updates the count for number of statements executed, and fails if it is over the limit. */
 	statementExecuted(range:TextRangeLike, increment = 1){
 		if((this.statementsExecuted += increment) > configs.statements.max_statements.value){
 			fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
 		}
 	}
-	/** Creates a scope. */
+	/** Runs a block as the main program. Creates a global scope, and checks for unclosed files. */
 	runProgram(code:ProgramASTNodeGroup){
 		code.preRun();
 		this.runBlock(code, false, {
@@ -1171,7 +1247,9 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
 			else fail(f.quote`File ${name} was not closed`, file.openRange);
 		}
 	}
+	/** Gets an opened file, failing if it has not been opened. */
 	getOpenFile(filename:string):OpenedFile;
+	/** Gets an opened file, failing if it was not opened with one of the expected modes. */
 	getOpenFile<T extends FileMode>(filename:string, modes:T[], operationDescription:string):OpenedFileOfType<T>;
 	getOpenFile(filename:string, modes?:FileMode[], operationDescription?:string):OpenedFile {
 		const data = (this.openFiles[filename] ?? fail(f.quote`File ${filename} has not been opened.`, undefined));

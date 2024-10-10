@@ -17,7 +17,7 @@ export interface FileSystem {
 	createFile(filename:string):void;
 	/** Changes the content of an existing file. Creates the file if it does not exist. */
 	updateFile(filename:string, newContent:string):void;
-	/** Clears the content of (pr truncates) an existing file. Throws an error if it does not exist. */
+	/** Clears the content of an existing file. Throws an error if it does not exist. */
 	clearFile(filename:string, newContent:string):void;
 	/** Deletes an existing file. Throws an error if it does not exist. */
 	deleteFile(filename:string):void;
