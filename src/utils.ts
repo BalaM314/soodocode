@@ -5,6 +5,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains utility functions.
 */
 
+import { Config } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
 import type { TokenMatcher } from "./parser-types.js";
@@ -296,17 +297,51 @@ export function array<T>(input:T | T[]):T[] {
 }
 
 type ErrorMessageLine = string | Array<string | TextRangeLike>;
+/** Used for rich error messages. May contain a button that changes the config value. */
+type ConfigSuggestion<T> = {
+	/**
+	 * If unspecified, the help text will be: `help: To allow this, ${enable/disable} the config "${config name}"`
+	 * If specified, this message will replace "To allow this"
+	 * @example
+	 * {
+	 *   message: "To fix this",
+	 *   config: configs.syntax.semicolons_as_newlines,
+	 *   value: true,
+	 * }
+	 * `help: To fix this, enable the config "Semicolons as newlines"`
+	 */
+	message?: string;
+	config: Config<T, boolean>;
+	value: T extends number ? "increase" | "decrease" : T;
+};
+
 type ErrorMessage = string | {
+	/** Short summary of the error, displayed at the top */
 	summary: ErrorMessageLine;
+	/** Details about what exactly caused the error, displayed after the summary */
 	elaboration?: string | ErrorMessageLine[];
+	/**
+	 * Should be automatically filled in
+	 * @example
+	 * while evaluating the expression "2 + a + 2"
+	 * while running the statement "OUTPUT 2 + a + 2"
+	 */
 	context?: string | ErrorMessageLine[];
-	help?: string | ErrorMessageLine[];
+	/**
+	 * Suggests a solution to the error
+	 */
+	help?: string | ErrorMessageLine[] | ConfigSuggestion<unknown>;
 };
 function formatErrorLine(line:ErrorMessageLine, sourceCode:string):string {
 	return typeof line == "string" ? line : line.map(chunk =>
 		typeof chunk == "string" ? chunk :
 		sourceCode.slice(...getRange(chunk))
 	).join("");
+}
+
+declare global {
+	// eslint-disable-next-line no-var
+	var currentConfigModificationFunc: (() => void) | undefined;
 }
 export class SoodocodeError extends Error {
 	modified = false;
@@ -329,8 +364,19 @@ export class SoodocodeError extends Error {
 				output += array(this.richMessage.context).map(line => "\t" + formatErrorLine(line, sourceCode) + "\n").join("");
 				output += "\n";
 			}
-			if(this.richMessage.help){
-				output += array(this.richMessage.help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n");
+			const { help } = this.richMessage;
+			if(help){
+				if(Array.isArray(help) || typeof help === "string"){
+					//Lines or string
+					output += array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n");
+				} else {
+					output += `help: ${help.message ?? `To allow this`}, ${
+						help.value === true ? `enable the config "${help.config.name}"` :
+						help.value === false ? `disable the config "${help.config.name}"` :
+						["increase", "decrease"].includes(help.value) ? `${help.value} the value of the config "${help.config.name}"` :
+						`change the config "${help.config.name}" to ${String(help.value)}`
+					}`;
+				}
 			}
 			output += "\n\n" + this.showRange(sourceCode, false);
 			return output;
@@ -353,8 +399,34 @@ export class SoodocodeError extends Error {
 				output += array(this.richMessage.context).map(line => "\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n").join("");
 				output += "\n";
 			}
-			if(this.richMessage.help){
-				output += array(this.richMessage.help).map(line => span(`help: ${formatErrorLine(line, sourceCode)}`, "error-message-help")).join("\n");
+			const { help } = this.richMessage;
+			if(help){
+				if(Array.isArray(help) || typeof help === "string"){
+					//Lines or string
+					output += span(array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n"), "error-message-help");
+				} else {
+					const shouldCreateButton = typeof help.value !== "string";
+					//Add a button that enables it
+					if(shouldCreateButton)
+						globalThis.currentConfigModificationFunc = () => {
+							help.config.value = help.value;
+							globalThis.currentConfigModificationFunc = () => {
+								document.getElementById("execute-soodocode-button")?.click();
+								globalThis.currentConfigModificationFunc = undefined;
+							};
+						};
+					const buttonAttributes = `class="error-message-help-clickable" onclick="currentConfigModificationFunc?.();this.classList.add('error-message-help-clicked');"`;
+					output += (
+`<span class="error-message-help">\
+help: ${escapeHTML(help.message ?? `To allow this`)}, \
+<span ${shouldCreateButton ? buttonAttributes : ""}>${escapeHTML(
+	help.value === true ? `enable the config "${help.config.name}"` :
+	help.value === false ? `disable the config "${help.config.name}"` :
+	["increase", "decrease"].includes(help.value) ? `${help.value} the value of the config "${help.config.name}"` :
+	`change the config "${help.config.name}" to ${String(help.value)}`
+)}</span></span>`
+					);
+				}
 			}
 			output += "\n\n" + this.showRange(sourceCode, true);
 			return output;

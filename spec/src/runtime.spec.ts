@@ -1039,7 +1039,12 @@ const statementTests = ((data:Record<string, [
 			"keyword.file_mode.append"
 		]],
 		r => {},
-		"error"
+		r => expect(r.openFiles["amogus.txt"]).toEqual({
+			name: "amogus.txt",
+			mode: "APPEND",
+			openRange: anyRange,
+			text: "",
+		})
 	],
 	files_open_nonexistent_for_random: [
 		[OpenFileStatement, [

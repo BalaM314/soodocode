@@ -230,6 +230,23 @@ td, th {
 .error-message {
 	color: red;
 }
+.error-message-help-clickable {
+	cursor: pointer;
+	color: #DDF;
+	text-decoration: underline solid #DDF 1px;
+}
+.error-message-help-clickable:hover {
+	color: #AFF;
+	text-decoration: underline solid #AFF 1px;
+}
+.error-message-help-clickable:active {
+	color: #9FF;
+	text-decoration: underline solid #9FF 1px;
+}
+.error-message-help-clickable.error-message-help-clicked::after {
+	content: "✅🔄️";
+	display: inline-block;
+}
 
 .program-display-inner {
 	border-left: 15px solid var(--program-block-accent-color);
