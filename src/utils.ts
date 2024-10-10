@@ -300,8 +300,8 @@ type ErrorMessageLine = string | Array<string | TextRangeLike>;
 /** Used for rich error messages. May contain a button that changes the config value. */
 type ConfigSuggestion<T> = {
 	/**
-	 * If unspecified, the help text will be: `help: To allow this, ${enable/disable} the config "${config name}"`
-	 * If specified, this message will replace "To allow this"
+	 * The help text will be: `help: ${message}, ${enable/disable} the config "${config name}"`
+	 * If unspecified, this message will be "To allow this"
 	 * @example
 	 * {
 	 *   message: "To fix this",
@@ -393,14 +393,13 @@ export class SoodocodeError extends Error {
 			output += span(formatErrorLine(this.richMessage.summary, sourceCode), "error-message") + "\n";
 			if(this.richMessage.elaboration){
 				output += array(this.richMessage.elaboration).map(line => "  &bull; " + span(formatErrorLine(line, sourceCode), "error-message-elaboration") + "\n").join("");
-				output += "\n";
 			}
 			if(this.richMessage.context){
 				output += array(this.richMessage.context).map(line => "\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n").join("");
-				output += "\n";
 			}
 			const { help } = this.richMessage;
 			if(help){
+				output += "\n"; //Extra blank line before the help message
 				if(Array.isArray(help) || typeof help === "string"){
 					//Lines or string
 					output += span(array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n"), "error-message-help");
@@ -418,7 +417,7 @@ export class SoodocodeError extends Error {
 					const buttonAttributes = `class="error-message-help-clickable" onclick="currentConfigModificationFunc?.();this.classList.add('error-message-help-clicked');"`;
 					output += (
 `<span class="error-message-help">\
-help: ${escapeHTML(help.message ?? `To allow this`)}, \
+help: ${escapeHTML(help.message ?? `to allow this`)}, \
 <span ${shouldCreateButton ? buttonAttributes : ""}>${escapeHTML(
 	help.value === true ? `enable the config "${help.config.name}"` :
 	help.value === false ? `disable the config "${help.config.name}"` :
@@ -426,9 +425,11 @@ help: ${escapeHTML(help.message ?? `To allow this`)}, \
 	`change the config "${help.config.name}" to ${String(help.value)}`
 )}</span></span>`
 					);
+					output += "\n";
 				}
 			}
-			output += "\n\n" + this.showRange(sourceCode, true);
+			output += "\n"; //Extra blank line
+			output += this.showRange(sourceCode, true);
 			return output;
 		}
 	}
@@ -611,6 +612,15 @@ export function* zip<T extends unknown[]>(...iters:Iterators<T>):IterableIterato
 		yield values.map(v => v.value) as T;
 	}
 }
+export function weave<T>(...arrays:ReadonlyArray<ReadonlyArray<T>>):T[] {
+	const out:T[] = [];
+	for(let j = 0 ;; j ++){
+		for(let i = 0; i < arrays.length; i ++){
+			if(j >= arrays[i].length) return out;
+			out.push(arrays[i][j]);
+		}
+	}
+}
 
 export function* withRemaining<T>(items:T[]):IterableIterator<[T, T[]]> {
 	for(let i = 0; i < items.length; i ++){
@@ -678,6 +688,14 @@ export const f = {
 	short: tagProcessor(formatShort),
 	quote: tagProcessor(formatQuoted),
 	debug: tagProcessor(formatDebug),
+	quoteRange(stringChunks: readonly string[], ...varChunks: readonly (string | TextRangeLike)[]):(string | TextRangeLike)[] {
+		return weave(stringChunks.map((chunk, i) => {
+			if(varChunks.length == 0) return chunk;
+			if(i == 0) return chunk + `"`;
+			else if(i == varChunks.length) return `"` + chunk;
+			else return `"${chunk}"`;
+		}), varChunks);
+	},
 };
 
 export function forceType<T>(input:unknown):asserts input is T {}
