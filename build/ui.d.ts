@@ -7,7 +7,7 @@ export declare function flattenTree(program: parserTypes.ProgramASTNodeGroup): (
 export declare function displayExpressionHTML(node: ExpressionASTNodeExt, expand?: boolean, format?: boolean): string;
 export declare function displayProgram(program: ProgramAST | ProgramASTNode[]): string;
 export declare function displayStatement(statement: Statement): string;
-export declare function generateConfigsDialog(): HTMLElement;
+export declare function generateConfigsDialog(): void;
 export declare function evaluateExpressionDemo(node: ExpressionASTNode): number;
 export declare function download(filename: string, data: BlobPart): void;
 declare global {
