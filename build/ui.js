@@ -480,7 +480,6 @@ ${displayProgram(program)}`;
         console.error(err);
     }
 }
-let lastOutputText = "";
 function executeSoodocode() {
     const noOutput = `<span style="color: lightgray;">&lt;no output&gt;</span>`;
     const output = [];
@@ -493,6 +492,7 @@ function executeSoodocode() {
         }
         printPrefixed(str);
     }, fileSystem);
+    const lastOutputText = outputDiv.innerHTML;
     outputDiv.classList.remove("state-error", "state-success");
     try {
         if (configs.runtime.display_output_immediately.value)
@@ -517,14 +517,12 @@ function executeSoodocode() {
                 outputDiv.innerHTML = noOutput;
             if (outputDiv.innerHTML == lastOutputText)
                 flashOutputDiv();
-            lastOutputText = outputDiv.innerHTML;
         }
         else {
             const outputText = output.join("\n") || noOutput;
             outputDiv.innerHTML = outputText;
             if (lastOutputText == outputText)
                 flashOutputDiv();
-            lastOutputText = outputText;
         }
     }
     catch (err) {
@@ -539,6 +537,8 @@ function executeSoodocode() {
         else {
             outputDiv.innerHTML = `<span class="error-message">Soodocode crashed! ${escapeHTML(parseError(err))}</span>`;
         }
+        if (outputDiv.innerHTML == lastOutputText)
+            flashOutputDiv();
         console.error(err);
     }
 }
