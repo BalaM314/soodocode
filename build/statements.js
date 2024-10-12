@@ -43,7 +43,7 @@ import { ExpressionASTFunctionCallNode, ExpressionASTNodes, ExpressionASTTypeNod
 import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, TypedNodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UntypedNodeValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
-import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, enableConfig, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
 if (!Symbol.metadata)
     Object.defineProperty(Symbol, "metadata", {
         writable: false,
@@ -622,7 +622,14 @@ let AssignmentStatement = (() => {
                         };
                     }
                     else
-                        fail(f.quote `Variable ${this.target.text} does not exist\n` + configs.statements.auto_declare_classes.errorHelp, this.target);
+                        fail({
+                            summary: f.quote `Variable ${this.target.text} does not exist`,
+                            help: {
+                                message: `to automatically declare the variable`,
+                                config: configs.statements.auto_declare_classes,
+                                value: true,
+                            }
+                        }, this.target);
                 }
                 else
                     runtime.handleNonexistentVariable(this.target.text, this.target);
@@ -832,7 +839,11 @@ let CallStatement = (() => {
                 if ("name" in func)
                     fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
                 if (func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
-                    fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, this.func);
+                    fail({
+                        summary: `CALL cannot be used on functions.`,
+                        elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
+                        help: enableConfig(configs.statements.call_functions)
+                    }, this.func);
                 runtime.callFunction(func, this.func.args);
             }
         }

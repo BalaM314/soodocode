@@ -14,7 +14,7 @@ import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArgum
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue, VariableScope, VariableData, ConstantData } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
-import { Abstract, combineClasses, crash, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
+import { Abstract, combineClasses, crash, enableConfig, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, RangeArray, splitTokensOnComma } from "./utils.js";
 
 //Enable decorator metadata
 if(!Symbol.metadata)
@@ -514,7 +514,14 @@ export class AssignmentStatement extends Statement {
 					runtime.getCurrentScope().variables[this.target.text] = {
 						type, value, declaration: this, mutable: true,
 					};
-				} else fail(f.quote`Variable ${this.target.text} does not exist\n` + configs.statements.auto_declare_classes.errorHelp, this.target);
+				} else fail({
+					summary: f.quote`Variable ${this.target.text} does not exist`,
+					help: {
+						message: `to automatically declare the variable`,
+						config: configs.statements.auto_declare_classes,
+						value: true,
+					}
+				}, this.target);
 			} else runtime.handleNonexistentVariable(this.target.text, this.target);
 		}
 
@@ -601,7 +608,11 @@ export class CallStatement extends Statement {
 		} else {
 			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
 			if(func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
-				fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, this.func);
+				fail({
+					summary: `CALL cannot be used on functions.`,
+					elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
+					help: enableConfig(configs.statements.call_functions)
+				}, this.func);
 			runtime.callFunction(func, this.func.args);
 		}
 	}

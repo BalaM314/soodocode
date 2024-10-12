@@ -14,7 +14,7 @@ import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, E
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, File, FileMode, FunctionData, IntegerRangeVariableType, TypedNodeValue, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedValue, TypedValue_, UnresolvedVariableType, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual, UntypedNodeValue } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "./types.js";
-import { RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 
 /** A class method, wrapped together with the information needed to call it. */
 export type ClassMethodCallInformation = {
@@ -135,9 +135,11 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	//typescript really hates this function, beware
 
 	let assignabilityError;
-	if((assignabilityError = typesAssignable(to, from)) === true) return value as never;
-	let disabledConfig:Config<unknown, true> | null = null;
-	let helpMessage:string | null = null;
+	let helpMessage:string | ConfigSuggestion<any> | null | undefined = null;
+	const result = typesAssignable(to, from);
+	if(result === true) return value as never;
+	if(result) [assignabilityError, helpMessage] = result;
+	let configToEnable:Config<unknown, true> | null = null;
 	if(from.isInteger() && to.is("REAL", "INTEGER")) return value as never;
 	if(from.is("REAL") && to.is("INTEGER")){
 		forceType<VariableTypeMapping<PrimitiveVariableType<"REAL">>>(value);
@@ -149,45 +151,45 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 				// Don't tell the user about this one
 				// disabledConfig = configs.coercion.truncate_real_to_int;
 			}
-		} else disabledConfig = configs.coercion.real_to_int;
+		} else configToEnable = configs.coercion.real_to_int;
 	}
 	if(from.is("STRING") && to.is("CHAR")){
 		if(configs.coercion.string_to_char.value){
 			const v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
 			if(v.length == 1) return v as never;
 			else assignabilityError = f.quote`the length of the string ${v} is not 1`;
-		} else disabledConfig = configs.coercion.string_to_char;
+		} else configToEnable = configs.coercion.string_to_char;
 	}
 	if(to.is("STRING")){
 		if(from.is("BOOLEAN")){
 			if(configs.coercion.booleans_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"BOOLEAN">>).toString().toUpperCase() as never;
-			else disabledConfig = configs.coercion.booleans_to_string;
+			else configToEnable = configs.coercion.booleans_to_string;
 		} else if(from.isInteger() || from.is("REAL")){
 			if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL"> | IntegerRangeVariableType>).toString() as never;
-			else disabledConfig = configs.coercion.numbers_to_string;
+			else configToEnable = configs.coercion.numbers_to_string;
 		} else if(from.is("CHAR")){
 			if(configs.coercion.char_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"CHAR">>).toString() as never;
-			else disabledConfig = configs.coercion.char_to_string;
+			else configToEnable = configs.coercion.char_to_string;
 		} else if(from.is("DATE")){
 			if(configs.coercion.numbers_to_string.value) return (value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>).toString() as never;
-			else disabledConfig = configs.coercion.numbers_to_string;
+			else configToEnable = configs.coercion.numbers_to_string;
 		} else if(from instanceof ArrayVariableType){
 			if(configs.coercion.arrays_to_string.value){
 				if(from.elementType instanceof PrimitiveVariableType || from.elementType instanceof EnumeratedVariableType){
 					(null! as VariableTypeMapping<EnumeratedVariableType>) satisfies string;
 					return `[${(value as VariableTypeMapping<ArrayVariableType>).join(",")}]` as never;
 				} else assignabilityError = `the type of the elements in the array does not support coercion to string`;
-			} else disabledConfig = configs.coercion.arrays_to_string;
+			} else configToEnable = configs.coercion.arrays_to_string;
 		} else if(from instanceof EnumeratedVariableType){
 			if(configs.coercion.enums_to_string.value) return value as VariableTypeMapping<EnumeratedVariableType> satisfies string as never;
-			else disabledConfig = configs.coercion.enums_to_string;
+			else configToEnable = configs.coercion.enums_to_string;
 		}
 	}
 	if((from.isInteger() || from.is("REAL")) && to.is("BOOLEAN"))
 		helpMessage = `to check if this number is non-zero, add "\xA0<>\xA00" after this expression`;
 	if(from instanceof EnumeratedVariableType && (to.is("INTEGER") || to.is("REAL"))){
 		if(configs.coercion.enums_to_integer.value) return from.values.indexOf(value as VariableTypeMapping<EnumeratedVariableType>) as never;
-		else disabledConfig = configs.coercion.enums_to_integer;
+		else configToEnable = configs.coercion.enums_to_integer;
 	}
 	if(to instanceof IntegerRangeVariableType && from.is("INTEGER", "REAL")){
 		const v = value as VariableTypeMapping<PrimitiveVariableType<"INTEGER" | "REAL">>;
@@ -199,8 +201,8 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	fail({
 		summary: f.quote`Cannot coerce value of type ${from} to ${to}`,
 		elaboration: assignabilityError,
-		help: disabledConfig ? {
-			config: disabledConfig,
+		help: configToEnable ? {
+			config: configToEnable,
 			value: true
 		} : (helpMessage ?? undefined)
 	}, range);
@@ -551,7 +553,13 @@ export class Runtime {
 						//Guess the type
 						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						if(!configs.pointers.implicit_variable_creation.value)
-							rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
+							rethrow(err, m =>
+								typeof m == "string" ? `\n${configs.pointers.implicit_variable_creation.errorHelp}` :
+								{
+									...m,
+									help: m.help ?? enableConfig(configs.pointers.implicit_variable_creation)
+								}
+							);
 						return finishEvaluation({
 							type: target.type,
 							declaration: "dynamic",
@@ -1158,7 +1166,11 @@ export class Runtime {
 		if(func instanceof ClassProcedureStatement && requireReturnValue === true)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
 		if(func instanceof ClassFunctionStatement && requireReturnValue === false && !configs.statements.call_functions.value)
-			fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, undefined);
+			fail({
+				summary: `CALL cannot be used on functions.`,
+				elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
+				help: enableConfig(configs.statements.call_functions)
+			}, undefined);
 
 		const classScope = instance.type.getScope(this, instance);
 		const methodScope = this.assembleScope(func, args);
@@ -1287,7 +1299,10 @@ export class Runtime {
 	/** Updates the count for number of statements executed, and fails if it is over the limit. */
 	statementExecuted(range:TextRangeLike, increment = 1){
 		if((this.statementsExecuted += increment) > configs.statements.max_statements.value){
-			fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
+			fail({
+				summary: `Statement execution limit reached (${configs.statements.max_statements.value})`,
+				help: setConfig("increase", configs.statements.max_statements)
+			}, range);
 		}
 	}
 	/** Runs a block as the main program. Creates a global scope, and checks for unclosed files. */

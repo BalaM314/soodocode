@@ -36,8 +36,8 @@ export declare function getRange(input?: TextRangeLike): TextRange | undefined;
 export declare function getRange(input?: TextRangeLike | null): TextRange | undefined | null;
 export declare function findRange(args: unknown[]): TextRange | undefined;
 export declare function array<T>(input: T | T[]): T[];
-type ErrorMessageLine = string | Array<string | number | TextRangeLike>;
-type ConfigSuggestion<T> = {
+export type ErrorMessageLine = string | Array<string | number | TextRangeLike>;
+export type ConfigSuggestion<T> = {
     message?: string;
     config: Config<T, boolean>;
     value: T extends number ? "increase" | "decrease" : T;
@@ -46,7 +46,7 @@ export type ErrorMessage = string | {
     summary: ErrorMessageLine;
     elaboration?: string | ErrorMessageLine[];
     context?: string | ErrorMessageLine[];
-    help?: string | ErrorMessageLine[] | ConfigSuggestion<unknown>;
+    help?: string | ErrorMessageLine[] | ConfigSuggestion<any>;
 };
 declare global {
     var currentConfigModificationFunc: (() => void) | undefined;
@@ -64,8 +64,11 @@ export declare class SoodocodeError extends Error {
     showRange(text: string, html: boolean): string;
     static getString(message: ErrorMessage): string;
 }
+export declare function enableConfig(config: Config<boolean, boolean>): ConfigSuggestion<boolean>;
+export declare function setConfig(value: "increase" | "decrease", config: Config<number, boolean>): ConfigSuggestion<number>;
+export declare function plural(count: number, word: string, plural?: string): string;
 export declare function fail(message: ErrorMessage, rangeSpecific: TextRangeLike | null | undefined, rangeGeneral?: TextRangeLike | null, rangeOther?: TextRangeLike): never;
-export declare function rethrow(error: SoodocodeError, msg: (old: string) => string): void;
+export declare function rethrow(error: SoodocodeError, msg: (old: ErrorMessage) => ErrorMessage): void;
 export declare function crash(message: string, ...extra: unknown[]): never;
 export declare function impossible(): never;
 export declare function Abstract<TClass extends new (...args: any[]) => {}>(input: TClass, context: ClassDecoratorContext<TClass>): TClass;
