@@ -282,16 +282,23 @@ export class Runtime {
 		//TODO is there any way of getting a 1D array out of a 2D array?
 		//Forbids getting any arrays from arrays
 		if(outType instanceof ArrayVariableType)
-			fail(f.quote`Cannot evaluate expression starting with "array access": expected the expression to evaluate to a value of type ${outType}, but the array access produces a result of type ${targetType.elementType}`, expr.target);
+			fail({
+				summary: `Type mismatch`,
+				elaboration: [
+					f.quote`Expected this expression to have type ${outType},`,
+					f.quote`but this array access produces a result of type ${targetType.elementType}`
+				]
+			}, expr.target);
 
 
 		if(expr.indices.length != targetType.lengthInformation.length)
-			fail(
-`Cannot evaluate expression starting with "array access": \
-${targetType.lengthInformation.length}-dimensional array requires ${targetType.lengthInformation.length} indices, \
-but found ${expr.indices.length} indices`,
-				expr.indices
-			);
+			fail({
+				summary: `Incorrect number of indices`,
+				elaboration: [
+					f.range`"${expr.target}" is a ${targetType.lengthInformation.length}-dimensional array,`,
+					`so it needs ${targetType.lengthInformation.length} indices, not ${expr.indices.length}`
+				],
+			}, expr.indices);
 		const indexes:[ExpressionASTNode, number][] = expr.indices.map(e => [e, this.evaluateExpr(e, PrimitiveVariableType.INTEGER).value]);
 		let invalidIndexIndex;
 		if(
@@ -299,11 +306,18 @@ but found ${expr.indices.length} indices`,
 				value > targetType.lengthInformation![index][1] ||
 				value < targetType.lengthInformation![index][0])
 			) != -1
-		) fail(
-`Array index out of bounds: \
-value ${indexes[invalidIndexIndex][1]} was not in range \
-(${targetType.lengthInformation[invalidIndexIndex].join(" to ")})`,
-			indexes[invalidIndexIndex][0]);
+		){
+			const invalidIndex = indexes[invalidIndexIndex];
+			fail({
+				summary: `Array index out of bounds`,
+				elaboration: [
+					`the array's length is ${targetType.lengthInformation[invalidIndexIndex].join(" to ")}`,
+					(invalidIndex[0] instanceof Token && invalidIndex[0].type === "number.decimal")
+						? f.quote`value ${invalidIndex[1]} is not in range`
+						: f.quoteRange`${invalidIndex[0]} evaluated to ${invalidIndex[1]}, which is not in range`
+				]
+			}, invalidIndex[0]);
+		}
 		const index = indexes.reduce((acc, [_expr, value], index) =>
 			(acc + value - targetType.lengthInformation![index][0]) * (index == indexes.length - 1 ? 1 : targetType.arraySizes![index + 1]),
 		0);
@@ -318,7 +332,15 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 			};
 		}
 		const output = target.value[index];
-		if(output == null) fail(f.text`Cannot use the value of uninitialized variable ${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]`, expr.target);
+		if(output == null) fail({
+			summary: f.text`Variable "${expr.target}[${indexes.map(([_expr, val]) => val).join(", ")}]" has not been initialized`,
+			elaboration: `Variables cannot be accessed unless they have been initialized first`,
+			help: {
+				config: configs.initialization.arrays_default,
+				value: true,
+				message: "to automatically initialize all slots of arrays"
+			}
+		}, expr.indices);
 		return finishEvaluation(output, targetType.elementType, outType);
 	}
 	/* Processes a property access expression, optionally specifying type */
@@ -340,9 +362,21 @@ value ${indexes[invalidIndexIndex][1]} was not in range \
 
 		//Special case: super method call
 		if(expr.nodes[0] instanceof Token && expr.nodes[0].type == "keyword.super"){
-			if(!this.classData) fail(`SUPER is only valid within a class`, expr.nodes[0]);
-			const baseType = this.classData.clazz.baseClass ?? fail(`SUPER does not exist for class ${this.classData.clazz.fmtQuoted()} because it does not inherit from any other class`, expr.nodes[0]);
-			if(!(outType == "function")) fail(`Expected this expression to evaluate to a value, but it is a member access on SUPER, which can only return methods`, expr);
+			if(!this.classData) fail(`Keyword "SUPER" is only allowed in classes`, expr.nodes[0]);
+			const baseType = this.classData.clazz.baseClass ?? fail({
+				summary: f.quote`SUPER does not exist for class ${this.classData.clazz.fmtPlain()}`,
+				elaboration: [
+					`"SUPER" is a keyword that refers to the base class, which is the other class that this class inherits from`,
+					`but the class "${this.classData.clazz.fmtShort()}" does not inherit from any other class`
+				]
+			}, expr.nodes[0]);
+			if(!(outType == "function")) fail({
+				summary: "Type mismatch",
+				elaboration: [
+					`Expected this expression to evaluate to a value,`,
+					`but it is a member access on SUPER, which can only return methods`
+				]
+			}, expr);
 			const [clazz, method] = baseType.allMethods[property] ?? fail(f.quote`Method ${property} does not exist on SUPER (class ${baseType.fmtPlain()})`, expr.nodes[1]);
 			return {
 				clazz, method, instance: this.classData.instance

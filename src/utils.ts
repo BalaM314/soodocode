@@ -296,7 +296,7 @@ export function array<T>(input:T | T[]):T[] {
 	else return [input];
 }
 
-type ErrorMessageLine = string | Array<string | TextRangeLike>;
+type ErrorMessageLine = string | Array<string | number | TextRangeLike>;
 /** Used for rich error messages. May contain a button that changes the config value. */
 type ConfigSuggestion<T> = {
 	/**
@@ -334,8 +334,9 @@ type ErrorMessage = string | {
 };
 function formatErrorLine(line:ErrorMessageLine, sourceCode:string):string {
 	return typeof line == "string" ? line : line.map(chunk =>
-		typeof chunk == "string" ? chunk :
-		sourceCode.slice(...getRange(chunk))
+		Array.isArray(chunk)
+			? sourceCode.slice(...getRange(chunk))
+			: String(chunk)
 	).join("");
 }
 
@@ -688,13 +689,16 @@ export const f = {
 	short: tagProcessor(formatShort),
 	quote: tagProcessor(formatQuoted),
 	debug: tagProcessor(formatDebug),
-	quoteRange(stringChunks: readonly string[], ...varChunks: readonly (string | TextRangeLike)[]):(string | TextRangeLike)[] {
+	quoteRange(stringChunks: readonly string[], ...varChunks: readonly (string | number | TextRangeLike)[]):(string | number | TextRangeLike)[] {
 		return weave(stringChunks.map((chunk, i) => {
 			if(varChunks.length == 0) return chunk;
 			if(i == 0) return chunk + `"`;
 			else if(i == varChunks.length) return `"` + chunk;
 			else return `"${chunk}"`;
 		}), varChunks);
+	},
+	range(stringChunks: readonly string[], ...varChunks: readonly (string | number | TextRangeLike)[]):(string | number | TextRangeLike)[] {
+		return weave(stringChunks, varChunks);
 	},
 };
 
