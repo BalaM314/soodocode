@@ -403,10 +403,14 @@ let Runtime = (() => {
                         const [clazz, method] = targetType.allMethods[property]
                             ? (instanceType.allMethods[property] ?? crash(`Inherited method not present`))
                             : instanceType.allMethods[property]
-                                ? fail(f.quote `Method ${property} does not exist on type ${targetType}.
-The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()} which has the method, \
-but the type of the variable is ${targetType.fmtPlain()}.
-help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes[1])
+                                ? fail({
+                                    summary: f.quote `Method ${property} does not exist on type ${targetType}`,
+                                    elaboration: [
+                                        f.quoteRange `The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()}, which has the method,`,
+                                        f.quote `but the type of the variable is ${targetType.fmtPlain()}.`
+                                    ],
+                                    help: f.quote `change the type of the variable to ${instanceType.fmtPlain()}`,
+                                }, expr.nodes[1])
                                 : fail(f.quote `Method ${property} does not exist on type ${targetType}`, expr.nodes[1]);
                         if (method.controlStatements[0].accessModifier == "private" && !this.canAccessClass(targetType))
                             fail(f.quote `Method ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
@@ -414,10 +418,14 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                     }
                     else {
                         const propertyStatement = targetType.properties[property]?.[1] ?? (instanceType.properties[property]
-                            ? fail(f.quote `Property ${property} does not exist on type ${targetType}.
-The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()} which has the property, \
-but the type of the variable is ${targetType.fmtPlain()}.
-help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes[1])
+                            ? fail({
+                                summary: f.quote `Property ${property} does not exist on type ${targetType}`,
+                                elaboration: [
+                                    f.quoteRange `The data in the variable ${expr.nodes[0]} is of type ${instanceType.fmtPlain()}, which has the property,`,
+                                    f.quote `but the type of the variable is ${targetType.fmtPlain()}.`
+                                ],
+                                help: f.quote `change the type of the variable to ${instanceType.fmtPlain()}`,
+                            }, expr.nodes[1])
                             : fail(f.quote `Property ${property} does not exist on type ${targetType}`, expr.nodes[1]));
                         if (propertyStatement.accessModifier == "private" && !this.canAccessClass(targetType))
                             fail(f.quote `Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
@@ -605,6 +613,13 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                         left = coerceValue(left.value, left.type, guessedType, expr.nodes[0]);
                         right = coerceValue(right.value, right.type, guessedType, expr.nodes[1]);
                     }
+                    if (expr.operator == operators.divide || expr.operator == operators.integer_divide || expr.operator == operators.mod) {
+                        if (right == 0)
+                            fail({
+                                summary: `Division by zero`,
+                                elaboration: expr.nodes[1] instanceof Token ? undefined : [f.quoteRange `The expression ${expr.nodes[1]} evaluated to 0`]
+                            }, expr.nodes[1], expr);
+                    }
                     switch (expr.operator) {
                         case operators.add:
                             value = left + right;
@@ -616,23 +631,14 @@ help: change the type of the variable to ${instanceType.fmtPlain()}`, expr.nodes
                             value = left * right;
                             break;
                         case operators.divide:
-                            if (right == 0)
-                                fail(`Division by zero`, expr.nodes[1], expr);
                             value = left / right;
-                            if (type?.is("INTEGER"))
-                                fail(`This arithmetic operation evaluated to value of type REAL, cannot be coerced to INTEGER
-help: try using DIV instead of / to produce an integer as the result`, expr.operatorToken, expr);
                             break;
                         case operators.integer_divide:
-                            if (right == 0)
-                                fail(`Division by zero`, expr.nodes[1], expr);
                             value = Math.trunc(left / right);
                             if (!type)
                                 guessedType = PrimitiveVariableType.INTEGER;
                             break;
                         case operators.mod:
-                            if (right == 0)
-                                fail(`Division by zero`, expr.nodes[1], expr);
                             value = left % right;
                             break;
                         default:
@@ -820,7 +826,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 let found;
                 if ((found =
                     min(allClasses, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
-                    fail(f.quote `Class ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
+                    fail({
+                        summary: f.quote `Class ${name} does not exist`,
+                        help: f.quote `did you mean ${found[1]}?`
+                    }, range);
                 }
                 fail(f.quote `Class ${name} does not exist`, range);
             }
@@ -830,13 +839,19 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     ...PrimitiveVariableType.all.map(t => [t.name, t])
                 ];
                 if (PrimitiveVariableType.get(name.toUpperCase()))
-                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
+                    fail({
+                        summary: f.quote `Type ${name} does not exist`,
+                        help: f.quote `did you mean ${name.toUpperCase()}? (uppercase)`
+                    }, range);
                 if (this.currentlyResolvingTypeName == name)
                     fail(f.quote `Type ${name} does not exist yet, it is currently being initialized`, range);
                 let found;
                 if ((found =
                     min(allTypes, t => t[0] == this.currentlyResolvingPointerTypeName ? Infinity : biasedLevenshtein(t[0], name), 2.5)) != undefined) {
-                    fail(f.quote `Type ${name} does not exist\nhelp: perhaps you meant ${found[1]}`, range);
+                    fail({
+                        summary: f.quote `Type ${name} does not exist`,
+                        help: f.quote `did you mean ${found[1]}?`
+                    }, range);
                 }
                 fail(f.quote `Type ${name} does not exist`, range);
             }
@@ -846,11 +861,17 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                     ...Object.entries(this.builtinFunctions),
                 ];
                 if (this.builtinFunctions[name.toUpperCase()])
-                    fail(f.quote `Function ${name} does not exist\nhelp: perhaps you meant ${name.toUpperCase()} (uppercase)`, range);
+                    fail({
+                        summary: f.quote `Function ${name} does not exist`,
+                        help: f.quote `did you mean ${name.toUpperCase()}? (uppercase)`
+                    }, range);
                 let found;
                 if ((found =
                     min(allFunctions, t => biasedLevenshtein(t[0], name), 3)) != undefined) {
-                    fail(f.quote `Function ${name} does not exist\nhelp: perhaps you meant ${found[0]}`, range);
+                    fail({
+                        summary: f.quote `Function ${name} does not exist`,
+                        help: f.quote `did you mean ${found[0]}?`
+                    }, range);
                 }
                 fail(f.quote `Function ${name} does not exist`, range);
             }
@@ -861,7 +882,10 @@ help: try using DIV instead of / to produce an integer as the result`, expr.oper
                 let found;
                 if ((found =
                     min(allVariables, t => biasedLevenshtein(t, name), 2)) != undefined) {
-                    fail(f.quote `Variable ${name} does not exist\nhelp: perhaps you meant ${found}`, range);
+                    fail({
+                        summary: f.quote `Variable ${name} does not exist`,
+                        help: f.quote `did you mean ${found}?`
+                    }, range);
                 }
                 fail(f.quote `Variable ${name} does not exist`, range);
             }

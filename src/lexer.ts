@@ -298,19 +298,31 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 		} else if(state.multilineComment){
 			//discard the symbol
 		} else if(state.singleQuotedString){
-			if(symbol.type == "escape_character") fail(`Unescaped backslash in string\nhelp: escape the backslash by adding another backslash before it`, symbol);
+			if(symbol.type == "escape_character") fail({
+				summary: `Unescaped backslash in string`,
+				help: `escape the backslash by adding another backslash before it`
+			}, symbol);
 			currentString += symbol.getStringText();
 			if(symbol.type === "quote.single"){
 				state.singleQuotedString = null;
 				const range:TextRange = [symbol.range[1] - currentString.length, symbol.range[1]];
 				if(unicodeSetsSupported()){
-					if((new RegExp(`^'\\p{RGI_Emoji_Flag_Sequence}'$`, "v")).test(currentString)) fail(`Character ${currentString} has an invalid length: expected one character\nhelp: Flags are actually two characters, use a string to hold both`, range);
+					if((new RegExp(`^'\\p{RGI_Emoji_Flag_Sequence}'$`, "v")).test(currentString))
+						fail({
+							summary: `Character ${currentString} has an invalid length: expected one character`,
+							help: `Flags are actually two characters, use a string to hold both`
+						}, range);
 				}
 				if([...currentString].length != 3){
+					const str = currentString.slice(1, -1);
 					if(typeof Intl != "undefined"){
 						//Use Intl.Segmenter to check if the user passed a grapheme made of multiple connected chars
-						const chars = (new Intl.Segmenter()).segment(currentString.slice(1, -1));
-						if([...chars].length == 1) fail(`Character ${currentString} has an invalid length: expected one character\nhelp: although it looks like one character, it is actually ${[...currentString].length - 2} characters, use a string to hold them all`, range);
+						const chars = (new Intl.Segmenter()).segment(str);
+						if([...chars].length == 1) fail({
+							summary: `Character ${currentString} has an invalid length: expected one character`,
+							elaboration: `although it looks like one character, it is actually ${[...str].length} characters (${[...str].map(c => `'${c}'`).join(", ")})`,
+							help: `use a string to hold them all`
+						}, range);
 					}
 					fail(`Character ${currentString} has an invalid length: expected one character`, range);
 				}
@@ -318,7 +330,10 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 				currentString = "";
 			}
 		} else if(state.doubleQuotedString){
-			if(symbol.type == "escape_character") fail(`Unescaped backslash in string\nhelp: escape the backslash by adding another backslash before it`, symbol);
+			if(symbol.type == "escape_character") fail({
+				summary: `Unescaped backslash in string`,
+				help: `escape the backslash by adding another backslash before it`
+			}, symbol);
 			currentString += symbol.getStringText();
 			if(symbol.type === "quote.double"){
 				state.doubleQuotedString = null;

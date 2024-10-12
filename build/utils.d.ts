@@ -42,7 +42,7 @@ type ConfigSuggestion<T> = {
     config: Config<T, boolean>;
     value: T extends number ? "increase" | "decrease" : T;
 };
-type ErrorMessage = string | {
+export type ErrorMessage = string | {
     summary: ErrorMessageLine;
     elaboration?: string | ErrorMessageLine[];
     context?: string | ErrorMessageLine[];

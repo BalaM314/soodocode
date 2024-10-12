@@ -1550,7 +1550,10 @@ let ReadFileStatement = (() => {
             const name = runtime.evaluate(this.filename);
             const data = runtime.getOpenFile(name, ["READ"], `Reading from a file with READFILE`);
             if (data.lineNumber >= data.lines.length)
-                fail(`End of file reached\nhelp: before attempting to read from the file, check if it has lines left with EOF(filename)`, this);
+                fail({
+                    summary: `End of file reached`,
+                    help: `before attempting to read from the file, check if it has lines left with the EOF function, like "EOF(filename)"`
+                }, this);
             const output = runtime.evaluateExpr(this.output, "variable");
             output.value = data.lines[data.lineNumber++];
         }

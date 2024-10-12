@@ -172,7 +172,6 @@ export function parse({ program, tokens }) {
     };
 }
 export function getPossibleStatements(tokens, context) {
-    const ctx = context?.controlStatements[0].type;
     let validStatements = statements.byStartKeyword[tokens[0].type]
         ?? (() => {
             const closest = closestKeywordToken(tokens[0].text);
@@ -183,20 +182,23 @@ export function getPossibleStatements(tokens, context) {
                 return statements.irregular;
             }
         })();
-    if (ctx?.allowOnly) {
-        const allowedValidStatements = validStatements.filter(s => ctx.allowOnly.has(s.type));
-        if (allowedValidStatements.length == 0) {
-            return [
-                validStatements,
-                statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context.type} blocks are ${[...ctx.allowOnly].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
-            ];
+    if (context != "any") {
+        const ctx = context?.controlStatements[0].type;
+        if (ctx?.allowOnly) {
+            const allowedValidStatements = validStatements.filter(s => ctx.allowOnly.has(s.type));
+            if (allowedValidStatements.length == 0) {
+                return [
+                    validStatements,
+                    statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context.type} blocks are ${[...ctx.allowOnly].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
+                ];
+            }
+            else
+                validStatements = allowedValidStatements;
         }
-        else
-            validStatements = allowedValidStatements;
     }
     if (validStatements.length == 0)
         fail(`No valid statement definitions`, tokens);
-    const allowedValidStatements = validStatements.filter(s => !(s.blockType && s.blockType != context?.type.split(".")[0]));
+    const allowedValidStatements = validStatements.filter(s => context == "any" || !(s.blockType && s.blockType != context?.type.split(".")[0]));
     if (allowedValidStatements.length == 0) {
         return [
             validStatements,
@@ -217,6 +219,8 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens, c
         if (Array.isArray(result)) {
             if (possibleStatement.invalidMessage) {
                 if (typeof possibleStatement.invalidMessage == "function") {
+                    if (context == "any")
+                        context = null;
                     const [message, range] = possibleStatement.invalidMessage(result, context);
                     fail(message, range ?? tokens);
                 }
@@ -250,7 +254,10 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens, c
     const [expr] = tryRun(() => parseExpression(tokens));
     if (expr && !(expr instanceof Token)) {
         if (expr instanceof ExpressionASTFunctionCallNode)
-            fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`, tokens);
+            fail({
+                summary: `Expected a statement, not an expression`,
+                help: [f.range `use the CALL statement to evaluate this expression, by changing the line to "CALL ${tokens}"`],
+            }, tokens);
         else
             fail(`Expected a statement, not an expression`, tokens);
     }
@@ -339,7 +346,11 @@ export function checkStatement(statement, input, allowRecursiveCall) {
         }
         else {
             if (j >= input.length)
-                return { message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`, priority: 4, range: input.at(-1).rangeAfter() };
+                return {
+                    message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`,
+                    priority: 4,
+                    range: input.at(-1).rangeAfter()
+                };
             if (statement.tokens[i] == "#")
                 impossible();
             else if (statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")) || (statement.tokens[i] == "class_modifier" && input[j].type.startsWith("keyword.class_modifier.")) || (statement.tokens[i] == "name" && input[j].type == "keyword.new")) {
@@ -367,37 +378,39 @@ export function checkStatement(statement, input, allowRecursiveCall) {
     if (j != input.length) {
         if (j > 0 && allowRecursiveCall) {
             try {
-                void parseStatement(input.slice(j), null, false);
-                return { message: f.quote `Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
+                void parseStatement(input.slice(j), "any", false);
+                return {
+                    message: {
+                        summary: f.quote `Expected end of line, found beginning of new statement`,
+                        help: [f.quoteRange `add a newline or semicolon before ${input[j]}`],
+                    },
+                    priority: 20,
+                    range: input[j].range
+                };
             }
-            catch (err) {
-                void err;
-            }
+            catch { }
         }
         return { message: f.quote `Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
     }
     return output;
 }
 function getMessage(expected, found, priority) {
+    const message = f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
+    const range = found.range;
     if (isKey(tokenTextMapping, expected)) {
         if (tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase())
             return {
-                message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`,
+                message: {
+                    summary: message,
+                    elaboration: `keywords are case sensitive`,
+                },
                 priority: 50,
-                range: found.range
+                range
             };
         if (biasedLevenshtein(tokenTextMapping[expected], found.text) < 2)
-            return {
-                message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
-                priority: 50,
-                range: found.range
-            };
+            priority = 50;
     }
-    return {
-        message: f.text `Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
-        priority,
-        range: found.range
-    };
+    return { message, priority, range };
 }
 export function checkTokens(tokens, input) {
     return Array.isArray(checkStatement(fakeObject({
