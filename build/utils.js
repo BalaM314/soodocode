@@ -247,9 +247,9 @@ export function array(input) {
         return [input];
 }
 function formatErrorLine(line, sourceCode) {
-    return typeof line == "string" ? line : line.map(chunk => Array.isArray(chunk)
-        ? sourceCode.slice(...getRange(chunk))
-        : String(chunk)).join("");
+    return typeof line == "string" ? line : line.map(chunk => (typeof chunk == "string" || typeof chunk == "number")
+        ? String(chunk)
+        : sourceCode.slice(...getRange(chunk))).join("");
 }
 export class SoodocodeError extends Error {
     constructor(richMessage, rangeSpecific, rangeGeneral, rangeOther) {

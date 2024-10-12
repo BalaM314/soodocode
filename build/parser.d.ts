@@ -3,17 +3,17 @@ import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, Progra
 import { UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
 import { TextRange } from "./types.js";
-import { RangeArray } from "./utils.js";
+import { ErrorMessage, RangeArray } from "./utils.js";
 export declare const parseFunctionArguments: (tokens: RangeArray<Token>) => FunctionArguments;
 export declare const processTypeData: (typeNode: ExpressionASTTypeNode) => UnresolvedVariableType;
 export declare const parseType: (tokens: RangeArray<Token>) => ExpressionASTTypeNode;
 export declare function splitTokensToStatements(tokens: RangeArray<Token>): RangeArray<Token>[];
 export declare function parse({ program, tokens }: TokenizedProgram): ProgramAST;
-export declare function getPossibleStatements(tokens: RangeArray<Token>, context: ProgramASTBranchNode | null): [
+export declare function getPossibleStatements(tokens: RangeArray<Token>, context: ProgramASTBranchNode | null | "any"): [
     definitions: (typeof Statement)[],
     error: ((valid: typeof Statement) => never) | null
 ];
-export declare const parseStatement: (tokens: RangeArray<Token>, context: ProgramASTBranchNode | null, allowRecursiveCall: boolean) => Statement;
+export declare const parseStatement: (tokens: RangeArray<Token>, context: ProgramASTBranchNode | null | "any", allowRecursiveCall: boolean) => Statement;
 export declare function isLiteral(type: TokenType): boolean;
 export type StatementCheckTokenRange = (Token | {
     type: "expression" | "type";
@@ -21,7 +21,7 @@ export type StatementCheckTokenRange = (Token | {
     end: number;
 });
 type StatementCheckFailResult = {
-    message: string;
+    message: ErrorMessage;
     priority: number;
     range: TextRange | null;
 };

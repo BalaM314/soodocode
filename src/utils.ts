@@ -315,7 +315,7 @@ type ConfigSuggestion<T> = {
 	value: T extends number ? "increase" | "decrease" : T;
 };
 
-type ErrorMessage = string | {
+export type ErrorMessage = string | {
 	/** Short summary of the error, displayed at the top */
 	summary: ErrorMessageLine;
 	/** Details about what exactly caused the error, displayed after the summary */
@@ -334,9 +334,9 @@ type ErrorMessage = string | {
 };
 function formatErrorLine(line:ErrorMessageLine, sourceCode:string):string {
 	return typeof line == "string" ? line : line.map(chunk =>
-		Array.isArray(chunk)
-			? sourceCode.slice(...getRange(chunk))
-			: String(chunk)
+		(typeof chunk == "string" || typeof chunk == "number")
+			? String(chunk)
+			: sourceCode.slice(...getRange(chunk))
 	).join("");
 }
 

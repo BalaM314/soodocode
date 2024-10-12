@@ -432,22 +432,32 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		}
 	}
 	validate(){
-		for(const [name, [type, range]] of Object.entries((this as RecordVariableType<true>).fields)){
-			if(type == this) fail(f.text
-`Recursive type "${this.name}" has infinite size: \
-field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object
-help: change the field's type to be "pointer to ${this.name}"`,
-			range);
-			if(type instanceof ArrayVariableType && type.elementType == this) fail(f.text
-`Recursive type "${this.name}" has infinite size: \
-field "${name}" immediately references the parent type, so initializing it would require creating an infinitely large object
-help: change the field's type to be "array of pointer to ${this.name}"`,
-			range);
-			if(type instanceof RecordVariableType && type.directDependencies.has(this as RecordVariableType<true>)) fail(f.quote
-`Recursive type ${this.name} has infinite size: \
-initializing field ${name} indirectly requires initializing the parent type, which requires initializing the field again
-help: change the field's type to be a pointer`,
-			range);
+		const self = this as RecordVariableType<true>;
+		for(const [name, [type, range]] of Object.entries(self.fields)){
+			if(type == this) fail({
+				summary: f.text`Recursive type "${this.name}" has infinite size`,
+				elaboration: [
+					`field "${name}" immediately references the parent type,`,
+					`so initializing it would require creating an infinitely large object`
+				],
+				help: `change the field's type to be "pointer to ${this.name}"`,
+			}, range);
+			if(type instanceof ArrayVariableType && type.elementType == this) fail({
+				summary: f.text`Recursive type "${this.name}" has infinite size`,
+				elaboration: [
+					`field "${name}" immediately references the parent type,`,
+					`so initializing it would require creating an infinitely large object`
+				],
+				help: `change the field's type to be "array of pointer to ${this.name}"`,
+			}, range);
+			if(type instanceof RecordVariableType && type.directDependencies.has(self)) fail({
+				summary: f.quote`Recursive type ${this.name} has infinite size`,
+				elaboration: [
+					`initializing field ${name} indirectly requires initializing the parent type,`,
+					`which requires initializing the field again`
+				],
+				help: `change the field's type to be a pointer`,
+			}, range);
 		}
 	}
 	fmtText(){

@@ -14,7 +14,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionAST
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArguments, FunctionArgumentPassMode, Statement, statements } from "./statements.js";
 import { TextRange } from "./types.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, ErrorMessage, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, RangeArray, SoodocodeError, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 
 
 /** Parses function arguments (everything between the parentheses), such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
@@ -209,44 +209,46 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
  * Only checking a subset of statement definitions helps improve error accuracy and performance.
  * May return a deferred error function, which should be called if any of the statements parse successfully.
  */
-export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null):[
+export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null | "any"):[
 	definitions: (typeof Statement)[],
 	error: ((valid:typeof Statement) => never) | null,
 ]{
-	const ctx = context?.controlStatements[0].type;
 	let validStatements =
-		//Try to use the list of statements that start with the first token, if any exist.
-		statements.byStartKeyword[tokens[0].type]
-		?? (() => {
-			const closest = closestKeywordToken(tokens[0].text);
-			//Check if there are statements that start with a keyword that is close to the first token
-			//eg if the statement is "OUTPUY 5"
-			//Add those statements into the pool
-			if(closest && statements.byStartKeyword[closest]){
-				return [...statements.irregular, ...statements.byStartKeyword[closest]];
-			} else {
-				//Otherwise, just return the irregular statements
-				return statements.irregular;
-			}
-		})();
-
+	//Try to use the list of statements that start with the first token, if any exist.
+	statements.byStartKeyword[tokens[0].type]
+	?? (() => {
+		const closest = closestKeywordToken(tokens[0].text);
+		//Check if there are statements that start with a keyword that is close to the first token
+		//eg if the statement is "OUTPUY 5"
+		//Add those statements into the pool
+		if(closest && statements.byStartKeyword[closest]){
+			return [...statements.irregular, ...statements.byStartKeyword[closest]];
+		} else {
+			//Otherwise, just return the irregular statements
+			return statements.irregular;
+		}
+	})();
+	
 	//If the current block only allows certain statements
-	if(ctx?.allowOnly){
-		const allowedValidStatements = validStatements.filter(s => ctx.allowOnly!.has(s.type));
-		if(allowedValidStatements.length == 0){
-			//None of the possible statements are allowed
-			//Return them anyway, and throw the error later
-			return [
-				validStatements,
-				statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
-			];
-		} else validStatements = allowedValidStatements;
+	if(context != "any"){
+		const ctx = context?.controlStatements[0].type;
+		if(ctx?.allowOnly){
+			const allowedValidStatements = validStatements.filter(s => ctx.allowOnly!.has(s.type));
+			if(allowedValidStatements.length == 0){
+				//None of the possible statements are allowed
+				//Return them anyway, and throw the error later
+				return [
+					validStatements,
+					statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
+				];
+			} else validStatements = allowedValidStatements;
+		}
 	}
 
 	if(validStatements.length == 0) fail(`No valid statement definitions`, tokens);
 
 	//Remove all statements that require a different block type 
-	const allowedValidStatements = validStatements.filter(s => !(
+	const allowedValidStatements = validStatements.filter(s => context == "any" || !(
 		s.blockType && s.blockType != context?.type.split(".")[0]
 	));
 	if(allowedValidStatements.length == 0){
@@ -265,7 +267,7 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
  * Parses a string of tokens into a Statement.
  * @argument tokens must not contain any newlines.
  **/
-export const parseStatement = errorBoundary()(function _parseStatement(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null, allowRecursiveCall:boolean):Statement {
+export const parseStatement = errorBoundary()(function _parseStatement(tokens:RangeArray<Token>, context:ProgramASTBranchNode | null | "any", allowRecursiveCall:boolean):Statement {
 	if(tokens.length <= 0) crash("Empty statement");
 
 	const [possibleStatements, statementError] = getPossibleStatements(tokens, context);
@@ -276,6 +278,7 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 		if(Array.isArray(result)){ //if the statement is valid
 			if(possibleStatement.invalidMessage){
 				if(typeof possibleStatement.invalidMessage == "function"){
+					if(context == "any") context = null;
 					const [message, range] = possibleStatement.invalidMessage(result, context);
 					fail(message, range ?? tokens);
 				} else {
@@ -308,7 +311,10 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 	const [expr] = tryRun(() => parseExpression(tokens));
 	if(expr && !(expr instanceof Token)){
 		if(expr instanceof ExpressionASTFunctionCallNode)
-			fail(`Expected a statement, not an expression\nhelp: use the CALL statement to evaluate this expression`, tokens);
+			fail({
+				summary: `Expected a statement, not an expression`,
+				help: [f.range`use the CALL statement to evaluate this expression, by changing the line to "CALL ${tokens}"`],
+			}, tokens);
 		else fail(`Expected a statement, not an expression`, tokens);
 	}
 
@@ -330,7 +336,7 @@ export function isLiteral(type:TokenType){
 
 /** start and end are inclusive */
 export type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
-type StatementCheckFailResult = { message: string; priority: number; range: TextRange | null; };
+type StatementCheckFailResult = { message: ErrorMessage; priority: number; range: TextRange | null; };
 /**
  * Checks if a RangeArray<Token> is valid for a statement type. If it is, it returns the information needed to construct the statement.
  * This is to avoid duplicating the expression parsing logic.
@@ -404,7 +410,11 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 			else
 				output.push(...input.slice(start, end + 1));
 		} else {
-			if(j >= input.length) return { message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`, priority: 4, range: input.at(-1)!.rangeAfter() };
+			if(j >= input.length) return {
+				message: `Expected ${displayTokenMatcher(statement.tokens[i])}, found end of line`,
+				priority: 4,
+				range: input.at(-1)!.rangeAfter()
+			};
 			if(statement.tokens[i] as any == "#") impossible();
 			else if(statement.tokens[i] == "." || statement.tokens[i] == input[j].type || (
 				statement.tokens[i] == "file_mode" && input[j].type.startsWith("keyword.file_mode.")
@@ -436,9 +446,16 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 		if(j > 0 && allowRecursiveCall){
 			try {
 				//Check if the rest of the line is valid
-				void parseStatement(input.slice(j), null, false);
-				return { message: f.quote`Expected end of line, found beginning of new statement\nhelp: add a newline here`, priority: 20, range: input[j].range };
-			} catch(err){void err;}
+				void parseStatement(input.slice(j), "any", false);
+				return {
+					message: {
+						summary: f.quote`Expected end of line, found beginning of new statement`,
+						help: [f.quoteRange`add a newline or semicolon before ${input[j]}`],
+					},
+					priority: 20,
+					range: input[j].range
+				};
+			} catch { /* ignore */ }
 		}
 		return { message: f.quote`Expected end of line, found ${input[j]}`, priority: 7, range: input[j].range };
 	}
@@ -446,25 +463,23 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 }
 /** Computes the best error message, given a token matcher and the token that failed to match it. */
 function getMessage(expected:TokenMatcher, found:Token, priority:number):StatementCheckFailResult {
+	//FIXME: is this function being used correctly? `IF FALSE THEn` does not call it
+	const message = f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``;
+	const range = found.range;
 	if(isKey(tokenTextMapping, expected)){
 		if(tokenTextMapping[expected].toLowerCase() == found.text.toLowerCase()) return {
-			message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\`\nhelp: keywords are case sensitive`,
+			message: {
+				summary: message,
+				elaboration: `keywords are case sensitive`,
+			},
 			priority: 50,
-			range: found.range
+			range
 		};
-		if(biasedLevenshtein(tokenTextMapping[expected], found.text) < 2) return {
-			//Same message with higher priority
-			message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
-			priority: 50,
-			range: found.range
-		};
+		if(biasedLevenshtein(tokenTextMapping[expected], found.text) < 2)
+			priority = 50;
 	}
 
-	return {
-		message: f.text`Expected ${displayTokenMatcher(expected)}, got \`${found}\``,
-		priority,
-		range: found.range
-	};
+	return { message, priority, range };
 }
 
 /** Crashes if the checkStatement function attempts to read unknown properties from the fake statement definition. */
