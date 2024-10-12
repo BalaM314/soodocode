@@ -344,7 +344,6 @@ type StatementCheckFailResult = { message: ErrorMessage; priority: number; range
  */
 export function checkStatement(statement:typeof Statement, input:RangeArray<Token>, allowRecursiveCall:boolean):
 	StatementCheckFailResult | StatementCheckTokenRange[] {
-	//TODO rewrite to use modified wagner-fischer for best detection
 
 	if(input.length == 0) crash(`checkStatement() called with empty input`);
 	if(statement.category == "block_multi_split" && !statement.blockType) crash(`block_multi_split statements must have a block type specified.`);
@@ -376,17 +375,13 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 					//End was reached but there are still matchers left, error
 					//Check for typos
 					const expectedType = statement.tokens[i + 1];
-					if(isKey(tokenTextMapping, expectedType)){ //TODO consider move this to the lexer
-						const expected = tokenTextMapping[expectedType];
+					if(isKey(tokenTextMapping, expectedType)){
 						const nestLevel = manageNestLevel();
-						for(let k = start; k < input.length; k ++){
-							nestLevel.update(input[k]);
-							if(nestLevel.out() && biasedLevenshtein(expected, input[k].text) <= 1) return {
-								message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found "${input[k].text}"`,
-								priority: 50,
-								range: input[k].range
-							};
-						}
+						const err = max(input.slice(start).map(token => {
+							nestLevel.update(token);
+							return nestLevel.out() && getMessage(expectedType, token, 10);
+						}).filter(Boolean), m => m.priority, 49);
+						if(err) return err;
 					}
 					return {
 						message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, 
