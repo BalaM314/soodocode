@@ -36,7 +36,7 @@ export declare function getRange(input?: TextRangeLike): TextRange | undefined;
 export declare function getRange(input?: TextRangeLike | null): TextRange | undefined | null;
 export declare function findRange(args: unknown[]): TextRange | undefined;
 export declare function array<T>(input: T | T[]): T[];
-type ErrorMessageLine = string | Array<string | TextRangeLike>;
+type ErrorMessageLine = string | Array<string | number | TextRangeLike>;
 type ConfigSuggestion<T> = {
     message?: string;
     config: Config<T, boolean>;
@@ -91,7 +91,8 @@ export declare const f: {
     short: TagFunction<Formattable, string>;
     quote: TagFunction<Formattable, string>;
     debug: TagFunction<Formattable, string>;
-    quoteRange(stringChunks: readonly string[], ...varChunks: readonly (string | TextRangeLike)[]): (string | TextRangeLike)[];
+    quoteRange(stringChunks: readonly string[], ...varChunks: readonly (string | number | TextRangeLike)[]): (string | number | TextRangeLike)[];
+    range(stringChunks: readonly string[], ...varChunks: readonly (string | number | TextRangeLike)[]): (string | number | TextRangeLike)[];
 };
 export declare function forceType<T>(input: unknown): asserts input is T;
 export declare function isKey<T extends Record<PropertyKey, unknown>>(record: T, key: PropertyKey): key is keyof T;
