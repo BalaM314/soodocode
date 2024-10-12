@@ -1,7 +1,7 @@
 import { configs } from "./config.js";
 import { Runtime } from "./runtime.js";
 import { ClassFunctionStatement } from "./statements.js";
-import { crash, errorBoundary, escapeHTML, f, fail, getTotalRange, impossible, match, zip } from "./utils.js";
+import { crash, enableConfig, escapeHTML, f, fail, getTotalRange, impossible, match, plural, setConfig, zip } from "./utils.js";
 export const primitiveVariableTypeNames = [
     "INTEGER",
     "REAL",
@@ -234,7 +234,10 @@ export class ArrayVariableType extends BaseVariableType {
             this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
         }
         else if (!configs.arrays.unspecified_length.value)
-            fail(`Please specify the length of the array\n${configs.arrays.unspecified_length.errorHelp}`, this.range);
+            fail({
+                summary: `Please specify the length of the array`,
+                help: enableConfig(configs.arrays.unspecified_length)
+            }, this.range);
     }
     validate(runtime) {
         if (this.totalLength && this.totalLength > ArrayVariableType.maxLength)
@@ -269,15 +272,24 @@ export class ArrayVariableType extends BaseVariableType {
             crash(`Attempted to initialize array of arrays`);
         if (type.is("REAL")) {
             if (this.totalLength * 8 > configs.arrays.max_size_bytes.value)
-                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_bytes.errorHelp}`, this.range);
+                fail({
+                    summary: `Array of total length "${this.totalLength}" is too large`,
+                    help: setConfig("increase", configs.arrays.max_size_bytes)
+                }, this.range);
         }
         else if (type.is("INTEGER") && configs.arrays.use_32bit_integers.value) {
             if (this.totalLength * 4 > configs.arrays.max_size_bytes.value)
-                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_bytes.errorHelp}`, this.range);
+                fail({
+                    summary: `Array of total length "${this.totalLength}" is too large`,
+                    help: setConfig("increase", configs.arrays.max_size_bytes)
+                }, this.range);
         }
         else {
             if (this.totalLength > configs.arrays.max_size_composite.value)
-                fail(`Array of total length "${this.totalLength}" is too large\n${configs.arrays.max_size_composite.errorHelp}`, this.range);
+                fail({
+                    summary: `Array of total length "${this.totalLength}" is too large`,
+                    help: setConfig("increase", configs.arrays.max_size_composite)
+                }, this.range);
         }
         if (type.is("INTEGER") && configs.arrays.use_32bit_integers.value && this.totalLength > 1000)
             return new Int32Array(this.totalLength).fill(configs.default_values.INTEGER.value);
@@ -406,7 +418,10 @@ export class PointerVariableType extends BaseVariableType {
     validate() {
         if (!configs.pointers.infinite_pointer_types.value) {
             if (PointerVariableType.isInfinite(this))
-                fail(f.quote `Pointer type ${this.name} references itself infinitely\n` + configs.pointers.infinite_pointer_types.errorHelp, this);
+                fail({
+                    summary: f.quote `Pointer type ${this.name} references itself infinitely`,
+                    help: enableConfig(configs.pointers.infinite_pointer_types)
+                }, this);
         }
     }
     static isInfinite(type, seen = new Set()) {
@@ -645,65 +660,91 @@ export function typesAssignable(base, ext) {
     if (base == ext)
         return true;
     if (Array.isArray(base) && Array.isArray(ext))
-        return base[1] == ext[1] || "";
+        return base[1] == ext[1] || false;
     if (base instanceof ArrayVariableType && ext instanceof ArrayVariableType) {
         if (base.elementType != null) {
             if (ext.elementType == null)
-                return f.quote `Type "ANY" is not assignable to type ${base.elementType}`;
+                return [f.quote `Type "ANY" is not assignable to type ${base.elementType}`];
             if (!typesEqual(base.elementType, ext.elementType))
-                return f.quote `Types ${base.elementType} and ${ext.elementType} are not equal`;
+                return [f.quote `Types ${base.elementType} and ${ext.elementType} are not equal`];
         }
         if (base.lengthInformation != null) {
             if (ext.lengthInformation == null)
-                return `cannot assign an array with unknown length to an array requiring a specific length`;
+                return [`cannot assign an array with unknown length to an array requiring a specific length`];
             if (base.totalLength != ext.totalLength)
-                return "these array types have different lengths";
+                return ["these array types have different lengths"];
             if (!configs.coercion.arrays_same_total_size.value &&
                 base.arraySizes.toString() != ext.arraySizes.toString())
-                return `these array types have different lengths\n${configs.coercion.arrays_same_total_size.errorHelp}`;
+                return [`these array types have different lengths`, enableConfig(configs.coercion.arrays_same_total_size)];
             if (!configs.coercion.arrays_same_length.value &&
                 base.lengthInformation.toString() != ext.lengthInformation.toString())
-                return `these array types have different start and end indexes\n${configs.coercion.arrays_same_length.errorHelp}`;
+                return [`these array types have different start and end indexes`, enableConfig(configs.coercion.arrays_same_length)];
         }
         return true;
     }
     if (base == PrimitiveVariableType.INTEGER && ext instanceof IntegerRangeVariableType)
         return true;
     if (base instanceof PointerVariableType && ext instanceof PointerVariableType) {
-        return typesEqual(base.target, ext.target) || f.quote `Types ${base.target} and ${ext.target} are not equal`;
+        return typesEqual(base.target, ext.target) || [f.quote `Types ${base.target} and ${ext.target} are not equal`];
     }
     if (base instanceof SetVariableType && ext instanceof SetVariableType) {
-        return typesEqual(base.baseType, ext.baseType) || f.quote `Types ${base.baseType} and ${ext.baseType} are not equal`;
+        return typesEqual(base.baseType, ext.baseType) || [f.quote `Types ${base.baseType} and ${ext.baseType} are not equal`];
     }
     if (base instanceof ClassVariableType && ext instanceof ClassVariableType) {
-        return ext.inherits(base) || "";
+        return ext.inherits(base) || false;
     }
-    return "";
+    return false;
 }
-export const checkClassMethodsCompatible = errorBoundary({
-    message: (base, derived) => `Derived class method ${derived.name} is not compatible with the same method in the base class: `,
-})(function _checkClassMethodsCompatible(runtime, base, derived) {
+export function checkClassMethodsCompatible(runtime, base, derived) {
+    const summary = f.quote `Derived class method ${derived.name} is not compatible with the same method in the base class`;
     if (base.accessModifier != derived.accessModifier)
-        fail(f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`, derived.accessModifierToken);
+        fail({
+            summary,
+            elaboration: f.text `Method was ${base.accessModifier} in base class, cannot override it with a ${derived.accessModifier} method`
+        }, derived.accessModifierToken, derived);
     if (base.stype != derived.stype)
-        fail(f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`, derived.methodKeywordToken);
+        fail({
+            summary,
+            elaboration: f.text `Method was a ${base.stype.split("_")[1]} in base class, cannot override it with a ${derived.stype.split("_")[1]}`
+        }, derived.methodKeywordToken, derived);
     if (!(base.name == "NEW" && derived.name == "NEW")) {
         if (base.args.size != derived.args.size)
-            fail(`Method should have ${base.args.size} parameter${base.args.size == 1 ? "" : "s"}, but it has ${derived.args.size} parameter${derived.args.size == 1 ? "" : "s"}.`, derived.argsRange);
+            fail({
+                summary,
+                elaboration: `Method should have ${plural(base.args.size, "parameter")}, but it has ${plural(derived.args.size, "parameter")}`
+            }, derived.argsRange, derived);
         for (const [[aName, aType], [bName, bType]] of zip(base.args.entries(), derived.args.entries())) {
             let result;
             if ((result = typesAssignable(runtime.resolveVariableType(bType.type), runtime.resolveVariableType(aType.type))) != true)
-                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class: type ${aType.type} is not assignable to type ${bType.type}` + (result ? `: ${result}.` : ""), derived.argsRange);
+                fail({
+                    summary,
+                    elaboration: [
+                        f.quote `argument ${bName} in derived class is not compatible with argument ${aName} in base class`,
+                        f.quote `type ${aType.type} is not assignable to type ${bType.type}`,
+                        result && result[0],
+                        `note: argument types are contravariant, meaning the base class's argument type needs to be assignable to the derived class's argument type`
+                    ].filter(Boolean),
+                    help: result && result[1] ? result[1] : undefined
+                }, derived.argsRange, derived);
             if (aType.passMode != bType.passMode)
-                fail(f.quote `Argument ${bName} in derived class is not assignable to argument ${aName} in base class because their pass modes are different.`, derived.argsRange);
+                fail({
+                    summary,
+                    elaboration: [
+                        f.quote `argument ${bName} in the derived class has a pass mode of ${bType.passMode}, but in the base class, this argument has a pass mode of ${aType.passMode}`
+                    ]
+                }, derived.argsRange, derived);
         }
     }
     if (base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement) {
         let result;
         if ((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true)
-            fail(f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}` + (result ? `: ${result}.` : ""), derived.returnTypeToken);
+            fail({
+                summary: f.quote `Return type ${derived.returnType} is not assignable to ${base.returnType}`,
+                elaboration: result ? result[0] : undefined,
+                help: result && result[1] ? result[1] : undefined,
+            }, derived.returnTypeToken, derived);
     }
-});
+}
 export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"];
 export function FileMode(input) {
     if (fileModes.includes(input))

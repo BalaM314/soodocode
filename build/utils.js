@@ -403,11 +403,23 @@ help: ${escapeHTML(help.message ?? `to allow this`)}, \
         return typeof message.summary == "string" ? message.summary : message.summary.map(chunk => typeof chunk == "string" ? chunk : "<...>").join("");
     }
 }
+export function enableConfig(config) {
+    return {
+        config,
+        value: true
+    };
+}
+export function setConfig(value, config) {
+    return { config, value };
+}
+export function plural(count, word, plural = word + "s") {
+    return `${count} ${count == 1 ? word : plural}`;
+}
 export function fail(message, rangeSpecific, rangeGeneral, rangeOther) {
     throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral), getRange(rangeOther));
 }
 export function rethrow(error, msg) {
-    error.message = msg(error.message);
+    error.richMessage = msg(error.richMessage);
     throw error;
 }
 export function crash(message, ...extra) {

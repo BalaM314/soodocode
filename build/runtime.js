@@ -39,7 +39,7 @@ import { Token } from "./lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ProgramASTBranchNode, operators } from "./parser-types.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "./statements.js";
-import { biasedLevenshtein, boxPrimitive, crash, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
+import { biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "./utils.js";
 function checkTypeMatch(a, b, range) {
     if (typesEqual(a, b))
         return true;
@@ -137,10 +137,13 @@ function checkValueEquality(type, a, b, aPath, bPath, range) {
 }
 function coerceValue(value, from, to, range) {
     let assignabilityError;
-    if ((assignabilityError = typesAssignable(to, from)) === true)
-        return value;
-    let disabledConfig = null;
     let helpMessage = null;
+    const result = typesAssignable(to, from);
+    if (result === true)
+        return value;
+    if (result)
+        [assignabilityError, helpMessage] = result;
+    let configToEnable = null;
     if (from.isInteger() && to.is("REAL", "INTEGER"))
         return value;
     if (from.is("REAL") && to.is("INTEGER")) {
@@ -155,7 +158,7 @@ function coerceValue(value, from, to, range) {
             }
         }
         else
-            disabledConfig = configs.coercion.real_to_int;
+            configToEnable = configs.coercion.real_to_int;
     }
     if (from.is("STRING") && to.is("CHAR")) {
         if (configs.coercion.string_to_char.value) {
@@ -166,32 +169,32 @@ function coerceValue(value, from, to, range) {
                 assignabilityError = f.quote `the length of the string ${v} is not 1`;
         }
         else
-            disabledConfig = configs.coercion.string_to_char;
+            configToEnable = configs.coercion.string_to_char;
     }
     if (to.is("STRING")) {
         if (from.is("BOOLEAN")) {
             if (configs.coercion.booleans_to_string.value)
                 return value.toString().toUpperCase();
             else
-                disabledConfig = configs.coercion.booleans_to_string;
+                configToEnable = configs.coercion.booleans_to_string;
         }
         else if (from.isInteger() || from.is("REAL")) {
             if (configs.coercion.numbers_to_string.value)
                 return value.toString();
             else
-                disabledConfig = configs.coercion.numbers_to_string;
+                configToEnable = configs.coercion.numbers_to_string;
         }
         else if (from.is("CHAR")) {
             if (configs.coercion.char_to_string.value)
                 return value.toString();
             else
-                disabledConfig = configs.coercion.char_to_string;
+                configToEnable = configs.coercion.char_to_string;
         }
         else if (from.is("DATE")) {
             if (configs.coercion.numbers_to_string.value)
                 return value.toString();
             else
-                disabledConfig = configs.coercion.numbers_to_string;
+                configToEnable = configs.coercion.numbers_to_string;
         }
         else if (from instanceof ArrayVariableType) {
             if (configs.coercion.arrays_to_string.value) {
@@ -203,13 +206,13 @@ function coerceValue(value, from, to, range) {
                     assignabilityError = `the type of the elements in the array does not support coercion to string`;
             }
             else
-                disabledConfig = configs.coercion.arrays_to_string;
+                configToEnable = configs.coercion.arrays_to_string;
         }
         else if (from instanceof EnumeratedVariableType) {
             if (configs.coercion.enums_to_string.value)
                 return value;
             else
-                disabledConfig = configs.coercion.enums_to_string;
+                configToEnable = configs.coercion.enums_to_string;
         }
     }
     if ((from.isInteger() || from.is("REAL")) && to.is("BOOLEAN"))
@@ -218,7 +221,7 @@ function coerceValue(value, from, to, range) {
         if (configs.coercion.enums_to_integer.value)
             return from.values.indexOf(value);
         else
-            disabledConfig = configs.coercion.enums_to_integer;
+            configToEnable = configs.coercion.enums_to_integer;
     }
     if (to instanceof IntegerRangeVariableType && from.is("INTEGER", "REAL")) {
         const v = value;
@@ -234,8 +237,8 @@ function coerceValue(value, from, to, range) {
     fail({
         summary: f.quote `Cannot coerce value of type ${from} to ${to}`,
         elaboration: assignabilityError,
-        help: disabledConfig ? {
-            config: disabledConfig,
+        help: configToEnable ? {
+            config: configToEnable,
             value: true
         } : (helpMessage ?? undefined)
     }, range);
@@ -520,7 +523,11 @@ let Runtime = (() => {
                                 const target = this.evaluateExpr(expr.nodes[0], type?.target, true);
                                 const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote `Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
                                 if (!configs.pointers.implicit_variable_creation.value)
-                                    rethrow(err, m => m + `\n${configs.pointers.implicit_variable_creation.errorHelp}`);
+                                    rethrow(err, m => typeof m == "string" ? `\n${configs.pointers.implicit_variable_creation.errorHelp}` :
+                                        {
+                                            ...m,
+                                            help: m.help ?? enableConfig(configs.pointers.implicit_variable_creation)
+                                        });
                                 return finishEvaluation({
                                     type: target.type,
                                     declaration: "dynamic",
@@ -1070,7 +1077,11 @@ let Runtime = (() => {
                 if (func instanceof ClassProcedureStatement && requireReturnValue === true)
                     fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
                 if (func instanceof ClassFunctionStatement && requireReturnValue === false && !configs.statements.call_functions.value)
-                    fail(`CALL cannot be used on functions according to Cambridge.\n${configs.statements.call_functions.errorHelp}`, undefined);
+                    fail({
+                        summary: `CALL cannot be used on functions.`,
+                        elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
+                        help: enableConfig(configs.statements.call_functions)
+                    }, undefined);
                 const classScope = instance.type.getScope(this, instance);
                 const methodScope = this.assembleScope(func, args);
                 const previousClassData = this.classData;
@@ -1186,7 +1197,10 @@ let Runtime = (() => {
             }
             statementExecuted(range, increment = 1) {
                 if ((this.statementsExecuted += increment) > configs.statements.max_statements.value) {
-                    fail(`Statement execution limit reached (${configs.statements.max_statements.value})\n${configs.statements.max_statements.errorHelp}`, range);
+                    fail({
+                        summary: `Statement execution limit reached (${configs.statements.max_statements.value})`,
+                        help: setConfig("increase", configs.statements.max_statements)
+                    }, range);
                 }
             }
             runProgram(code) {

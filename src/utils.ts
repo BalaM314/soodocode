@@ -296,9 +296,9 @@ export function array<T>(input:T | T[]):T[] {
 	else return [input];
 }
 
-type ErrorMessageLine = string | Array<string | number | TextRangeLike>;
+export type ErrorMessageLine = string | Array<string | number | TextRangeLike>;
 /** Used for rich error messages. May contain a button that changes the config value. */
-type ConfigSuggestion<T> = {
+export type ConfigSuggestion<T> = {
 	/**
 	 * The help text will be: `help: ${message}, ${enable/disable} the config "${config name}"`
 	 * If unspecified, this message will be "To allow this"
@@ -330,7 +330,7 @@ export type ErrorMessage = string | {
 	/**
 	 * Suggests a solution to the error
 	 */
-	help?: string | ErrorMessageLine[] | ConfigSuggestion<unknown>;
+	help?: string | ErrorMessageLine[] | ConfigSuggestion<any>;
 };
 function formatErrorLine(line:ErrorMessageLine, sourceCode:string):string {
 	return typeof line == "string" ? line : line.map(chunk =>
@@ -409,6 +409,8 @@ export class SoodocodeError extends Error {
 					//Add a button that enables it
 					if(shouldCreateButton)
 						globalThis.currentConfigModificationFunc = () => {
+							// safety: value is not "increase" or "decrease"
+							// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 							help.config.value = help.value;
 							globalThis.currentConfigModificationFunc = () => {
 								document.getElementById("execute-soodocode-button")?.click();
@@ -508,12 +510,25 @@ help: ${escapeHTML(help.message ?? `to allow this`)}, \
 		).join("");
 	}
 }
+export function enableConfig(config:Config<boolean, boolean>):ConfigSuggestion<boolean> {
+	return {
+		config,
+		value: true
+	};
+}
+export function setConfig(value:"increase" | "decrease", config:Config<number, boolean>):ConfigSuggestion<number> {
+	return { config, value };
+}
+
+export function plural(count:number, word:string, plural = word + "s"){
+	return `${count} ${count == 1 ? word : plural}`;
+}
 
 export function fail(message:ErrorMessage, rangeSpecific:TextRangeLike | null | undefined, rangeGeneral?:TextRangeLike | null, rangeOther?:TextRangeLike):never {
 	throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral), getRange(rangeOther));
 }
-export function rethrow(error:SoodocodeError, msg:(old:string) => string){
-	error.message = msg(error.message);
+export function rethrow(error:SoodocodeError, msg:(old:ErrorMessage) => ErrorMessage){
+	error.richMessage = msg(error.richMessage);
 	throw error;
 }
 export function crash(message:string, ...extra:unknown[]):never {
