@@ -311,17 +311,13 @@ export function checkStatement(statement, input, allowRecursiveCall) {
                         break;
                     const expectedType = statement.tokens[i + 1];
                     if (isKey(tokenTextMapping, expectedType)) {
-                        const expected = tokenTextMapping[expectedType];
                         const nestLevel = manageNestLevel();
-                        for (let k = start; k < input.length; k++) {
-                            nestLevel.update(input[k]);
-                            if (nestLevel.out() && biasedLevenshtein(expected, input[k].text) <= 1)
-                                return {
-                                    message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found "${input[k].text}"`,
-                                    priority: 50,
-                                    range: input[k].range
-                                };
-                        }
+                        const err = max(input.slice(start).map(token => {
+                            nestLevel.update(token);
+                            return nestLevel.out() && getMessage(expectedType, token, 10);
+                        }).filter(Boolean), m => m.priority, 49);
+                        if (err)
+                            return err;
                     }
                     return {
                         message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`,
