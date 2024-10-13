@@ -699,6 +699,9 @@ function formatDebug(input:Formattable):string {
 		return `[${(input as IFormattable[]).map(formatDebug).join(", ")}]`;
 	} else return input.fmtDebug();
 }
+export function quote(input:Formattable | null | undefined):string | null | undefined {
+	return input != null ? formatQuoted(input) : input;
+}
 export const f = {
 	text: tagProcessor(formatText),
 	short: tagProcessor(formatShort),

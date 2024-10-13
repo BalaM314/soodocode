@@ -575,6 +575,9 @@ function formatDebug(input) {
     else
         return input.fmtDebug();
 }
+export function quote(input) {
+    return input != null ? formatQuoted(input) : input;
+}
 export const f = {
     text: tagProcessor(formatText),
     short: tagProcessor(formatShort),

@@ -2945,14 +2945,14 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 
 const functionArgumentTests = ((data:Record<string,
 	[input:_Token[], output:[string, type:_UnresolvedVariableType, passMode?:FunctionArgumentPassMode][]
-| "error"]>) => Object.entries(data).map<
+		| string]>) => Object.entries(data).map<
 	{name:string; input:RangeArray<Token>; output:[string,
 		{type:UnresolvedVariableType; passMode:jasmine.ExpectedRecursive<FunctionArgumentPassMode>}
-	][] | "error"}
+	][] | string}
 >(([name, [input, output]]) => ({
 	name,
 	input: new RangeArray<Token>(input.map(process_Token), [-1, -1]),
-	output: output == "error" ? "error" :
+	output: typeof output == "string" ? output :
 	output.map(
 		([name, type, passMode]) => [name, {type: process_UnresolvedVariableType(type), passMode: passMode ?? jasmine.any(String)}]
 	)
@@ -3139,40 +3139,40 @@ const functionArgumentTests = ((data:Record<string,
 	]],
 	nameOnly: [[
 		"arg2",
-	], "error"],
+	], "Type not specified"],
 	missingType: [[
 		"arg2",
 		"punctuation.colon",
-	], "error"],
+	], `Expected a type, got end of function arguments`],
 	missingComma: [[
 		"arg2",
 		"punctuation.colon",
 		"DATE",
 		"arg2",
-	], "error"],
+	], ""],
 	extraComma: [[
 		"arg2",
 		"punctuation.colon",
 		"CHAR",
 		"punctuation.comma",
-	], "error"],
+	], `Expected a name, got end of function arguments`],
 	onlyPassMode: [[
 		"keyword.pass_mode.by_reference",
-	], "error"],
+	], `Expected a name, got end of function arguments`],
 	onlyPassMode2: [[
 		"arg2",
 		"punctuation.colon",
 		"INTEGER",
 		"punctuation.comma",
 		"keyword.pass_mode.by_reference",
-	], "error"],
+	], `Expected a name, got end of function arguments`],
 	doublePassMode: [[
 		"keyword.pass_mode.by_reference",
 		"keyword.pass_mode.by_value",
 		"arg2",
 		"punctuation.colon",
 		"BOOLEAN",
-	], "error"],
+	], `Expected a name, got "BYVAL"`],
 	doubleArg1: [[
 		"arg",
 		"punctuation.colon",
@@ -3185,7 +3185,7 @@ const functionArgumentTests = ((data:Record<string,
 		"arg",
 		"punctuation.colon",
 		"STRING",
-	], "error"],
+	], `Duplicate function argument "arg"`],
 	doubleArg2: [[
 		"arg",
 		"punctuation.comma",
@@ -3194,7 +3194,7 @@ const functionArgumentTests = ((data:Record<string,
 		"arg4",
 		"punctuation.colon",
 		"STRING",
-	], "error"],
+	], `Duplicate function argument "arg4"`],
 	missingType2: [[
 		"keyword.pass_mode.by_reference",
 		"arg1",
@@ -3202,13 +3202,13 @@ const functionArgumentTests = ((data:Record<string,
 		"arg2",
 		"punctuation.comma",
 		"arg3",
-	], "error"],
+	], `Type not specified for function argument "arg`],
 	randomJunk: [[
 		"keyword.case",
 		"arg2",
 		"punctuation.colon",
 		"STRING",
-	], "error"],
+	], ""],
 });
 
 
@@ -3533,10 +3533,11 @@ describe("parse", () => {
 
 describe("parseFunctionArguments", () => {
 	for(const {name, input, output} of functionArgumentTests){
-		if(output == "error"){
+		if(typeof output == "string"){
 			it(`should not parse ${name} as function arguments`, () => {
-				expect(() => parseFunctionArguments(input))
-					.toThrowMatching(t => t instanceof SoodocodeError);
+				expect(() => parseFunctionArguments(input)).toThrowMatching(e =>
+					e instanceof SoodocodeError && (expect(e.formatMessage(``)).toContain(output), true)
+				);
 			});
 		} else {
 			it(`should parse ${name} as function arguments`, () => {

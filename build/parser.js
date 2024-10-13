@@ -3,7 +3,7 @@ import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode, operators, operatorsByPriority, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup } from "./parser-types.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType } from "./runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, Statement, statements } from "./statements.js";
-import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
+import { biasedLevenshtein, closestKeywordToken, crash, displayTokenMatcher, errorBoundary, f, fail, fakeObject, findLastNotInGroup, forceType, impossible, isKey, manageNestLevel, max, quote, RangeArray, splitTokens, splitTokensOnComma, tryRun } from "./utils.js";
 export const parseFunctionArguments = errorBoundary()(function _parseFunctionArguments(tokens) {
     if (tokens.length == 0)
         return new Map();
@@ -24,16 +24,17 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
         else
             passMode = null;
         if (section[offset + 0]?.type != "name")
-            fail(f.quote `Expected a name, got ${section[offset + 0] ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
+            fail(`Expected a name, got ${quote(section[offset + 0]) ?? "end of function arguments"}`, section[offset + 0] ?? (section[offset - 1] ?? tokens.at(-1)).rangeAfter());
         if (section.length == offset + 1) {
             type = null;
         }
         else {
             if (section[offset + 1]?.type != "punctuation.colon")
-                fail(f.quote `Expected a colon, got ${section[offset + 1] ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
-            if (offset + 2 >= section.length)
-                fail(`Expected a colon, got end of function arguments`, section.at(-1).rangeAfter());
-            type = processTypeData(parseType(section.slice(offset + 2)));
+                fail(`Expected a colon, got ${quote(section[offset + 1]) ?? "end of function arguments"}`, section[offset + 1] ?? (section[offset + 0] ?? tokens.at(-1)).rangeAfter());
+            const typeTokens = section.slice(offset + 2);
+            if (typeTokens.length == 0)
+                fail(`Expected a type, got end of function arguments`, section.at(-1).rangeAfter());
+            type = processTypeData(parseType(typeTokens));
         }
         return [
             section[offset + 0],
