@@ -89,6 +89,7 @@ export declare function weave<T>(...arrays: ReadonlyArray<ReadonlyArray<T>>): T[
 export declare function withRemaining<T>(items: T[]): IterableIterator<[T, T[]]>;
 export declare function tagProcessor<T>(transformer: (chunk: T, index: number, allStringChunks: readonly string[], allVarChunks: readonly T[]) => string): TagFunction<T, string>;
 export type Formattable = IFormattable | IFormattable[] | string | Exclude<UnresolvedVariableType, IFormattable> | String | Number | Boolean | number | boolean;
+export declare function quote(input: Formattable | null | undefined): string | null | undefined;
 export declare const f: {
     text: TagFunction<Formattable, string>;
     short: TagFunction<Formattable, string>;

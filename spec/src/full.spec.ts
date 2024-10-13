@@ -1474,6 +1474,23 @@ CLASS mogus INHERITS amogus
 ENDCLASS`,
 `"INTEGER" is not assignable to type "1..10"`
 ],
+parse_class_inherits_parameter_type_contravariant_4: [
+`CLASS amogus
+	PUBLIC x: INTEGER
+	PUBLIC PROCEDURE NEW(X: INTEGER)
+		x <- X
+	ENDPROCEDURE
+	PUBLIC PROCEDURE name(arg:ARRAY OF INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS
+CLASS mogus INHERITS amogus
+	PUBLIC PROCEDURE name(arg:ARRAY[1:10] OF INTEGER)
+		
+	ENDPROCEDURE
+ENDCLASS`,
+`cannot assign an array with unknown length to an array requiring a specific length`
+],
 parse_class_inherits_recursive_illegal: [
 `CLASS amogus INHERITS mogus
 	PUBLIC PROCEDURE NEW()
