@@ -27,6 +27,7 @@ const savedProgramKey = "soodocode:savedProgram";
 const fileSystem = new files.BrowserFileSystem(true);
 
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
+const header = getElement("header", HTMLDivElement);
 const headerText = getElement("header-text", HTMLSpanElement);
 const secondFocusableElement = getElement("second-focusable-element", HTMLAnchorElement, "class");
 const outputDiv = getElement("output-div", HTMLDivElement);
@@ -681,7 +682,7 @@ function setupHeaderEasterEgg(){
 		if(e.shiftKey) flashing = !flashing;
 		if(e.altKey) bouncing = !bouncing;
 		if(e.ctrlKey) flipped = !flipped;
-		headerText.style.setProperty("transform", flipped ? "scaleX(-1)" : "none");
+		header.style.setProperty("transform", flipped ? "scaleX(-1)" : "none");
 		headerText.style.setProperty("animation-name", bouncing ? "sizebounce" : "none");
 		//modifying animation-play-state didn't work as the animation could get paused when the size is high, causing scrollbars to appear
 		if(!e.shiftKey && !e.altKey && !e.ctrlKey)
