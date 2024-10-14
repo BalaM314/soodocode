@@ -2,7 +2,10 @@
 
 Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax.
 
-View the site [here](https://balam314.github.io/soodocode)
+[Click here to view the site](https://balam314.github.io/soodocode)
+
+![image](https://github.com/user-attachments/assets/dcca80a1-dbd9-4df5-83be-ceb58e91c1c4)
+
 
 # Features
 
