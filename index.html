@@ -70,16 +70,20 @@
 					</div>
 					<span id="files-dialog-close" class="text-button dialog-close" role="button" aria-label="close" tabindex="0" onclick="document.getElementById('files-dialog').close()">❌</span>
 					<div id="files-dialog-select-line">
-						<label for="files-dialog-select">
-							Select File
-						</label>
-						<select id="files-dialog-select" name="files-dialog-select" autofocus="false">
-							<option id="files-dialog-select-none" value="none" selected>(no file selected)</option>
-						</select>
-						<span id="files-dialog-download" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #CCF;">Download ⇓</span>
-						<span id="files-dialog-upload" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #CCF;">Upload ⇑</span>
-						<span id="files-dialog-create" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #CFC;">Create ➕</span>
-						<span id="files-dialog-delete" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #F88;">Delete 🗑</span>
+						<div id="files-dialog-select-line-left">
+							<label for="files-dialog-select">
+								Select File
+							</label>
+							<select id="files-dialog-select" name="files-dialog-select" autofocus="false">
+								<option id="files-dialog-select-none" value="none" selected>(no file selected)</option>
+							</select>
+						</div>
+						<div id="files-dialog-select-line-right">
+							<span id="files-dialog-download" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #CCF;">Download ⇓</span>
+							<span id="files-dialog-upload" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #CCF;">Upload ⇑</span>
+							<span id="files-dialog-create" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #CFC;">Create ➕</span>
+							<span id="files-dialog-delete" class="text-button" role="button" tabindex="0" style="font-size: 20px; color: #F88;">Delete 🗑</span>
+						</div>
 					</div>
 					<textarea id="files-dialog-contents" disabled></textarea>
 				</div>
