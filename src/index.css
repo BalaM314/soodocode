@@ -61,6 +61,24 @@ html {
 	display: none;
 }
 
+button {
+	background-color: #114;
+	color: white;
+	border: 3px solid #003;
+	border-radius: 5px;
+	padding: 4px 10px;
+}
+
+button:hover {
+	background-color: #171750;
+	border: 3px solid #050540;
+}
+
+button:active {
+	background-color: #227;
+	border: 3px solid #114;
+}
+
 #header-text {
 	font-size: 2em;
 	font-weight: bold;
