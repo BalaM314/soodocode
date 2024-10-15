@@ -497,7 +497,7 @@ help: ${escapeHTML(help.message ?? `to allow this`)}, \
 		})() : (() => {
 			const formattedPreviousLine = previousLine && `${previousLineNumber} | ${previousLine}`;
 			const errorLine = `${lineNumber} | ${startOfLine}${rangeText}${restOfLine}`;
-			const underlineLine = `${" ".repeat(lineNumber.length)} | ${" ".repeat(startOfLine.length)}${"~".repeat(rangeText.length)}`;
+			const underlineLine = `${" ".repeat(lineNumber.length)} | ${startOfLine.replace(/[^\t]/g, " ")}${"~".repeat(rangeText.length)}`;
 			return [formattedPreviousLine, errorLine, underlineLine];
 		})();
 		const formattedText = lines.filter(Boolean).map(l => "\t" + l).join("\n");
