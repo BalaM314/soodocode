@@ -606,7 +606,7 @@ function executeSoodocode(){
 	const runtime = new Runtime(
 		(msg) => prompt(msg) ?? fail("User did not input a value", undefined),
 		m => {
-			const str = m.map(x => x.asHTML(false)).join(" ");
+			const str = m.map(x => x.asHTML(false)).join("");
 			output.push(str);
 			if(configs.runtime.display_output_immediately.value){
 				outputDiv.innerHTML += str + "\n";
