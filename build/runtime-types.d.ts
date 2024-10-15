@@ -3,7 +3,7 @@ import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, Expr
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
-import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
+import type { BoxPrimitive, IFormattable, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { ConfigSuggestion, RangeArray } from "./utils.js";
 export type VariableTypeMapping<T> = T extends PrimitiveVariableType<infer U> ? (U extends "INTEGER" ? number : U extends "REAL" ? number : U extends "STRING" ? string : U extends "CHAR" ? string : U extends "BOOLEAN" ? boolean : U extends "DATE" ? Date : never) : T extends ArrayVariableType ? (Array<VariableTypeMapping<ArrayElementVariableType> | null> | Int32Array | Float64Array) : T extends IntegerRangeVariableType ? number : T extends RecordVariableType ? {
     [index: string]: VariableTypeMapping<any> | null;
@@ -187,13 +187,13 @@ export declare class SetVariableType<Init extends boolean = true> extends BaseVa
 export declare class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
     initialized: Init;
     statement: ClassStatement;
-    properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]>;
+    properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement, TextRangeLike]>;
     ownMethods: Record<string, ClassMethodData>;
     allMethods: Record<string, [source: ClassVariableType<Init extends true ? true : boolean>, data: ClassMethodData]>;
     propertyStatements: ClassPropertyStatement[];
     name: string;
     baseClass: ClassVariableType<Init extends true ? true : boolean> | null;
-    constructor(initialized: Init, statement: ClassStatement, properties?: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [source: ClassVariableType<Init extends true ? true : boolean>, data: ClassMethodData]>, propertyStatements?: ClassPropertyStatement[]);
+    constructor(initialized: Init, statement: ClassStatement, properties?: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement, TextRangeLike]>, ownMethods?: Record<string, ClassMethodData>, allMethods?: Record<string, [source: ClassVariableType<Init extends true ? true : boolean>, data: ClassMethodData]>, propertyStatements?: ClassPropertyStatement[]);
     init(runtime: Runtime): void;
     fmtText(): string;
     fmtShort(): string;

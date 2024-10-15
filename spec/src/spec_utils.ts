@@ -435,7 +435,7 @@ export function classType(
 	const clazz = new ClassVariableType(
 		true,
 		statement,
-		properties,
+		Object.fromEntries(Object.entries(properties).map(([k, [type, s]]) => [k, [type, s, [-1, -1]]])),
 		Object.fromEntries(Object.entries(ownMethods).map(([k, v]) => [k, process_ProgramASTNode(v) as ClassMethodData])),
 		allMethods
 	);

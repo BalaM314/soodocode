@@ -11,7 +11,7 @@ import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTLeafNode, 
 import { Runtime } from "./runtime.js";
 import type { AssignmentStatement, BuiltinFunctionArguments, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "./statements.js";
 import { ClassFunctionStatement, ClassProcedureStatement } from "./statements.js";
-import type { BoxPrimitive, IFormattable, RangeAttached, TextRange } from "./types.js";
+import type { BoxPrimitive, IFormattable, RangeAttached, TextRange, TextRangeLike } from "./types.js";
 import { ConfigSuggestion, crash, enableConfig, errorBoundary, ErrorMessage, escapeHTML, f, fail, getTotalRange, impossible, match, plural, RangeArray, setConfig, zip } from "./utils.js";
 
 /** Maps a pseudocode VariableType to the type used to represent it in TS. */
@@ -630,7 +630,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public initialized: Init,
 		public statement: ClassStatement,
 		/** Stores regular and inherited properties. */
-		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement]> = Object.create(null) as never,
+		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement, TextRangeLike]> = Object.create(null) as never,
 		/** Does not store inherited methods. */
 		public ownMethods: Record<string, ClassMethodData> = Object.create(null) as never,
 		public allMethods: Record<string, [source:ClassVariableType<Init extends true ? true : boolean>, data:ClassMethodData]> = Object.create(null) as never,

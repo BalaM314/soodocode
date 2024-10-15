@@ -701,6 +701,19 @@ record_type_fields_nonexistent: [
 ENDTYPE`,
 "SUSSY"
 ],
+record_type_invalid_statement: [
+`TYPE amogus
+	TYPE invalid
+	ENDTYPE
+ENDTYPE`,
+` statement is not valid here`
+],
+record_type_invalid_statement_2: [
+`TYPE amogus
+	OUTPUT "oh no"
+ENDTYPE`,
+` statement is not valid here`
+],
 //#endregion
 //#region recursive types
 record_type_recursive_illegal_1: [

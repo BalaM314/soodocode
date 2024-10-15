@@ -40,7 +40,7 @@ import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionASTFunctionCallNode, ExpressionASTNodes, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType } from "./parser-types.js";
-import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
+import { isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData } from "./parser.js";
 import { ClassVariableType, EnumeratedVariableType, FileMode, TypedNodeValue, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, UntypedNodeValue } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import { Abstract, combineClasses, crash, enableConfig, errorBoundary, f, fail, forceType, getTotalRange, getUniqueNamesFromCommaSeparatedTokenList, splitTokensOnComma } from "./utils.js";
@@ -372,7 +372,10 @@ let DeclareStatement = (() => {
         run(runtime) {
             const varType = runtime.resolveVariableType(this.varType);
             if (varType instanceof SetVariableType)
-                fail(`Cannot declare a set variable with the DECLARE statement, please use the DEFINE statement`, this.nodes.at(-1));
+                fail({
+                    summary: `Cannot declare a set variable with the DECLARE statement`,
+                    help: [f.range `use the DEFINE statement instead, like this:\nDEFINE ${this.variables[0][0]} (your comma-separated values here): ${this.expr(-1, "type")}`]
+                }, this.nodes.at(-1));
             for (const [variable, token] of this.variables) {
                 runtime.defineVariable(variable, {
                     type: varType,
@@ -413,7 +416,7 @@ let ConstantStatement = (() => {
             if (runtime.getVariable(this.name))
                 fail(`Constant ${this.name} was already declared`, this);
             const { type, value } = Runtime.evaluateToken(this.expression)
-                ?? fail(f.quote `Cannot evaluate expression ${this.expression} in a static context`, this.expression);
+                ?? crash(`evaluation of literals cannot fail`);
             runtime.getCurrentScope().variables[this.name] = {
                 type,
                 get value() { return value; },
@@ -447,19 +450,23 @@ let DefineStatement = (() => {
         constructor() {
             super(...arguments);
             this.name = this.token(1);
-            this.variableType = this.token(-1);
-            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokens(3, -3), this.token(-3), expressionLeafNodeTypes);
+            this.variableTypeToken = this.token(-1);
+            this.variableType = processTypeData(this.variableTypeToken);
+            this.values = getUniqueNamesFromCommaSeparatedTokenList(this.tokens(3, -3), this.token(-3), literalTypes);
         }
         run(runtime) {
-            const type = runtime.getType(this.variableType.text) ?? fail(`Nonexistent variable type ${this.variableType.text}`, this.variableType);
+            const type = runtime.resolveVariableType(this.variableType);
             if (!(type instanceof SetVariableType))
-                fail(`DEFINE can only be used on set types, please use a declare statement instead`, this.variableType);
+                fail({
+                    summary: `DEFINE can only be used on set types`,
+                    help: `use a DECLARE statement instead`
+                }, this.variableTypeToken);
             runtime.defineVariable(this.name.text, {
                 type,
                 declaration: this,
                 mutable: true,
                 value: this.values.map(t => (Runtime.evaluateToken(t, type.baseType)
-                    ?? fail(f.quote `Cannot evaluate token ${t} in a static context`, t)).value)
+                    ?? crash(`evaluating a literal token cannot fail`)).value)
             }, this.name);
         }
     };
@@ -574,7 +581,7 @@ let TypeRecordStatement = (() => {
             const fields = Object.create(null);
             for (const statement of node.nodeGroups[0]) {
                 if (!(statement instanceof DeclareStatement))
-                    fail(`Statements in a record type block can only be declaration statements`, statement);
+                    crash(`allowOnly is ["declare"]`);
                 statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
             }
             return [this.name.text, new RecordVariableType(false, this.name.text, fields)];
@@ -588,6 +595,7 @@ let TypeRecordStatement = (() => {
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
     _classThis.propagatesControlFlowInterruptions = false;
+    _classThis.allowOnly = new Set(["declare"]);
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -629,7 +637,7 @@ let AssignmentStatement = (() => {
                                 config: configs.statements.auto_declare_classes,
                                 value: true,
                             }
-                        }, this.target);
+                        }, this.target, this);
                 }
                 else
                     runtime.handleNonexistentVariable(this.target.text, this.target);
@@ -717,7 +725,7 @@ let InputStatement = (() => {
         run(runtime) {
             const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.nodes[1].range);
             if (!variable.mutable)
-                fail(`Cannot INPUT ${this.name} because it is a constant`, this.nodes[1]);
+                fail(f.quote `Cannot INPUT ${this.name} because it is immutable`, this.nodes[1], this);
             const input = runtime._input(f.text `Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
             switch (variable.type) {
                 case PrimitiveVariableType.BOOLEAN:
@@ -1057,14 +1065,26 @@ let CaseBranchRangeStatement = (() => {
             this.lowerBound = this.token(0);
             this.upperBound = this.token(2);
             if (!CaseBranchRangeStatement.allowedTypes.includes(this.lowerBound.type))
-                fail(f.quote `Token of type ${this.lowerBound.type} is not valid in range cases: expected a number or character`, this.lowerBound);
-            if (this.lowerBound.type != this.upperBound.type)
-                fail(f.quote `Token of type ${this.upperBound.type} does not match the other range bound: expected a ${this.lowerBound.type}`, this.upperBound);
+                fail({
+                    summary: f.range `Range bound ${this.lowerBound} is not valid`,
+                    elaboration: `expected a number or character`
+                }, this.lowerBound);
+            if (this.lowerBound.type != this.upperBound.type) {
+                const lowerBoundType = this.lowerBound.type == "number.decimal" ? `number` : `char`;
+                const upperBoundType = this.upperBound.type == "number.decimal" ? `number` : `char`;
+                fail({
+                    summary: f.quote `Range bound ${this.upperBound} is not valid`,
+                    elaboration: [
+                        f.range `the other range bound (${this.lowerBound}) was a ${lowerBoundType}`,
+                        f.range `expected another ${lowerBoundType}, not a ${upperBoundType}`
+                    ]
+                }, this.upperBound);
+            }
         }
         branchMatches(switchType, switchValue) {
             if (this.value.type == "keyword.otherwise")
                 return true;
-            const { value: lValue } = Runtime.evaluateToken(this.value, switchType);
+            const { value: lValue } = Runtime.evaluateToken(this.lowerBound, switchType);
             const { value: uValue } = Runtime.evaluateToken(this.upperBound, switchType);
             return lValue <= switchValue && switchValue <= uValue;
         }
@@ -1109,7 +1129,13 @@ let ForStatement = (() => {
             this.empty = node.nodeGroups[0].length == 0;
             const endStatement = node.controlStatements[1];
             if (endStatement.name.text !== this.name)
-                fail(f.quote `Incorrect NEXT statement: expected variable ${this.name} from for loop, got variable ${endStatement.name.text}`, endStatement.name);
+                fail({
+                    summary: f.quote `Incorrect NEXT statement`,
+                    elaboration: [
+                        `the variables in the FOR statement and NEXT statement should match`,
+                        f.quote `expected variable ${this.name} from for loop, got variable ${endStatement.name}`
+                    ]
+                }, endStatement.name);
         }
         getStep(runtime) {
             return 1;
@@ -1452,7 +1478,8 @@ let OpenFileStatement = (() => {
         run(runtime) {
             const name = runtime.evaluate(this.filename);
             const mode = FileMode(this.mode.type.split("keyword.file_mode.")[1].toUpperCase());
-            const file = runtime.fs.openFile(name, ["WRITE", "APPEND"].includes(mode)) ?? fail(f.quote `File ${name} does not exist.`, this.filename);
+            const file = runtime.fs.openFile(name, ["WRITE", "APPEND"].includes(mode))
+                ?? fail(f.quote `File ${name} does not exist.`, this.filename);
             if (runtime.openFiles[name])
                 fail(f.quote `File ${name} has already been opened.`, this.filename);
             if (mode == "READ") {
@@ -1517,10 +1544,10 @@ let CloseFileStatement = (() => {
                 runtime.fs.closeFile(name);
             }
             else if (name in runtime.openFiles) {
-                fail(f.quote `Cannot close file ${name}, because it has already been closed.`, this);
+                fail(f.quote `File ${name} has already been closed, cannot close it again`, this);
             }
             else {
-                fail(f.quote `Cannot close file ${name}, because it was never opened.`, this);
+                fail(f.quote `File ${name} was never opened, cannot close it`, this);
             }
         }
         constructor() {
@@ -1765,7 +1792,7 @@ let ClassStatement = (() => {
                     if (node.controlStatements[0] instanceof ClassFunctionStatement || node.controlStatements[0] instanceof ClassProcedureStatement) {
                         const method = node.controlStatements[0];
                         if (classData.ownMethods[method.name]) {
-                            fail(f.quote `Duplicate declaration of class method ${method.name}`, this, classData.ownMethods[method.name]);
+                            fail(f.quote `Duplicate declaration of class method ${method.name}`, method.nameToken, method);
                         }
                         else {
                             node.controlStatements[0];
@@ -1783,10 +1810,10 @@ let ClassStatement = (() => {
                 else if (node instanceof ClassPropertyStatement) {
                     for (const [variable, token] of node.variables) {
                         if (classData.properties[variable]) {
-                            fail(f.quote `Duplicate declaration of class property ${variable}`, token, classData.properties[variable][1]);
+                            fail(f.quote `Duplicate declaration of class property ${variable}`, token, node);
                         }
                         else {
-                            classData.properties[variable] = [node.varType, node];
+                            classData.properties[variable] = [node.varType, node, token];
                         }
                     }
                     classData.propertyStatements.push(node);
@@ -1809,7 +1836,7 @@ let ClassStatement = (() => {
         ClassStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.allowOnly = new Set(["class_property", "class_procedure", "class_function", "class.end"]);
+    _classThis.allowOnly = new Set(["class_property", "class_procedure", "class_function"]);
     _classThis.propagatesControlFlowInterruptions = false;
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
@@ -1830,13 +1857,13 @@ let ClassInheritsStatement = (() => {
         }
         initializeClass(runtime, branchNode) {
             if (this.superClassName.text == this.name.text)
-                fail(`A class cannot inherit from itself`, this.superClassName);
-            const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range);
+                fail(`A class cannot inherit from itself`, this.superClassName, this);
+            const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range, this);
             const extensions = super.initializeClass(runtime, branchNode);
             extensions.baseClass = baseClass;
             for (const [key, value] of Object.entries(baseClass.properties)) {
                 if (extensions.properties[key]) {
-                    fail(f.quote `Property ${key} has already been defined in base class ${this.superClassName.text}`, extensions.properties[key][1]);
+                    fail(f.quote `Property ${key} has already been declared in the base class, cannot declare it again`, extensions.properties[key][2], extensions.properties[key][1]);
                 }
                 else {
                     extensions.properties[key] = value;
