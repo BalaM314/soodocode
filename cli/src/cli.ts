@@ -1,12 +1,27 @@
 import { Application, ApplicationError } from "cli-app";
 import fs from "node:fs";
 import fsP from "node:fs/promises";
-import readline from "node:readline/promises";
+import { spawnSync } from "node:child_process";
 import { symbolize, tokenize, parse, Runtime, FileSystem, File, tryRunOr, SoodocodeError, parseError, configs, fail as scFail, f, crash } from "../../build/index.js";
 import path from "node:path";
+import os from "node:os";
 
 function fail(message:string):never {
 	throw new ApplicationError(message);
+}
+
+// Behold, the Node.JS!
+/** Uses a shell command. If platform is windows, uses cmd. If platform is linux, uses sh read. */
+function promptSync():string {
+	let command:[string, string[]];
+	if(os.platform() == "win32"){
+		command = ["cmd", ["/V:ON", "/C", `set /p response="> " && echo !response!`]];
+	} else {
+		command = ["sh", ["-c", "read response; echo $response"]];
+	}
+	return spawnSync(...command, {
+		stdio: ["inherit", "pipe", "inherit"]
+	}).stdout.toString();
 }
 
 class NodeJSFileSystem implements FileSystem {
@@ -72,10 +87,11 @@ soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
 	
 	const runtime = new Runtime(
 		function input(message, type){
-			throw new Error(`not yet implemented`);
+			//ignore the message and type, the user will be able to see the previously output message
+			return promptSync();
 		},
 		function output(values){
-			console.log(values.map(v => v.asString()).join(" "));
+			console.log(values.map(v => v.asString()).join(""));
 		},
 		new NodeJSFileSystem(),
 	);
@@ -99,13 +115,6 @@ soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
 		description: "Path to the file to run",
 		required: true,
 	}],
-	namedArgs: {
-		verbose: {
-			description: "If true, emits additional output.",
-			aliases: ["v"],
-			needsValue: false,
-		}
-	}
 }, ["execute", "r"]);
 
 soodocode.run(process.argv);
