@@ -250,7 +250,17 @@ export class Runtime {
 	/** Stores the total number of statements executed. Used for the statement limits check. */
 	statementsExecuted = 0;
 	constructor(
+		/**
+		 * Note: this method is synchronous for performance reasons.
+		 * If it was asynchronous, basically every runtime function would need to be asynchronous,
+		 * which has an unacceptable performance overhead.
+		 */
 		public _input: (message:string, type:VariableType) => string, //TODO change signature
+		/**
+		 * Note: this method is synchronous for performance reasons.
+		 * If it was asynchronous, basically every runtime function would need to be asynchronous,
+		 * which has an unacceptable performance overhead.
+		 */
 		public _output: (values:TypedValue[]) => void,
 		/**
 		 * Uses dependency injection.

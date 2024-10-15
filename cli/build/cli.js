@@ -1,10 +1,24 @@
 import { Application, ApplicationError } from "cli-app";
 import fs from "node:fs";
 import fsP from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { symbolize, tokenize, parse, Runtime, SoodocodeError, parseError, configs, fail as scFail, f, crash } from "../../build/index.js";
 import path from "node:path";
+import os from "node:os";
 function fail(message) {
     throw new ApplicationError(message);
+}
+function promptSync() {
+    let command;
+    if (os.platform() == "win32") {
+        command = ["cmd", ["/V:ON", "/C", `set /p response="> " && echo !response!`]];
+    }
+    else {
+        command = ["sh", ["-c", "read response; echo $response"]];
+    }
+    return spawnSync(...command, {
+        stdio: ["inherit", "pipe", "inherit"]
+    }).stdout.toString();
 }
 class NodeJSFileSystem {
     rootDirectory;
@@ -66,9 +80,9 @@ soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
     const data = await fsP.readFile(filename, "utf-8")
         .catch(() => fail(`Failed to read the file "${filename}"`));
     const runtime = new Runtime(function input(message, type) {
-        throw new Error(`not yet implemented`);
+        return promptSync();
     }, function output(values) {
-        console.log(values.map(v => v.asString()).join(" "));
+        console.log(values.map(v => v.asString()).join(""));
     }, new NodeJSFileSystem());
     configs.statements.max_statements.value = 1_100_000;
     configs.arrays.max_size_bytes.value = 512 * 1024 * 1024;
@@ -92,12 +106,5 @@ soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
             description: "Path to the file to run",
             required: true,
         }],
-    namedArgs: {
-        verbose: {
-            description: "If true, emits additional output.",
-            aliases: ["v"],
-            needsValue: false,
-        }
-    }
 }, ["execute", "r"]);
 soodocode.run(process.argv);
