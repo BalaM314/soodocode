@@ -558,14 +558,19 @@ export class InputStatement extends Statement {
 		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
 		switch(variable.type){
 			case PrimitiveVariableType.BOOLEAN:
-				variable.value = input.toLowerCase() != "false"; break;
+				if(input.toLowerCase() == "false") variable.value = false;
+				else if(input.toLowerCase() == "true") variable.value = true;
+				else fail(`input was an invalid boolean`, this);
+				break;
 			case PrimitiveVariableType.INTEGER: {
+				if(input.trim().length == 0) fail(`input was empty`, this);
 				const value = Number(input);
 				if(isNaN(value)) fail(`input was an invalid number`, this);
 				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`, this);
 				variable.value = value;
 				break; }
 			case PrimitiveVariableType.REAL: {
+				if(input.trim().length == 0) fail(`input was empty`, this);
 				const value = Number(input);
 				if(isNaN(value)) fail(`input was an invalid number`, this);
 				if(!Number.isSafeInteger(value)) fail(`input was an invalid integer`, this);
