@@ -97,7 +97,8 @@ export declare class ConstantStatement extends Statement {
 export declare class DefineStatement extends Statement {
     static requiresScope: boolean;
     name: Token;
-    variableType: Token;
+    variableTypeToken: Token;
+    variableType: UnresolvedVariableType;
     values: RangeArray<Token>;
     run(runtime: Runtime): void;
 }
@@ -119,6 +120,7 @@ export declare class TypeSetStatement extends TypeStatement {
 export declare class TypeRecordStatement extends TypeStatement {
     name: Token;
     static propagatesControlFlowInterruptions: boolean;
+    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     createTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): [name: string, type: VariableType<false>];
 }
 export declare class AssignmentStatement extends Statement {
@@ -331,7 +333,7 @@ declare class ClassMemberStatement {
 }
 export declare class ClassStatement extends TypeStatement {
     name: Token;
-    static allowOnly: Set<"function" | "type" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "dowhile" | "dowhile.end" | "function.end" | "procedure" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     static propagatesControlFlowInterruptions: boolean;
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];

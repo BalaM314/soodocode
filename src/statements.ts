@@ -10,7 +10,7 @@ import { configs } from "./config.js";
 import { Token, TokenType } from "./lexer-types.js";
 import { tokenTextMapping } from "./lexer.js";
 import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNode, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
-import { expressionLeafNodeTypes, isLiteral, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
+import { isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, StatementCheckTokenRange } from "./parser.js";
 import { ClassMethodData, ClassVariableType, EnumeratedVariableType, FileMode, FunctionData, TypedNodeValue, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, UnresolvedVariableType, VariableType, VariableValue, UntypedNodeValue, NodeValue, VariableScope, VariableData, ConstantData } from "./runtime-types.js";
 import { Runtime } from "./runtime.js";
 import type { IFormattable, TextRange, TextRanged } from "./types.js";
@@ -485,10 +485,11 @@ export class TypeSetStatement extends TypeStatement {
 export class TypeRecordStatement extends TypeStatement {
 	name = this.token(1);
 	static propagatesControlFlowInterruptions = false;
+	static allowOnly = new Set<StatementType>(["declare"]);
 	createTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
 		const fields:Record<string, [UnresolvedVariableType, TextRange]> = Object.create(null);
 		for(const statement of node.nodeGroups[0]){
-			if(!(statement instanceof DeclareStatement)) fail(`Statements in a record type block can only be declaration statements`, statement);
+			if(!(statement instanceof DeclareStatement)) crash(`allowOnly is ["declare"]`);
 			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
 		}
 		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as [name: string, type: VariableType<false>];
@@ -1044,7 +1045,7 @@ class ClassMemberStatement {
 @statement("class", "CLASS Dog", "block", "auto", "keyword.class", "name")
 export class ClassStatement extends TypeStatement {
 	name = this.token(1);
-	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function", "class.end"]);
+	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function"]);
 	static propagatesControlFlowInterruptions = false;
 	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		const classData = new ClassVariableType(false, this);
