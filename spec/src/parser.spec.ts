@@ -3587,12 +3587,12 @@ describe("parseType", () => {
 	for(const {name, input, output} of parseTypeTests){
 		if(output == "error"){
 			it(`should not parse ${name} into a valid type`, () => {
-				expect(() => parseType(input))
+				expect(() => parseType(input, [-1, -1]))
 					.toThrowMatching(t => t instanceof SoodocodeError);
 			});
 		} else {
 			it(`should parse ${name} as a valid type`, () => {
-				expect(parseType(input)).toEqual(output);
+				expect(parseType(input, [-1, -1])).toEqual(output);
 			});
 		}
 	}

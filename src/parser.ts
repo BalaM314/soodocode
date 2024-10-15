@@ -257,7 +257,7 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
 	if(context != "any"){
 		const ctx = context?.controlStatements[0].type;
 		if(ctx?.allowOnly){
-			const allowedValidStatements = validStatements.filter(s => ctx.allowOnly!.has(s.type));
+			const allowedValidStatements = validStatements.filter(s => ctx.allowOnly!.has(s.type) || (ctx.category == "block" && ctx.blockEndStatement() == s));
 			if(allowedValidStatements.length == 0){
 				//None of the possible statements are allowed
 				//Return them anyway, and throw the error later
@@ -350,13 +350,7 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 });
 
 export function isLiteral(type:TokenType){
-	switch(type){
-		case "boolean.false": case "boolean.true":
-		case "number.decimal":
-		case "string": case "char":
-			return true;
-		default: return false;
-	}
+	return literalTypes.includes(type);
 }
 
 /** start and end are inclusive */
@@ -526,6 +520,7 @@ function canBeUnaryOperator(token:Token){
 }
 
 export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+export const literalTypes:TokenType[] = ["number.decimal", "string", "char", "boolean.false", "boolean.true"];
 
 /** Parses the provided token as an expression leaf node. Examples: number, string, variable name */
 export function parseExpressionLeafNode(token:Token, allowSuper = false, allowNew = false):ExpressionASTLeafNode {

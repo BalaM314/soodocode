@@ -209,7 +209,7 @@ export function getPossibleStatements(tokens, context) {
     if (context != "any") {
         const ctx = context?.controlStatements[0].type;
         if (ctx?.allowOnly) {
-            const allowedValidStatements = validStatements.filter(s => ctx.allowOnly.has(s.type));
+            const allowedValidStatements = validStatements.filter(s => ctx.allowOnly.has(s.type) || (ctx.category == "block" && ctx.blockEndStatement() == s));
             if (allowedValidStatements.length == 0) {
                 return [
                     validStatements,
@@ -297,15 +297,7 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens, c
         fail(maxError.message, maxError.range, tokens);
 });
 export function isLiteral(type) {
-    switch (type) {
-        case "boolean.false":
-        case "boolean.true":
-        case "number.decimal":
-        case "string":
-        case "char":
-            return true;
-        default: return false;
-    }
+    return literalTypes.includes(type);
 }
 export function checkStatement(statement, input, allowRecursiveCall) {
     if (input.length == 0)
@@ -454,6 +446,7 @@ function canBeUnaryOperator(token) {
     return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
+export const literalTypes = ["number.decimal", "string", "char", "boolean.false", "boolean.true"];
 export function parseExpressionLeafNode(token, allowSuper = false, allowNew = false) {
     if (expressionLeafNodeTypes.includes(token.type) ||
         (allowSuper && token.type == "keyword.super") ||
