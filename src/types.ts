@@ -73,7 +73,7 @@ export interface IFormattable {
 }
 
 /** Makes the property K of T optional. */
-export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
+export type PartialKey<T, K extends keyof T> = Partial<T> & Omit<T, K>;
 
 declare global {
 	interface ObjectConstructor {

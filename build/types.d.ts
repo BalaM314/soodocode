@@ -23,7 +23,7 @@ export interface IFormattable {
     fmtText(): string;
     fmtShort?: () => string;
 }
-export type PartialKey<T, O extends keyof T> = Partial<T> & Omit<T, O>;
+export type PartialKey<T, K extends keyof T> = Partial<T> & Omit<T, K>;
 declare global {
     interface ObjectConstructor {
         entries<const K extends PropertyKey, T>(o: Record<K, T>): [K, T][];

@@ -315,7 +315,7 @@ export type ConfigSuggestion<T> = {
 	value: T extends number ? "increase" | "decrease" : T;
 };
 
-export type ErrorMessage = string | {
+export type RichErrorMessage = {
 	/** Short summary of the error, displayed at the top */
 	summary: ErrorMessageLine;
 	/** Details about what exactly caused the error, displayed after the summary */
@@ -332,6 +332,8 @@ export type ErrorMessage = string | {
 	 */
 	help?: string | ErrorMessageLine[] | ConfigSuggestion<any>;
 };
+
+export type ErrorMessage = string | RichErrorMessage;
 function formatErrorLine(line:ErrorMessageLine, sourceCode:string):string {
 	return typeof line == "string" ? line : line.map(chunk =>
 		(typeof chunk == "string" || typeof chunk == "number")
