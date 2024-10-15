@@ -487,15 +487,20 @@ function setupTextEditor(){
 			const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
 			const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n(?=\t)/g)?.length ?? 0;
 			//indent the text
-			soodocodeInput.value = soodocodeInput.value
+			const newValue = soodocodeInput.value
 				.slice(0, end)
 				.split("\n")
 				.map((line, i) =>
 					i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line
 				).join("\n") + soodocodeInput.value.slice(end);
-			//Replace cursor position
-			soodocodeInput.selectionStart = start - 1;
-			soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
+			
+			//Only if it changed
+			if(newValue != soodocodeInput.value){
+				soodocodeInput.value = newValue;
+				//Replace cursor position
+				soodocodeInput.selectionStart = start - 1;
+				soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
+			}
 		} else if(e.key == "Tab" || (e.key == "]" && e.ctrlKey)){
 			e.preventDefault();
 			if(soodocodeInput.selectionStart == soodocodeInput.selectionEnd && !(e.key == "]" && e.ctrlKey)){

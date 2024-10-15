@@ -394,12 +394,15 @@ function setupTextEditor() {
             const start = soodocodeInput.selectionStart, end = soodocodeInput.selectionEnd;
             const numNewlinesBefore = soodocodeInput.value.slice(0, start).match(/\n/g)?.length ?? 0;
             const numNewlinesWithin = soodocodeInput.value.slice(start, end).match(/\n(?=\t)/g)?.length ?? 0;
-            soodocodeInput.value = soodocodeInput.value
+            const newValue = soodocodeInput.value
                 .slice(0, end)
                 .split("\n")
                 .map((line, i) => i >= numNewlinesBefore && line.startsWith("\t") ? line.slice(1) : line).join("\n") + soodocodeInput.value.slice(end);
-            soodocodeInput.selectionStart = start - 1;
-            soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
+            if (newValue != soodocodeInput.value) {
+                soodocodeInput.value = newValue;
+                soodocodeInput.selectionStart = start - 1;
+                soodocodeInput.selectionEnd = end - 1 - numNewlinesWithin;
+            }
         }
         else if (e.key == "Tab" || (e.key == "]" && e.ctrlKey)) {
             e.preventDefault();
