@@ -42,12 +42,13 @@ export type ConfigSuggestion<T> = {
     config: Config<T, boolean>;
     value: T extends number ? "increase" | "decrease" : T;
 };
-export type ErrorMessage = string | {
+export type RichErrorMessage = {
     summary: ErrorMessageLine;
     elaboration?: string | ErrorMessageLine[];
     context?: string | ErrorMessageLine[];
     help?: string | ErrorMessageLine[] | ConfigSuggestion<any>;
 };
+export type ErrorMessage = string | RichErrorMessage;
 declare global {
     var currentConfigModificationFunc: (() => void) | undefined;
 }

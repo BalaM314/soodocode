@@ -2,11 +2,11 @@ import { Token, TokenizedProgram, TokenType } from "./lexer-types.js";
 import { ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, TokenMatcher } from "./parser-types.js";
 import { UnresolvedVariableType } from "./runtime-types.js";
 import { FunctionArguments, Statement } from "./statements.js";
-import { TextRange } from "./types.js";
+import { TextRange, TextRangeLike } from "./types.js";
 import { ErrorMessage, RangeArray } from "./utils.js";
 export declare const parseFunctionArguments: (tokens: RangeArray<Token>) => FunctionArguments;
 export declare const processTypeData: (typeNode: ExpressionASTTypeNode) => UnresolvedVariableType;
-export declare const parseType: (tokens: RangeArray<Token>) => ExpressionASTTypeNode;
+export declare function parseType(tokens: RangeArray<Token>, gRange: TextRangeLike): ExpressionASTTypeNode;
 export declare function splitTokensToStatements(tokens: RangeArray<Token>): RangeArray<Token>[];
 export declare function parse({ program, tokens }: TokenizedProgram): ProgramAST;
 export declare function getPossibleStatements(tokens: RangeArray<Token>, context: ProgramASTBranchNode | null | "any"): [

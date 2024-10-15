@@ -148,8 +148,8 @@ export const preprocessedBuiltinFunctions = ({
 	MID: fn({
 		args: [
 			["ThisString", "STRING"],
-			["x", "INTEGER"],
-			["y", "INTEGER"],
+			["StartIndex", "INTEGER"],
+			["Length", "INTEGER"],
 		],
 		returnType: "STRING",
 		impl(str, start, length){

@@ -34,7 +34,7 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
             const typeTokens = section.slice(offset + 2);
             if (typeTokens.length == 0)
                 fail(`Expected a type, got end of function arguments`, section.at(-1).rangeAfter());
-            type = processTypeData(parseType(typeTokens));
+            type = processTypeData(parseType(typeTokens, tokens));
         }
         return [
             section[offset + 0],
@@ -72,9 +72,15 @@ export const processTypeData = errorBoundary()(function _processTypeData(typeNod
     typeNode;
     impossible();
 });
-export const parseType = errorBoundary()(function _parseType(tokens) {
+export function parseType(tokens, gRange) {
     if (tokens.length == 0)
         crash(`Cannot parse empty type`);
+    function _fail(message, range = tokens) {
+        fail({
+            summary: f.quoteRange `${tokens} is not a valid type`,
+            ...message
+        }, range, gRange);
+    }
     if (checkTokens(tokens, ["name"]))
         return tokens[0];
     if (checkTokens(tokens, ["number.decimal", "operator.range", "number.decimal"]))
@@ -85,25 +91,42 @@ export const parseType = errorBoundary()(function _parseType(tokens) {
         return new ExpressionASTArrayTypeNode(splitTokensOnComma(tokens.slice(2, -3)).map((group) => {
             const groups = splitTokens(group, "punctuation.colon");
             if (groups.length != 2)
-                fail(`Invalid array range specifier $rc: must consist of two expressions separated by a colon`, group);
+                fail({
+                    summary: f.quoteRange `Invalid array range specifier ${group}`,
+                    elaboration: `must consist of two expressions separated by a colon`
+                }, group, gRange);
             return groups.map(a => parseExpression(a));
         }), tokens.at(-1), tokens);
     if (checkTokens(tokens, ["keyword.array"]))
-        fail(`Please specify the type of the array, like this: "ARRAY OF STRING"`, tokens);
+        _fail({
+            help: `specify the type of the array, like this: "ARRAY[1:10] OF STRING"`
+        });
     if (tokens.length <= 1)
-        fail(f.quote `Cannot parse type from ${tokens}: expected the name of a builtin or user-defined type, or an array type definition, like "ARRAY[1:10] OF STRING"`, tokens);
+        _fail({
+            elaboration: f.quote `expected the name of a builtin or user-defined type, or an array type definition, like "ARRAY[1:10] OF STRING"`
+        });
     if (checkTokens(tokens, ["keyword.array", "bracket.open", ".+", "bracket.close", ".*"]))
-        fail(`Please specify the type of the array, like this: "ARRAY[1:10] OF STRING"`, tokens);
+        _fail({ help: `specify the type of the array, like this: "ARRAY[1:10] OF STRING"` });
     if (checkTokens(tokens, ["keyword.array", "parentheses.open", ".+", "parentheses.close", "keyword.of", "name"]))
-        fail(`Array range specifiers use square brackets, like this: "ARRAY[1:10] OF STRING"`, tokens);
+        _fail({
+            help: `array range specifiers use square brackets, like this: "ARRAY[1:10] OF STRING"`
+        });
     if (checkTokens(tokens, ["keyword.set"]))
-        fail(`Please specify the type of the set, like this: "SET OF STRING"`, tokens);
+        _fail({
+            help: `Please specify the type of the set, like this: "SET OF STRING"`
+        });
     if (checkTokens(tokens, ["keyword.set", "keyword.of", "name"]))
-        fail(`Set types cannot be specified inline, please create a type alias first, like this: TYPE yournamehere = SET OF ${tokens[2].text}`, tokens);
+        _fail({
+            elaboration: `Set types cannot be specified inline`,
+            help: [f.range `please create a type alias first, like this: TYPE yournamehere = SET OF ${tokens[2]}`]
+        });
     if (checkTokens(tokens, ["operator.pointer", "name"]))
-        fail(`Pointer types cannot be specified inline, please create a type alias first, like this: TYPE p${tokens[1].text} = ^${tokens[1].text}`, tokens);
-    fail(f.quote `Cannot parse type from ${tokens}`, tokens);
-});
+        _fail({
+            elaboration: `Pointer types cannot be specified inline`,
+            help: [f.range `please create a type alias first, like this: TYPE p${tokens[1].text} = ^${tokens[1].text}`]
+        });
+    _fail({});
+}
 export function splitTokensToStatements(tokens) {
     const statementData = [
         [CaseBranchStatement, 2],
@@ -229,9 +252,14 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens, c
                     fail(possibleStatement.invalidMessage, tokens);
                 }
             }
-            const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(x => x instanceof Token
-                ? x
-                : (x.type == "expression" ? parseExpression : parseType)(tokens.slice(x.start, x.end + 1))))));
+            const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(part => {
+                if (part instanceof Token)
+                    return part;
+                const tks = tokens.slice(part.start, part.end + 1);
+                if (part.type == "expression")
+                    return parseExpression(tks);
+                return parseType(tks, tokens);
+            }))));
             if (out) {
                 if (statementError)
                     statementError(possibleStatement);
