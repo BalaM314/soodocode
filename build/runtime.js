@@ -505,7 +505,7 @@ let Runtime = (() => {
                 if (expr instanceof ExpressionASTClassInstantiationNode) {
                     if (type == "variable" || type == "function")
                         fail(`Expected this expression to evaluate to a ${type}, but found a class instantiation expression, which can only return a class instance, not a ${type}.`, expr);
-                    const clazz = this.getClass(expr.className.text, expr.className.range);
+                    const clazz = this.getClass(expr.className.text, expr.className.range, expr);
                     const output = clazz.construct(this, expr.args);
                     return finishEvaluation(output, clazz, type);
                 }
@@ -540,7 +540,13 @@ let Runtime = (() => {
                         }
                         case operators.pointer_dereference: {
                             if (type == "function")
-                                fail(`Expected this expression to evaluate to a function, but found a dereferencing expression, which cannot return a function`, expr);
+                                fail({
+                                    summary: "Type mismatch",
+                                    elaboration: [
+                                        `Expected this expression to evaluate to a function`,
+                                        `this is a dereferencing expression, which cannot return a function`
+                                    ]
+                                }, expr);
                             const pointerVariable = this.evaluateExpr(expr.nodes[0], undefined, true);
                             if (pointerVariable.value == null)
                                 fail(`Cannot dereference uninitialized pointer`, expr.nodes[0]);
@@ -711,7 +717,7 @@ let Runtime = (() => {
                 }
                 if (type?.is("STRING") || expr.operator.category == "string") {
                     if (type && !type.is("STRING"))
-                        fail(f.quote `expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`, expr);
+                        fail(f.quote `Expected the expression to evaluate to a value of type ${type}, but the operator ${expr.operator} returns a string`, expr);
                     const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.STRING, true).value;
                     const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.STRING, true).value;
                     switch (expr.operator) {
@@ -825,20 +831,20 @@ let Runtime = (() => {
                 else
                     return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
             }
-            handleNonexistentClass(name, range) {
+            handleNonexistentClass(name, range, gRange) {
                 const allClasses = [...this.activeScopes()].flatMap(s => Object.entries(s.types)
                     .filter((x) => x[1] instanceof ClassVariableType));
                 if (this.currentlyResolvingTypeName == name)
-                    fail(f.quote `Class ${name} does not exist yet, it is currently being initialized`, range);
+                    fail(f.quote `Class ${name} does not exist yet, it is currently being initialized`, range, gRange);
                 let found;
                 if ((found =
                     min(allClasses, t => biasedLevenshtein(t[0], name) ?? Infinity, 2.5)) != undefined) {
                     fail({
                         summary: f.quote `Class ${name} does not exist`,
                         help: f.quote `did you mean ${found[1]}?`
-                    }, range);
+                    }, range, gRange);
                 }
-                fail(f.quote `Class ${name} does not exist`, range);
+                fail(f.quote `Class ${name} does not exist`, range, gRange);
             }
             handleNonexistentType(name, range) {
                 const allTypes = [
@@ -972,17 +978,17 @@ let Runtime = (() => {
                 else
                     return this.functions[text] ?? this.builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
             }
-            getClass(name, range) {
+            getClass(name, range, gRange) {
                 for (const scope of this.activeScopes()) {
                     const type = scope.types[name];
                     if (type) {
                         if (type instanceof ClassVariableType)
                             return type;
                         else
-                            fail(f.quote `Type ${name} is not a class, it is ${scope.types[name]}`, range);
+                            fail(f.quote `Type ${name} is not a class, it is ${scope.types[name]}`, range, gRange);
                     }
                 }
-                this.handleNonexistentClass(name, range);
+                this.handleNonexistentClass(name, range, gRange);
             }
             getCurrentFunction() {
                 const scope = this.scopes.findLast((s) => s.statement instanceof FunctionStatement || s.statement instanceof ProcedureStatement || s.statement instanceof ClassFunctionStatement || s.statement instanceof ClassProcedureStatement);

@@ -56,7 +56,7 @@ export declare class Runtime {
     evaluateUntyped(expr: UntypedNodeValue): TypedValue;
     evaluateUntyped<Type extends VariableType>(expr: UntypedNodeValue, type: Type): TypedValue<Type>;
     resolveVariableType(type: UnresolvedVariableType): VariableType;
-    handleNonexistentClass(name: string, range: TextRangeLike): never;
+    handleNonexistentClass(name: string, range: TextRangeLike, gRange: TextRangeLike): never;
     handleNonexistentType(name: string, range: TextRangeLike): never;
     handleNonexistentFunction(name: string, range: TextRangeLike): never;
     handleNonexistentVariable(name: string, range: TextRangeLike): never;
@@ -70,7 +70,7 @@ export declare class Runtime {
     defineVariable(name: string, data: VariableData | ConstantData, range: TextRangeLike): void;
     defineFunction(name: string, data: FunctionData, range: TextRange): void;
     getFunction({ text, range }: Token): FunctionData | BuiltinFunctionData | ClassMethodCallInformation;
-    getClass(name: string, range: TextRange): ClassVariableType<boolean>;
+    getClass(name: string, range: TextRangeLike, gRange: TextRangeLike): ClassVariableType<boolean>;
     getCurrentFunction(): FunctionData | ClassMethodStatement | null;
     cloneValue<T extends VariableType>(type: T, value: VariableTypeMapping<T> | null): VariableTypeMapping<T> | null;
     assembleScope(func: ProcedureStatement | FunctionStatement, args: RangeArray<ExpressionAST>): VariableScope;
