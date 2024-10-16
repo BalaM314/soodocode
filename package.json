@@ -6,8 +6,7 @@
 	"scripts": {
 		"test": "tsc -b spec && jasmine",
 		"profile": "node ./scripts/profiler.js 100000 5",
-		"build": "tsc -b src",
-		"dev": "tsc -p src -w"
+		"watch": "tsc -b core/ spec/ cli/ scripts/ ui/ -w"
 	},
 	"repository": {
 		"type": "git",
