@@ -1,4 +1,4 @@
-/**
+/* @license
 Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
@@ -13,7 +13,7 @@ import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, Consta
 import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { getBuiltinFunctions } from "./builtin_functions.js";
-import { BrowserFileSystem, FileSystem } from "./files.js";
+import { LocalFileSystem, FileSystem } from "./files.js";
 import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedNodeValue, TypedValue, TypedValue_, UnresolvedVariableType, UntypedNodeValue, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 
 /** A class method, wrapped together with the information needed to call it. */
@@ -268,7 +268,7 @@ export class Runtime {
 		 * Writes are buffered: the file system's update method is only called when closing a file,
 		 * so blocking the thread on writing a file is fine.
 		 */
-		public fs:FileSystem = new BrowserFileSystem(false),
+		public fs:FileSystem = new LocalFileSystem(false),
 	){}
 	/** Processes an array access expression, optionally specifying the type. */
 	processArrayAccess(expr:ExpressionASTArrayAccessNode, outType?:VariableType):TypedValue;

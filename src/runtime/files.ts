@@ -1,3 +1,10 @@
+/* @license
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains types used for file system handling.
+*/
+
 import { crash } from "../utils/funcs.js";
 import { File } from "./runtime-types.js";
 
@@ -26,7 +33,7 @@ export interface FileSystem {
 }
 
 /** A file system that stores all the data about its files in a Javascript object, optionally saving it to local storage. Supports creating backups. */
-export class BrowserFileSystem implements FileSystem {
+export class LocalFileSystem implements FileSystem {
 	static readonly storageKey = "soodocode:files";
 
 	private files: Record<string, File> = Object.create(null);
@@ -80,22 +87,22 @@ export class BrowserFileSystem implements FileSystem {
 	}
 	makeBackup(){
 		if(this.useLocalStorage){
-			this.save(BrowserFileSystem.storageKey + "/backup");
+			this.save(LocalFileSystem.storageKey + "/backup");
 		} else {
 			this.backupFiles = JSON.stringify(this.files);
 		}
 	}
 	loadBackup(){
 		if(this.useLocalStorage){
-			this.load(BrowserFileSystem.storageKey + "/backup");
+			this.load(LocalFileSystem.storageKey + "/backup");
 		} else {
 			if(this.backupFiles) this.files = JSON.parse(this.backupFiles) as Record<string, File>;
 		}
 	}
-	private save(key = BrowserFileSystem.storageKey){
+	private save(key = LocalFileSystem.storageKey){
 		localStorage.setItem(key, JSON.stringify(Object.fromEntries(Object.entries(this.files).map(([name, file]) => [name, file.text]))));
 	}
-	private load(key = BrowserFileSystem.storageKey){
+	private load(key = LocalFileSystem.storageKey){
 		const rawData = localStorage.getItem(key);
 		if(!rawData) return;
 		let parsedData;

@@ -1,3 +1,10 @@
+/* @license
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains config-related functions.
+*/
+
 import { isKey } from "../utils/funcs.js";
 import { Config, configs } from "./config.js";
 

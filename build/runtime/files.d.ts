@@ -11,7 +11,7 @@ export interface FileSystem {
     deleteFile(filename: string): void;
     listFiles(): string[];
 }
-export declare class BrowserFileSystem implements FileSystem {
+export declare class LocalFileSystem implements FileSystem {
     useLocalStorage: boolean;
     static readonly storageKey = "soodocode:files";
     private files;

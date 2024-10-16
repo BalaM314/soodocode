@@ -1,5 +1,5 @@
 import { crash } from "../utils/funcs.js";
-export class BrowserFileSystem {
+export class LocalFileSystem {
     constructor(useLocalStorage) {
         this.useLocalStorage = useLocalStorage;
         this.files = Object.create(null);
@@ -50,7 +50,7 @@ export class BrowserFileSystem {
     }
     makeBackup() {
         if (this.useLocalStorage) {
-            this.save(BrowserFileSystem.storageKey + "/backup");
+            this.save(LocalFileSystem.storageKey + "/backup");
         }
         else {
             this.backupFiles = JSON.stringify(this.files);
@@ -58,17 +58,17 @@ export class BrowserFileSystem {
     }
     loadBackup() {
         if (this.useLocalStorage) {
-            this.load(BrowserFileSystem.storageKey + "/backup");
+            this.load(LocalFileSystem.storageKey + "/backup");
         }
         else {
             if (this.backupFiles)
                 this.files = JSON.parse(this.backupFiles);
         }
     }
-    save(key = BrowserFileSystem.storageKey) {
+    save(key = LocalFileSystem.storageKey) {
         localStorage.setItem(key, JSON.stringify(Object.fromEntries(Object.entries(this.files).map(([name, file]) => [name, file.text]))));
     }
-    load(key = BrowserFileSystem.storageKey) {
+    load(key = LocalFileSystem.storageKey) {
         const rawData = localStorage.getItem(key);
         if (!rawData)
             return;
@@ -87,4 +87,4 @@ export class BrowserFileSystem {
             }]));
     }
 }
-BrowserFileSystem.storageKey = "soodocode:files";
+LocalFileSystem.storageKey = "soodocode:files";

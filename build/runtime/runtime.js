@@ -38,7 +38,7 @@ import { ExpressionASTArrayAccessNode, ExpressionASTClassInstantiationNode, Expr
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
 import { biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
 import { getBuiltinFunctions } from "./builtin_functions.js";
-import { BrowserFileSystem } from "./files.js";
+import { LocalFileSystem } from "./files.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, IntegerRangeVariableType, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
 function checkTypeMatch(a, b, range) {
     if (typesEqual(a, b))
@@ -258,7 +258,7 @@ let Runtime = (() => {
     let _processRecordAccess_decorators;
     let _evaluateExpr_decorators;
     return _a = class Runtime {
-            constructor(_input, _output, fs = new BrowserFileSystem(false)) {
+            constructor(_input, _output, fs = new LocalFileSystem(false)) {
                 this._input = (__runInitializers(this, _instanceExtraInitializers), _input);
                 this._output = _output;
                 this.fs = fs;
