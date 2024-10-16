@@ -413,7 +413,7 @@ export class ProgramASTBranchNode<T extends ProgramASTBranchNodeType = ProgramAS
 			"for": "for",
 			"for.step": "for (step)",
 			"while": "while",
-			"dowhile": "repeat",
+			"do_while": "repeat",
 			"function": "function",
 			"procedure": "procedure",
 			"switch": "switch",
@@ -474,7 +474,7 @@ delete (ProgramASTNodeGroup as {from: any;}).from;
 // A type that looks like `name.variant` is treated as a variant of `name`,
 // meaning things that require a block of type `name` will also accept `name.variant`.
 /** The valid types for a branch node in a program AST. */
-export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "dowhile", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;
+export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "do_while", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;
 /** The valid types for a branch node in a program AST. */
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType {
@@ -486,7 +486,7 @@ export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> 
 	T extends "for" ? [ForStatement, ForEndStatement] :
 	T extends "for.step" ? [ForStepStatement, ForEndStatement] :
 	T extends "while" ? [WhileStatement, Statement] :
-	T extends "dowhile" ? [DoWhileStatement, DoWhileEndStatement] :
+	T extends "do_while" ? [DoWhileStatement, DoWhileEndStatement] :
 	T extends "function" ? [FunctionStatement, Statement] :
 	T extends "procedure" ? [ProcedureStatement, Statement] :
 	T extends "switch" ? [SwitchStatement, ...CaseBranchStatement[], Statement] :

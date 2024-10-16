@@ -2064,7 +2064,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			5,
 			"x",
 		]]],
-		["dowhile", DoWhileStatement]
+		["do_while", DoWhileStatement]
 	],
 	until2: [
 		[
@@ -2075,7 +2075,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 		["DoWhileEnd", ["tree", "not", [
 			"x",
 		]]],
-		["dowhile", DoWhileStatement]
+		["do_while", DoWhileStatement]
 	],
 	procedure1: [
 		[
@@ -2613,7 +2613,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			"newline",
 			1,
 			"punctuation.colon",
-			"keyword.dowhile",
+			"keyword.do_while",
 			"newline",
 			"keyword.output",
 			"x",
@@ -2698,7 +2698,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 				[],
 				[
 					{
-						type: "dowhile",
+						type: "do_while",
 						controlStatements: [
 							["DoWhile"],
 							["DoWhileEnd", "boolean.true"],

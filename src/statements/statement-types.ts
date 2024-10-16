@@ -10,7 +10,6 @@ import { UnresolvedVariableType, VariableType, VariableValue } from "../runtime/
 import { crash } from "../utils/funcs.js";
 
 
-//TODO snake case
 export const statementTypes = [
 	"declare", "define", "constant", "assignment", "output", "input", "return", "call",
 	"type", "type.pointer", "type.enum", "type.set", "type.end",
@@ -18,11 +17,11 @@ export const statementTypes = [
 	"switch", "switch.end", "case", "case.range",
 	"for", "for.step", "for.end",
 	"while", "while.end",
-	"dowhile", "dowhile.end",
+	"do_while", "do_while.end",
 	"function", "function.end",
 	"procedure", "procedure.end",
-	"openfile", "readfile", "writefile", "closefile",
-	"seek", "getrecord", "putrecord",
+	"open_file", "read_file", "write_file", "close_file",
+	"seek", "get_record", "put_record",
 	"class", "class.inherits", "class.end",
 	"class_property",
 	"class_procedure", "class_procedure.end",

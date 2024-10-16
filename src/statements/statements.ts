@@ -21,10 +21,10 @@ export abstract class TypeStatement extends Statement {
 	preRun(group:ProgramASTNodeGroup, node?:ProgramASTBranchNode){
 		super.preRun(group, node);
 	}
-	createType(runtime:Runtime):[name:string, type:VariableType<false>] {
+	createType(runtime:Runtime):readonly [name:string, type:VariableType<false>] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
-	createTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):[name:string, type:VariableType<false>] {
+	createTypeBlock(runtime:Runtime, block:ProgramASTBranchNode):readonly [name:string, type:VariableType<false>] {
 		crash(`Missing runtime implementation for type initialization for statement ${this.stype}`);
 	}
 }
@@ -108,7 +108,7 @@ export class TypePointerStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name, new PointerVariableType(
 			false, this.name, this.targetType, this.range
-		)] as [name: string, type: VariableType<false>];
+		)] as const;
 	}
 }
 @statement("type.enum", "TYPE Weekend = (Sunday, Saturday)", "keyword.type", "name", "operator.equal_to", "parentheses.open", ".*", "parentheses.close")
@@ -118,7 +118,7 @@ export class TypeEnumStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name.text, new EnumeratedVariableType(
 			this.name.text, this.values.map(t => t.text)
-		)] as [name: string, type: VariableType<false>];
+		)] as const;
 	}
 }
 @statement("type.set", "TYPE myIntegerSet = SET OF INTEGER", "keyword.type", "name", "operator.equal_to", "keyword.set", "keyword.of", "name")
@@ -129,7 +129,7 @@ export class TypeSetStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name.text, new SetVariableType(
 			false, this.name.text, this.setType
-		)] as [name: string, type: VariableType<false>]; //TODO allow sets of UDTs
+		)] as const; //TODO allow sets of UDTs
 	}
 }
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")
@@ -143,7 +143,7 @@ export class TypeRecordStatement extends TypeStatement {
 			if(!(statement instanceof DeclareStatement)) crash(`allowOnly is ["declare"]`);
 			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
 		}
-		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as [name: string, type: VariableType<false>];
+		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as const;
 	}
 }
 @statement("assignment", "x <- 5", "#", "expr+", "operator.assignment", "expr+")
@@ -513,9 +513,9 @@ export class WhileStatement extends Statement {
 		}
 	}
 }
-@statement("dowhile", "REPEAT", "block", "keyword.dowhile")
+@statement("do_while", "REPEAT", "block", "keyword.do_while")
 export class DoWhileStatement extends Statement {
-	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"dowhile">){
+	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"do_while">){
 		//Register the execution of an infinite amount of statements if the condition is constant false
 		if(node.nodeGroups[0].length == 0 && node.controlStatements[1].condition.value === false)
 			runtime.statementExecuted(this, Infinity);
@@ -532,10 +532,10 @@ export class DoWhileStatement extends Statement {
 		//Inverted, the pseudocode statement is "until"
 	}
 }
-@statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
+@statement("do_while.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")
 export class DoWhileEndStatement extends Statement {
 	@evaluate condition = this.exprT(1, "BOOLEAN");
-	static blockType: ProgramASTBranchNodeType = "dowhile";
+	static blockType: ProgramASTBranchNodeType = "do_while";
 }
 
 @statement("function", "FUNCTION name(arg1: TYPE) RETURNS INTEGER", "block", "auto", "keyword.function", "name", "parentheses.open", ".*", "parentheses.close", "keyword.returns", "type+")
@@ -588,7 +588,7 @@ interface IFileStatement {
 	filename: TypedNodeValue<ExpressionAST, "STRING">;
 }
 
-@statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
+@statement("open_file", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")
 export class OpenFileStatement extends Statement implements IFileStatement {
 	mode = this.token(3);
 	@evaluate filename = this.exprT(1, "STRING");
@@ -618,7 +618,7 @@ export class OpenFileStatement extends Statement implements IFileStatement {
 		}
 	}
 }
-@statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
+@statement("close_file", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")
 export class CloseFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	run(runtime:Runtime){
@@ -639,7 +639,7 @@ export class CloseFileStatement extends Statement implements IFileStatement {
 		}
 	}
 }
-@statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
+@statement("read_file", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")
 export class ReadFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	output = this.expr(3);
@@ -655,7 +655,7 @@ export class ReadFileStatement extends Statement implements IFileStatement {
 		output.value = data.lines[data.lineNumber ++];
 	}
 }
-@statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")
+@statement("write_file", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")
 export class WriteFileStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	@evaluate data = this.exprT(3, "STRING");
@@ -679,7 +679,7 @@ export class SeekStatement extends Statement implements IFileStatement {
 		fail(`Not yet implemented`, this);
 	}
 }
-@statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")
+@statement("get_record", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")
 export class GetRecordStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	variable = this.expr(3);
@@ -690,7 +690,7 @@ export class GetRecordStatement extends Statement implements IFileStatement {
 		fail(`Not yet implemented`, this);
 	}
 }
-@statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")
+@statement("put_record", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")
 export class PutRecordStatement extends Statement implements IFileStatement {
 	@evaluate filename = this.exprT(1, "STRING");
 	variable = this.expr(3);

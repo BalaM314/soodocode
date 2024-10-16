@@ -573,7 +573,7 @@ const tokenizerTests = ((data:Record<string, [input:_Symbol[], output:_Token[] |
 			["keyword.file_mode.read", "READ"],
 			["keyword.read_file", "READFILE"],
 			["name", "REAL"],
-			["keyword.dowhile", "REPEAT"],
+			["keyword.do_while", "REPEAT"],
 			["keyword.return", "RETURN"],
 			["keyword.returns", "RETURNS"],
 			["name", "RIGHT"],
