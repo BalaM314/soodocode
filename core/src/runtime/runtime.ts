@@ -1293,7 +1293,7 @@ export class Runtime {
 			if(node instanceof Statement){
 				result = node.run(this);
 			} else {
-				result = (node.controlStatements[0] as Statement).runBlock(this, node satisfies ProgramASTBranchNode as never);
+				result = (node.controlStatements[0] as Statement).runBlock(this, node); //correspondence
 			}
 			if(result){
 				if(result.type == "function_return"){
@@ -1317,7 +1317,7 @@ export class Runtime {
 			if(node instanceof Statement){
 				node.run(this);
 			} else {
-				node.controlStatements[0].runBlock(this, node satisfies ProgramASTBranchNode as never);
+				(node.controlStatements[0] as Statement).runBlock(this, node); //correspondence
 			}
 		}
 	}
