@@ -1,15 +1,10 @@
-import * as lexerTypes from "./lexer/lexer-types.js";
-import * as lexer from "./lexer/lexer.js";
-import * as parserTypes from "./parser/parser-types.js";
-import * as parser from "./parser/parser.js";
-import * as runtime from "./runtime/runtime.js";
-import * as runtimeTypes from "./runtime/runtime-types.js";
-import * as statements from "./statements/statements.js";
+import * as lexer from "./lexer/index.js";
+import * as parser from "./parser/index.js";
+import * as runtime from "./runtime/index.js";
+import * as statements from "./statements/index.js";
 import * as utils from "./utils/funcs.js";
-import * as config from "./config/config.js";
-import * as configFuncs from "./config/funcs.js";
+import * as config from "./config/index.js";
 import * as files from "./runtime/files.js";
-import * as builtin_functions from "./runtime/builtin_functions.js";
 import { Token } from "./lexer/lexer-types.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser/parser-types.js";
 import { Runtime } from "./runtime/runtime.js";
@@ -49,7 +44,7 @@ export function flattenTree(program) {
         if (s instanceof Statement)
             return [[0, s]];
         else
-            return flattenTree(parserTypes.ProgramASTNodeGroup.from(s.nodeGroups.flat())).map(([depth, statement]) => [depth + 1, statement]);
+            return flattenTree(parser.ProgramASTNodeGroup.from(s.nodeGroups.flat())).map(([depth, statement]) => [depth + 1, statement]);
     }).flat(1);
 }
 export function displayExpressionHTML(node, expand = false, format = true) {
@@ -269,9 +264,9 @@ function setupEventHandlers() {
     });
     getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
         if (confirm(`Are you sure you want to restore all settings to their default values?`)) {
-            configFuncs.resetToDefaults();
+            config.resetToDefaults();
             generateConfigsDialog();
-            configFuncs.saveConfigs();
+            config.saveConfigs();
         }
     });
     getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
@@ -567,14 +562,14 @@ function saveAll() {
     if (soodocodeInput.value.trim().length > 0) {
         localStorage.setItem(savedProgramKey, soodocodeInput.value);
     }
-    configFuncs.saveConfigs();
+    config.saveConfigs();
 }
 function loadAll() {
     const savedProgram = localStorage.getItem(savedProgramKey);
     if (savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0) {
         soodocodeInput.value = savedProgram;
     }
-    configFuncs.loadConfigs();
+    config.loadConfigs();
 }
 function setupHeaderEasterEgg() {
     let flashing = false;
@@ -604,7 +599,7 @@ function setupHeaderEasterEgg() {
 }
 function dumpFunctionsToGlobalScope() {
     window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
-    Object.assign(window, lexer, lexerTypes, parser, parserTypes, statements, utils, runtime, runtimeTypes, config, builtin_functions, files, {
+    Object.assign(window, lexer, parser, statements, utils, runtime, config, files, {
         persistentFilesystem: fileSystem
     });
 }

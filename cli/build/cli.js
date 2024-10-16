@@ -9,9 +9,10 @@ function fail(message) {
     throw new ApplicationError(message);
 }
 function promptSync() {
+    process.stdout.write("> ");
     let command;
     if (os.platform() == "win32") {
-        command = ["cmd", ["/V:ON", "/C", `set /p response="> " && echo !response!`]];
+        command = ["cmd", ["/V:ON", "/C", `set /p response= && echo !response!`]];
     }
     else {
         command = ["sh", ["-c", "read response; echo $response"]];
@@ -41,6 +42,7 @@ class NodeJSFileSystem {
         return fs.existsSync(this.resolveSafe(filename));
     }
     openFile(filename, create = false) {
+        console.log(`Opened file ${filename}`);
         const filepath = this.resolveSafe(filename);
         if (!fs.existsSync(filepath) && !create)
             return undefined;
@@ -57,10 +59,11 @@ class NodeJSFileSystem {
         this.openFile(filename, true);
     }
     updateFile(filename, newContent) {
-        fs.writeFileSync(this.descriptor(filename), newContent, this.encoding);
+        fs.ftruncateSync(this.descriptor(filename));
+        fs.writeFileSync(this.descriptor(filename), newContent);
     }
     clearFile(filename) {
-        fs.writeFileSync(this.descriptor(filename), "", this.encoding);
+        fs.ftruncateSync(this.descriptor(filename));
     }
     deleteFile(filename) {
         const filepath = this.resolveSafe(filename);

@@ -134,7 +134,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
     }
     return new RangeArray(names);
 }
-export function closestKeywordToken(input, threshold = 1.5) {
+export function closestKeywordToken(input, threshold = 2.01) {
     const keywordTokens = Object.entries(tokenNameTypeData);
     if (input.toUpperCase() in tokenNameTypeData) {
         return tokenNameTypeData[input.toUpperCase()];
