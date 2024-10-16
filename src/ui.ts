@@ -1,4 +1,4 @@
-/**
+/* @license
 Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
@@ -25,7 +25,7 @@ import { SoodocodeError, applyRangeTransformers, crash, escapeHTML, fail, parseE
 import { configs } from "./config/config.js";
 
 const savedProgramKey = "soodocode:savedProgram";
-const fileSystem = new files.BrowserFileSystem(true);
+const fileSystem = new files.LocalFileSystem(true);
 
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const header = getElement("header", HTMLDivElement);

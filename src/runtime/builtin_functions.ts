@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-unary-minus */
-/**
+/* @license
 Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
-This file contains all builtin functions defined in the insert.
+This file contains all builtin functions. Some defined in the insert, others were made up.
 */
+/* eslint-disable @typescript-eslint/no-unsafe-unary-minus */
 
 
 import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";

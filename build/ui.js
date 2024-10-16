@@ -17,7 +17,7 @@ import { Statement } from "./statements/statement.js";
 import { SoodocodeError, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils/funcs.js";
 import { configs } from "./config/config.js";
 const savedProgramKey = "soodocode:savedProgram";
-const fileSystem = new files.BrowserFileSystem(true);
+const fileSystem = new files.LocalFileSystem(true);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const header = getElement("header", HTMLDivElement);
 const headerText = getElement("header-text", HTMLSpanElement);

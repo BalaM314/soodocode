@@ -40,8 +40,8 @@ import { Token } from "../lexer/lexer-types.js";
 import { ExpressionASTNodes, ExpressionASTTypeNodes } from "../parser/parser-types.js";
 import { TypedNodeValue, UntypedNodeValue } from "../runtime/runtime-types.js";
 import { Abstract, crash, fail, getTotalRange } from "../utils/funcs.js";
-import { StatementType } from "./statement-types.js";
 import { statements } from "./registry.js";
+import { StatementType } from "./statement-types.js";
 let Statement = (() => {
     let _classDecorators = [Abstract];
     let _classDescriptor;

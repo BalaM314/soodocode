@@ -1,4 +1,9 @@
+/* @license
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
+This file contains utility types, like U2I.
+*/
 
 /**
 Converts an object like
@@ -10,7 +15,6 @@ Converts an object like
 ```
 to a tuple like `["zero", "one"]`
 */
-
 export type Tuplify<
 	TupleLike extends Record<string, unknown>,
 	/** Used to count upwards, as there is no addition operator */
@@ -19,17 +23,17 @@ export type Tuplify<
 	CurrentKey = "0",
 
 	NextCounter extends 0[] = [...Counter, 0],
-	NextKey = Exclude<keyof NextCounter, keyof Counter>
-> = CurrentKey extends keyof TupleLike ? [TupleLike[CurrentKey], ...Tuplify<TupleLike, NextCounter, NextKey>] : [];
+	NextKey = Exclude<keyof NextCounter, keyof Counter>,
+> =
+	CurrentKey extends keyof TupleLike
+		? [TupleLike[CurrentKey], ...Tuplify<TupleLike, NextCounter, NextKey>]
+		// If the current key isn't in the object, done
+		: [];
 export type MergeTuples<T extends unknown[]> = Tuplify<
-	U2I<T extends unknown ? Omit<T, keyof any[]> : never>
+	U2I<T extends unknown ?
+		Omit<T, keyof any[]>
+	: never>
 >;
-/*
-Copyright © <BalaM314>, 2024. All Rights Reserved.
-This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
-
-This file contains global type definitions.
-*/
 
 export type ClassProperties<
 	T extends object,
@@ -39,10 +43,13 @@ export type ClassProperties<
 
 // eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
 export type BoxPrimitive<T> = T extends number ? Number : T extends string ? String : T extends boolean ? Boolean : T;
-export type U2I<U> = (U extends U ? (u: U) => 0 : never) extends (i: infer I) => 0 ? Extract<I, U> : never;
-/** Makes the property K of T optional. */
+export type U2I<U> = (
+	U extends U ? (u: U) => 0 : never
+) extends (i: infer I) => 0 ? Extract<I, U> : never;
 
+/** Makes the property K of T optional. */
 export type PartialKey<T, K extends keyof T> = Partial<T> & Omit<T, K>;
+
 export type TextRange = [start: number, end: number]; //TODO convert to class
 export type TextRanged = {
 	range: TextRange | (() => TextRange);

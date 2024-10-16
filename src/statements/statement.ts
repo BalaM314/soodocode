@@ -1,3 +1,10 @@
+/* @license
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains the base Statement class, which all the other statements extend.
+*/
+
 import { Token } from "../lexer/lexer-types.js";
 import { ExpressionAST, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "../parser/parser-types.js";
 import { StatementCheckTokenRange } from "../parser/parser.js";
@@ -5,9 +12,8 @@ import { NodeValue, PrimitiveVariableTypeName, TypedNodeValue, UntypedNodeValue,
 import { Runtime } from "../runtime/runtime.js";
 import { Abstract, crash, fail, getTotalRange, RangeArray, type IFormattable } from "../utils/funcs.js";
 import type { TextRange, TextRanged } from "../utils/types.js";
-import { LegalStatementType, StatementCategory, StatementExecutionResult, StatementType } from "./statement-types.js";
-import { ConstantStatement, TypeStatement } from "./statements.js";
 import { statements } from "./registry.js";
+import { LegalStatementType, StatementCategory, StatementExecutionResult, StatementType } from "./statement-types.js";
 
 
 @Abstract

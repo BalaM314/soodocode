@@ -1,3 +1,10 @@
+/* @license
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains functions used by the parser.
+*/
+
 import { Token, TokenType, tokenNameTypeData, tokenTextMapping } from "../lexer/index.js";
 import { biasedLevenshtein, crash, f, fail, impossible, isKey, isRange, match, min, RangeArray } from "../utils/funcs.js";
 import type { TextRange } from "../utils/types.js";

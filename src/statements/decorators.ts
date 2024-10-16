@@ -1,3 +1,10 @@
+/* @license
+Copyright © <BalaM314>, 2024. All Rights Reserved.
+This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
+
+This file contains decorators used for the statement definitions.
+*/
+
 import { tokenTextMapping, TokenType } from "../lexer/index.js";
 import { ProgramASTBranchNodeType, TokenMatcher } from "../parser/index.js";
 import { NodeValue } from "../runtime/runtime-types.js";

@@ -1,8 +1,8 @@
-/**
+/* @license
 Copyright © <BalaM314>, 2024. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
-This file contains types for the lexer, such as Symbol and Token.
+This file contains types for the lexer, such as Symbol, Token, SymbolType, and TokenType.
 */
 
 import type { IFormattable } from "../utils/funcs.js";
