@@ -243,14 +243,7 @@ export function download(filename:string, data:BlobPart){
 
 function setupGlobalKeybinds(){
 	window.addEventListener("keydown", e => {
-		//TODO move these, pressing Ctrl+S when the file dialog is open should trigger download and upload
-		if(e.key == "s" && e.ctrlKey){
-			e.preventDefault();
-			download("program.sc", soodocodeInput.value);
-		} else if(e.key == "o" && e.ctrlKey){
-			e.preventDefault();
-			uploadButton.click();
-		} else if(e.key == "Escape"){
+		if(e.key == "Escape"){
 			if(document.activeElement == soodocodeInput){
 				//When in the code editor: Escape and focus the next element in the tab order, which is the github icon
 				//Necessary because the code editor captures tab, which is normally used to do that
@@ -265,6 +258,10 @@ function setupGlobalKeybinds(){
 				el.click();
 				e.preventDefault();
 			}
+		} else if(e.key == "s" && e.ctrlKey){
+			e.preventDefault();
+		} else if(e.key == "o" && e.ctrlKey){
+			e.preventDefault();
 		}
 	});
 }
@@ -349,6 +346,15 @@ function setupFileGUI(){
 	setupFileGUIHandlers();
 }
 function setupFileGUIHandlers(){
+	filesDialog.addEventListener("keydown", (e) => {
+		if(e.key == "s" && e.ctrlKey){
+			e.preventDefault();
+			fileDownloadButton.click();
+		} else if(e.key == "o" && e.ctrlKey){
+			e.preventDefault();
+			fileUploadButton.click();
+		}
+	});
 	fileContents.addEventListener("change", function updateFileData(){
 		const file = getSelectedFile();
 		if(!file) return;
@@ -536,6 +542,12 @@ function setupTextEditor(){
 			executeSoodocode();
 		} else if(e.key == "\\" && e.ctrlKey){
 			displayAST();
+		} else if(e.key == "S" && e.ctrlKey){
+			e.preventDefault();
+			download("program.sc", soodocodeInput.value);
+		} else if(e.key == "o" && e.ctrlKey){
+			e.preventDefault();
+			uploadButton.click();
 		}
 		//Update text
 		// const newText = soodocodeInput.value.replace("", "");
