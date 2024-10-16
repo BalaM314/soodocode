@@ -197,7 +197,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 		} else if(statement.category == "block"){
 			const node = new ProgramASTBranchNode(
 				ProgramASTBranchNodeType(statement.stype),
-				[statement] as never,
+				[statement] as never, //will be mutated later
 				[new ProgramASTNodeGroup()]
 			);
 			getActiveBuffer().push(node);
