@@ -11,6 +11,9 @@ importers:
       cli-app:
         specifier: github:BalaM314/cli-app
         version: https://codeload.github.com/BalaM314/cli-app/tar.gz/153ebb74fed32c9bd10ca64788a580e112cc2afb
+      soodocode:
+        specifier: ^1.0.0
+        version: 1.0.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.0.0
@@ -466,6 +469,9 @@ packages:
   shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+
+  soodocode@1.0.0:
+    resolution: {integrity: sha512-lHaBq8G1I2LulcQ/tvI3B0jANsKeFO3Tkb7jZPhjfGEY1xALjwmjUZP7DxdAN4sGx5yagY9lgtWv1BSKgwDl3A==}
 
   strip-json-comments@3.1.1:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
@@ -973,6 +979,8 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  soodocode@1.0.0: {}
 
   strip-json-comments@3.1.1: {}
 

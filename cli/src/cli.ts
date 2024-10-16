@@ -1,10 +1,12 @@
+#!/usr/bin/env node
+
 import { Application, ApplicationError } from "cli-app";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import fsP from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { configs, crash, f, File, FileSystem, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "../../core/build/index.js";
+import { configs, crash, f, File, FileSystem, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "soodocode";
 
 function fail(message:string):never {
 	throw new ApplicationError(message);
