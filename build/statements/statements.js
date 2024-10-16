@@ -1044,7 +1044,7 @@ let WhileStatement = (() => {
 })();
 export { WhileStatement };
 let DoWhileStatement = (() => {
-    let _classDecorators = [statement("dowhile", "REPEAT", "block", "keyword.dowhile")];
+    let _classDecorators = [statement("do_while", "REPEAT", "block", "keyword.do_while")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1077,7 +1077,7 @@ let DoWhileStatement = (() => {
 })();
 export { DoWhileStatement };
 let DoWhileEndStatement = (() => {
-    let _classDecorators = [statement("dowhile.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")];
+    let _classDecorators = [statement("do_while.end", "UNTIL flag = false", "block_end", "keyword.dowhile_end", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1101,7 +1101,7 @@ let DoWhileEndStatement = (() => {
         DoWhileEndStatement = _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
     })();
-    _classThis.blockType = "dowhile";
+    _classThis.blockType = "do_while";
     (() => {
         __runInitializers(_classThis, _classExtraInitializers);
     })();
@@ -1177,7 +1177,7 @@ let ProcedureStatement = (() => {
 })();
 export { ProcedureStatement };
 let OpenFileStatement = (() => {
-    let _classDecorators = [statement("openfile", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")];
+    let _classDecorators = [statement("open_file", `OPENFILE "file.txt" FOR READ`, "keyword.open_file", "expr+", "keyword.for", "file_mode")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1235,7 +1235,7 @@ let OpenFileStatement = (() => {
 })();
 export { OpenFileStatement };
 let CloseFileStatement = (() => {
-    let _classDecorators = [statement("closefile", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")];
+    let _classDecorators = [statement("close_file", `CLOSEFILE "file.txt"`, "keyword.close_file", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1281,7 +1281,7 @@ let CloseFileStatement = (() => {
 })();
 export { CloseFileStatement };
 let ReadFileStatement = (() => {
-    let _classDecorators = [statement("readfile", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")];
+    let _classDecorators = [statement("read_file", `READFILE "file.txt", OutputVar`, "keyword.read_file", "expr+", "punctuation.comma", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1321,7 +1321,7 @@ let ReadFileStatement = (() => {
 })();
 export { ReadFileStatement };
 let WriteFileStatement = (() => {
-    let _classDecorators = [statement("writefile", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")];
+    let _classDecorators = [statement("write_file", `WRITEFILE "file.txt", "hello world"`, "keyword.write_file", "expr+", "punctuation.comma", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1404,7 +1404,7 @@ let SeekStatement = (() => {
 })();
 export { SeekStatement };
 let GetRecordStatement = (() => {
-    let _classDecorators = [statement("getrecord", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")];
+    let _classDecorators = [statement("get_record", `GETRECORD "file.txt", Record`, "keyword.get_record", "expr+", "punctuation.comma", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
@@ -1439,7 +1439,7 @@ let GetRecordStatement = (() => {
 })();
 export { GetRecordStatement };
 let PutRecordStatement = (() => {
-    let _classDecorators = [statement("putrecord", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")];
+    let _classDecorators = [statement("put_record", `PUTRECORD "file.txt", Record`, "keyword.put_record", "expr+", "punctuation.comma", "expr+")];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;

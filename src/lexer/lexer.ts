@@ -4,7 +4,7 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 
 This file contains the lexer, which takes the raw user input and processes it;
 first into a list of symbols, such as "operator.add" (+), "numeric_fragment" (123), or "quote.double" ("),
-second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.readfile", or "string" ("amogus").
+second into a list of tokens, such as "operator.add" (+), "number.decimal" (12.34), "keyword.read_file", or "string" ("amogus").
 */
 
 
@@ -110,7 +110,7 @@ export const tokenNameTypeData = {
 	"RANDOM": "keyword.file_mode.random",
 	"READ": "keyword.file_mode.read",
 	"READFILE": "keyword.read_file",
-	"REPEAT": "keyword.dowhile",
+	"REPEAT": "keyword.do_while",
 	"RETURN": "keyword.return",
 	"RETURNS": "keyword.returns",
 	"SEEK": "keyword.seek",

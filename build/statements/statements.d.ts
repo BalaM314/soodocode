@@ -1,6 +1,6 @@
 import { Token } from "../lexer/index.js";
 import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup } from "../parser/index.js";
-import { ClassVariableType, ConstantData, FunctionData, PrimitiveVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableType, VariableValue } from "../runtime/runtime-types.js";
+import { ClassVariableType, ConstantData, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableType, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
 import { RangeArray } from "../utils/funcs.js";
 import type { TextRange } from "../utils/types.js";
@@ -8,8 +8,8 @@ import { FunctionArguments, StatementExecutionResult } from "./statement-types.j
 import { Statement } from "./statement.js";
 export declare abstract class TypeStatement extends Statement {
     preRun(group: ProgramASTNodeGroup, node?: ProgramASTBranchNode): void;
-    createType(runtime: Runtime): [name: string, type: VariableType<false>];
-    createTypeBlock(runtime: Runtime, block: ProgramASTBranchNode): [name: string, type: VariableType<false>];
+    createType(runtime: Runtime): readonly [name: string, type: VariableType<false>];
+    createTypeBlock(runtime: Runtime, block: ProgramASTBranchNode): readonly [name: string, type: VariableType<false>];
 }
 export declare class DeclareStatement extends Statement {
     static requiresScope: boolean;
@@ -35,23 +35,23 @@ export declare class DefineStatement extends Statement {
 export declare class TypePointerStatement extends TypeStatement {
     name: string;
     targetType: UnresolvedVariableType;
-    createType(runtime: Runtime): [name: string, type: VariableType<false>];
+    createType(runtime: Runtime): readonly [string, PointerVariableType<false>];
 }
 export declare class TypeEnumStatement extends TypeStatement {
     name: Token;
     values: RangeArray<Token>;
-    createType(runtime: Runtime): [name: string, type: VariableType<false>];
+    createType(runtime: Runtime): readonly [string, EnumeratedVariableType];
 }
 export declare class TypeSetStatement extends TypeStatement {
     name: Token;
-    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "BOOLEAN" | "STRING" | "CHAR" | "DATE">;
-    createType(runtime: Runtime): [name: string, type: VariableType<false>];
+    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
+    createType(runtime: Runtime): readonly [string, SetVariableType<false>];
 }
 export declare class TypeRecordStatement extends TypeStatement {
     name: Token;
     static propagatesControlFlowInterruptions: boolean;
-    static allowOnly: Set<"function" | "class" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
-    createTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): [name: string, type: VariableType<false>];
+    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "do_while" | "do_while.end" | "function.end" | "procedure" | "procedure.end" | "open_file" | "read_file" | "write_file" | "close_file" | "seek" | "get_record" | "put_record" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    createTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): readonly [string, RecordVariableType<false>];
 }
 export declare class AssignmentStatement extends Statement {
     static requiresScope: boolean;
@@ -188,7 +188,7 @@ export declare class WhileStatement extends Statement {
     } | undefined;
 }
 export declare class DoWhileStatement extends Statement {
-    runBlock(runtime: Runtime, node: ProgramASTBranchNode<"dowhile">): {
+    runBlock(runtime: Runtime, node: ProgramASTBranchNode<"do_while">): {
         type: "function_return";
         value: VariableValue;
     } | undefined;
@@ -263,7 +263,7 @@ declare class ClassMemberStatement {
 }
 export declare class ClassStatement extends TypeStatement {
     name: Token;
-    static allowOnly: Set<"function" | "class" | "if" | "for" | "for.step" | "while" | "dowhile" | "procedure" | "switch" | "type" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "dowhile.end" | "function.end" | "procedure.end" | "openfile" | "readfile" | "writefile" | "closefile" | "seek" | "getrecord" | "putrecord" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "do_while" | "do_while.end" | "function.end" | "procedure" | "procedure.end" | "open_file" | "read_file" | "write_file" | "close_file" | "seek" | "get_record" | "put_record" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     static propagatesControlFlowInterruptions: boolean;
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];

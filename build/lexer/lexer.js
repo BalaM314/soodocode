@@ -92,7 +92,7 @@ export const tokenNameTypeData = {
     "RANDOM": "keyword.file_mode.random",
     "READ": "keyword.file_mode.read",
     "READFILE": "keyword.read_file",
-    "REPEAT": "keyword.dowhile",
+    "REPEAT": "keyword.do_while",
     "RETURN": "keyword.return",
     "RETURNS": "keyword.returns",
     "SEEK": "keyword.seek",

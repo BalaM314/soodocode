@@ -906,6 +906,19 @@ ENDPROCEDURE
 CALL localScope()`,
 ["5"]
 ],
+global_variable_exists_inside_2_functions: [
+`DECLARE xvar: INTEGER
+PROCEDURE localScope()
+	xvar <- 5
+	OUTPUT xvar
+ENDPROCEDURE
+PROCEDURE main()
+	CALL localScope()
+ENDPROCEDURE
+CALL main()
+`,
+["5"]
+],	
 local_variable_does_not_exist_inside_function: [
 `PROCEDURE x()
 	DECLARE xvar: INTEGER

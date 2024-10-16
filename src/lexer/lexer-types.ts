@@ -98,7 +98,7 @@ export const tokenTypes = [
 	"keyword.declare", "keyword.define", "keyword.constant", "keyword.output", "keyword.input", "keyword.call",
 	"keyword.if", "keyword.then", "keyword.else", "keyword.if_end",
 	"keyword.for", "keyword.to", "keyword.for_end", "keyword.step",
-	"keyword.while", "keyword.while_end", "keyword.dowhile", "keyword.dowhile_end",
+	"keyword.while", "keyword.while_end", "keyword.do_while", "keyword.dowhile_end",
 	"keyword.function", "keyword.function_end", "keyword.procedure", "keyword.procedure_end", "keyword.return", "keyword.returns",
 	"keyword.pass_mode.by_reference", "keyword.pass_mode.by_value",
 	"keyword.type", "keyword.type_end",
@@ -121,7 +121,7 @@ export function TokenType(input:string):TokenType {
 }
 
 /**
- * Represents a single token parsed from the list of symbols, such as such as "operator.add" (`+`), "number.decimal" (`12.34`), "keyword.readfile" (`READFILE`), or "string" (`"amogus"`)
+ * Represents a single token parsed from the list of symbols, such as such as "operator.add" (`+`), "number.decimal" (`12.34`), "keyword.read_file" (`READFILE`), or "string" (`"amogus"`)
  * Determination of Tokens is context-specific.
  */
 export class Token implements TextRanged, IFormattable {
