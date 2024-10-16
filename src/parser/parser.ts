@@ -271,7 +271,7 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
 
 	if(validStatements.length == 0) fail(`No valid statement definitions`, tokens);
 
-	//Remove all statements that require a different block type 
+	//Remove all statements that require a different block type
 	const allowedValidStatements = validStatements.filter(s => context == "any" || !(
 		s.blockType && s.blockType != context?.type.split(".")[0]
 	));
@@ -403,7 +403,7 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 						if(err) return err;
 					}
 					return {
-						message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`, 
+						message: `Expected ${displayTokenMatcher(statement.tokens[i + 1])}, found end of line`,
 						priority: 4,
 						range: input.at(-1)!.rangeAfter()
 					};

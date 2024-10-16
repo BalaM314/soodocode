@@ -10,7 +10,7 @@ import { Config, configs } from "./config.js";
 
 const configsKey = "soodocode:configs";
 export function saveConfigs(){
-	const data = JSON.stringify(Object.fromEntries(Object.entries(configs).map(([category, items]) => 
+	const data = JSON.stringify(Object.fromEntries(Object.entries(configs).map(([category, items]) =>
 		[category, Object.fromEntries(Object.entries(items).map(([key, config]) =>
 			[key, config.value]
 		))]

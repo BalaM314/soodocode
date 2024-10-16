@@ -234,6 +234,13 @@ function coerceValue(value, from, to, range) {
         else
             assignabilityError = f.quote `Value ${v} is not an integer`;
     }
+    if (to instanceof ClassVariableType && from instanceof ClassVariableType && to.inherits(from)) {
+        const v = value;
+        if (v.type == to || v.type.inherits(to))
+            return v;
+        else
+            assignabilityError = f.quote `the data in the variable is of type ${v.type}`;
+    }
     fail({
         summary: f.quote `Cannot coerce value of type ${from} to ${to}`,
         elaboration: assignabilityError,
@@ -981,7 +988,7 @@ let Runtime = (() => {
             }
             getFunction({ text, range }) {
                 if (this.classData && this.classData.clazz.allMethods[text]) {
-                    const [clazz, method] = this.classData.clazz.allMethods[text];
+                    const [clazz, method] = this.classData.instance.type.allMethods[text] ?? crash(`Function exists on the variable type, so it must exist on the instance type`);
                     return { clazz, method, instance: this.classData.instance };
                 }
                 else

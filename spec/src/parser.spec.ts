@@ -1006,7 +1006,7 @@ const parseExpressionTests = ((d:Record<string, [program:_Token[], output:_Expre
 			1,
 			"bracket.close",
 		],
-		["tree", ["array access", 
+		["tree", ["array access",
 			["tree", "access", [
 				["tree", ["array access", "amogus"], [
 					1,

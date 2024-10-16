@@ -183,24 +183,24 @@ export const ExpressionASTNodes = [
 export type OperatorName<T = TokenType> = T extends `operator.${infer N}` ? N extends ("minus" | "assignment" | "pointer" | "range") ? never : (N | "negate" | "subtract" | "access" | "pointer_reference" | "pointer_dereference") : never;
 /**
  * The way that this operator can be used within expressions.
- * 
+ *
  * * binary: an operator that is between two other expressions.
  * Example: a + b
- * 
+ *
  * * unary_prefix: an operator that comes before one expression.
  * Example: - c
- * 
+ *
  * * binary_o_unary_prefix: An operator that is between two other expressions, like binary, but has also been overloaded as a unary prefix operator.
  * Example: d - e (the - operator can also be a unary prefix operator)
- * 
+ *
  * * unary_prefix_o_postfix: An operator that comes before one expression, but has also been overloaded as a unary postfix operator.
  * Example: ^ x
- * 
+ *
  * * unary_postfix_o_prefix: An operator that comes after one expression, but has also been overloaded as a unary prefix operator.
  * Example: y ^
  */
 export type OperatorFix = "binary" | "binary_o_unary_prefix" | "unary_prefix" | "unary_prefix_o_postfix" | "unary_postfix_o_prefix";
-export type OperatorCategory = "arithmetic" | "logical" | "string" | "special"; 
+export type OperatorCategory = "arithmetic" | "logical" | "string" | "special";
 /**
  * Token types for operators that are valid within expressions.
  * Includes operator.negate and operator.pointer_reference, but not operator.minus or operator.assignment.

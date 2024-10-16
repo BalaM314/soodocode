@@ -51,7 +51,7 @@ type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 		? RangeAttached<PrimitiveVariableTypeMapping<T>> //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
 		: never;
 /** Returns the type of the arguments of a builtin function impl given the (const) type of the specified args. */
-type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> = 
+type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> =
 	[TSuppliedArgs & 0] extends [1] //If any
 		? RangeAttached<VariableValue>[] //output this
 		: {
@@ -65,7 +65,7 @@ type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TRetur
 	impl(this:Runtime, ...args:FunctionArgs<TArgs>):PrimitiveVariableTypeMapping<TReturn>;
 	/**
 	 * List of aliases. The function can also be called by any of these names.
-	 * 
+	 *
 	 * Example:
 	 * ```
 	 * FOO: {
