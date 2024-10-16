@@ -242,7 +242,6 @@ export function symbolize(input:string):SymbolizedProgram {
 	const str = new SymbolizerIO(input);
 	toNextCharacter:
 	while(str.has()){
-		//TODO optimize nested loop
 		for(const [identifier, symbolType] of symbolTypeData){
 			if(typeof identifier == "string" || identifier instanceof RegExp){
 				if(str.cons(identifier)){

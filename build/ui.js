@@ -224,15 +224,7 @@ export function download(filename, data) {
 }
 function setupGlobalKeybinds() {
     window.addEventListener("keydown", e => {
-        if (e.key == "s" && e.ctrlKey) {
-            e.preventDefault();
-            download("program.sc", soodocodeInput.value);
-        }
-        else if (e.key == "o" && e.ctrlKey) {
-            e.preventDefault();
-            uploadButton.click();
-        }
-        else if (e.key == "Escape") {
+        if (e.key == "Escape") {
             if (document.activeElement == soodocodeInput) {
                 secondFocusableElement.focus();
             }
@@ -246,6 +238,12 @@ function setupGlobalKeybinds() {
                 el.click();
                 e.preventDefault();
             }
+        }
+        else if (e.key == "s" && e.ctrlKey) {
+            e.preventDefault();
+        }
+        else if (e.key == "o" && e.ctrlKey) {
+            e.preventDefault();
         }
     });
 }
@@ -328,6 +326,16 @@ function setupFileGUI() {
     setupFileGUIHandlers();
 }
 function setupFileGUIHandlers() {
+    filesDialog.addEventListener("keydown", (e) => {
+        if (e.key == "s" && e.ctrlKey) {
+            e.preventDefault();
+            fileDownloadButton.click();
+        }
+        else if (e.key == "o" && e.ctrlKey) {
+            e.preventDefault();
+            fileUploadButton.click();
+        }
+    });
     fileContents.addEventListener("change", function updateFileData() {
         const file = getSelectedFile();
         if (!file)
@@ -430,6 +438,14 @@ function setupTextEditor() {
         }
         else if (e.key == "\\" && e.ctrlKey) {
             displayAST();
+        }
+        else if (e.key == "S" && e.ctrlKey) {
+            e.preventDefault();
+            download("program.sc", soodocodeInput.value);
+        }
+        else if (e.key == "o" && e.ctrlKey) {
+            e.preventDefault();
+            uploadButton.click();
         }
     };
 }
