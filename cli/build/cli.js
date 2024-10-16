@@ -1,10 +1,10 @@
 import { Application, ApplicationError } from "cli-app";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import fsP from "node:fs/promises";
-import { spawnSync } from "node:child_process";
-import { symbolize, tokenize, parse, Runtime, SoodocodeError, parseError, configs, fail as scFail, f, crash } from "../../build/index.js";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
+import { configs, crash, f, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "../../build/index.js";
 function fail(message) {
     throw new ApplicationError(message);
 }
