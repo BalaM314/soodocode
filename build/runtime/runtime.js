@@ -905,30 +905,36 @@ let Runtime = (() => {
             *activeScopes() {
                 for (let i = this.scopes.length - 1; i >= 0; i--) {
                     yield this.scopes[i];
-                    if (this.scopes[i].opaque && i > 0) {
-                        if (this.scopes[0].statement == "global")
-                            yield this.scopes[0];
-                        return null;
-                    }
+                    if (this.scopes[i].opaque && i > 1 && this.scopes[0].statement == "global")
+                        i = 1;
                 }
                 return null;
             }
             getVariable(name) {
-                for (const scope of this.activeScopes()) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    const scope = this.scopes[i];
+                    if (scope.opaque && i > 1 && this.scopes[0].statement == "global")
+                        i = 1;
                     if (scope.variables[name])
                         return scope.variables[name];
                 }
                 return null;
             }
             getType(name) {
-                for (const scope of this.activeScopes()) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    const scope = this.scopes[i];
+                    if (scope.opaque && i > 1 && this.scopes[0].statement == "global")
+                        i = 1;
                     if (scope.types[name])
                         return scope.types[name];
                 }
                 return null;
             }
             getEnumFromValue(name) {
-                for (const scope of this.activeScopes()) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    const scope = this.scopes[i];
+                    if (scope.opaque && i > 1 && this.scopes[0].statement == "global")
+                        i = 1;
                     const data = Object.values(scope.types)
                         .find((data) => data instanceof EnumeratedVariableType && data.values.includes(name));
                     if (data)
@@ -937,7 +943,10 @@ let Runtime = (() => {
                 return null;
             }
             getPointerTypeFor(type) {
-                for (const scope of this.activeScopes()) {
+                for (let i = this.scopes.length - 1; i >= 0; i--) {
+                    const scope = this.scopes[i];
+                    if (scope.opaque && i > 1 && this.scopes[0].statement == "global")
+                        i = 1;
                     const data = Object.values(scope.types)
                         .find((data) => data instanceof PointerVariableType && typesEqual(data.target, type));
                     if (data)
