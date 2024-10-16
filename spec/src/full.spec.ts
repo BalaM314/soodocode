@@ -6,10 +6,10 @@ This file contains blackbox tests that can be applied to other pseudocode engine
 */
 /* eslint-disable indent */
 import "jasmine";
-import { symbolize, tokenize } from "../../build/lexer/index.js";
-import { parse } from "../../build/parser/index.js";
-import { Runtime } from "../../build/runtime/index.js";
-import { SoodocodeError, crash } from "../../build/utils/funcs.js";
+import { symbolize, tokenize } from "../../core/build/lexer/index.js";
+import { parse } from "../../core/build/parser/index.js";
+import { Runtime } from "../../core/build/runtime/index.js";
+import { SoodocodeError, crash } from "../../core/build/utils/funcs.js";
 
 type ErrorData = string;
 

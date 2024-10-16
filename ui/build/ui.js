@@ -1,18 +1,8 @@
-import * as lexer from "./lexer/index.js";
-import * as parser from "./parser/index.js";
-import * as runtime from "./runtime/index.js";
-import * as statements from "./statements/index.js";
-import * as utils from "./utils/funcs.js";
-import * as config from "./config/index.js";
-import * as files from "./runtime/files.js";
-import { Token } from "./lexer/lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser/parser-types.js";
-import { Runtime } from "./runtime/runtime.js";
-import { Statement } from "./statements/statement.js";
-import { SoodocodeError, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils/funcs.js";
-import { configs } from "./config/config.js";
+import * as sc from "../../core/build/index.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode, LocalFileSystem, ProgramASTNodeGroup, Runtime, SoodocodeError, Statement, Token, capitalizeText, configs, crash, escapeHTML, f, fail, loadConfigs, parse, parseError, resetToDefaults, saveConfigs, symbolize, tokenize } from "../../core/build/index.js";
+import "../../core/build/utils/globals.js";
 const savedProgramKey = "soodocode:savedProgram";
-const fileSystem = new files.LocalFileSystem(true);
+const fileSystem = new LocalFileSystem(true);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
 const header = getElement("header", HTMLDivElement);
 const headerText = getElement("header-text", HTMLSpanElement);
@@ -44,7 +34,7 @@ export function flattenTree(program) {
         if (s instanceof Statement)
             return [[0, s]];
         else
-            return flattenTree(parser.ProgramASTNodeGroup.from(s.nodeGroups.flat())).map(([depth, statement]) => [depth + 1, statement]);
+            return flattenTree(ProgramASTNodeGroup.from(s.nodeGroups.flat())).map(([depth, statement]) => [depth + 1, statement]);
     }).flat(1);
 }
 export function displayExpressionHTML(node, expand = false, format = true) {
@@ -264,9 +254,9 @@ function setupEventHandlers() {
     });
     getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
         if (confirm(`Are you sure you want to restore all settings to their default values?`)) {
-            config.resetToDefaults();
+            resetToDefaults();
             generateConfigsDialog();
-            config.saveConfigs();
+            saveConfigs();
         }
     });
     getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
@@ -455,9 +445,9 @@ function flashOutputDiv() {
 function displayAST() {
     outputDiv.classList.remove("state-error", "state-success");
     try {
-        const symbols = lexer.symbolize(soodocodeInput.value);
-        const tokens = lexer.tokenize(symbols);
-        const program = parser.parse(tokens);
+        const symbols = symbolize(soodocodeInput.value);
+        const tokens = tokenize(symbols);
+        const program = parse(tokens);
         outputDiv.innerHTML = `\
 <!--<h2>Symbols</h2>\
 <div class="display-scroller">
@@ -514,9 +504,9 @@ function executeSoodocode() {
         if (configs.runtime.display_output_immediately.value)
             outputDiv.innerHTML = "";
         console.time("parsing");
-        const symbols = lexer.symbolize(soodocodeInput.value);
-        const tokens = lexer.tokenize(symbols);
-        const program = parser.parse(tokens);
+        const symbols = symbolize(soodocodeInput.value);
+        const tokens = tokenize(symbols);
+        const program = parse(tokens);
         console.timeEnd("parsing");
         Object.assign(window, {
             symbols, tokens, program, runtime
@@ -562,14 +552,14 @@ function saveAll() {
     if (soodocodeInput.value.trim().length > 0) {
         localStorage.setItem(savedProgramKey, soodocodeInput.value);
     }
-    config.saveConfigs();
+    saveConfigs();
 }
 function loadAll() {
     const savedProgram = localStorage.getItem(savedProgramKey);
     if (savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0) {
         soodocodeInput.value = savedProgram;
     }
-    config.loadConfigs();
+    loadConfigs();
 }
 function setupHeaderEasterEgg() {
     let flashing = false;
@@ -599,7 +589,7 @@ function setupHeaderEasterEgg() {
 }
 function dumpFunctionsToGlobalScope() {
     window.runtime = new Runtime((msg) => prompt(msg) ?? fail("User did not input a value", undefined), printPrefixed);
-    Object.assign(window, lexer, parser, statements, utils, runtime, config, files, {
+    Object.assign(window, sc, {
         persistentFilesystem: fileSystem
     });
 }

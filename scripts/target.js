@@ -1,4 +1,4 @@
-import * as sc from "../build/index.js";
+import * as sc from "../core/build/index.js";
 const limit = Number(process.argv[2]);
 const count = Number(process.argv[3]);
 if (isNaN(limit) || isNaN(count))

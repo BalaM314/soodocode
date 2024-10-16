@@ -1,10 +1,10 @@
 /* eslint-disable indent */
 import "jasmine";
-import { Token } from "../../build/lexer/index.js";
-import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../build/parser/index.js";
-import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../../build/runtime/index.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../build/statements/index.js";
-import { SoodocodeError, crash } from "../../build/utils/funcs.js";
+import { Token } from "../../core/build/lexer/index.js";
+import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../core/build/parser/index.js";
+import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../../core/build/runtime/index.js";
+import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../core/build/statements/index.js";
+import { SoodocodeError, crash } from "../../core/build/utils/funcs.js";
 import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, anyRange, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,

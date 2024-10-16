@@ -9,6 +9,6 @@
 		"src/**.ts"
 	],
 	"references": [
-		{ "path": "../src/" }
+		{ "path": "../core/" }
 	]
 }

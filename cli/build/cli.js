@@ -4,7 +4,7 @@ import fs from "node:fs";
 import fsP from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { configs, crash, f, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "../../build/index.js";
+import { configs, crash, f, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "../../core/build/index.js";
 function fail(message) {
     throw new ApplicationError(message);
 }
