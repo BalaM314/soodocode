@@ -13,9 +13,10 @@ function fail(message:string):never {
 // Behold, the Node.JS!
 /** Uses a shell command. If platform is windows, uses cmd. If platform is linux, uses sh read. */
 function promptSync():string {
+	process.stdout.write("> ");
 	let command:[string, string[]];
 	if(os.platform() == "win32"){
-		command = ["cmd", ["/V:ON", "/C", `set /p response="> " && echo !response!`]];
+		command = ["cmd", ["/V:ON", "/C", `set /p response= && echo !response!`]];
 	} else {
 		command = ["sh", ["-c", "read response; echo $response"]];
 	}
@@ -47,6 +48,7 @@ class NodeJSFileSystem implements FileSystem {
 	openFile(filename:string, create:true):File;
 	openFile(filename:string, create:boolean):File | undefined;
 	openFile(filename:string, create = false):File | undefined {
+		console.log(`Opened file ${filename}`);
 		const filepath = this.resolveSafe(filename);
 		if(!fs.existsSync(filepath) && !create) return undefined;
 		this.fileDescriptors[filepath] = fs.openSync(filepath, fs.constants.O_RDWR | fs.constants.O_CREAT);
@@ -62,10 +64,11 @@ class NodeJSFileSystem implements FileSystem {
 		this.openFile(filename, true);
 	}
 	updateFile(filename:string, newContent:string){
-		fs.writeFileSync(this.descriptor(filename), newContent, this.encoding);
+		fs.ftruncateSync(this.descriptor(filename));
+		fs.writeFileSync(this.descriptor(filename), newContent);
 	}
 	clearFile(filename:string){
-		fs.writeFileSync(this.descriptor(filename), "", this.encoding);
+		fs.ftruncateSync(this.descriptor(filename));
 	}
 	deleteFile(filename:string){
 		const filepath = this.resolveSafe(filename);
