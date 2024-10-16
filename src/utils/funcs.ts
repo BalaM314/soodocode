@@ -776,7 +776,7 @@ export function biasedLevenshtein(a:string, b:string, maxLengthProduct = 1000):n
 //#region multiple inheritance
 
 export type Class = (new (...args: any[]) => unknown) & Record<PropertyKey, unknown>;
-export type MergeInstances<A, B> = A & B extends never ? 
+export type MergeInstances<A, B> = A & B extends never ?
 	// Merging them with & hasn't worked because one or more of the properties are incompatible
 	// Remove keyof B from A before intersecting
 	Omit<A, keyof B> & B

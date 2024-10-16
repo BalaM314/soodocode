@@ -198,6 +198,11 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 			else assignabilityError = f.quote`Value ${v} is not in range ${to}`;
 		} else assignabilityError = f.quote`Value ${v} is not an integer`;
 	}
+	if(to instanceof ClassVariableType && from instanceof ClassVariableType && to.inherits(from)){
+		const v = value as VariableTypeMapping<ClassVariableType>;
+		if(v.type == to || v.type.inherits(to)) return v as never;
+		else assignabilityError = f.quote`the data in the variable is of type ${v.type}`;
+	}
 	fail({
 		summary: f.quote`Cannot coerce value of type ${from} to ${to}`,
 		elaboration: assignabilityError,
@@ -1075,7 +1080,7 @@ export class Runtime {
 	}
 	getFunction({text, range}:Token):FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(this.classData && this.classData.clazz.allMethods[text]){
-			const [clazz, method] = this.classData.clazz.allMethods[text];
+			const [clazz, method] = this.classData.instance.type.allMethods[text] ?? crash(`Function exists on the variable type, so it must exist on the instance type`);
 			return { clazz, method, instance: this.classData.instance };
 		} else return this.functions[text] ?? this.builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}

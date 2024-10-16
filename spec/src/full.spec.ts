@@ -21,7 +21,7 @@ empty: [
 ],
 mostlyEmpty: [
 `\t
-\t 
+\t
 
 `,
 []
@@ -1852,6 +1852,36 @@ DECLARE dog: Animal
 dog <- NEW Dog("doggy")
 CALL dog.bark()`,
 `Method "bark" does not exist`
+],
+call_class_method_polymorphically_from_base: [
+`CLASS Animal
+	PUBLIC Name: STRING
+	PUBLIC PROCEDURE NEW(name: STRING)
+		Name <- name
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		RETURN TRUE
+	ENDFUNCTION
+	PUBLIC FUNCTION wrappedIsSus() RETURNS BOOLEAN
+		RETURN isSus()
+	ENDFUNCTION
+ENDCLASS
+CLASS Dog INHERITS Animal
+	PUBLIC PROCEDURE NEW(name: STRING)
+		CALL SUPER.NEW(name)
+	ENDPROCEDURE
+	PUBLIC FUNCTION isSus() RETURNS BOOLEAN
+		RETURN FALSE
+	ENDFUNCTION
+ENDCLASS
+
+DECLARE animal: Animal
+animal <- NEW Animal("doggy")
+DECLARE dog: Animal
+dog <- NEW Dog("doggy")
+OUTPUT animal.wrappedIsSus()
+OUTPUT dog.wrappedIsSus()`,
+["TRUE", "FALSE"]
 ],
 call_class_method_in_function_polymorphically: [
 `CLASS Animal
