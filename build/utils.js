@@ -1,6 +1,64 @@
 import { tokenNameTypeData, tokenTextMapping } from "./lexer.js";
-export function getText(tokens) {
-    return tokens.map(t => t.text).join(" ");
+export function separateArray(arr, predicate) {
+    const a = [];
+    const b = [];
+    for (const el of arr) {
+        (predicate(el) ? a : b).push(el);
+    }
+    return [a, b];
+}
+export function groupArray(arr, predicate, keys) {
+    var _a;
+    const out = keys ? Object.fromEntries(keys.map(k => [k, []])) : {};
+    for (const el of arr) {
+        (out[_a = predicate(el)] ?? (out[_a] = [])).push(el);
+    }
+    return out;
+}
+export function min(input, predicate, threshold = Infinity) {
+    let min = threshold;
+    let minItem = null;
+    for (const item of input) {
+        const score = predicate(item);
+        if (score < min) {
+            min = score;
+            minItem = item;
+        }
+    }
+    return minItem;
+}
+export function max(input, predicate, threshold = -Infinity) {
+    let max = threshold;
+    let maxItem = null;
+    for (const item of input) {
+        const score = predicate(item);
+        if (score > max) {
+            max = score;
+            maxItem = item;
+        }
+    }
+    return maxItem;
+}
+export function splitArray(arr, split) {
+    const output = [[]];
+    if (typeof split == "function") {
+        for (let i = 0; i < arr.length; i++) {
+            if (split(arr[i], i, arr))
+                output.push([]);
+            else
+                output.at(-1).push(arr[i]);
+        }
+    }
+    else {
+        let lastBoundary = 0;
+        for (let i = 0; i <= arr.length; i++) {
+            if (i == arr.length || arr[i] == split[0]) {
+                output.push(arr.slice(lastBoundary, i));
+                lastBoundary = i + 1;
+            }
+        }
+    }
+    return output;
 }
 export function manageNestLevel(reversed = false, validate = true) {
     let paren = 0;
@@ -71,83 +129,12 @@ export function displayTokenMatcher(input) {
             "name": "an identifier"
         });
 }
-export function applyRangeTransformers(text, ranges, transformer = (x => x)) {
-    const chars = [...text].map(transformer);
-    for (const [[range, start, end], remaining] of withRemaining(ranges)) {
-        chars.splice(range[1], 0, end);
-        chars.splice(range[0], 0, start);
-        remaining.forEach(([next]) => {
-            next[0] =
-                next[0] >= range[1] ? next[0] + 2 :
-                    next[0] > range[0] ? next[0] + 1 :
-                        (next[0] >= range[0] && next[1] <= range[1]) ? next[0] + 1 :
-                            next[0];
-            next[1] =
-                next[1] > range[1] ? next[1] + 2 :
-                    (next[1] >= range[1] && next[0] < range[0]) ? next[1] + 2 :
-                        next[1] > range[0] ? next[1] + 1 :
-                            next[1];
-        });
-    }
-    return chars.join("");
-}
-export function separateArray(arr, predicate) {
-    const a = [];
-    const b = [];
-    for (const el of arr) {
-        (predicate(el) ? a : b).push(el);
-    }
-    return [a, b];
-}
-export function groupArray(arr, predicate, keys) {
-    var _a;
-    const out = keys ? Object.fromEntries(keys.map(k => [k, []])) : {};
-    for (const el of arr) {
-        (out[_a = predicate(el)] ?? (out[_a] = [])).push(el);
-    }
-    return out;
-}
-export function splitArray(arr, split) {
-    const output = [[]];
-    if (typeof split == "function") {
-        for (let i = 0; i < arr.length; i++) {
-            if (split(arr[i], i, arr))
-                output.push([]);
-            else
-                output.at(-1).push(arr[i]);
-        }
-    }
-    else {
-        let lastBoundary = 0;
-        for (let i = 0; i <= arr.length; i++) {
-            if (i == arr.length || arr[i] == split[0]) {
-                output.push(arr.slice(lastBoundary, i));
-                lastBoundary = i + 1;
-            }
-        }
-    }
-    return output;
-}
 export function splitTokens(arr, split) {
     const output = [];
     let lastBoundary = 0;
     for (let i = 0; i <= arr.length; i++) {
         if (i == arr.length || arr[i].type == split) {
             output.push(arr.slice(lastBoundary, i));
-            lastBoundary = i + 1;
-        }
-    }
-    return output;
-}
-export function splitTokensWithSplitter(arr, split) {
-    const output = [];
-    let lastBoundary = 0;
-    for (let i = 0; i <= arr.length; i++) {
-        if (i == arr.length || arr[i].type == split) {
-            output.push({
-                group: arr.slice(lastBoundary, i),
-                splitter: arr[i]
-            });
             lastBoundary = i + 1;
         }
     }
@@ -207,6 +194,46 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens, nextToken, val
     }
     return new RangeArray(names);
 }
+export class RangeArray extends Array {
+    constructor(arg0, range) {
+        if (typeof arg0 == "number") {
+            super(arg0);
+            this.range = null;
+        }
+        else {
+            super(...arg0);
+            this.range = range ?? getTotalRange(arg0);
+        }
+    }
+    slice(start = 0, end = this.length) {
+        const arr = super.slice(start, end);
+        if (arr.length == 0) {
+            let range;
+            if (this.length == 0)
+                range = this.range;
+            else {
+                const rangeStart = this[start - 1]?.range[1] ?? this.range[0];
+                const rangeEnd = this.at(end)?.range[0] ?? this.range[1];
+                range = [rangeStart, rangeEnd];
+            }
+            return new RangeArray(arr, range);
+        }
+        else {
+            return new RangeArray(arr);
+        }
+    }
+    map(fn) {
+        return Array.from(this).map(fn);
+    }
+    select(fn, range) {
+        if (this.length == 0)
+            return this.slice();
+        const arr = super.filter(fn);
+        arr.range = arr.length > 0 ? getTotalRange(arr) : (range ?? crash(`Cannot get range from an empty filtered list of tokens`));
+        return arr;
+    }
+}
+RangeArray.prototype.filter = () => crash(`Do not call filter() on RangeArray, use select() instead.`);
 export function getTotalRange(things) {
     if (things.length == 0)
         crash(`Cannot get range from an empty list of tokens`);
@@ -239,12 +266,6 @@ export function findRange(args) {
             return getTotalRange(arg);
     }
     return undefined;
-}
-export function array(input) {
-    if (Array.isArray(input))
-        return input;
-    else
-        return [input];
 }
 function formatErrorLine(line, sourceCode) {
     return typeof line == "string" ? line : line.map(chunk => (typeof chunk == "string" || typeof chunk == "number")
@@ -412,9 +433,6 @@ export function enableConfig(config) {
 export function setConfig(value, config) {
     return { config, value };
 }
-export function plural(count, word, plural = word + "s") {
-    return `${count} ${count == 1 ? word : plural}`;
-}
 export function fail(message, rangeSpecific, rangeGeneral, rangeOther) {
     throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral), getRange(rangeOther));
 }
@@ -429,14 +447,31 @@ export function crash(message, ...extra) {
 export function impossible() {
     throw new Error(`this shouldn't be possible...`);
 }
-export function Abstract(input, context) {
-    return class __temp extends input {
-        constructor(...args) {
-            super(...args);
-            if (new.target === __temp)
-                throw new Error(`Cannot construct abstract class ${input.name}`);
+export function tryRun(callback) {
+    try {
+        return [callback(), null];
+    }
+    catch (err) {
+        if (err instanceof SoodocodeError) {
+            return [null, err];
         }
-    };
+        else
+            throw err;
+    }
+}
+export function tryRunOr(callback, errorHandler) {
+    try {
+        callback();
+        return true;
+    }
+    catch (err) {
+        if (err instanceof SoodocodeError) {
+            errorHandler(err);
+            return false;
+        }
+        else
+            throw err;
+    }
 }
 export function errorBoundary({ predicate = (() => true), message } = {}) {
     return function decorator(func, _ctx) {
@@ -470,13 +505,20 @@ export function errorBoundary({ predicate = (() => true), message } = {}) {
         return replacedFunction;
     };
 }
-export function escapeHTML(input) {
-    if (input == undefined)
-        return "";
-    return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+export function Abstract(input, context) {
+    return class __temp extends input {
+        constructor(...args) {
+            super(...args);
+            if (new.target === __temp)
+                throw new Error(`Cannot construct abstract class ${input.name}`);
+        }
+    };
 }
-export function span(input, className) {
-    return `<span class="${className}">${escapeHTML(input)}</span>`;
+export function array(input) {
+    if (Array.isArray(input))
+        return input;
+    else
+        return [input];
 }
 export function parseError(thing) {
     if (thing instanceof Error) {
@@ -493,6 +535,70 @@ export function parseError(thing) {
         console.log(thing);
         return "Unable to parse error object";
     }
+}
+export function applyRangeTransformers(text, ranges, transformer = (x => x)) {
+    const chars = [...text].map(transformer);
+    for (const [[range, start, end], remaining] of withRemaining(ranges)) {
+        chars.splice(range[1], 0, end);
+        chars.splice(range[0], 0, start);
+        remaining.forEach(([next]) => {
+            next[0] =
+                next[0] >= range[1] ? next[0] + 2 :
+                    next[0] > range[0] ? next[0] + 1 :
+                        (next[0] >= range[0] && next[1] <= range[1]) ? next[0] + 1 :
+                            next[0];
+            next[1] =
+                next[1] > range[1] ? next[1] + 2 :
+                    (next[1] >= range[1] && next[0] < range[0]) ? next[1] + 2 :
+                        next[1] > range[0] ? next[1] + 1 :
+                            next[1];
+        });
+    }
+    return chars.join("");
+}
+const fakeObjectTrap = new Proxy({}, {
+    get(target, property) { crash(`Attempted to access property ${String(property)} on fake object`); },
+});
+export function fakeObject(input) {
+    Object.setPrototypeOf(input, fakeObjectTrap);
+    return input;
+}
+export function boxPrimitive(input) {
+    if (typeof input == "boolean")
+        return new Boolean(input);
+    if (typeof input == "number")
+        return new Number(input);
+    if (typeof input == "string")
+        return new String(input);
+    return input;
+}
+let _unicodeSetsSupported = null;
+export function unicodeSetsSupported() {
+    return _unicodeSetsSupported ?? (_unicodeSetsSupported = (() => {
+        try {
+            void new RegExp("", "v");
+            return true;
+        }
+        catch {
+            return false;
+        }
+    })());
+}
+export function shallowCloneOwnProperties(input) {
+    return Object.defineProperties({}, Object.getOwnPropertyDescriptors(input));
+}
+export function getAllPropertyDescriptors(object) {
+    const proto = Object.getPrototypeOf(object);
+    if (proto == Object.prototype || proto == null)
+        return Object.getOwnPropertyDescriptors(object);
+    else
+        return {
+            ...getAllPropertyDescriptors(proto),
+            ...Object.getOwnPropertyDescriptors(object),
+        };
+}
+export function match(value, clauses, defaultValue) {
+    return value in clauses ? clauses[value] : defaultValue;
 }
 export function* zip(...iters) {
     while (true) {
@@ -516,6 +622,26 @@ export function* withRemaining(items) {
     for (let i = 0; i < items.length; i++) {
         yield [items[i], items.slice(i + 1)];
     }
+}
+export function escapeHTML(input) {
+    if (input == undefined)
+        return "";
+    return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+export function span(input, className) {
+    return `<span class="${className}">${escapeHTML(input)}</span>`;
+}
+export function plural(count, word, plural = word + "s") {
+    return `${count} ${count == 1 ? word : plural}`;
+}
+export function capitalizeWord(word) {
+    return word[0].toUpperCase() + word.slice(1).toLowerCase();
+}
+export function capitalizeText(input) {
+    return input
+        .split(/[^a-z0-9]+/i)
+        .map((w, i) => i == 0 ? capitalizeWord(w) : w.toLowerCase())
+        .join(" ");
 }
 export function tagProcessor(transformer) {
     return function (stringChunks, ...varChunks) {
@@ -606,30 +732,6 @@ export function isKey(record, key) {
 export function access(record, key, fallback) {
     return record[key] ?? fallback;
 }
-export function min(input, predicate, threshold = Infinity) {
-    let min = threshold;
-    let minItem = null;
-    for (const item of input) {
-        const score = predicate(item);
-        if (score < min) {
-            min = score;
-            minItem = item;
-        }
-    }
-    return minItem;
-}
-export function max(input, predicate, threshold = -Infinity) {
-    let max = threshold;
-    let maxItem = null;
-    for (const item of input) {
-        const score = predicate(item);
-        if (score > max) {
-            max = score;
-            maxItem = item;
-        }
-    }
-    return maxItem;
-}
 export function biasedLevenshtein(a, b, maxLengthProduct = 1000) {
     a = a.toLowerCase();
     b = b.toLowerCase();
@@ -665,122 +767,6 @@ export function closestKeywordToken(input, threshold = 1.5) {
     }
     return min(keywordTokens, ([expected, type]) => biasedLevenshtein(expected, input), threshold)?.[1];
 }
-const fakeObjectTrap = new Proxy({}, {
-    get(target, property) { crash(`Attempted to access property ${String(property)} on fake object`); },
-});
-export function fakeObject(input) {
-    Object.setPrototypeOf(input, fakeObjectTrap);
-    return input;
-}
-export function tryRun(callback) {
-    try {
-        return [callback(), null];
-    }
-    catch (err) {
-        if (err instanceof SoodocodeError) {
-            return [null, err];
-        }
-        else
-            throw err;
-    }
-}
-export function tryRunOr(callback, errorHandler) {
-    try {
-        callback();
-        return true;
-    }
-    catch (err) {
-        if (err instanceof SoodocodeError) {
-            errorHandler(err);
-            return false;
-        }
-        else
-            throw err;
-    }
-}
-export function boxPrimitive(input) {
-    if (typeof input == "boolean")
-        return new Boolean(input);
-    if (typeof input == "number")
-        return new Number(input);
-    if (typeof input == "string")
-        return new String(input);
-    return input;
-}
-let _unicodeSetsSupported = null;
-export function unicodeSetsSupported() {
-    return _unicodeSetsSupported ?? (_unicodeSetsSupported = (() => {
-        try {
-            void new RegExp("", "v");
-            return true;
-        }
-        catch {
-            return false;
-        }
-    })());
-}
-export function capitalizeWord(word) {
-    return word[0].toUpperCase() + word.slice(1).toLowerCase();
-}
-export function capitalizeText(input) {
-    return input
-        .split(/[^a-z0-9]+/i)
-        .map((w, i) => i == 0 ? capitalizeWord(w) : w.toLowerCase())
-        .join(" ");
-}
-export function shallowCloneOwnProperties(input) {
-    return Object.defineProperties({}, Object.getOwnPropertyDescriptors(input));
-}
-export class RangeArray extends Array {
-    constructor(arg0, range) {
-        if (typeof arg0 == "number") {
-            super(arg0);
-            this.range = null;
-        }
-        else {
-            super(...arg0);
-            this.range = range ?? getTotalRange(arg0);
-        }
-    }
-    slice(start = 0, end = this.length) {
-        const arr = super.slice(start, end);
-        if (arr.length == 0) {
-            let range;
-            if (this.length == 0)
-                range = this.range;
-            else {
-                const rangeStart = this[start - 1]?.range[1] ?? this.range[0];
-                const rangeEnd = this.at(end)?.range[0] ?? this.range[1];
-                range = [rangeStart, rangeEnd];
-            }
-            return new RangeArray(arr, range);
-        }
-        else {
-            return new RangeArray(arr);
-        }
-    }
-    map(fn) {
-        return Array.from(this).map(fn);
-    }
-    select(fn, range) {
-        if (this.length == 0)
-            return this.slice();
-        const arr = super.filter(fn);
-        arr.range = arr.length > 0 ? getTotalRange(arr) : (range ?? crash(`Cannot get range from an empty filtered list of tokens`));
-        return arr;
-    }
-}
-RangeArray.prototype.filter = () => crash(`Do not call filter() on RangeArray, use select() instead.`);
-export function getAllPropertyDescriptors(object) {
-    const proto = Object.getPrototypeOf(object);
-    if (proto == Object.prototype || proto == null)
-        return Object.getOwnPropertyDescriptors(object);
-    else
-        return {
-            ...getAllPropertyDescriptors(proto),
-            ...Object.getOwnPropertyDescriptors(object),
-        };
-}
 export function combineClasses(...classes) {
     function ctor(...args) {
         if (!new.target)
@@ -793,7 +779,4 @@ export function combineClasses(...classes) {
     return Object.assign(ctor, statics, {
         prototype: ctorPrototype
     });
-}
-export function match(value, clauses, defaultValue) {
-    return value in clauses ? clauses[value] : defaultValue;
 }
