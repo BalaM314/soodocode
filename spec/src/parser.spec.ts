@@ -7,11 +7,11 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token, TokenizedProgram } from "../../build/lexer/index.js";
-import { ExpressionAST, ExpressionASTTypeNode, parse, parseExpression, parseFunctionArguments, parseStatement, parseType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser/index.js";
-import { PrimitiveVariableType, Runtime, UnresolvedVariableType } from "../../build/runtime/index.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, FunctionArgumentPassMode, IfStatement, InputStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements/index.js";
-import { impossible, RangeArray, SoodocodeError } from "../../build/utils/funcs.js";
+import { Token, TokenizedProgram } from "../../core/build/lexer/index.js";
+import { ExpressionAST, ExpressionASTTypeNode, parse, parseExpression, parseFunctionArguments, parseStatement, parseType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../core/build/parser/index.js";
+import { PrimitiveVariableType, Runtime, UnresolvedVariableType } from "../../core/build/runtime/index.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, FunctionArgumentPassMode, IfStatement, InputStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../core/build/statements/index.js";
+import { impossible, RangeArray, SoodocodeError } from "../../core/build/utils/funcs.js";
 import { _ExpressionAST, _ExpressionASTTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
 //i miss rust macros

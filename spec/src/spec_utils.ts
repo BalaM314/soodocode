@@ -1,10 +1,10 @@
-import { Symbol, SymbolType, Token, TokenType, tokenTextMapping } from "../../build/lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "../../build/parser/index.js";
-import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, Runtime, TypedNodeValue, UnresolvedVariableType, VariableType } from "../../build/runtime/index.js";
-import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../build/statements/index.js";
-import { RangeArray, crash, fakeObject, forceType, impossible } from "../../build/utils/funcs.js";
-import "../../build/utils/globals.js";
-import type { TextRange, TextRanged2 } from "../../build/utils/types.js";
+import { Symbol, SymbolType, Token, TokenType, tokenTextMapping } from "../../core/build/lexer/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "../../core/build/parser/index.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, Runtime, TypedNodeValue, UnresolvedVariableType, VariableType } from "../../core/build/runtime/index.js";
+import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../core/build/statements/index.js";
+import { RangeArray, crash, fakeObject, forceType, impossible } from "../../core/build/utils/funcs.js";
+import "../../core/build/utils/globals.js";
+import type { TextRange, TextRanged2 } from "../../core/build/utils/types.js";
 
 
 if(typeof jasmine === "undefined"){

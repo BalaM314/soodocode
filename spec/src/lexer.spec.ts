@@ -6,8 +6,8 @@ This file contains unit tests for the lexer.
 */
 
 import "jasmine";
-import { Symbol, symbolize, SymbolizedProgram, Token, tokenize } from "../../build/lexer/index.js";
-import { SoodocodeError } from "../../build/utils/funcs.js";
+import { Symbol, symbolize, SymbolizedProgram, Token, tokenize } from "../../core/build/lexer/index.js";
+import { SoodocodeError } from "../../core/build/utils/funcs.js";
 import { _Symbol, _Token, process_Token, symbol } from "./spec_utils.js";
 
 

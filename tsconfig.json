@@ -16,7 +16,7 @@
 	},
 	"files": [],
 	"references": [
-		{ "path": "src/" },
+		{ "path": "core/" },
 		{ "path": "spec/" },
 	]
 }

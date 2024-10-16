@@ -44,13 +44,13 @@ export declare class TypeEnumStatement extends TypeStatement {
 }
 export declare class TypeSetStatement extends TypeStatement {
     name: Token;
-    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "STRING" | "CHAR" | "BOOLEAN" | "DATE">;
+    setType: PrimitiveVariableType<"INTEGER" | "REAL" | "BOOLEAN" | "STRING" | "CHAR" | "DATE">;
     createType(runtime: Runtime): readonly [string, SetVariableType<false>];
 }
 export declare class TypeRecordStatement extends TypeStatement {
     name: Token;
     static propagatesControlFlowInterruptions: boolean;
-    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "do_while" | "do_while.end" | "function.end" | "procedure" | "procedure.end" | "open_file" | "read_file" | "write_file" | "close_file" | "seek" | "get_record" | "put_record" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "do_while" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "do_while.end" | "function.end" | "procedure.end" | "open_file" | "read_file" | "write_file" | "close_file" | "seek" | "get_record" | "put_record" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     createTypeBlock(runtime: Runtime, node: ProgramASTBranchNode): readonly [string, RecordVariableType<false>];
 }
 export declare class AssignmentStatement extends Statement {
@@ -263,7 +263,7 @@ declare class ClassMemberStatement {
 }
 export declare class ClassStatement extends TypeStatement {
     name: Token;
-    static allowOnly: Set<"function" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if" | "if.end" | "else" | "switch" | "switch.end" | "case" | "case.range" | "for" | "for.step" | "for.end" | "while" | "while.end" | "do_while" | "do_while.end" | "function.end" | "procedure" | "procedure.end" | "open_file" | "read_file" | "write_file" | "close_file" | "seek" | "get_record" | "put_record" | "class" | "class.inherits" | "class.end" | "class_property" | "class_procedure" | "class_procedure.end" | "class_function" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
+    static allowOnly: Set<"function" | "if" | "for" | "for.step" | "while" | "do_while" | "procedure" | "switch" | "type" | "class" | "class.inherits" | "class_function" | "class_procedure" | "declare" | "define" | "constant" | "assignment" | "output" | "input" | "return" | "call" | "type.pointer" | "type.enum" | "type.set" | "type.end" | "if.end" | "else" | "switch.end" | "case" | "case.range" | "for.end" | "while.end" | "do_while.end" | "function.end" | "procedure.end" | "open_file" | "read_file" | "write_file" | "close_file" | "seek" | "get_record" | "put_record" | "class.end" | "class_property" | "class_procedure.end" | "class_function.end" | "illegal.assignment" | "illegal.end" | "illegal.for.end">;
     static propagatesControlFlowInterruptions: boolean;
     initializeClass(runtime: Runtime, branchNode: ProgramASTBranchNode): ClassVariableType<false>;
     createTypeBlock(runtime: Runtime, branchNode: ProgramASTBranchNode): [name: string, type: VariableType<false>];
