@@ -15,8 +15,4 @@
 		"noEmitOnError": true,
 	},
 	"files": [],
-	"references": [
-		{ "path": "core/" },
-		{ "path": "spec/" },
-	]
 }
