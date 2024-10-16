@@ -1,20 +1,21 @@
-import * as lexerTypes from "./lexer-types.js";
-import * as lexer from "./lexer.js";
-import * as parserTypes from "./parser-types.js";
-import * as parser from "./parser.js";
-import * as runtime from "./runtime.js";
-import * as runtimeTypes from "./runtime-types.js";
-import * as statements from "./statements.js";
-import * as utils from "./utils.js";
-import * as config from "./config.js";
-import * as files from "./files.js";
-import * as builtin_functions from "./builtin_functions.js";
-import { Token } from "./lexer-types.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser-types.js";
-import { Runtime } from "./runtime.js";
-import { Statement } from "./statements.js";
-import { SoodocodeError, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils.js";
-import { configs } from "./config.js";
+import * as lexerTypes from "./lexer/lexer-types.js";
+import * as lexer from "./lexer/lexer.js";
+import * as parserTypes from "./parser/parser-types.js";
+import * as parser from "./parser/parser.js";
+import * as runtime from "./runtime/runtime.js";
+import * as runtimeTypes from "./runtime/runtime-types.js";
+import * as statements from "./statements/statements.js";
+import * as utils from "./utils/funcs.js";
+import * as config from "./config/config.js";
+import * as configFuncs from "./config/funcs.js";
+import * as files from "./runtime/files.js";
+import * as builtin_functions from "./runtime/builtin_functions.js";
+import { Token } from "./lexer/lexer-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTRangeTypeNode } from "./parser/parser-types.js";
+import { Runtime } from "./runtime/runtime.js";
+import { Statement } from "./statements/statement.js";
+import { SoodocodeError, crash, escapeHTML, fail, parseError, f, capitalizeText } from "./utils/funcs.js";
+import { configs } from "./config/config.js";
 const savedProgramKey = "soodocode:savedProgram";
 const fileSystem = new files.BrowserFileSystem(true);
 const soodocodeInput = getElement("soodocode-input", HTMLTextAreaElement);
@@ -270,9 +271,9 @@ function setupEventHandlers() {
     });
     getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
         if (confirm(`Are you sure you want to restore all settings to their default values?`)) {
-            config.resetToDefaults();
+            configFuncs.resetToDefaults();
             generateConfigsDialog();
-            config.saveConfigs();
+            configFuncs.saveConfigs();
         }
     });
     getElement("files-dialog-button", HTMLSpanElement).addEventListener("click", () => {
@@ -550,14 +551,14 @@ function saveAll() {
     if (soodocodeInput.value.trim().length > 0) {
         localStorage.setItem(savedProgramKey, soodocodeInput.value);
     }
-    config.saveConfigs();
+    configFuncs.saveConfigs();
 }
 function loadAll() {
     const savedProgram = localStorage.getItem(savedProgramKey);
     if (savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0) {
         soodocodeInput.value = savedProgram;
     }
-    config.loadConfigs();
+    configFuncs.loadConfigs();
 }
 function setupHeaderEasterEgg() {
     let flashing = false;

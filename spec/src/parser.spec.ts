@@ -7,16 +7,12 @@ This file contains unit tests for the parser.
 
 
 import "jasmine";
-import { Token, TokenizedProgram } from "../../build/lexer-types.js";
-import { ExpressionAST, ExpressionASTTypeNode, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser-types.js";
-import { parse, parseExpression, parseFunctionArguments, parseStatement, parseType } from "../../build/parser.js";
-import { PrimitiveVariableType, UnresolvedVariableType } from "../../build/runtime-types.js";
-import { Runtime } from "../../build/runtime.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, IfStatement, InputStatement, FunctionArgumentPassMode, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements.js";
-import { impossible, RangeArray, SoodocodeError } from "../../build/utils.js";
+import { Token, TokenizedProgram } from "../../build/lexer/index.js";
+import { ExpressionAST, ExpressionASTTypeNode, parse, parseExpression, parseFunctionArguments, parseStatement, parseType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../build/parser/index.js";
+import { PrimitiveVariableType, Runtime, UnresolvedVariableType } from "../../build/runtime/index.js";
+import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, FunctionArgumentPassMode, IfStatement, InputStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../build/statements/index.js";
+import { impossible, RangeArray, SoodocodeError } from "../../build/utils/funcs.js";
 import { _ExpressionAST, _ExpressionASTTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
-
-//copy(tokenize(symbolize(``)).map(t => `{text: "${t.text}", type: "${t.type}"},`).join("\n"))
 
 //i miss rust macros
 
