@@ -87,8 +87,13 @@ class NodeJSFileSystem implements FileSystem {
 const soodocode = new Application("soodocode", "CLI interface for the Soodocode runtime");
 soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
 	const filename = opts.positionalArgs[0];
-	const data = await fsP.readFile(filename, "utf-8")
+	let data = await fsP.readFile(filename, "utf-8")
 		.catch(() => fail(`Failed to read the file "${filename}"`));
+	
+	//Trim shebang
+	if(data.startsWith("#!")){
+		data = data.replace(/^#!.*\n/, "");
+	}
 	
 	const runtime = new Runtime(
 		function input(message, type){
