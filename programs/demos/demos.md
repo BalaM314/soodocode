@@ -21,6 +21,8 @@
 
 [![Image of contravariance error](./classes/contravariance.png)](./classes/contravariance.sc)
 
+[![Image of array out of bounds](./errors/array-out-of-bounds.png)](./errors/array-out-of-bounds.sc)
+
 ## Programs
 
 [![Image of main program](./main.png)](./main.sc)
