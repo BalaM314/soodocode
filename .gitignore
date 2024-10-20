@@ -7,3 +7,7 @@ scripts/tsconfig.tsbuildinfo
 spec/build
 spec/build/.tsbuildinfo
 scripts/isolate-*
+cli/build
+core/build
+scripts/*.js
+ui/build
