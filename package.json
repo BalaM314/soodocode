@@ -6,6 +6,7 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "tsc -b spec && jasmine",
+		"build": "tsc -b core/ cli/ ui/",
 		"profile": "node ./scripts/profiler.js 100000 5",
 		"watch": "tsc -b core/ spec/ cli/ scripts/ ui/ -w"
 	},
