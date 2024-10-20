@@ -70,3 +70,6 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Types
 * [x] Minimalistic
 * [x] Create, view, edit, delete, upload, and download files
 * [x] All features accessible with only the keyboard
+
+## More information
+For a full list of features, see [features.md](docs/features.md)
