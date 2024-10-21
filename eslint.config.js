@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
 	{
-		ignores: ["build/", "spec/build/", "scripts/**.js", "scripts/**.d.ts", "cli/build/"],
+		ignores: ["core/build/", "spec/build/", "scripts/**.js", "scripts/**.d.ts", "cli/build/", "ui/build/"],
 	},
 	eslint.configs.recommended,
 	...tseslint.configs.recommendedTypeChecked,

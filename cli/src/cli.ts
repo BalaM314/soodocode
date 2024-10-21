@@ -7,6 +7,7 @@ import fsP from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { configs, crash, f, File, FileSystem, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "soodocode";
+import "soodocode/utils/globals";
 
 function fail(message:string):never {
 	throw new ApplicationError(message);

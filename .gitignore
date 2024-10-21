@@ -10,4 +10,5 @@ scripts/isolate-*
 cli/build
 core/build
 scripts/*.js
+scripts/*.d.ts
 ui/build
