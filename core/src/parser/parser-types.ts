@@ -481,6 +481,7 @@ export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType 
 	if(programASTBranchNodeTypes.includes(input)) return input;
 	crash(`"${input}" is not a valid program AST branch node type`);
 }
+/** Determines the control statements stored by a {@link ProgramASTBranchNode}, based on the type. */
 export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> =
 	T extends "if" ? [IfStatement, Statement] | [IfStatement, ElseStatement, Statement] :
 	T extends "for" ? [ForStatement, ForEndStatement] :

@@ -57,7 +57,9 @@ export const primitiveVariableTypeNames = [
 	"BOOLEAN",
 	"DATE",
 ] as const;
+/** The name of a primitive variable type, like INTEGER, STRING, or DATE. */
 export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extends ReadonlyArray<infer T> ? T : never;
+/** Maps the name of a primitive variable type to the TS type used to store its data. */
 export type PrimitiveVariableTypeMapping<T extends PrimitiveVariableTypeName> =
 	T extends "INTEGER" ? number :
 	T extends "REAL" ? number :
@@ -67,10 +69,12 @@ export type PrimitiveVariableTypeMapping<T extends PrimitiveVariableTypeName> =
 	T extends "DATE" ? Date :
 	never;
 
+/** A type and value wrapped together, as an expanded union. */
 export type TypedValue<T extends VariableType = VariableType> =
 	//Trigger DCT
 	T extends unknown ? TypedValue_<T> : never;
 export type { TypedValue_ };
+/** A type and value wrapped together. */
 class TypedValue_<T extends VariableType> {
 	constructor(
 		public type:T,
@@ -95,7 +99,10 @@ class TypedValue_<T extends VariableType> {
 			return this.type == PrimitiveVariableType.get(type);
 		impossible();
 	}
-	/** MUST escape HTML special chars from user input. */
+	/**
+	 * Displays the value as formatted HTML.
+	 * Must escape HTML special chars from user input.
+	 */
 	asHTML(recursive:boolean):string {
 		if(this.type instanceof PrimitiveVariableType){
 			if(this.typeIs("INTEGER"))
@@ -116,6 +123,7 @@ class TypedValue_<T extends VariableType> {
 		}
 		return this.type.asHTML(this.value as never, recursive); //corr
 	}
+	/** Displays the value as a plain-text string. */
 	asString():string {
 		if(this.type instanceof PrimitiveVariableType){
 			if(this.typeIs("INTEGER"))
@@ -135,6 +143,7 @@ class TypedValue_<T extends VariableType> {
 		return this.type.asString(this.value as never); //corr
 	}
 }
+/** A collection of utility functions that generate a TypedValue of a particular type. */
 export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n =>
 	[n, function(value:VariableTypeMapping<PrimitiveVariableType>){
 		if(value == undefined){
@@ -146,6 +155,7 @@ export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n =>
 )) as {
 	[N in PrimitiveVariableTypeName]: (value:VariableTypeMapping<PrimitiveVariableType<N>>) => TypedValue_<PrimitiveVariableType<N>>;
 };
+/** Utility function to create a TypedValue. */
 export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
 	if(type == null || value == null) impossible();
 	if(!(type instanceof BaseVariableType)){
@@ -155,11 +165,17 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 	return new TypedValue_(type, value) as TypedValue;
 }
 
+/** An {@link ExpressionASTNode} wrapped with its evaluation result, and a function to evaluate it. */
 export interface NodeValue {
 	node: ExpressionASTNode;
+	/**
+	 * Set to undefined if pre-evaluation has not been attempted yet.
+	 * Set to null if pre-evaluation has been attempted but failed.
+	 */
 	value: VariableValue | TypedValue | null | undefined;
 	init():void;
 }
+/** An {@link ExpressionASTNode} of known expected type wrapped with its evaluation result, and a function to evaluate it. */
 export class TypedNodeValue<
 	T extends ExpressionASTNode = ExpressionASTNode,
 	InputType extends PrimitiveVariableTypeName | VariableType = VariableType,
@@ -170,6 +186,10 @@ export class TypedNodeValue<
 	constructor(
 		public node: T,
 		inputType: InputType,
+		/**
+		 * Set to undefined if pre-evaluation has not been attempted yet.
+		 * Set to null if pre-evaluation has been attempted but failed.
+		 */
 		public value: VariableTypeMapping<Type> | null | undefined = undefined
 	){
 		this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType) as Type;
@@ -178,17 +198,23 @@ export class TypedNodeValue<
 		this.value = (Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
 	}
 }
+/** An {@link ExpressionASTNode} of unknown type wrapped with its evaluation result, and a function to evaluate it. */
 export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implements NodeValue {
 	constructor(
 		public node: T
 	){}
 	range = this.node.range;
+	/**
+	 * Set to undefined if pre-evaluation has not been attempted yet.
+	 * Set to null if pre-evaluation has been attempted but failed.
+	 */
 	value: TypedValue | null | undefined;
 	init(){
 		this.value = Runtime.evaluateExpr(this.node);
 	}
 }
 
+/** Base class for variable types. */
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
 	abstract init(runtime:Runtime):void;
@@ -207,15 +233,23 @@ export abstract class BaseVariableType implements IFormattable {
 	abstract fmtText():string;
 }
 
+/** Discriminated union for {@link PrimitiveVariableType} */
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
+/** A primitive variable type, like INTEGER, STRING, and DATE. */
 export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
 	static all:PrimitiveVariableType[] = [];
 
+	/** An integer value. Currently, only integers from -9007199254740991 to 9007199254740991 are supported. */
 	static INTEGER = new PrimitiveVariableType("INTEGER");
+	/** A real number, more commonly known as a float or double. Uses a 64-bit float. */
 	static REAL = new PrimitiveVariableType("REAL");
+	/** A string of UTF-8 characters. */
 	static STRING = new PrimitiveVariableType("STRING");
+	/** A single Unicode Scalar Value, between U+0000 and U+10FFFF. */
 	static CHAR = new PrimitiveVariableType("CHAR");
+	/** A boolean value, TRUE or FALSE. */
 	static BOOLEAN = new PrimitiveVariableType("BOOLEAN");
+	/** A date. Stores the year, month, and day. */
 	static DATE = new PrimitiveVariableType("DATE");
 
 	private constructor(
@@ -284,6 +318,9 @@ export class IntegerRangeVariableType extends BaseVariableType {
 	fmtText(){
 		return `${this.low}..${this.high}`;
 	}
+	asNumberRange(){
+		return `${this.low} to ${this.high}`;
+	}
 	fmtDebug(){
 		return `IntegerRangeVariableType { ${this.low} .. ${this.high} }`;
 	}
@@ -295,6 +332,9 @@ export class IntegerRangeVariableType extends BaseVariableType {
 	}
 	overlaps(other:IntegerRangeVariableType){
 		return this.high >= other.low;
+	}
+	contains(other:IntegerRangeVariableType){
+		return this.low <= other.low && this.high >= other.high;
 	}
 	static from(node:ExpressionASTRangeTypeNode){
 		return new this(Number(node.low.text), Number(node.high.text), node.range);
@@ -819,6 +859,8 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	if(base == ext) return true;
 	if(Array.isArray(base) && Array.isArray(ext))
 		return base[1] == ext[1] || false;
+	if(Array.isArray(base) || Array.isArray(ext))
+		return false;
 	if(base instanceof ArrayVariableType && ext instanceof ArrayVariableType){
 		if(base.elementType != null){
 			if(ext.elementType == null) return [f.quote`Type "ANY" is not assignable to type ${base.elementType}`];
@@ -842,7 +884,6 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		}
 		return true;
 	}
-	if(base == PrimitiveVariableType.INTEGER && ext instanceof IntegerRangeVariableType) return true;
 	if(base instanceof PointerVariableType && ext instanceof PointerVariableType){
 		return typesEqual(base.target, ext.target) || [f.quote`Types ${base.target} and ${ext.target} are not equal`];
 	}
@@ -851,6 +892,11 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	}
 	if(base instanceof ClassVariableType && ext instanceof ClassVariableType){
 		return ext.inherits(base) || false;
+	}
+	if(ext instanceof IntegerRangeVariableType){
+		if(base instanceof IntegerRangeVariableType) return base.contains(ext)
+			|| [f.quote`Range ${base.asNumberRange()} does not contain ${ext.asNumberRange()}`];
+		if(base.is("INTEGER")) return true;
 	}
 	return false;
 }
