@@ -552,7 +552,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 	}
 	asHTML(value:VariableValue):string {
 		const v = value as VariableTypeMapping<PointerVariableType>;
-		return `(pointer to ${v.name})`;
+		return `<span class="sth-type">(pointer to</span> ${v.name}<span class="sth-type">)</span>`;
 	}
 	asString(value:VariableValue):string {
 		const v = value as VariableTypeMapping<PointerVariableType>;

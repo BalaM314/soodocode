@@ -342,7 +342,7 @@ export class Runtime {
 		if(outType == "variable"){
 			return {
 				type: targetType.elementType,
-				name: `${target.name}[${index}]`,
+				name: `${target.name}[${indexes.map(([, value], i) => value).join(", ")}]`,
 				declaration: target.declaration,
 				mutable: true,
 				get value(){ return target.value[index]; },
