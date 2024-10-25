@@ -1,0 +1,15 @@
+TYPE pINTEGER = ^INTEGER
+CLASS Foo
+	PUBLIC field: INTEGER
+	PUBLIC array: ARRAY[1:10, 0:2] OF INTEGER
+	PUBLIC PROCEDURE NEW()
+    ENDPROCEDURE
+ENDCLASS
+
+DECLARE foo: Foo
+foo <- NEW Foo()
+foo.field <- 5
+
+OUTPUT ^(foo.field)
+OUTPUT ^(foo.array[4, 0])
+OUTPUT ^(foo.field DIV 1)

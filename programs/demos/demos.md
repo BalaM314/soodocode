@@ -28,3 +28,5 @@
 [![Image of main program](./main.png)](./main.sc)
 
 [![Image of output color](./output-color.png)](./output-color.sc)
+
+[![Image of pointer name](./pointer-names.png)](./pointer-names.sc)
