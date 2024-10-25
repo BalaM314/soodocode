@@ -6,6 +6,7 @@
 
 * [x] Numeric literals
 * [x] String literals
+  * [x] Multiline string literals
 * [x] Char literals
 * [ ] Date literals
 
@@ -36,6 +37,10 @@
 | function call | \( ) | special | [x] |
 | new | NEW | special | [x] |
 
+## Comments
+* [x] Single line comments (from `//` not in a string, to the end of the line)
+* [x] Multiline comments (from `/*` not in a string, to the next `*/` )
+
 # Types
 
 ## Primitives
@@ -51,14 +56,67 @@
 
 ## User-defined types
 
-<!-- TODO more detail -->
-| Name | Comment | Supported |
-| ---- | ------- | --------- |
-| Record | Usually known as "struct". | [x] |
-| Pointer | Points at a variable and can be used to change it. | [x] |
-| Set | Similar to an array, but without ordering. | [~] |
-| Enum | Stores one of a few specified values. | [x] |
-| Class | Supports normal object-oriented programming features | [x] |
+| Name | Comment | Example | Supported |
+| ---- | ------- | ------- | --------- |
+| Record | Usually known as "struct". | TYPE name<br>DECLARE field: INTEGER<br>ENDTYPE | [x] |
+| Pointer | Points at a variable and can be used to change it. | TYPE name = ^INTEGER | [x] |
+| Set | Similar to an array, but without ordering. | TYPE name = SET OF INTEGER | [x] |
+| Enum | Stores one of a few specified values. | TYPE name = (value1, value2, value3) | [x] |
+| Class | Supports normal object-oriented programming features | CLASS name<br>ENDCLASS | [x] |
+| Integer range | An INTEGER between two values (inclusive). | 1..10 | [x] |
+
+### Records
+
+A record type is a user-defined composite data type, made up of zero or more fields.
+
+Initializing a variable of type (record type) causes all its fields to be initialized automatically.
+
+## A note on recursive types
+
+Because records do not have a constructor, initializing a variable of type (record type) causes all its fields to be initialized automatically.
+
+This means recursive record types without indirection are not allowed.
+
+```js
+TYPE Foo
+  DECLARE field: Foo //recursive without indirection
+ENDTYPE
+DECLARE foo: Foo
+//Initializing this variable of type Foo requires initializing foo.field,
+//which requires initializing foo.field.field...
+```
+
+To work around this, you can use a class, like this:
+
+```js
+CLASS Foo
+  PUBLIC field: Foo //recursive without indirection
+ENDCLASS
+
+DECLARE foo: Foo
+//this variable is currently uninitialized
+
+foo <- NEW foo()
+//foo.field is now uninitialized
+foo.field <- NEW foo()
+//foo.field.field is still uninitialized
+//This does not create an infinite loop
+```
+
+Alternatively, use a pointer, like this:
+
+```js
+TYPE pFoo = ^Foo
+TYPE Foo
+  DECLARE field: ^Foo //recursive with indirection
+ENDTYPE
+DECLARE foo1, foo2: Foo
+//foo1.field is now uninitialized
+
+foo1.field <- ^foo2
+```
+
+These approaches have a drawback: there is no way to check if a variable is initialized without attempting to access it, which terminates the program. Use of a separate flag variable is recommended.
 
 # Expressions
 

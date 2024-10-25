@@ -39,11 +39,15 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Types
 
 ## Types
 * [x] Enums
-* [x] Pointers
-* [x] Recursive types
-* [x] Infinite pointer types
 * [x] Records
+* [x] Pointers
+  * [x] Infinite pointer types
+* [x] Recursive types
 * [x] Sets
+* [ ] Set operations
+* [x] Integer range type (1..10, 200..250)
+* [x] Sound type system
+  * Type checking is partly done at compile time (class inheritance, type esize check) and partly at runtime (everything else).
 
 ## Classes
 * [x] Classes
@@ -53,14 +57,15 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Types
 
 ## Files
 * [x] OPENFILE READFILE WRITEFILE CLOSEFILE statements
-* [ ] SEEK GETRECORD PUTRECORD statements
+* [x] READ WRITE APPEND file modes
+* [ ] SEEK GETRECORD PUTRECORD statements, RANDOM file mode
 * [x] File GUI
 * [x] EOF() function
 
 ## Misc
 * [x] Passing by value/reference for all variable types
 * [x] Shortened forms (for variable declaration and function arguments)
-* [x] Hundreds of error messages
+* [x] Robust, hundreds of error messages
 * [x] Typo checking
 * [x] Error ranges (underline the exact cause of the error, highlight the area around it)
 * [x] Configurable
