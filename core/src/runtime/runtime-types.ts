@@ -767,6 +767,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 				set value(value){instance.properties[k] = value;},
 				declaration: v[1],
 				mutable: true,
+				name: k,
 			} as VariableData]))
 		};
 	}
@@ -971,6 +972,8 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
 	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | AssignmentStatement | "dynamic";
+	/** Name for the variable, used for error messages */
+	name: string;
 	mutable: true;
 }
 export type ConstantData<T extends VariableType = VariableType> = {
@@ -978,6 +981,7 @@ export type ConstantData<T extends VariableType = VariableType> = {
 	/** Cannot be null */
 	value: VariableTypeMapping<T>;
 	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
+	name: string;
 	mutable: false;
 }
 /** Either a function or a procedure */

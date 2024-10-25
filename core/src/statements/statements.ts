@@ -45,6 +45,7 @@ export class DeclareStatement extends Statement {
 		for(const [variable, token] of this.variables){
 			runtime.defineVariable(variable, {
 				type: varType,
+				name: variable,
 				value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
 				declaration: this,
 				mutable: true,
@@ -67,6 +68,7 @@ export class ConstantStatement extends Statement {
 			?? crash(`evaluation of literals cannot fail`);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
+			name: this.name,
 			get value(){ return value; },
 			set value(value){ crash(`Attempted assignment to constant`); },
 			declaration: this,
@@ -91,6 +93,7 @@ export class DefineStatement extends Statement {
 		}, this.variableTypeToken);
 		runtime.defineVariable(this.name.text, {
 			type,
+			name: this.name.text,
 			declaration: this,
 			mutable: true,
 			value: this.values.map(t => (
@@ -164,7 +167,9 @@ export class AssignmentStatement extends Statement {
 			if(type instanceof ClassVariableType){
 				if(configs.statements.auto_declare_classes.value){
 					runtime.getCurrentScope().variables[this.target.text] = {
-						type, value, declaration: this, mutable: true,
+						name: this.target.text, declaration: this,
+						mutable: true,
+						type, value,
 					};
 				} else fail({
 					summary: f.quote`Variable ${this.target.text} does not exist`,
@@ -432,6 +437,7 @@ export class ForStatement extends Statement {
 		
 		const variable:ConstantData = {
 			declaration: this,
+			name: this.name,
 			mutable: false,
 			type: PrimitiveVariableType.INTEGER,
 			value: null!,

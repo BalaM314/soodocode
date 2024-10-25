@@ -94,6 +94,7 @@ const tokenTests = ((data:Record<string,
 		["INTEGER", 5],
 		r => r.getCurrentScope().variables["x"] = {
 			mutable: true,
+			name: "x",
 			declaration: null!,
 			type: PrimitiveVariableType.INTEGER,
 			value: 5
@@ -190,6 +191,7 @@ const expressionTests = ((data:Record<string, [
 		r => {
 			r.getCurrentScope().variables["amogus"] = {
 				type: arrayType([[1, 10]], PrimitiveVariableType.INTEGER),
+				name: "amogus",
 				declaration: null!,
 				mutable: true,
 				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0]
@@ -210,6 +212,7 @@ const expressionTests = ((data:Record<string, [
 			r.getCurrentScope().types["amogusType"] = amogusType;
 			r.getCurrentScope().variables["amogus"] = {
 				type: amogusType,
+				name: "amogus",
 				declaration: null!,
 				mutable: true,
 				value: {
@@ -239,6 +242,7 @@ const expressionTests = ((data:Record<string, [
 			r.getCurrentScope().types["outerType"] = outerType;
 			r.getCurrentScope().variables["aaa"] = {
 				type: outerType,
+				name: "aaa",
 				declaration: null!,
 				mutable: true,
 				value: {
@@ -265,6 +269,7 @@ const expressionTests = ((data:Record<string, [
 			r.getCurrentScope().types["innerType"] = innerType;
 			r.getCurrentScope().variables["aaa"] = {
 				type: arrayType([[1, 5]], innerType),
+				name: "aaa",
 				declaration: null!,
 				mutable: true,
 				value: [null, {
@@ -283,6 +288,7 @@ const expressionTests = ((data:Record<string, [
 		r => {
 			r.getCurrentScope().variables["aaa"] = {
 				type: PrimitiveVariableType.DATE,
+				name: "aaa",
 				declaration: null!,
 				mutable: true,
 				value: Date.now()
@@ -303,6 +309,7 @@ const expressionTests = ((data:Record<string, [
 			r.getCurrentScope().types["amogusType"] = amogusType;
 			r.getCurrentScope().variables["amogus"] = {
 				type: amogusType,
+				name: "amogus",
 				declaration: null!,
 				mutable: true,
 				value: {
@@ -315,6 +322,7 @@ const expressionTests = ((data:Record<string, [
 		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER, [-1, -1]);
 		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 			type: PrimitiveVariableType.INTEGER,
+			name: "amogus",
 			declaration: null!,
 			mutable: true,
 			value: 19
@@ -336,6 +344,7 @@ const expressionTests = ((data:Record<string, [
 		const arrayPointer = new PointerVariableType(true, "intPtr", arrayType([[1, 10]], foo), [-1, -1]);
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: arrayType([[1, 10]], foo),
+			name: "amogus",
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -358,6 +367,7 @@ const expressionTests = ((data:Record<string, [
 		// const arrayPointer = new PointerVariableType(true, "intPtr", arrayType([[1, 10]], foo));
 		const arrayVar:VariableData<ArrayVariableType> = {
 			type: arrayType([[1, 10]], foo),
+			name: "amogus",
 			declaration: null!,
 			mutable: true,
 			value: Array(10).fill(null)
@@ -399,6 +409,7 @@ const expressionTests = ((data:Record<string, [
 		const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER, [-1, -1]);
 		const intVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 			type: PrimitiveVariableType.INTEGER,
+			name: "amogus",
 			declaration: null!,
 			mutable: true,
 			value: 19
@@ -426,6 +437,7 @@ const expressionTests = ((data:Record<string, [
 				const intPointer = new PointerVariableType(true, "intPtr", PrimitiveVariableType.INTEGER, [-1, -1]);
 				const amogusVar:VariableData<PrimitiveVariableType<"INTEGER">> = {
 					type: PrimitiveVariableType.INTEGER,
+					name: "amogus",
 					declaration: null!,
 					mutable: true,
 					value: 20
@@ -434,6 +446,7 @@ const expressionTests = ((data:Record<string, [
 				r.getCurrentScope().variables["amogus"] = amogusVar;
 				r.getCurrentScope().variables["amogusPtr"] = {
 					declaration: null!,
+					name: "amogusPtr",
 					mutable: true,
 					type: intPointer,
 					value: amogusVar
@@ -682,6 +695,7 @@ const expressionTests = ((data:Record<string, [
 					declaration: null!,
 					mutable: true,
 					type: amogusClass,
+					name: "amogus",
 					value: {
 						properties: {
 							prop: 65
@@ -717,6 +731,7 @@ const expressionTests = ((data:Record<string, [
 					declaration: null!,
 					mutable: true,
 					type: amogusClass,
+					name: "amogus",
 					value: {
 						properties: {
 							prop: 65
@@ -779,6 +794,7 @@ const expressionTests = ((data:Record<string, [
 					declaration: null!,
 					mutable: true,
 					type: amogusClass,
+					name: "amogus",
 					value: {
 						properties: {
 							prop: 90
@@ -791,6 +807,7 @@ const expressionTests = ((data:Record<string, [
 					declaration: null!,
 					mutable: true,
 					type: amogusClass,
+					name: "sus",
 					value: {
 						properties: {
 							prop: 1
@@ -849,6 +866,7 @@ const expressionTests = ((data:Record<string, [
 				declaration: null!,
 				mutable: true,
 				type: amogusClass,
+				name: "amogus",
 				value: {
 					properties: {
 						prop: 65
@@ -909,6 +927,7 @@ const expressionTests = ((data:Record<string, [
 				declaration: null!,
 				mutable: true,
 				type: amogusClass,
+				name: "amogus",
 				value: {
 					properties: {
 						prop: 65
@@ -967,6 +986,7 @@ const expressionTests = ((data:Record<string, [
 				declaration: null!,
 				mutable: true,
 				type: amogusClass,
+				name: "amogus",
 				value: {
 					properties: {
 						prop: 65
@@ -1002,6 +1022,7 @@ const statementTests = ((data:Record<string, [
 			declaration: jasmine.any(DeclareStatement),
 			mutable: true,
 			type: PrimitiveVariableType.DATE,
+			name: "x",
 			value: null
 		})
 	],

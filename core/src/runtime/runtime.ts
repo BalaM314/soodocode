@@ -342,6 +342,7 @@ export class Runtime {
 		if(outType == "variable"){
 			return {
 				type: targetType.elementType,
+				name: `${target.name}[${index}]`,
 				declaration: target.declaration,
 				mutable: true,
 				get value(){ return target.value[index]; },
@@ -416,6 +417,7 @@ export class Runtime {
 				//i see nothing wrong with this bodged variable data
 				return {
 					type: outputType,
+					name: `(record).${property}`,
 					declaration: (target! satisfies VariableData | ConstantData).declaration as never,
 					mutable: true, //Even if the record is immutable, the property is mutable
 					get value(){ return targetValue[property]; },
@@ -577,6 +579,7 @@ export class Runtime {
 							);
 						return finishEvaluation({
 							type: target.type,
+							name: `(dynamic variable)`,
 							declaration: "dynamic",
 							mutable: true,
 							value: target.value
@@ -600,7 +603,10 @@ export class Runtime {
 						if(!pointerVariable.value.mutable) fail(`Cannot assign to constant`, expr);
 						return pointerVariable.value;
 					} else {
-						if(pointerVariable.value.value == null) fail(f.quote`Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
+						if(pointerVariable.value.value == null) fail({
+							summary: f.quoteRange`Cannot dereference ${expr.nodes[0]} and use the value`,
+							elaboration: [f.quoteRange`${expr.nodes[0]} points to ${pointerVariable.value.name}, which has not been initialized`],
+						}, expr.nodes[0]);
 						return finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
 					}
 				}
@@ -1148,6 +1154,7 @@ export class Runtime {
 				if(!typesEqual(varData.type, rType)) fail(f.quote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type or change the pass mode to BYVAL.`, args[i]);
 				scope.variables[name] = {
 					declaration: func,
+					name,
 					mutable: true,
 					type: rType,
 					get value(){ return varData.value ?? fail(`Variable (passed by reference) has not been initialized`, args[i]); },
@@ -1158,6 +1165,7 @@ export class Runtime {
 				if(type instanceof ArrayVariableType && !type.lengthInformation) crash(f.quote`evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
 				scope.variables[name] = {
 					declaration: func,
+					name,
 					mutable: true,
 					type,
 					value: this.cloneValue(rType, value)
