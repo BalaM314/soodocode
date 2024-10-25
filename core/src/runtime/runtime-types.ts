@@ -551,10 +551,12 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		return null;
 	}
 	asHTML(value:VariableValue):string {
-		return "(pointer)";
+		const v = value as VariableTypeMapping<PointerVariableType>;
+		return `(pointer to ${v.name})`;
 	}
 	asString(value:VariableValue):string {
-		return "(pointer)";
+		const v = value as VariableTypeMapping<PointerVariableType>;
+		return `(pointer to ${v.name})`;
 	}
 }
 export class EnumeratedVariableType extends BaseVariableType {
