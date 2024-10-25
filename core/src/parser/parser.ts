@@ -550,7 +550,7 @@ export const parseExpression = errorBoundary({
 	if(input.length == 1) return parseExpressionLeafNode(input[0], allowSuper, allowNew);
 
 	/** Some logic in this function handles cases where the input might be valid, or there is a specifc error message to explain why is is not valid. */
-	let deferredError: typeof impossible = () => fail(`No operators found`, input.length > 0 ? input : undefined);
+	let deferredError: [string[], TextRangeLike | undefined] = [[`No operators found`], input.length > 0 ? input : undefined];
 
 	//Recursive descent parser, modified with a lot of extra cases.
 
@@ -584,7 +584,7 @@ export const parseExpression = errorBoundary({
 							//If the operator on the right was of lower priority, it would have already been selected for recursion
 							//so it must be a higher priority operator
 							if(right[0] && canBeOperator(right[0])){
-								deferredError = () => fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+								deferredError = [[f.text`Unexpected expression on right side of operator ${input[i]}`, `this is a unary postfix operator, it should come after an expression`], input[i]];
 								continue;
 							}
 						}
@@ -624,11 +624,17 @@ export const parseExpression = errorBoundary({
 					if(i != input.length - 1){ //if there are tokens to the right of a unary postfix operator
 						if(operator.fix == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
 						if(input[i + 1] && canBeOperator(input[i + 1])){
-							deferredError = () => fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+							deferredError = [[
+								f.quote`Unexpected expression on right side of operator ${input[i]}`,
+								`this is a unary postfix operator, it should come after an expression`
+							], input[i]];
 							continue;
 						}
 						//No need to worry about operator priority changing for postfix
-						fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+						fail({
+							summary: f.text`Unexpected expression on right side of operator ${input[i]}`,
+							elaboration: `this is a unary postfix operator, it should come after an expression`
+						}, input[i]);
 					}
 					if(left.length == 0) fail(f.text`Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
 					return new ExpressionASTBranchNode(
@@ -651,7 +657,7 @@ export const parseExpression = errorBoundary({
 					}
 					if(operator == operators.access){
 						if(!(right.length == 1 && (right[0].type == "name" || right[0].type == "keyword.new"))){ //TODO properly handle keywords being names, everywhere
-							deferredError = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+							deferredError = [[`Access operator can only have a single token to the right, which must be a property name`], right];
 							continue;
 						}
 					}
@@ -701,7 +707,10 @@ export const parseExpression = errorBoundary({
 				),
 				input
 			);
-		else fail(f.quote`${parsedTarget} is not a valid function name, function names must be a single token, or the result of a property access`, parsedTarget);
+		else fail({
+			summary: f.quote`${parsedTarget} is not a valid function name`,
+			elaboration: `function names must be a single token, or the result of a property access`
+		}, parsedTarget);
 	}
 
 	//If the whole expression is surrounded by parentheses, parse the inner expression
@@ -726,5 +735,8 @@ export const parseExpression = errorBoundary({
 	}
 
 	//No operators found at all, invalid input
-	deferredError();
+	fail({
+		summary: `Invalid expression`,
+		elaboration: deferredError[0],
+	}, deferredError[1]);
 });
