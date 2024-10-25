@@ -755,7 +755,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			statement: this.statement,
 			opaque: true,
 			types: Object.create(null),
-			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
+			variables: Object.fromEntries(Object.entries((this as ClassVariableType<true>).properties).map(([k, v]) => [k, {
 				type: instance.propertyTypes[k] ?? v[0],
 				assignabilityType: v[0],
 				updateType(type){
@@ -768,7 +768,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 				declaration: v[1],
 				mutable: true,
 				name: k,
-			} as VariableData]))
+			} satisfies VariableData]))
 		};
 	}
 	iterateProperties<T>(value:VariableTypeMapping<ClassVariableType>, callback:(tval:TypedValue | null, name:string, statement:ClassPropertyStatement) => T):T[] {

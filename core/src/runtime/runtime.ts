@@ -411,6 +411,7 @@ export class Runtime {
 			({ type:targetType, value:targetValue } = this.evaluateExpr(expr.nodes[0]));
 		}
 		if(targetType instanceof RecordVariableType){
+			if(targetValue == null) fail(f.quote`Variable ${expr.nodes[0]} has not been initialized`, expr.nodes[0]);
 			forceType<VariableTypeMapping<RecordVariableType>>(targetValue);
 			const outputType = targetType.fields[property]?.[0] ?? fail(f.quote`Property ${property} does not exist on type ${targetType}`, expr.nodes[1]);
 			if(outType == "variable"){
@@ -431,7 +432,8 @@ export class Runtime {
 				return finishEvaluation(value, outputType, outType);
 			}
 		} else if(targetType instanceof ClassVariableType){
-			const classInstance = targetValue as VariableTypeMapping<ClassVariableType>;
+			const classInstance = targetValue as VariableTypeMapping<ClassVariableType> | null;
+			if(classInstance == null) fail(f.quote`Variable ${expr.nodes[0]} has not been initialized`, expr.nodes[0]);
 			const instanceType = classInstance.type; //Use the instance's type (Dog, not the variable type Animal) only when searching for methods
 			if(outType == "function"){
 				const [clazz, method] = targetType.allMethods[property]
@@ -470,18 +472,19 @@ export class Runtime {
 				if(outType == "variable"){
 					return {
 						type: outputType,
+						name: `${target ? target.name : `(instance of ${targetType.name})`}.${property}`,
 						assignabilityType: targetType.properties[property][0],
 						updateType(type){
 							if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
 								classInstance.propertyTypes[property] = type;
 						},
-						declaration: target!.declaration,
+						declaration: targetType.properties[property][1] as never,
 						mutable: true, //Even if the class instance variable is immutable, the property is mutable
 						get value(){ return classInstance.properties[property]; },
 						set value(val){
 							classInstance.properties[property] = val;
 						}
-					} as (VariableData | ConstantData);
+					} satisfies (VariableData | ConstantData);
 				}	else {
 					const value = classInstance.properties[property];
 					if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
