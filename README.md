@@ -2,9 +2,17 @@
 
 Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Typescript.
 
+[![Image of sample program](./programs/demos/main.png)](./programs/demos/main.sc)
+
+## Website
+
 [Click here to view the site](https://balam314.github.io/soodocode)
 
-[![Image of sample program](./programs/demos/main.png)](./programs/demos/main.sc)
+## CLI
+
+Installation: `npm i -g soodocode-cli`
+
+Usage: `soodocode file.sc`
 
 [More demos](./programs/demos/demos.md)
 
