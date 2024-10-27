@@ -118,6 +118,160 @@ foo1.field <- ^foo2
 
 These approaches have a drawback: there is no way to check if a variable is initialized without attempting to access it, which terminates the program. Use of a separate flag variable is recommended.
 
+## A note on variable length array types
+
+In Soodocode, all arrays must have a fixed length. The DECLARE statement automatically initializes an array, so it is not possible to DECLARE a variable with an unknown length and leave it uninitialized. However, there are a few places when variable-length array types can be used.
+
+### In function parameters
+
+```js
+PROCEDURE arr(x: ARRAY OF INTEGER)
+  OUTPUT LENGTH(x)
+ENDPROCEDURE
+DECLARE y: ARRAY[1:10] OF INTEGER
+CALL arr(y)
+```
+Here, the parameter "x" can accept an array of any length, because when the function is actually running, it has a known length.
+
+This can also be thought of as the function being generic:
+
+```ts
+function arr<const T extends number[]>(x:T){
+  console.log(x.length);
+}
+const y = Array<number>(10).fill(0);
+arr<number[] & {length: 10;}>(y);
+```
+
+Functions may return an array of arbitrary length, however, this is difficult to use. 
+
+```js
+//returns an array with a random length
+FUNCTION arr() RETURNS ARRAY OF INTEGER
+  DECLARE out: ARRAY[1:ROUND(RAND(100), 0)] OF INTEGER
+  RETURN out
+ENDFUNCTION
+
+OUTPUT LENGTH(arr()) //we can call the function, but how do we store the return value?
+DECLARE x: ARRAY OF INTEGER //not allowed, because DECLARE allocates and initializes the array
+```
+
+Variable-length arrays are also not allowed in record types, because record types automatically initialize their fields.
+
+```js
+TYPE foo
+  DECLARE field: ARRAY OF INTEGER
+ENDTYPE
+DECLARE x: foo //not allowed: this tries to initialize x.field
+```
+
+There are two workarounds.
+
+### Varlength arrays behind pointers
+
+Pointers do not do any automatic initialization, so variable-length arrays can be safely stored behind a pointer.
+
+```js
+//returns an array with a random length
+FUNCTION arr() RETURNS ARRAY OF INTEGER
+  DECLARE out: ARRAY[1:ROUND(RAND(100), 0)] OF INTEGER
+  RETURN out
+ENDFUNCTION
+
+//pointer to array of integer (unknown length)
+TYPE arrayWrapper = ^ARRAY OF INTEGER
+DECLARE x: arrayWrapper
+
+x <- ^arr() //Store a pointer to the return value
+
+OUTPUT LENGTH(x^)
+FOR i <- 1 TO LENGTH(x^)
+	OUTPUT (x^)[i]
+NEXT i
+
+x^ <- arr() //This also works
+```
+
+### Varlength arrays behind class fields
+
+At first glance, it looks like class fields are automatically initialized, but there is a way to avoid initializing them.
+
+```js
+CLASS bar
+  PUBLIC field: ARRAY OF INTEGER
+  PUBLIC PROCEDURE NEW()
+  ENDPROCEDURE
+ENDCLASS
+
+DECLARE x: bar; x <- NEW bar()
+OUTPUT x.field //initialized?
+```
+
+The trick is to lazily initialize class fields: if the first assignment to a field occurs in the constructor, it never needs to be initialized. Therefore, the following code works:
+
+```js
+FUNCTION arr() RETURNS ARRAY OF INTEGER
+  DECLARE out: ARRAY[1:ROUND(RAND(100), 0)] OF INTEGER
+  RETURN out
+ENDFUNCTION
+
+
+CLASS bar
+  PUBLIC field: ARRAY OF INTEGER
+  PUBLIC PROCEDURE NEW()
+    field <- arr()
+    //field never needed to be initialized
+  ENDPROCEDURE
+ENDCLASS
+
+DECLARE x: bar; x <- NEW bar()
+OUTPUT LENGTH(x.field)
+```
+
+(If the field is not assigned to in the constructor, it will be automatically initialized after the constructor runs, which will cause an error)
+
+### Varlength arrays behind class fields and pointers
+
+```js
+FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
+	DECLARE out: ARRAY[1:x] OF INTEGER
+	RETURN out
+ENDFUNCTION
+
+TYPE pArray = ^ARRAY OF INTEGER
+CLASS bar
+	PUBLIC field: ARRAY OF INTEGER
+	PUBLIC PROCEDURE NEW(len: INTEGER)
+		//The field is assigned to before it is used, so it does not need to be initialized
+		field <- arr(len)
+	ENDPROCEDURE
+ENDCLASS
+
+DECLARE x: bar
+DECLARE y: pArray
+
+x <- NEW bar(1)
+y <- ^x.field //Create a pointer to x.field
+
+FOR i <- 1 TO LENGTH(x.field) //Loop through x.field
+	OUTPUT x.field[i]
+NEXT i
+
+FOR i <- 1 TO LENGTH(y^) //Loop through the pointer
+	OUTPUT (y^)[i]
+NEXT i
+
+//Replace x.field with an array of different type
+x.field <- arr(2)
+
+//The pointer should still be pointing to x.field
+FOR i <- 1 TO LENGTH(y^)
+	OUTPUT (y^)[i]
+NEXT i
+```
+
+This was difficult to implement, but it is supported.
+
 # Expressions
 
 ## Operators

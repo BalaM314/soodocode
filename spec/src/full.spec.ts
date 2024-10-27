@@ -459,7 +459,7 @@ OUTPUT amogus(x)`,
 `different length`,
 ],
 varlength_array_behind_pointer_simple: [
-`FUNCTION foo(x: INTEGER) RETURNS ARRAY OF INTEGER
+`FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
 	DECLARE out: ARRAY[1:x] OF INTEGER
 	RETURN out
 ENDFUNCTION
@@ -467,7 +467,7 @@ ENDFUNCTION
 TYPE arrayWrapper = ^ARRAY OF INTEGER
 DECLARE x: arrayWrapper
 
-x <- ^foo(1)
+x <- ^arr(1)
 OUTPUT LENGTH(x^)
 FOR i <- 1 TO LENGTH(x^)
 	OUTPUT (x^)[i]
@@ -476,7 +476,7 @@ NEXT i
 ["1", "0"]
 ],
 varlength_array_behind_pointer_complex: [
-`FUNCTION foo(x: INTEGER) RETURNS ARRAY OF INTEGER
+`FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
 	DECLARE out: ARRAY[1:x] OF INTEGER
 	RETURN out
 ENDFUNCTION
@@ -484,19 +484,19 @@ ENDFUNCTION
 TYPE arrayWrapper = ^ARRAY OF INTEGER
 DECLARE x: arrayWrapper
 
-x <- ^foo(1)
+x <- ^arr(1)
 OUTPUT LENGTH(x^)
 FOR i <- 1 TO LENGTH(x^)
 	OUTPUT (x^)[i]
 NEXT i
 
-x <- ^foo(2)
+x <- ^arr(2)
 OUTPUT LENGTH(x^)
 FOR i <- 1 TO LENGTH(x^)
 	OUTPUT (x^)[i]
 NEXT i
 
-x^ <- foo(3)
+x^ <- arr(3)
 OUTPUT LENGTH(x^)
 FOR i <- 1 TO LENGTH(x^)
 	OUTPUT (x^)[i]
@@ -504,7 +504,7 @@ NEXT i`,
 ["1", "0", "2", "0", "0", "3", "0", "0", "0"]
 ],
 varlength_array_in_class_complex: [
-`FUNCTION foo(x: INTEGER) RETURNS ARRAY OF INTEGER
+`FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
   DECLARE out: ARRAY[1:x] OF INTEGER
   RETURN out
 ENDFUNCTION
@@ -512,8 +512,7 @@ ENDFUNCTION
 CLASS bar
   PUBLIC field: ARRAY OF INTEGER
   PUBLIC PROCEDURE NEW(len: INTEGER)
-	field <- foo(len)
-    //field never needed to be initialized
+		field <- arr(len)
   ENDPROCEDURE
 ENDCLASS
 
@@ -524,14 +523,16 @@ FOR i <- 1 TO LENGTH(x.field)
 	OUTPUT x.field[i]
 NEXT i
 
-x.field <- foo(2)
+x.field <- arr(2)
 FOR i <- 1 TO LENGTH(x.field)
 	OUTPUT x.field[i]
 NEXT i`,
 ["0", "0", "0"]
 ],
 varlength_array_in_class_very_complex: [
-`FUNCTION foo(x: INTEGER) RETURNS ARRAY OF INTEGER
+`
+//Function that returns an array of arbitrary length
+FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
 	DECLARE out: ARRAY[1:x] OF INTEGER
 	RETURN out
 ENDFUNCTION
@@ -540,8 +541,8 @@ TYPE pArray = ^ARRAY OF INTEGER
 CLASS bar
 	PUBLIC field: ARRAY OF INTEGER
 	PUBLIC PROCEDURE NEW(len: INTEGER)
-	field <- foo(len)
-		//field never needed to be initialized
+		//The field is assigned to before it is used, so it does not need to be initialized
+		field <- arr(len)
 	ENDPROCEDURE
 ENDCLASS
 
@@ -549,15 +550,23 @@ DECLARE x: bar
 DECLARE y: pArray
 
 x <- NEW bar(1)
+//Create a pointer to x.field
 y <- ^x.field
+
+//Loop through x.field
 FOR i <- 1 TO LENGTH(x.field)
 	OUTPUT x.field[i]
 NEXT i
+
+//Loop through the pointer
 FOR i <- 1 TO LENGTH(y^)
 	OUTPUT (y^)[i]
 NEXT i
 
-x.field <- foo(2)
+//Replace x.field with an array of different type
+x.field <- arr(2)
+
+//The pointer should still be pointing to x.field
 FOR i <- 1 TO LENGTH(y^)
 	OUTPUT (y^)[i]
 NEXT i`,
