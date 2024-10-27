@@ -8,9 +8,9 @@ This file contains the runtime, which executes the program AST.
 
 import { Config, configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, operators } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
-import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { LocalFileSystem, FileSystem } from "./files.js";
@@ -748,14 +748,32 @@ export class Runtime {
 				case operators.greater_than_equal:
 				case operators.less_than:
 				case operators.less_than_equal: {
-					const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true).value;
-					const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true).value;
+					const left = this.evaluateExpr(expr.nodes[0], undefined, true);
+					if(!(
+						left.typeIs("INTEGER", "REAL", "CHAR", "DATE") || left.typeIs(EnumeratedVariableType)
+					)) fail({
+						summary: f.range`Expression ${expr.nodes[0]} has an invalid type`,
+						elaboration: [
+							f.quoteRange`Expected this expression to evaluate to a value of type INTEGER, REAL, CHAR, DATE, or (enumerated variable type), but it has type ${left.type.fmtText()}`
+						],
+						help: left.typeIs("STRING") && left.value.length == 1 ? 
+							expr.nodes[0] instanceof Token && expr.nodes[0].type == "string" ? [
+								`use a CHAR literal by replacing the double quotes with single quotes`
+							] : [
+								//Because left was evaluated with undefined as the variable type, coercion to char is not attempted
+								`explicitly convert this expression to a STRING by using a temp variable`
+							] : undefined
+					}, expr.nodes[0]);
+					const leftValue = computeOrdering(left);
+					const right = this.evaluateExpr(expr.nodes[1], left.type, true);
+					const rightValue = computeOrdering(right);
+
 					return TypedValue.BOOLEAN((() => {
 						switch(expr.operator){
-							case operators.greater_than: return left > right;
-							case operators.greater_than_equal: return left >= right;
-							case operators.less_than: return left < right;
-							case operators.less_than_equal: return left <= right;
+							case operators.greater_than: return leftValue > rightValue;
+							case operators.greater_than_equal: return leftValue >= rightValue;
+							case operators.less_than: return leftValue < rightValue;
+							case operators.less_than_equal: return leftValue <= rightValue;
 						}
 					})()!);
 				}
@@ -1367,3 +1385,13 @@ export class Runtime {
 		return data;
 	}
 }
+function computeOrdering(x:TypedValue<PrimitiveVariableType<"INTEGER" | "REAL" | "CHAR" | "DATE"> | EnumeratedVariableType>):number {
+	return (
+		x.typeIs(EnumeratedVariableType) ? x.type.values.indexOf(x.value) :
+		x.typeIs("INTEGER", "REAL") ? x.value :
+		x.typeIs("CHAR") ? x.value.codePointAt(0)! :
+		x.typeIs("DATE") ? x.value.getTime() :
+		impossible()
+	);
+}
+

@@ -90,13 +90,13 @@ class TypedValue_<T extends VariableType> {
 		| typeof ClassVariableType
 	>(clazz:Type):
 		this is TypedValue_<Type["prototype"]>;
-	typeIs<Type extends PrimitiveVariableTypeName>(type:Type):
+	typeIs<Type extends PrimitiveVariableTypeName>(...type:Type[]):
 		this is TypedValue_<PrimitiveVariableType<Type>>;
-	typeIs(type:unknown){
-		if(type instanceof Function && type.prototype instanceof BaseVariableType)
-			return this.type instanceof type;
-		if(typeof type == "string")
-			return this.type == PrimitiveVariableType.get(type);
+	typeIs(...type:PrimitiveVariableTypeName[] | [BaseVariableType]){
+		if(type[0] instanceof Function && type[0].prototype instanceof BaseVariableType)
+			return this.type instanceof type[0];
+		if(typeof type[0] == "string")
+			return this.type.is(...(type as PrimitiveVariableTypeName[]));
 		impossible();
 	}
 	/**
