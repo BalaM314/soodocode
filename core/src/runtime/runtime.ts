@@ -652,7 +652,7 @@ export class Runtime {
 				if(expr.operator == operators.add){
 					return finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else if(expr.operator == operators.subtract){
-					return finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
+					return finishEvaluation(left.type.values[value - other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
 			} else if(right.typeIs(EnumeratedVariableType)){
 				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
