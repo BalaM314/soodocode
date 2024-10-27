@@ -527,7 +527,7 @@ function setupTextEditor(){
 			executeSoodocode();
 		} else if(e.key == "\\" && e.ctrlKey){
 			displayAST();
-		} else if(e.key == "S" && e.ctrlKey){
+		} else if(e.key == "s" && e.ctrlKey && e.altKey){
 			e.preventDefault();
 			download("program.sc", soodocodeInput.value);
 		} else if(e.key == "o" && e.ctrlKey){
