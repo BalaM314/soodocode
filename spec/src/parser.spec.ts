@@ -1896,15 +1896,15 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 	],
 	casebranchrange_2: [
 		[
-			["char", 'c'],
+			["char", `'c'`],
 			"keyword.to",
-			["char", 'e'],
+			["char", `'e'`],
 			"punctuation.colon",
 		],
 		[CaseBranchRangeStatement, [
-			["char", 'c'],
+			["char", `'c'`],
 			"keyword.to",
-			["char", 'e'],
+			["char", `'e'`],
 			"punctuation.colon",
 		]],
 		["switch", SwitchStatement]

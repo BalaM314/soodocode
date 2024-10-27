@@ -96,6 +96,8 @@ export const operatorTokens: Record<OperatorName, Token> = {
 };
 
 export function token(type:TokenType, text:string):Token {
+	if(type == "string") if(!(text.at(0) == `"` && text.at(-1) == `"`)) crash(`Invalid test token of type string, missing double quotes: ${text}`);
+	if(type == "char") if(!(text.at(0) == `'` && text.at(2) == `'`)) crash(`Invalid test token of type char, missing single quotes: ${text}`);
 	return new Token(type, text, [-1, -1]);
 }
 export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
