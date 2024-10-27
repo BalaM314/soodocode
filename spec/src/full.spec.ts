@@ -561,7 +561,7 @@ x.field <- foo(2)
 FOR i <- 1 TO LENGTH(y^)
 	OUTPUT (y^)[i]
 NEXT i`,
-["0", "0", "0"]
+["0", "0", "0", "0"]
 ],
 //#endregion
 //#region functions

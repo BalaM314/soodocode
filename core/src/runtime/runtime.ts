@@ -474,11 +474,10 @@ export class Runtime {
 						: fail(f.quote`Property ${property} does not exist on type ${targetType}`, expr.nodes[1])
 				);
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(targetType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-				const outputType = targetType.getPropertyType(property, classInstance);
 				if(outType == "variable"){
 					const assignabilityType = targetType.properties[property][0];
 					return {
-						type: outputType,
+						get type(){ return targetType.getPropertyType(property, classInstance); },
 						name: `${target ? target.name : `(instance of ${targetType.name})`}.${property}`,
 						assignabilityType,
 						updateType: assignabilityType instanceof ArrayVariableType && !assignabilityType.lengthInformation ? (type) => {
@@ -492,6 +491,7 @@ export class Runtime {
 						}
 					} satisfies (VariableData | ConstantData);
 				}	else {
+					const outputType = targetType.getPropertyType(property, classInstance);
 					const value = classInstance.properties[property];
 					if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
 					return finishEvaluation(value, outputType, outType);
@@ -616,7 +616,7 @@ export class Runtime {
 							value: target.value
 						}, pointerType, type);
 					}
-					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
+					const pointerType = this.getPointerTypeFor((variable as VariableData).assignabilityType ?? variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
 					return finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
