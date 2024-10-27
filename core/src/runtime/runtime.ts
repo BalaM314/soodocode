@@ -480,10 +480,9 @@ export class Runtime {
 						type: outputType,
 						name: `${target ? target.name : `(instance of ${targetType.name})`}.${property}`,
 						assignabilityType: targetType.properties[property][0],
-						updateType(type){
-							if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
-								classInstance.propertyTypes[property] = type;
-						},
+						updateType: outputType instanceof ArrayVariableType && !outputType.lengthInformation ? (type) => {
+							classInstance.propertyTypes[property] = type;
+						} : undefined,
 						declaration: targetType.properties[property][1] as never,
 						mutable: true, //Even if the class instance variable is immutable, the property is mutable
 						get value(){ return classInstance.properties[property]; },
@@ -577,7 +576,6 @@ export class Runtime {
 						//create a fake variable
 						const target = this.evaluateExpr(expr.nodes[0], type?.target, true);
 						//Guess the type
-						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						if(!configs.pointers.implicit_variable_creation.value)
 							rethrow(err, m =>
 								typeof m == "string" ? `\n${configs.pointers.implicit_variable_creation.errorHelp}` :
@@ -586,6 +584,30 @@ export class Runtime {
 									help: m.help ?? enableConfig(configs.pointers.implicit_variable_creation)
 								}
 							);
+						if(
+							target.type instanceof ArrayVariableType && target.type.lengthInformation && target.type.elementType &&
+							type && type.target instanceof ArrayVariableType && type.target.elementType && !type.target.lengthInformation &&
+							typesEqual(target.type.elementType, type.target.elementType)
+						){
+							//This is code like the following:
+							//DECLARE ptr: ^ARRAY OF INTEGER
+							//ptr <- ^functionReturningVarlengthArray()
+							//If ptr gets assigned to later, the type needs to be updated
+							let dynVarType = target.type;
+							return typedValue(type, {
+								type: dynVarType, //
+								assignabilityType: type.target, //Arrays of other lengths can be assigned here
+								updateType(type){
+									crash(`TODO TEMP UNIMPLEMENTED`);
+									// if(type instanceof ArrayVariableType) dynVarType = type;
+								},
+								name: `(dynamic variable)`,
+								declaration: "dynamic",
+								mutable: true,
+								value: target.value
+							});
+						}
+						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						return finishEvaluation({
 							type: target.type,
 							name: `(dynamic variable)`,
@@ -616,7 +638,7 @@ export class Runtime {
 							summary: f.quoteRange`Cannot dereference ${expr.nodes[0]} and use the value`,
 							elaboration: [f.quoteRange`${expr.nodes[0]} points to ${pointerVariable.value.name}, which has not been initialized`],
 						}, expr.nodes[0]);
-						return finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
+						return finishEvaluation(pointerVariable.value.value, pointerVariable.value.type, type);
 					}
 				}
 				default: impossible();

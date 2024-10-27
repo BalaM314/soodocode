@@ -802,11 +802,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			variables: Object.fromEntries(Object.entries((this as ClassVariableType<true>).properties).map(([k, v]) => [k, {
 				type: instance.propertyTypes[k] ?? v[0],
 				assignabilityType: v[0],
-				updateType(type){
-					if(v[0] instanceof ArrayVariableType && !v[0].lengthInformation){
-						instance.propertyTypes[k] = type;
-					}
-				},
+				updateType: v[0] instanceof ArrayVariableType && !v[0].lengthInformation ? (type) => {
+					instance.propertyTypes[k] = type;
+				} : undefined,
 				get value(){return instance.properties[k];},
 				set value(value){instance.properties[k] = value;},
 				declaration: v[1],
