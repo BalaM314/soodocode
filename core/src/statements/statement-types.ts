@@ -6,7 +6,7 @@ This file stores types used for statements.
 */
 
 import { Token } from "../lexer/index.js";
-import { UnresolvedVariableType, VariableType, VariableValue } from "../runtime/index.js";
+import { TypedValue, UnresolvedVariableType, VariableType, VariableValue } from "../runtime/index.js";
 import { crash } from "../utils/funcs.js";
 
 
@@ -47,5 +47,5 @@ export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVari
 
 export type StatementExecutionResult = {
 	type: "function_return";
-	value: VariableValue;
+	value: TypedValue;
 };

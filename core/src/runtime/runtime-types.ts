@@ -162,6 +162,8 @@ export function typedValue<T extends VariableType>(type:T, value:VariableTypeMap
 		(type satisfies never);
 		crash(`Type was not a valid type`, type);
 	}
+	if(type instanceof ArrayVariableType && !type.lengthInformation)
+		crash(`Attempted to construct a TypedValue with an array type without a known length`);
 	return new TypedValue_(type, value) as TypedValue;
 }
 

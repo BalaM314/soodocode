@@ -215,9 +215,15 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 
 /** Finishes evaluating an expression or function call by ensuring the evaluation result is of the specified type. Also handles specifying generic array types. */
 function finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
-	if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
-		return typedValue(from, coerceValue(value, from, to)); //don't have a varlength array as the output type
-	else if(to) return typedValue(to, coerceValue(value, from, to));
+	if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType)){
+		if(from instanceof ArrayVariableType && (!from.lengthInformation || !from.elementType)){
+			//from is a varlength array, to is also a varlength array
+			crash(`Attempting to finish evaluation of an array without length, passing it to another array without length`);
+		} else {
+			//from has a length, so just keep its length
+			return typedValue(from, coerceValue(value, from, to)); //don't have a varlength array as the output type
+		}
+	}	else if(to) return typedValue(to, coerceValue(value, from, to));
 	else return typedValue(from, value);
 }
 
@@ -545,7 +551,7 @@ export class Runtime {
 				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`, expr.functionName);
 				const statement = func.controlStatements[0];
 				const output = this.callFunction(func, expr.args, true);
-				return finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
+				return finishEvaluation(output.value, output.type, type);
 			}
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
@@ -1199,13 +1205,14 @@ export class Runtime {
 		}
 		return scope;
 	}
-	callFunction<T extends boolean>(funcNode:FunctionData, args:RangeArray<ExpressionAST>, requireReturnValue?:T):VariableValue | (T extends false ? null : never){
+	callFunction<T extends boolean>(funcNode:FunctionData, args:RangeArray<ExpressionAST>, requireReturnValue?:T):TypedValue | (T extends false ? null : never){
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
 
 		const scope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], false, scope);
+		//If there was a return, the return statement has already ensured the type matches the function return type
 		if(func instanceof ProcedureStatement){
 			//requireReturnValue satisfies false;
 			return null as never;
@@ -1235,13 +1242,14 @@ export class Runtime {
 		const previousClassData = this.classData;
 		this.classData = {instance, method, clazz};
 		const output = this.runBlock(method.nodeGroups[0], false, classScope, methodScope);
+		//If there was a return, the return statement has already ensured the type matches the function return type
 		this.classData = previousClassData;
 		if(func instanceof ClassProcedureStatement){
 			//requireReturnValue satisfies false;
 			return null as never;
 		} else { //must be functionstatement
 			if(!output) fail(f.quote`Function ${func.name} did not return a value`, undefined);
-			return typedValue(this.resolveVariableType(func.returnType), output.value) as never;
+			return output.value as never;
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):TypedValue {
@@ -1274,11 +1282,11 @@ export class Runtime {
 	 */
 	runBlock(code:ProgramASTNodeGroup, allScopesEmpty:boolean, ...scopes:VariableScope[]):void | {
 		type: "function_return";
-		value: VariableValue;
+		value: TypedValue;
 	}{
 		if(code.simple() && allScopesEmpty) return this.runBlockFast(code);
 		this.scopes.push(...scopes);
-		let returned:null | VariableValue = null;
+		let returned:null | TypedValue = null;
 		const {typeNodes, constants, others} = groupArray(code, c =>
 			(c instanceof TypeStatement ||
 			c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement) ? "typeNodes" :

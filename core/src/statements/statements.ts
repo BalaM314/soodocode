@@ -255,7 +255,7 @@ export class ReturnStatement extends Statement {
 		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type)).value
+			value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type))
 		};
 	}
 }
