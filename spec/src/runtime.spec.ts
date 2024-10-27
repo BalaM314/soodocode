@@ -182,6 +182,22 @@ const expressionTests = ((data:Record<string, [
 		"BOOLEAN",
 		["BOOLEAN", false]
 	],
+	comparison_numbers: [
+		["tree", "greater_than", [
+			5,
+			6
+		]],
+		"BOOLEAN",
+		["BOOLEAN", false]
+	],
+	comparison_chars: [
+		["tree", "less_than", [
+			["char", `'a'`],
+			["char", `'b'`]
+		]],
+		"BOOLEAN",
+		["BOOLEAN", true]
+	],
 	arrayAccess_simple: [
 		["tree", ["array access", "amogus"], [
 			5,

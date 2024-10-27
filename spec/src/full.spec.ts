@@ -1046,6 +1046,99 @@ NEXT i`,
 Array(10).fill("10")
 ],
 //#endregion
+//#region expressions
+add_numbers: [
+`OUTPUT 2 + 2`,
+["4.0"]
+],
+comparison_numbers: [
+`OUTPUT 2 < 2
+OUTPUT 2 < 3
+OUTPUT 2 <= 2
+OUTPUT 2 <= 3
+OUTPUT 2 > 2
+OUTPUT 2 > 3
+OUTPUT 2 >= 2
+OUTPUT 2 >= 3`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_numbers_decimals: [
+`OUTPUT 2.4 < 2.4
+OUTPUT 2.4 < 2.6
+OUTPUT 2.4 <= 2.4
+OUTPUT 2.4 <= 2.6
+OUTPUT 2.4 > 2.4
+OUTPUT 2.4 > 2.6
+OUTPUT 2.4 >= 2.4
+OUTPUT 2.4 >= 2.6`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_chars: [
+`OUTPUT 'a' < 'a'
+OUTPUT 'a' < 'b'
+OUTPUT 'a' <= 'a'
+OUTPUT 'a' <= 'b'
+OUTPUT 'a' > 'a'
+OUTPUT 'a' > 'b'
+OUTPUT 'a' >= 'a'
+OUTPUT 'a' >= 'b'`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_enums: [
+`TYPE enum = (a, b)
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_dates: [
+`DECLARE a, b: DATE
+a <- SETDATE(12, 1, 2024)
+b <- SETDATE(13, 1, 2024)
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_strings_invalid: [
+`DECLARE a, b: STRING
+a <- "aaa"
+b <- "bbb"
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+`invalid type`
+],
+comparison_strings_invalid_2: [
+`DECLARE a, b: STRING
+a <- "a"
+b <- "b"
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+`convert`
+],
+//#endregion
 //#region statements
 if_normal: [
 `IF FALSE THEN
