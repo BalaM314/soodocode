@@ -5,7 +5,7 @@ import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../core/build/
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../../core/build/runtime/index.js";
 import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../core/build/statements/index.js";
 import { SoodocodeError, crash } from "../../core/build/utils/funcs.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, anyRange, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType } from "./spec_utils.js";
+import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, anyRange, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType, token } from "./spec_utils.js";
 
 const tokenTests = ((data:Record<string,
 	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
@@ -577,7 +577,7 @@ const expressionTests = ((data:Record<string, [
 			}
 		} as ClassStatement, {
 			prop: [PrimitiveVariableType.REAL, {
-				varType: PrimitiveVariableType.REAL
+				varType: token("name", "REAL")
 			} as ClassPropertyStatement]
 		}, {
 			NEW: {
@@ -621,7 +621,7 @@ const expressionTests = ((data:Record<string, [
 			}
 		} as ClassStatement, {
 			prop: [PrimitiveVariableType.REAL, {
-				varType: PrimitiveVariableType.REAL
+				varType: token("name", "REAL")
 			} as ClassPropertyStatement]
 		}, {
 			NEW: {
@@ -682,7 +682,7 @@ const expressionTests = ((data:Record<string, [
 				}
 			} as ClassStatement, {
 				prop: [PrimitiveVariableType.REAL, {
-					varType: PrimitiveVariableType.REAL
+					varType: token("name", "REAL")
 				} as ClassPropertyStatement]
 			});
 		}
@@ -694,7 +694,7 @@ const expressionTests = ((data:Record<string, [
 			}
 		} as ClassStatement, {
 			prop: [PrimitiveVariableType.REAL, {
-				varType: PrimitiveVariableType.REAL,
+				varType: token("name", "REAL"),
 				accessModifier: "public"
 			} as ClassPropertyStatement]
 		});
@@ -730,7 +730,7 @@ const expressionTests = ((data:Record<string, [
 			}
 		} as ClassStatement, {
 			prop: [PrimitiveVariableType.REAL, {
-				varType: PrimitiveVariableType.REAL,
+				varType: token("name", "REAL"),
 				accessModifier: "private"
 			} as ClassPropertyStatement]
 		});
@@ -765,7 +765,7 @@ const expressionTests = ((data:Record<string, [
 			"amogus"
 		]]) as ClassStatement, {
 			prop: [PrimitiveVariableType.REAL, {
-				varType: PrimitiveVariableType.REAL,
+				varType: token("name", "REAL"),
 				accessModifier: "private"
 			} as ClassPropertyStatement]
 		}, {
@@ -850,7 +850,7 @@ const expressionTests = ((data:Record<string, [
 				}
 			} as ClassStatement, {
 				prop: [PrimitiveVariableType.REAL, {
-					varType: PrimitiveVariableType.REAL
+					varType: token("name", "REAL")
 				} as ClassPropertyStatement]
 			}, {
 				eject: {
@@ -908,7 +908,7 @@ const expressionTests = ((data:Record<string, [
 				}
 			} as ClassStatement, {
 				prop: [PrimitiveVariableType.REAL, {
-					varType: PrimitiveVariableType.REAL
+					varType: token("name", "REAL")
 				} as ClassPropertyStatement]
 			}, {
 				eject: {
@@ -969,7 +969,7 @@ const expressionTests = ((data:Record<string, [
 				}
 			} as ClassStatement, {
 				prop: [PrimitiveVariableType.REAL, {
-					varType: PrimitiveVariableType.REAL
+					varType: token("name", "REAL")
 				} as ClassPropertyStatement]
 			}, {
 				eject: {

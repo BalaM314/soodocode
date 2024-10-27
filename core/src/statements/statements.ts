@@ -32,12 +32,12 @@ export abstract class TypeStatement extends Statement {
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
 	static requiresScope = true;
-	varType = processTypeData(this.expr(-1, "type"));
+	varType = this.expr(-1, "type");
 	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokens(1, -2), this.token(-2)
 	).map(t => [t.text, t] as [string, Token]);
 	run(runtime:Runtime){
-		const varType = runtime.resolveVariableType(this.varType);
+		const varType = runtime.resolveVariableType(processTypeData(this.varType));
 		if(varType instanceof SetVariableType) fail({
 			summary: `Cannot declare a set variable with the DECLARE statement`,
 			help: [f.range`use the DEFINE statement instead, like this:\nDEFINE ${this.variables[0][0]} (your comma-separated values here): ${this.expr(-1, "type")}`]
@@ -144,7 +144,7 @@ export class TypeRecordStatement extends TypeStatement {
 		const fields:Record<string, [UnresolvedVariableType, TextRange]> = Object.create(null);
 		for(const statement of node.nodeGroups[0]){
 			if(!(statement instanceof DeclareStatement)) crash(`allowOnly is ["declare"]`);
-			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
+			statement.variables.forEach(([v, r]) => fields[v] = [processTypeData(statement.varType), r.range]);
 		}
 		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as const;
 	}
@@ -550,7 +550,7 @@ export class FunctionStatement extends Statement {
 	args:FunctionArguments;
 	argsRange:TextRange;
 	returnType:UnresolvedVariableType;
-	returnTypeToken:ExpressionASTTypeNode;
+	returnTypeNode:ExpressionASTTypeNode;
 	name:string;
 	nameToken:Token;
 	static propagatesControlFlowInterruptions = false;
@@ -559,8 +559,8 @@ export class FunctionStatement extends Statement {
 		tokens = tokens.slice(offset);
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
-		this.returnType = processTypeData(tokens.at(-1)!);
-		this.returnTypeToken = tokens.at(-1)!;
+		this.returnTypeNode = tokens.at(-1)!;
+		this.returnType = processTypeData(this.returnTypeNode);
 		this.nameToken = tokens[1];
 		this.name = tokens[1].text;
 	}
@@ -728,7 +728,7 @@ export class ClassStatement extends TypeStatement {
 	name = this.token(1);
 	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function"]);
 	static propagatesControlFlowInterruptions = false;
-	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
+	createClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		const classData = new ClassVariableType(false, this);
 		for(const node of branchNode.nodeGroups[0]){
 			if(node instanceof ProgramASTBranchNode){
@@ -752,7 +752,7 @@ export class ClassStatement extends TypeStatement {
 					if(classData.properties[variable]){
 						fail(f.quote`Duplicate declaration of class property ${variable}`, token, node);
 					} else {
-						classData.properties[variable] = [node.varType, node, token];
+						classData.properties[variable] = [processTypeData(node.varType), node, token];
 					}
 				}
 				classData.propertyStatements.push(node);
@@ -764,16 +764,16 @@ export class ClassStatement extends TypeStatement {
 		return classData;
 	}
 	createTypeBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
-		return [this.name.text, this.initializeClass(runtime, branchNode)] as [name: string, type: VariableType<false>];
+		return [this.name.text, this.createClass(runtime, branchNode)] as [name: string, type: VariableType<false>];
 	}
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
 export class ClassInheritsStatement extends ClassStatement {
 	superClassName = this.token(3);
-	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
+	createClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		if(this.superClassName.text == this.name.text) fail(`A class cannot inherit from itself`, this.superClassName, this);
 		const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range, this);
-		const extensions = super.initializeClass(runtime, branchNode);
+		const extensions = super.createClass(runtime, branchNode);
 
 		//Apply the base class's properties and functions
 		extensions.baseClass = baseClass;

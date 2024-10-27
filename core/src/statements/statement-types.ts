@@ -43,7 +43,7 @@ export type FunctionArgumentPassMode = "value" | "reference";
 export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:FunctionArgumentPassMode}>;
 export type BuiltinFunctionArguments = Map<string, {type:VariableType[], passMode:FunctionArgumentPassMode}>;
 export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:FunctionArgumentPassMode}];
-export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:FunctionArgumentPassMode | null}];
+export type FunctionArgumentDataPartial = [nameToken:Token, {type:(() => UnresolvedVariableType) | null, passMode:FunctionArgumentPassMode | null}];
 
 export type StatementExecutionResult = {
 	type: "function_return";

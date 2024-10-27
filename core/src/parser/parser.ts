@@ -25,12 +25,12 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 	//Use state variables to remember the previous pass mode / type
 	//to handle things like `BYREF a, b, c, d: INTEGER`
 	let passMode:FunctionArgumentPassMode = "value";
-	let type:UnresolvedVariableType | null = null;
+	let type:(() => UnresolvedVariableType) | null = null;
 	//Split the arguments on commas
 	const argumentz = splitTokensOnComma(tokens).map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:FunctionArgumentPassMode | null;
-		let type:UnresolvedVariableType | null;
+		let type:(() => UnresolvedVariableType) | null;
 
 		//Increase the offset by 1 to ignore the pass mode specifier if present
 		let offset = 0;
@@ -56,21 +56,21 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 			const typeTokens = section.slice(offset + 2);
 			if(typeTokens.length == 0)
 				fail(`Expected a type, got end of function arguments`, section.at(-1)!.rangeAfter());
-			type = processTypeData(parseType(typeTokens, tokens));
+			type = () => processTypeData(parseType(typeTokens, tokens));
 		}
 		return [
 			section[offset + 0], //pass the token through so we can use it to generate errors
 			{ passMode, type }
 		];
 	})
-		.map<[name:Token, {type:UnresolvedVariableType | null, passMode:FunctionArgumentPassMode}]>(([name, data]) => [name, {
+		.map<[name:Token, {type:(() => UnresolvedVariableType) | null, passMode:FunctionArgumentPassMode}]>(([name, data]) => [name, {
 			passMode: data.passMode ? passMode = data.passMode : passMode,
 			type: data.type
 		}])
 		.reverse()
 		.map(([name, data]) => [name, {
 			passMode: data.passMode,
-			type: data.type ? type = data.type : type ?? fail(f.quote`Type not specified for function argument ${name}`, name)
+			type: (data.type ? type = data.type : type ?? fail(f.quote`Type not specified for function argument ${name}`, name))()
 		}] as const)
 		.reverse();
 	const argumentsMap:FunctionArguments = new Map(argumentz.map(([name, data]) => [name.text, data] as const));

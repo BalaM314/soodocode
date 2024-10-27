@@ -595,11 +595,10 @@ export class Runtime {
 							//If ptr gets assigned to later, the type needs to be updated
 							let dynVarType = target.type;
 							return typedValue(type, {
-								type: dynVarType, //
+								get type(){ return dynVarType; },
 								assignabilityType: type.target, //Arrays of other lengths can be assigned here
 								updateType(type){
-									crash(`TODO TEMP UNIMPLEMENTED`);
-									// if(type instanceof ArrayVariableType) dynVarType = type;
+									if(type instanceof ArrayVariableType) dynVarType = type;
 								},
 								name: `(dynamic variable)`,
 								declaration: "dynamic",

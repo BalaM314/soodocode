@@ -7,7 +7,7 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import { configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNodeGroup } from "../parser/index.js";
+import { processTypeData, type ExpressionAST, type ExpressionASTArrayTypeNode, type ExpressionASTNode, type ExpressionASTRangeTypeNode, type ProgramASTBranchNode, type ProgramASTNodeGroup } from "../parser/index.js";
 import { AssignmentStatement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "../statements/index.js";
 import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
@@ -342,11 +342,14 @@ export class IntegerRangeVariableType extends BaseVariableType {
 		return new this(Number(node.low.text), Number(node.high.text), node.range);
 	}
 }
+//TODO! refactor variable types
+//Stop mutating them to initialize, create a different class
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
 	lengthInformation: [low:number, high:number][] | null = null;
+	private initialized = false;
 	static maxLength = 10_000_000;
 	constructor(
 		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,
@@ -355,6 +358,8 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		public range: TextRange,
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
+		this.initialized = true;
 		if(Array.isArray(this.elementType))
 			this.elementType = runtime.resolveVariableType(this.elementType);
 		if(this.lengthInformationExprs){
@@ -465,6 +470,7 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		public fields: Record<string, [type:(Init extends true ? never : UnresolvedVariableType) | VariableType, range:TextRange]>,
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
 		for(const [name, [field, range]] of Object.entries(this.fields)){
 			if(Array.isArray(field))
 				this.fields[name][0] = runtime.resolveVariableType(field);
@@ -559,6 +565,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		public range: TextRange
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
 		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
 		(this as PointerVariableType<true>).initialized = true;
 	}
@@ -680,8 +687,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
 		for(const statement of this.propertyStatements){
-			const type = runtime.resolveVariableType(statement.varType);
+			const type = runtime.resolveVariableType(processTypeData(statement.varType));
 			for(const [name] of statement.variables){
 				this.properties[name][0] = type;
 			}
@@ -954,7 +962,7 @@ export function checkClassMethodsCompatible(runtime:Runtime, base:ClassMethodSta
 				summary: f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`,
 				elaboration: result ? result[0] : undefined,
 				help: result && result[1] ? result[1] : undefined,
-			}, derived.returnTypeToken, derived);
+			}, derived.returnTypeNode, derived);
 	}
 }
 

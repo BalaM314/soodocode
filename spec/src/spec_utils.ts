@@ -448,9 +448,10 @@ export function classType(
 export function arrayType(
 	processedLengthInformation: [low:number, high:number][] | null,
 	elementType: VariableType,
+	init = true,
 ){
 	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType, [-1, -1]);
-	type.init(fakeObject<Runtime>({
+	if(init) type.init(fakeObject<Runtime>({
 		evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function"){
 			if(typeof type == "string") impossible();
 			if(expr instanceof Token) return Runtime.evaluateToken(expr, type) as never;
