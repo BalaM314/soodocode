@@ -847,6 +847,10 @@ export class Runtime {
 				return finishEvaluation(val, PrimitiveVariableType.REAL, type);
 			}
 			case "string":
+				if(type?.is("CHAR")) fail({
+					summary: `Cannot coerce a STRING literal to type CHAR`,
+					help: `use a CHAR literal instead, by replacing the double quotes with single quotes`
+				}, token);
 				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.STRING, type); //remove the quotes
 			case "char":
 				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.CHAR, type); //remove the quotes
