@@ -808,7 +808,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			opaque: true,
 			types: Object.create(null),
 			variables: Object.fromEntries(Object.entries((this as ClassVariableType<true>).properties).map(([k, v]) => [k, {
-				type: instance.propertyTypes[k] ?? v[0],
+				get type(){ return instance.propertyTypes[k] ?? v[0]; },
 				assignabilityType: v[0],
 				updateType: v[0] instanceof ArrayVariableType && !v[0].lengthInformation ? (type) => {
 					instance.propertyTypes[k] = type;
@@ -957,9 +957,9 @@ export function checkClassMethodsCompatible(runtime:Runtime, base:ClassMethodSta
 
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
 		let result;
-		if((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true) //return type is covariant
+		if((result = typesAssignable(runtime.resolveVariableType(base.returnType()), runtime.resolveVariableType(derived.returnType()))) != true) //return type is covariant
 			fail({
-				summary: f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`,
+				summary: f.quote`Return type ${derived.returnType()} is not assignable to ${base.returnType()}`,
 				elaboration: result ? result[0] : undefined,
 				help: result && result[1] ? result[1] : undefined,
 			}, derived.returnTypeNode, derived);

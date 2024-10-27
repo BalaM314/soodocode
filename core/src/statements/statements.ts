@@ -248,10 +248,10 @@ export class ReturnStatement extends Statement {
 		if(fn instanceof ProgramASTBranchNode){
 			const statement = fn.controlStatements[0];
 			if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`, this);
-			type = statement.returnType;
+			type = statement.returnType();
 		} else {
 			if(fn instanceof ClassProcedureStatement) fail(`Procedures cannot return a value.`, this);
-			type = fn.returnType;
+			type = fn.returnType();
 		}
 		return {
 			type: "function_return" as const,
@@ -549,7 +549,6 @@ export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
 	argsRange:TextRange;
-	returnType:UnresolvedVariableType;
 	returnTypeNode:ExpressionASTTypeNode;
 	name:string;
 	nameToken:Token;
@@ -560,10 +559,10 @@ export class FunctionStatement extends Statement {
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
 		this.returnTypeNode = tokens.at(-1)!;
-		this.returnType = processTypeData(this.returnTypeNode);
 		this.nameToken = tokens[1];
 		this.name = tokens[1].text;
 	}
+	returnType():UnresolvedVariableType { return processTypeData(this.returnTypeNode); }
 	runBlock(runtime:Runtime, node:FunctionData<"function">){
 		runtime.defineFunction(this.name, node, this.nameToken.range);
 	}

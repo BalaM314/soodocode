@@ -476,11 +476,12 @@ export class Runtime {
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(targetType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
 				const outputType = targetType.getPropertyType(property, classInstance);
 				if(outType == "variable"){
+					const assignabilityType = targetType.properties[property][0];
 					return {
 						type: outputType,
 						name: `${target ? target.name : `(instance of ${targetType.name})`}.${property}`,
-						assignabilityType: targetType.properties[property][0],
-						updateType: outputType instanceof ArrayVariableType && !outputType.lengthInformation ? (type) => {
+						assignabilityType,
+						updateType: assignabilityType instanceof ArrayVariableType && !assignabilityType.lengthInformation ? (type) => {
 							classInstance.propertyTypes[property] = type;
 						} : undefined,
 						declaration: targetType.properties[property][1] as never,
