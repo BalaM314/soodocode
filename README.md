@@ -86,3 +86,5 @@ Usage: `soodocode file.sc`
 
 ## More information
 For a full list of features, see [features.md](docs/features.md)
+
+For some discussion of advanced language features, see [notes.md](docs/notes.md)
