@@ -41,9 +41,12 @@ Usage: `soodocode file.sc`
 
 ## Arrays
 * [x] n-dimensional arrays
-* [x] Arrays with generic size in function arguments
-* [x] Arrays with generic size in class properties
-* [x] Arrays with size determined by expressions
+* [x] Arrays with size determined by runtime-evaluated expressions
+* [x] Arrays with generic size
+  * [x] in function arguments
+  * [x] in function return types
+  * [x] in class fields
+  * [x] behind pointers
 
 ## Types
 * [x] Enums
