@@ -402,7 +402,10 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		return f.debug`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
-		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`, undefined);
+		if(!this.lengthInformation) fail({
+			summary: f.quote`${this} is not a valid variable type: length must be specified here`,
+			help: `specify the length by adding "[1:10]" after the keyword ARRAY`
+		}, undefined);
 		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, undefined);
 		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
@@ -516,6 +519,18 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 					`which requires initializing the field again`
 				],
 				help: `change the field's type to be a pointer`,
+			}, range);
+			if(type instanceof ArrayVariableType && !type.lengthInformation) fail({
+				summary: f.quote`Type ${this.name} cannot be initialized`,
+				elaboration: [
+					f.quote`When a variable of type ${this.name} is declared, all its fields are immediately initialized`,
+					f.quote`this includes the field ${name}, which does not have a known length and cannot be initialized`
+				],
+				help: [
+					`specify the length of the array type`,
+					f.quoteRange`if the length changes at runtime, change the field's type to be a pointer to ${type}`,
+					f.quoteRange`alternatively, convert this record type to a class, and assign to this field in the constructor so it does not need to be initialized`
+				],
 			}, range);
 		}
 	}
