@@ -71,18 +71,60 @@ A record type is a user-defined composite data type, made up of zero or more fie
 
 Initializing a variable of type (record type) causes all its fields to be initialized automatically.
 
+## A note on the DECLARE statement
+
+The DECLARE statement works quite differently than many other languages.
+
+In most other languages, you can declare an array or record variable, then assign an array or record to it, like this Typescript code:
+
+```ts
+let x: number[];
+x = [1, 2, 3];
+let y: { field: number };
+y = { field: 123 };
+```
+
+However, pseudocode does not have array or object literals. The only way to get an array or object is from the DECLARE statement, which automatically allocates an array or object.
+
+```js
+DECLARE x: ARRAY[1:3] OF INTEGER
+x[1] <- 1 //this is already accessible
+DECLARE y: Recordtype
+y.field <- 123 //y is already initialized
+```
+
+This initialization is also done recursively.
+
+```js
+TYPE Record
+  DECLARE field: INTEGER
+ENDTYPE
+DECLARE x: ARRAY[1:10] OF Record //allocates the array, and also 10 records
+x[0].field <- 50; //you can immediately write to the fields, the first declare statement already created all of the objects.
+```
+
+For comparison, in Typescript:
+```ts
+type Record = {
+  field?: number;
+};
+const x = new Array<Record>(10);
+x[0] = {};
+x[0].field = 50; //in Typescript, you need to assign the object first before writing to a slot in that object
+```
+
 ## A note on recursive types
 
-Because records do not have a constructor, initializing a variable of type (record type) causes all its fields to be initialized automatically.
-
-This means recursive record types without indirection are not allowed.
+Recursive record types without indirection are not allowed.
 
 ```js
 TYPE Foo
   DECLARE field: Foo //recursive without indirection
 ENDTYPE
+
 DECLARE foo: Foo
-//Initializing this variable of type Foo requires initializing foo.field,
+//Because there is no way to say "foo <- Foo { }" like in Rust, the declare statement automatically initializes the fields
+//that requires initializing foo.field,
 //which requires initializing foo.field.field...
 ```
 
@@ -94,7 +136,7 @@ CLASS Foo
 ENDCLASS
 
 DECLARE foo: Foo
-//this variable is currently uninitialized
+//this variable is currently uninitialized, because it can be assigned to with foo <- NEW foo()
 
 foo <- NEW foo()
 //foo.field is now uninitialized
@@ -125,11 +167,11 @@ In Soodocode, all arrays must have a fixed length. The DECLARE statement automat
 ### In function parameters
 
 ```js
-PROCEDURE arr(x: ARRAY OF INTEGER)
+PROCEDURE foo(x: ARRAY OF INTEGER)
   OUTPUT LENGTH(x)
 ENDPROCEDURE
 DECLARE y: ARRAY[1:10] OF INTEGER
-CALL arr(y)
+CALL foo(y)
 ```
 Here, the parameter "x" can accept an array of any length, because when the function is actually running, it has a known length.
 
@@ -233,8 +275,8 @@ OUTPUT LENGTH(x.field)
 ### Varlength arrays behind class fields and pointers
 
 ```js
-FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
-	DECLARE out: ARRAY[1:x] OF INTEGER
+FUNCTION arr(length: INTEGER) RETURNS ARRAY OF INTEGER
+	DECLARE out: ARRAY[1:length] OF INTEGER
 	RETURN out
 ENDFUNCTION
 
@@ -242,7 +284,6 @@ TYPE pArray = ^ARRAY OF INTEGER
 CLASS bar
 	PUBLIC field: ARRAY OF INTEGER
 	PUBLIC PROCEDURE NEW(len: INTEGER)
-		//The field is assigned to before it is used, so it does not need to be initialized
 		field <- arr(len)
 	ENDPROCEDURE
 ENDCLASS
