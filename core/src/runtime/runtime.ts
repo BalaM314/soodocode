@@ -789,7 +789,7 @@ export class Runtime {
 								`use a CHAR literal by replacing the double quotes with single quotes`
 							] : [
 								//Because left was evaluated with undefined as the variable type, coercion to char is not attempted
-								`explicitly convert this expression to a STRING by using a temp variable`
+								`explicitly convert this expression to a CHAR by using a temp variable`
 							] : undefined
 					}, expr.nodes[0]);
 					const leftValue = computeOrdering(left);
