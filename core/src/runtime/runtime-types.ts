@@ -405,8 +405,8 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		if(!this.lengthInformation) fail({
 			summary: f.quote`${this} is not a valid variable type: length must be specified here`,
 			help: `specify the length by adding "[1:10]" after the keyword ARRAY`
-		}, undefined);
-		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, undefined);
+		}, this.range);
+		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, this.range);
 		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
 		if(type.is("REAL")){
