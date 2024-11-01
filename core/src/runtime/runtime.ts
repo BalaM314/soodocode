@@ -10,7 +10,7 @@ import { Config, configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
-import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { LocalFileSystem, FileSystem } from "./files.js";
@@ -45,10 +45,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 		else if(!configs.equality_checks.allow_different_types.value)
 			fail({
 				summary: errorSummary,
-				help: {
-					config: configs.equality_checks.coerce_int_real,
-					value: true,
-				}
+				help: enableConfig(configs.equality_checks.coerce_int_real),
 			}, range);
 	}
 	if((a.is("STRING") && b.is("CHAR")) || (b.is("CHAR") && a.is("STRING"))){
@@ -56,10 +53,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 		else if(!configs.equality_checks.allow_different_types.value)
 			fail({
 				summary: errorSummary,
-				help: {
-					config: configs.equality_checks.coerce_string_char,
-					value: true,
-				}
+				help: enableConfig(configs.equality_checks.coerce_string_char),
 			}, range);
 	}
 	if(
@@ -71,10 +65,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 			fail({
 				summary: errorSummary,
 				elaboration: `these types have different lengths`,
-				help: {
-					config: configs.equality_checks.coerce_arrays,
-					value: true
-				}
+				help: enableConfig(configs.equality_checks.coerce_arrays),
 			}, range);
 	}
 	if(!configs.equality_checks.allow_different_types.value)
@@ -1193,7 +1184,10 @@ export class Runtime {
 	}
 	/** Evaluates arguments and assembles the scope required for calling a function or procedure. */
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:RangeArray<ExpressionAST>){
-		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
+		if(func.args.size != args.length) fail({
+			summary: f.quote`Incorrect number of arguments for function ${func.name}`,
+			elaboration: `Expected ${plural(func.args.size, "arguments")}, but received ${plural(args.length, "arguments")}`
+		}, args);
 		const scope:VariableScope = {
 			statement: func,
 			opaque: !(func instanceof ClassProcedureStatement || func instanceof ClassFunctionStatement),
@@ -1275,7 +1269,10 @@ export class Runtime {
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):TypedValue {
-		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`, undefined);
+		if(fn.args.size != args.length) fail({
+			summary: f.quote`Incorrect number of arguments for function ${fn.name}`,
+			elaboration: `Expected ${plural(fn.args.size, "arguments")}, but received ${plural(args.length, "arguments")}`
+		}, args);
 		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const evaluatedArgs:[VariableValue, TextRange][] = [];
 		let i = 0;
