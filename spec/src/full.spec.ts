@@ -1254,6 +1254,40 @@ OUTPUT a >= b`,
 ],
 //#endregion
 //#region statements
+input_variable: [
+`DECLARE hello: STRING
+INPUT hello`,
+[],
+["input"]
+],
+input_array_slot: [
+`FUNCTION foo() RETURNS INTEGER
+RETURN 3 + 4;
+ENDFUNCTION
+DECLARE hello: ARRAY[1:10] OF STRING
+INPUT hello[foo() - 2]
+OUTPUT hello[5]`,
+["input"],
+["input"]
+],
+input_record_slot: [
+`TYPE struct
+	DECLARE field: STRING
+ENDTYPE
+DECLARE hello: ARRAY[1:10] OF struct
+INPUT hello[4].field
+OUTPUT hello[4].field`,
+["input"],
+["input"]
+],
+input_invalid_1: [
+`INPUT 2 + 2`,
+``
+],
+input_invalid_2: [
+`INPUT TIME(0)`,
+``
+],
 if_normal: [
 `IF FALSE THEN
 ENDIF`,

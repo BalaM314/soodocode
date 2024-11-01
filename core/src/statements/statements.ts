@@ -8,7 +8,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import { configs } from "../config/index.js";
 import { Token, TokenType } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma } from "../parser/index.js";
 import { ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableScope, VariableType, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
 import { combineClasses, crash, enableConfig, f, fail, getTotalRange, RangeArray } from "../utils/funcs.js";
@@ -198,11 +198,19 @@ export class OutputStatement extends Statement {
 		runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
 	}
 }
-@statement("input", "INPUT y", "keyword.input", "name")
+@statement("input", "INPUT y", "keyword.input", "expr+")
 export class InputStatement extends Statement {
-	name = this.token(1).text;
+	name = this.expr(1,
+		[Token, ExpressionASTArrayAccessNode, ExpressionASTBranchNode],
+		`Invalid INPUT target: must be a single variable name, an array access expression, or a property access expression`,
+		node => {
+			if(node instanceof Token) return node.type == "name";
+			if(node instanceof ExpressionASTBranchNode) return node.operator.id == "operator.access";
+			return true;
+		}
+	);
 	run(runtime:Runtime){
-		const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.nodes[1].range);
+		const variable = runtime.evaluateExpr(this.name, "variable");
 		if(!variable.mutable) fail(f.quote`Cannot INPUT ${this.name} because it is immutable`, this.nodes[1], this);
 		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
 		switch(variable.type){
