@@ -7,12 +7,10 @@
 		"skipLibCheck": true,
 		"incremental": true,
 		"removeComments": true,
-		"lib": [
-			"DOM",
-			"ES2023"
-		],
+		"lib": [ "ES2023" ],
 		"composite": true,
 		"noEmitOnError": true,
+		"types": []
 	},
 	"files": [],
 }

@@ -6,6 +6,7 @@
 		"outDir": "./build/",
 		"rootDir": "./src",
 		"declaration": true,
+		"lib": ["DOM", "ES2023"]
 	},
 	"include": [
 		"./**/*.ts"

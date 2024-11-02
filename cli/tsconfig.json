@@ -5,7 +5,8 @@
 		"outDir": "build/",
 		"rootDir": "./src",
 		"moduleResolution": "NodeNext",
-		"module": "NodeNext"
+		"module": "NodeNext",
+		"types": ["node"]
 	},
 	"include": [
 		"src/**.ts"

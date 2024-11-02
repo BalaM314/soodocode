@@ -393,7 +393,7 @@ export function rethrow(error:SoodocodeError, msg:(old:ErrorMessage) => ErrorMes
 	throw error;
 }
 export function crash(message:string, ...extra:unknown[]):never {
-	console.error(...extra);
+	if(extra.length > 0 && typeof console != "undefined") console.error(...extra);
 	throw new Error(message);
 }
 export function impossible():never {
