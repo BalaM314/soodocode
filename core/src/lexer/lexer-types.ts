@@ -115,9 +115,10 @@ export const tokenTypes = [
 ] as const;
 /** The type of a {@link Token}. */
 export type TokenType = typeof tokenTypes extends ReadonlyArray<infer T> ? T : never;
+/** Asserts that the input is a valid token type, and returns it. */
 export function TokenType(input:string):TokenType {
 	if(tokenTypes.includes(input)) return input;
-	crash(`"${input}" is not a valid token type`);
+	crash(`Assertion failed: "${input}" is not a valid token type`);
 }
 
 /**

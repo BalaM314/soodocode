@@ -9,7 +9,7 @@ import { configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
 import { processTypeData, type ExpressionAST, type ExpressionASTArrayTypeNode, type ExpressionASTNode, type ExpressionASTRangeTypeNode, type ProgramASTBranchNode, type ProgramASTNodeGroup } from "../parser/index.js";
 import { AssignmentStatement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "../statements/index.js";
-import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { Runtime } from "./runtime.js";
 
@@ -147,8 +147,7 @@ class TypedValue_<T extends VariableType> {
 export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n =>
 	[n, function(value:VariableTypeMapping<PrimitiveVariableType>){
 		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
+			unreachable(value, `nullish values are not allowed here`);
 		}
 		return new TypedValue_(PrimitiveVariableType.get(n), value);
 	}] as const
@@ -159,8 +158,7 @@ export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n =>
 export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
 	if(type == null || value == null) impossible();
 	if(!(type instanceof BaseVariableType)){
-		(type satisfies never);
-		crash(`Type was not a valid type`, type);
+		unreachable(type, `Type was not a valid type`);
 	}
 	if(type instanceof ArrayVariableType && !type.lengthInformation)
 		crash(`Attempted to construct a TypedValue with an array type without a known length`);
@@ -1008,9 +1006,10 @@ export type VariableValue = VariableTypeMapping<any>;
 
 export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"] as const;
 export type FileMode = typeof fileModes extends ReadonlyArray<infer T> ? T : never;
+/** Asserts that the input is a valid file mode, and returns it. */
 export function FileMode(input:string):FileMode {
 	if(fileModes.includes(input)) return input;
-	crash(`${input} is not a valid file mode`);
+	crash(`Assertion failed: ${input} is not a valid file mode`);
 }
 export type File = {
 	readonly name: string;

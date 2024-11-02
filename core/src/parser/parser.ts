@@ -11,7 +11,7 @@ which is the preferred representation of the program.
 import { Token, TokenizedProgram, tokenTextMapping, TokenType } from "../lexer/index.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../runtime/runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArgumentPassMode, FunctionArguments, Statement, statements } from "../statements/index.js";
-import { biasedLevenshtein, crash, errorBoundary, ErrorMessage, f, fail, fakeObject, forceType, impossible, isKey, max, quote, RangeArray, RichErrorMessage, SoodocodeError, tryRun } from "../utils/funcs.js";
+import { biasedLevenshtein, crash, errorBoundary, ErrorMessage, f, fail, fakeObject, forceType, impossible, isKey, max, quote, RangeArray, RichErrorMessage, SoodocodeError, tryRun, unreachable } from "../utils/funcs.js";
 import { PartialKey, TextRange, TextRangeLike } from "../utils/types.js";
 import { closestKeywordToken, displayTokenMatcher, findLastNotInGroup, manageNestLevel, splitTokens, splitTokensOnComma } from "./funcs.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
@@ -90,9 +90,7 @@ export const processTypeData = errorBoundary()(function _processTypeData(typeNod
 		return ArrayVariableType.from(typeNode);
 	} else if(typeNode instanceof ExpressionASTRangeTypeNode){
 		return IntegerRangeVariableType.from(typeNode);
-	}
-	typeNode satisfies never;
-	impossible();
+	} else unreachable(typeNode);
 });
 
 /** Parses an ExpressionASTTypeNode from a list of tokens. */
@@ -218,7 +216,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 				fail(`Unexpected statement: ${errorMessage}`, statement, null);
 			lastNode.controlStatements_().push(statement);
 			lastNode.nodeGroups.push(new ProgramASTNodeGroup());
-		} else statement.category satisfies never;
+		} else unreachable(statement.category);
 	}
 	if(blockStack.length)
 		fail(f.quote`There were unclosed blocks: ${blockStack.at(-1)!.controlStatements[0]} requires a matching ${blockStack.at(-1)!.controlStatements[0].type.blockEndStatement().type} statement`, blockStack.at(-1)!.controlStatements[0], null);

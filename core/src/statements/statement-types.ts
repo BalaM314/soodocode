@@ -31,9 +31,10 @@ export const statementTypes = [
 export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never;
 /** Statement types that don't start with "illegal." */
 export type LegalStatementType<T extends StatementType = StatementType> = T extends `illegal.${string}` ? never : T;
+/** Asserts that the input is a valid statement type, and returns it. */
 export function StatementType(input:string):StatementType {
 	if(statementTypes.includes(input)) return input;
-	crash(`"${input}" is not a valid statement type`);
+	crash(`Assertion failed: "${input}" is not a valid statement type`);
 }
 
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";

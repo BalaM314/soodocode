@@ -41,6 +41,7 @@ class NodeJSFileSystem implements FileSystem {
 			scFail(f.quote`Cannot access file ${filepath}: it is not inside the directory ${this.rootDirectory}\nhelp: change the working directory and try again`, undefined);
 		return filepath;
 	}
+	/** The file must have been opened first. */
 	private descriptor(filename:string):number {
 		return this.fileDescriptors[this.resolveSafe(filename)] ?? crash(`Missing file descriptor`);
 	}
@@ -60,19 +61,23 @@ class NodeJSFileSystem implements FileSystem {
 			text: fs.readFileSync(filepath, this.encoding)
 		};
 	}
+	/** The file must have been opened first. */
 	closeFile(filename:string){
 		fs.closeSync(this.descriptor(filename));
 	}
 	createFile(filename:string){
 		this.openFile(filename, true);
 	}
+	/** The file must have been opened first. */
 	updateFile(filename:string, newContent:string){
 		fs.ftruncateSync(this.descriptor(filename));
 		fs.writeFileSync(this.descriptor(filename), newContent);
 	}
+	/** The file must have been opened first. */
 	clearFile(filename:string){
 		fs.ftruncateSync(this.descriptor(filename));
 	}
+	/** The file must have been opened first. */
 	deleteFile(filename:string){
 		const filepath = this.resolveSafe(filename);
 		try {

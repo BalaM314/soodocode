@@ -10,7 +10,7 @@ import { Config, configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
-import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { LocalFileSystem, FileSystem } from "./files.js";
@@ -816,8 +816,7 @@ export class Runtime {
 			}
 		}
 
-		expr.operator.category satisfies never;
-		impossible();
+		unreachable(expr.operator.category, JSON.stringify(expr.operator));
 	}
 	/** Evaluates an expression leaf node. */
 	evaluateToken(token:Token):TypedValue;
