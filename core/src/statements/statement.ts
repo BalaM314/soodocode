@@ -69,12 +69,12 @@ export class Statement implements TextRanged, IFormattable {
 	/** Returns the node at `ind` and asserts that it is a type. */
 	expr(ind:number, allowed:"type", error?:string):ExpressionASTTypeNode;
 	/** Returns the node at `ind` and asserts that it is one of the given types. */
-	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string):InstanceType<Type>;
-	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string):ExpressionASTNodeExt {
+	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string, extraValidator?:(node:ExpressionASTNodeExt) => boolean):InstanceType<Type>;
+	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string, extraValidator:(node:ExpressionASTNodeExt) => boolean = () => true):ExpressionASTNodeExt {
 		if(allowed === "type") allowed = ExpressionASTTypeNodes;
 		if(allowed === "expr") allowed = ExpressionASTNodes;
 
-		if(allowed.some(c => this.nodes.at(ind) instanceof c))
+		if(allowed.find(c => this.nodes.at(ind) instanceof c) && extraValidator(this.nodes.at(ind)!))
 			return this.nodes.at(ind) as ExpressionAST;
 
 		if(error != undefined) fail(error, this.nodes.at(ind));

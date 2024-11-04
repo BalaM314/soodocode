@@ -6,7 +6,7 @@ This file stores types used for statements.
 */
 
 import { Token } from "../lexer/index.js";
-import { UnresolvedVariableType, VariableType, VariableValue } from "../runtime/index.js";
+import { TypedValue, UnresolvedVariableType, VariableType, VariableValue } from "../runtime/index.js";
 import { crash } from "../utils/funcs.js";
 
 
@@ -31,9 +31,10 @@ export const statementTypes = [
 export type StatementType = typeof statementTypes extends ReadonlyArray<infer T> ? T : never;
 /** Statement types that don't start with "illegal." */
 export type LegalStatementType<T extends StatementType = StatementType> = T extends `illegal.${string}` ? never : T;
+/** Asserts that the input is a valid statement type, and returns it. */
 export function StatementType(input:string):StatementType {
 	if(statementTypes.includes(input)) return input;
-	crash(`"${input}" is not a valid statement type`);
+	crash(`Assertion failed: "${input}" is not a valid statement type`);
 }
 
 export type StatementCategory = "normal" | "block" | "block_end" | "block_multi_split";
@@ -43,9 +44,9 @@ export type FunctionArgumentPassMode = "value" | "reference";
 export type FunctionArguments = Map<string, {type:UnresolvedVariableType, passMode:FunctionArgumentPassMode}>;
 export type BuiltinFunctionArguments = Map<string, {type:VariableType[], passMode:FunctionArgumentPassMode}>;
 export type FunctionArgumentData = [name:string, {type:UnresolvedVariableType, passMode:FunctionArgumentPassMode}];
-export type FunctionArgumentDataPartial = [nameToken:Token, {type:UnresolvedVariableType | null, passMode:FunctionArgumentPassMode | null}];
+export type FunctionArgumentDataPartial = [nameToken:Token, {type:(() => UnresolvedVariableType) | null, passMode:FunctionArgumentPassMode | null}];
 
 export type StatementExecutionResult = {
 	type: "function_return";
-	value: VariableValue;
+	value: TypedValue;
 };

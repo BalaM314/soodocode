@@ -8,9 +8,9 @@ This file contains the runtime, which executes the program AST.
 
 import { Config, configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, operators } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
-import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { getBuiltinFunctions } from "./builtin_functions.js";
 import { LocalFileSystem, FileSystem } from "./files.js";
@@ -45,10 +45,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 		else if(!configs.equality_checks.allow_different_types.value)
 			fail({
 				summary: errorSummary,
-				help: {
-					config: configs.equality_checks.coerce_int_real,
-					value: true,
-				}
+				help: enableConfig(configs.equality_checks.coerce_int_real),
 			}, range);
 	}
 	if((a.is("STRING") && b.is("CHAR")) || (b.is("CHAR") && a.is("STRING"))){
@@ -56,10 +53,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 		else if(!configs.equality_checks.allow_different_types.value)
 			fail({
 				summary: errorSummary,
-				help: {
-					config: configs.equality_checks.coerce_string_char,
-					value: true,
-				}
+				help: enableConfig(configs.equality_checks.coerce_string_char),
 			}, range);
 	}
 	if(
@@ -71,10 +65,7 @@ function checkTypeMatch(a:VariableType, b:VariableType, range:TextRange):boolean
 			fail({
 				summary: errorSummary,
 				elaboration: `these types have different lengths`,
-				help: {
-					config: configs.equality_checks.coerce_arrays,
-					value: true
-				}
+				help: enableConfig(configs.equality_checks.coerce_arrays),
 			}, range);
 	}
 	if(!configs.equality_checks.allow_different_types.value)
@@ -215,9 +206,15 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 
 /** Finishes evaluating an expression or function call by ensuring the evaluation result is of the specified type. Also handles specifying generic array types. */
 function finishEvaluation(value:VariableValue, from:VariableType, to:VariableType | undefined):TypedValue {
-	if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType))
-		return typedValue(from, coerceValue(value, from, to)); //don't have a varlength array as the output type
-	else if(to) return typedValue(to, coerceValue(value, from, to));
+	if(to && to instanceof ArrayVariableType && (!to.lengthInformation || !to.elementType)){
+		if(from instanceof ArrayVariableType && (!from.lengthInformation || !from.elementType)){
+			//from is a varlength array, to is also a varlength array
+			crash(`Attempting to finish evaluation of an array without length, passing it to another array without length`);
+		} else {
+			//from has a length, so just keep its length
+			return typedValue(from, coerceValue(value, from, to)); //don't have a varlength array as the output type
+		}
+	}	else if(to) return typedValue(to, coerceValue(value, from, to));
 	else return typedValue(from, value);
 }
 
@@ -342,6 +339,7 @@ export class Runtime {
 		if(outType == "variable"){
 			return {
 				type: targetType.elementType,
+				name: `${target.name}[${indexes.map(([, value], i) => value).join(", ")}]`,
 				declaration: target.declaration,
 				mutable: true,
 				get value(){ return target.value[index]; },
@@ -410,12 +408,14 @@ export class Runtime {
 			({ type:targetType, value:targetValue } = this.evaluateExpr(expr.nodes[0]));
 		}
 		if(targetType instanceof RecordVariableType){
+			if(targetValue == null) fail(f.quote`Variable ${expr.nodes[0]} has not been initialized`, expr.nodes[0]);
 			forceType<VariableTypeMapping<RecordVariableType>>(targetValue);
 			const outputType = targetType.fields[property]?.[0] ?? fail(f.quote`Property ${property} does not exist on type ${targetType}`, expr.nodes[1]);
 			if(outType == "variable"){
 				//i see nothing wrong with this bodged variable data
 				return {
 					type: outputType,
+					name: `(record).${property}`,
 					declaration: (target! satisfies VariableData | ConstantData).declaration as never,
 					mutable: true, //Even if the record is immutable, the property is mutable
 					get value(){ return targetValue[property]; },
@@ -429,7 +429,8 @@ export class Runtime {
 				return finishEvaluation(value, outputType, outType);
 			}
 		} else if(targetType instanceof ClassVariableType){
-			const classInstance = targetValue as VariableTypeMapping<ClassVariableType>;
+			const classInstance = targetValue as VariableTypeMapping<ClassVariableType> | null;
+			if(classInstance == null) fail(f.quote`Variable ${expr.nodes[0]} has not been initialized`, expr.nodes[0]);
 			const instanceType = classInstance.type; //Use the instance's type (Dog, not the variable type Animal) only when searching for methods
 			if(outType == "function"){
 				const [clazz, method] = targetType.allMethods[property]
@@ -464,23 +465,24 @@ export class Runtime {
 						: fail(f.quote`Property ${property} does not exist on type ${targetType}`, expr.nodes[1])
 				);
 				if(propertyStatement.accessModifier == "private" && !this.canAccessClass(targetType)) fail(f.quote`Property ${property} is private and cannot be accessed outside of the class`, expr.nodes[1]);
-				const outputType = targetType.getPropertyType(property, classInstance);
 				if(outType == "variable"){
+					const assignabilityType = targetType.properties[property][0];
 					return {
-						type: outputType,
-						assignabilityType: targetType.properties[property][0],
-						updateType(type){
-							if(outputType instanceof ArrayVariableType && !outputType.lengthInformation)
-								classInstance.propertyTypes[property] = type;
-						},
-						declaration: target!.declaration,
+						get type(){ return targetType.getPropertyType(property, classInstance); },
+						name: `${target ? target.name : `(instance of ${targetType.name})`}.${property}`,
+						assignabilityType,
+						updateType: assignabilityType instanceof ArrayVariableType && !assignabilityType.lengthInformation ? (type) => {
+							classInstance.propertyTypes[property] = type;
+						} : undefined,
+						declaration: targetType.properties[property][1] as never,
 						mutable: true, //Even if the class instance variable is immutable, the property is mutable
 						get value(){ return classInstance.properties[property]; },
 						set value(val){
 							classInstance.properties[property] = val;
 						}
-					} as (VariableData | ConstantData);
+					} satisfies (VariableData | ConstantData);
 				}	else {
+					const outputType = targetType.getPropertyType(property, classInstance);
 					const value = classInstance.properties[property];
 					if(value === null) fail(f.text`Variable "${expr.nodes[0]}.${property}" has not been initialized`, expr.nodes[1]);
 					return finishEvaluation(value, outputType, outType);
@@ -540,7 +542,7 @@ export class Runtime {
 				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`, expr.functionName);
 				const statement = func.controlStatements[0];
 				const output = this.callFunction(func, expr.args, true);
-				return finishEvaluation(output, this.resolveVariableType(statement.returnType), type);
+				return finishEvaluation(output.value, output.type, type);
 			}
 		}
 		if(expr instanceof ExpressionASTClassInstantiationNode){
@@ -566,7 +568,6 @@ export class Runtime {
 						//create a fake variable
 						const target = this.evaluateExpr(expr.nodes[0], type?.target, true);
 						//Guess the type
-						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						if(!configs.pointers.implicit_variable_creation.value)
 							rethrow(err, m =>
 								typeof m == "string" ? `\n${configs.pointers.implicit_variable_creation.errorHelp}` :
@@ -575,14 +576,38 @@ export class Runtime {
 									help: m.help ?? enableConfig(configs.pointers.implicit_variable_creation)
 								}
 							);
+						if(
+							target.type instanceof ArrayVariableType && target.type.lengthInformation && target.type.elementType &&
+							type && type.target instanceof ArrayVariableType && type.target.elementType && !type.target.lengthInformation &&
+							typesEqual(target.type.elementType, type.target.elementType)
+						){
+							//This is code like the following:
+							//DECLARE ptr: ^ARRAY OF INTEGER
+							//ptr <- ^functionReturningVarlengthArray()
+							//If ptr gets assigned to later, the type needs to be updated
+							let dynVarType = target.type;
+							return typedValue(type, {
+								get type(){ return dynVarType; },
+								assignabilityType: type.target, //Arrays of other lengths can be assigned here
+								updateType(type){
+									if(type instanceof ArrayVariableType) dynVarType = type;
+								},
+								name: `(dynamic variable)`,
+								declaration: "dynamic",
+								mutable: true,
+								value: target.value
+							});
+						}
+						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
 						return finishEvaluation({
 							type: target.type,
+							name: `(dynamic variable)`,
 							declaration: "dynamic",
 							mutable: true,
 							value: target.value
 						}, pointerType, type);
 					}
-					const pointerType = this.getPointerTypeFor(variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
+					const pointerType = this.getPointerTypeFor((variable as VariableData).assignabilityType ?? variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
 					return finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
@@ -600,8 +625,11 @@ export class Runtime {
 						if(!pointerVariable.value.mutable) fail(`Cannot assign to constant`, expr);
 						return pointerVariable.value;
 					} else {
-						if(pointerVariable.value.value == null) fail(f.quote`Cannot dereference ${expr.nodes[0]} and use the value, because the underlying value has not been initialized`, expr.nodes[0]);
-						return finishEvaluation(pointerVariable.value.value, pointerVariable.type.target, type);
+						if(pointerVariable.value.value == null) fail({
+							summary: f.quoteRange`Cannot dereference ${expr.nodes[0]} and use the value`,
+							elaboration: [f.quoteRange`${expr.nodes[0]} points to ${pointerVariable.value.name}, which has not been initialized`],
+						}, expr.nodes[0]);
+						return finishEvaluation(pointerVariable.value.value, pointerVariable.value.type, type);
 					}
 				}
 				default: impossible();
@@ -643,7 +671,7 @@ export class Runtime {
 				if(expr.operator == operators.add){
 					return finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot add ${other} to enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else if(expr.operator == operators.subtract){
-					return finishEvaluation(left.type.values[value + other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
+					return finishEvaluation(left.type.values[value - other] ?? fail(f.text`Cannot subtract ${other} from enum value "${left.value}": no corresponding value in ${left.type}`, expr), left.type, type);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[0]);
 			} else if(right.typeIs(EnumeratedVariableType)){
 				if(type && !(type instanceof EnumeratedVariableType)) fail(f.quote`expected the expression to evaluate to a value of type ${type}, but it returns an enum value`, expr);
@@ -739,14 +767,32 @@ export class Runtime {
 				case operators.greater_than_equal:
 				case operators.less_than:
 				case operators.less_than_equal: {
-					const left = this.evaluateExpr(expr.nodes[0], PrimitiveVariableType.REAL, true).value;
-					const right = this.evaluateExpr(expr.nodes[1], PrimitiveVariableType.REAL, true).value;
+					const left = this.evaluateExpr(expr.nodes[0], undefined, true);
+					if(!(
+						left.typeIs("INTEGER", "REAL", "CHAR", "DATE") || left.typeIs(EnumeratedVariableType)
+					)) fail({
+						summary: f.range`Expression ${expr.nodes[0]} has an invalid type`,
+						elaboration: [
+							f.quoteRange`Expected this expression to evaluate to a value of type INTEGER, REAL, CHAR, DATE, or (enumerated variable type), but it has type ${left.type.fmtText()}`
+						],
+						help: left.typeIs("STRING") && left.value.length == 1 ? 
+							expr.nodes[0] instanceof Token && expr.nodes[0].type == "string" ? [
+								`use a CHAR literal by replacing the double quotes with single quotes`
+							] : [
+								//Because left was evaluated with undefined as the variable type, coercion to char is not attempted
+								`explicitly convert this expression to a CHAR by using a temp variable`
+							] : undefined
+					}, expr.nodes[0]);
+					const leftValue = computeOrdering(left);
+					const right = this.evaluateExpr(expr.nodes[1], left.type, true);
+					const rightValue = computeOrdering(right);
+
 					return TypedValue.BOOLEAN((() => {
 						switch(expr.operator){
-							case operators.greater_than: return left > right;
-							case operators.greater_than_equal: return left >= right;
-							case operators.less_than: return left < right;
-							case operators.less_than_equal: return left <= right;
+							case operators.greater_than: return leftValue > rightValue;
+							case operators.greater_than_equal: return leftValue >= rightValue;
+							case operators.less_than: return leftValue < rightValue;
+							case operators.less_than_equal: return leftValue <= rightValue;
 						}
 					})()!);
 				}
@@ -770,8 +816,7 @@ export class Runtime {
 			}
 		}
 
-		expr.operator.category satisfies never;
-		impossible();
+		unreachable(expr.operator.category, JSON.stringify(expr.operator));
 	}
 	/** Evaluates an expression leaf node. */
 	evaluateToken(token:Token):TypedValue;
@@ -820,6 +865,10 @@ export class Runtime {
 				return finishEvaluation(val, PrimitiveVariableType.REAL, type);
 			}
 			case "string":
+				if(type?.is("CHAR")) fail({
+					summary: `Cannot coerce a STRING literal to type CHAR`,
+					help: `use a CHAR literal instead, by replacing the double quotes with single quotes`
+				}, token);
 				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.STRING, type); //remove the quotes
 			case "char":
 				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.CHAR, type); //remove the quotes
@@ -1134,7 +1183,10 @@ export class Runtime {
 	}
 	/** Evaluates arguments and assembles the scope required for calling a function or procedure. */
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:RangeArray<ExpressionAST>){
-		if(func.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${func.name}`, args);
+		if(func.args.size != args.length) fail({
+			summary: f.quote`Incorrect number of arguments for function ${func.name}`,
+			elaboration: `Expected ${plural(func.args.size, "arguments")}, but received ${plural(args.length, "arguments")}`
+		}, args);
 		const scope:VariableScope = {
 			statement: func,
 			opaque: !(func instanceof ClassProcedureStatement || func instanceof ClassFunctionStatement),
@@ -1148,6 +1200,7 @@ export class Runtime {
 				if(!typesEqual(varData.type, rType)) fail(f.quote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type or change the pass mode to BYVAL.`, args[i]);
 				scope.variables[name] = {
 					declaration: func,
+					name,
 					mutable: true,
 					type: rType,
 					get value(){ return varData.value ?? fail(`Variable (passed by reference) has not been initialized`, args[i]); },
@@ -1158,6 +1211,7 @@ export class Runtime {
 				if(type instanceof ArrayVariableType && !type.lengthInformation) crash(f.quote`evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
 				scope.variables[name] = {
 					declaration: func,
+					name,
 					mutable: true,
 					type,
 					value: this.cloneValue(rType, value)
@@ -1166,13 +1220,14 @@ export class Runtime {
 		}
 		return scope;
 	}
-	callFunction<T extends boolean>(funcNode:FunctionData, args:RangeArray<ExpressionAST>, requireReturnValue?:T):VariableValue | (T extends false ? null : never){
+	callFunction<T extends boolean>(funcNode:FunctionData, args:RangeArray<ExpressionAST>, requireReturnValue?:T):TypedValue | (T extends false ? null : never){
 		const func = funcNode.controlStatements[0];
 		if(func instanceof ProcedureStatement && requireReturnValue)
 			fail(`Cannot use return value of ${func.name}() as it is a procedure`, undefined);
 
 		const scope = this.assembleScope(func, args);
 		const output = this.runBlock(funcNode.nodeGroups[0], false, scope);
+		//If there was a return, the return statement has already ensured the type matches the function return type
 		if(func instanceof ProcedureStatement){
 			//requireReturnValue satisfies false;
 			return null as never;
@@ -1202,17 +1257,21 @@ export class Runtime {
 		const previousClassData = this.classData;
 		this.classData = {instance, method, clazz};
 		const output = this.runBlock(method.nodeGroups[0], false, classScope, methodScope);
+		//If there was a return, the return statement has already ensured the type matches the function return type
 		this.classData = previousClassData;
 		if(func instanceof ClassProcedureStatement){
 			//requireReturnValue satisfies false;
 			return null as never;
 		} else { //must be functionstatement
 			if(!output) fail(f.quote`Function ${func.name} did not return a value`, undefined);
-			return typedValue(this.resolveVariableType(func.returnType), output.value) as never;
+			return output.value as never;
 		}
 	}
 	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):TypedValue {
-		if(fn.args.size != args.length) fail(f.quote`Incorrect number of arguments for function ${fn.name}`, undefined);
+		if(fn.args.size != args.length) fail({
+			summary: f.quote`Incorrect number of arguments for function ${fn.name}`,
+			elaboration: `Expected ${plural(fn.args.size, "arguments")}, but received ${plural(args.length, "arguments")}`
+		}, args);
 		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const evaluatedArgs:[VariableValue, TextRange][] = [];
 		let i = 0;
@@ -1241,11 +1300,11 @@ export class Runtime {
 	 */
 	runBlock(code:ProgramASTNodeGroup, allScopesEmpty:boolean, ...scopes:VariableScope[]):void | {
 		type: "function_return";
-		value: VariableValue;
+		value: TypedValue;
 	}{
 		if(code.simple() && allScopesEmpty) return this.runBlockFast(code);
 		this.scopes.push(...scopes);
-		let returned:null | VariableValue = null;
+		let returned:null | TypedValue = null;
 		const {typeNodes, constants, others} = groupArray(code, c =>
 			(c instanceof TypeStatement ||
 			c instanceof ProgramASTBranchNode && c.controlStatements[0] instanceof TypeStatement) ? "typeNodes" :
@@ -1356,3 +1415,13 @@ export class Runtime {
 		return data;
 	}
 }
+function computeOrdering(x:TypedValue<PrimitiveVariableType<"INTEGER" | "REAL" | "CHAR" | "DATE"> | EnumeratedVariableType>):number {
+	return (
+		x.typeIs(EnumeratedVariableType) ? x.type.values.indexOf(x.value) :
+		x.typeIs("INTEGER", "REAL") ? x.value :
+		x.typeIs("CHAR") ? x.value.codePointAt(0)! :
+		x.typeIs("DATE") ? x.value.getTime() :
+		impossible()
+	);
+}
+

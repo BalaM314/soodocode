@@ -458,6 +458,120 @@ x[7] <- 15
 OUTPUT amogus(x)`,
 `different length`,
 ],
+varlength_array_behind_pointer_simple: [
+`FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
+	DECLARE out: ARRAY[1:x] OF INTEGER
+	RETURN out
+ENDFUNCTION
+
+TYPE arrayWrapper = ^ARRAY OF INTEGER
+DECLARE x: arrayWrapper
+
+x <- ^arr(1)
+OUTPUT LENGTH(x^)
+FOR i <- 1 TO LENGTH(x^)
+	OUTPUT (x^)[i]
+NEXT i
+`,
+["1", "0"]
+],
+varlength_array_behind_pointer_complex: [
+`FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
+	DECLARE out: ARRAY[1:x] OF INTEGER
+	RETURN out
+ENDFUNCTION
+
+TYPE arrayWrapper = ^ARRAY OF INTEGER
+DECLARE x: arrayWrapper
+
+x <- ^arr(1)
+OUTPUT LENGTH(x^)
+FOR i <- 1 TO LENGTH(x^)
+	OUTPUT (x^)[i]
+NEXT i
+
+x <- ^arr(2)
+OUTPUT LENGTH(x^)
+FOR i <- 1 TO LENGTH(x^)
+	OUTPUT (x^)[i]
+NEXT i
+
+x^ <- arr(3)
+OUTPUT LENGTH(x^)
+FOR i <- 1 TO LENGTH(x^)
+	OUTPUT (x^)[i]
+NEXT i`,
+["1", "0", "2", "0", "0", "3", "0", "0", "0"]
+],
+varlength_array_in_class_complex: [
+`FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
+  DECLARE out: ARRAY[1:x] OF INTEGER
+  RETURN out
+ENDFUNCTION
+
+CLASS bar
+  PUBLIC field: ARRAY OF INTEGER
+  PUBLIC PROCEDURE NEW(len: INTEGER)
+		field <- arr(len)
+  ENDPROCEDURE
+ENDCLASS
+
+DECLARE x: bar;
+
+x <- NEW bar(1)
+FOR i <- 1 TO LENGTH(x.field)
+	OUTPUT x.field[i]
+NEXT i
+
+x.field <- arr(2)
+FOR i <- 1 TO LENGTH(x.field)
+	OUTPUT x.field[i]
+NEXT i`,
+["0", "0", "0"]
+],
+varlength_array_in_class_very_complex: [
+`
+//Function that returns an array of arbitrary length
+FUNCTION arr(x: INTEGER) RETURNS ARRAY OF INTEGER
+	DECLARE out: ARRAY[1:x] OF INTEGER
+	RETURN out
+ENDFUNCTION
+
+TYPE pArray = ^ARRAY OF INTEGER
+CLASS bar
+	PUBLIC field: ARRAY OF INTEGER
+	PUBLIC PROCEDURE NEW(len: INTEGER)
+		//The field is assigned to before it is used, so it does not need to be initialized
+		field <- arr(len)
+	ENDPROCEDURE
+ENDCLASS
+
+DECLARE x: bar
+DECLARE y: pArray
+
+x <- NEW bar(1)
+//Create a pointer to x.field
+y <- ^x.field
+
+//Loop through x.field
+FOR i <- 1 TO LENGTH(x.field)
+	OUTPUT x.field[i]
+NEXT i
+
+//Loop through the pointer
+FOR i <- 1 TO LENGTH(y^)
+	OUTPUT (y^)[i]
+NEXT i
+
+//Replace x.field with an array of different type
+x.field <- arr(2)
+
+//The pointer should still be pointing to x.field
+FOR i <- 1 TO LENGTH(y^)
+	OUTPUT (y^)[i]
+NEXT i`,
+["0", "0", "0", "0"]
+],
 //#endregion
 //#region functions
 parse_procedure_blank: [
@@ -1105,7 +1219,134 @@ NEXT i`,
 Array(10).fill("10")
 ],
 //#endregion
+//#region expressions
+add_numbers: [
+`OUTPUT 2 + 2`,
+["4.0"]
+],
+comparison_numbers: [
+`OUTPUT 2 < 2
+OUTPUT 2 < 3
+OUTPUT 2 <= 2
+OUTPUT 2 <= 3
+OUTPUT 2 > 2
+OUTPUT 2 > 3
+OUTPUT 2 >= 2
+OUTPUT 2 >= 3`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_numbers_decimals: [
+`OUTPUT 2.4 < 2.4
+OUTPUT 2.4 < 2.6
+OUTPUT 2.4 <= 2.4
+OUTPUT 2.4 <= 2.6
+OUTPUT 2.4 > 2.4
+OUTPUT 2.4 > 2.6
+OUTPUT 2.4 >= 2.4
+OUTPUT 2.4 >= 2.6`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_chars: [
+`OUTPUT 'a' < 'a'
+OUTPUT 'a' < 'b'
+OUTPUT 'a' <= 'a'
+OUTPUT 'a' <= 'b'
+OUTPUT 'a' > 'a'
+OUTPUT 'a' > 'b'
+OUTPUT 'a' >= 'a'
+OUTPUT 'a' >= 'b'`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_enums: [
+`TYPE enum = (a, b)
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_dates: [
+`DECLARE a, b: DATE
+a <- SETDATE(12, 1, 2024)
+b <- SETDATE(13, 1, 2024)
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+["FALSE", "TRUE", "TRUE", "TRUE", "FALSE", "FALSE", "TRUE", "FALSE"]
+],
+comparison_strings_invalid: [
+`DECLARE a, b: STRING
+a <- "aaa"
+b <- "bbb"
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+`invalid type`
+],
+comparison_strings_invalid_2: [
+`DECLARE a, b: STRING
+a <- "a"
+b <- "b"
+OUTPUT a < a
+OUTPUT a < b
+OUTPUT a <= a
+OUTPUT a <= b
+OUTPUT a > a
+OUTPUT a > b
+OUTPUT a >= a
+OUTPUT a >= b`,
+`convert`
+],
+//#endregion
 //#region statements
+input_variable: [
+`DECLARE hello: STRING
+INPUT hello`,
+[],
+["input"]
+],
+input_array_slot: [
+`FUNCTION foo() RETURNS INTEGER
+RETURN 3 + 4;
+ENDFUNCTION
+DECLARE hello: ARRAY[1:10] OF STRING
+INPUT hello[foo() - 2]
+OUTPUT hello[5]`,
+["input"],
+["input"]
+],
+input_record_slot: [
+`TYPE struct
+	DECLARE field: STRING
+ENDTYPE
+DECLARE hello: ARRAY[1:10] OF struct
+INPUT hello[4].field
+OUTPUT hello[4].field`,
+["input"],
+["input"]
+],
+input_invalid_1: [
+`INPUT 2 + 2`,
+``
+],
+input_invalid_2: [
+`INPUT TIME(0)`,
+``
+],
 if_normal: [
 `IF FALSE THEN
 ENDIF`,

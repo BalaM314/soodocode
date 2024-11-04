@@ -8,7 +8,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import { configs } from "../config/index.js";
 import { Token, TokenType } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma } from "../parser/index.js";
 import { ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableScope, VariableType, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
 import { combineClasses, crash, enableConfig, f, fail, getTotalRange, RangeArray } from "../utils/funcs.js";
@@ -32,12 +32,12 @@ export abstract class TypeStatement extends Statement {
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
 	static requiresScope = true;
-	varType = processTypeData(this.expr(-1, "type"));
+	varType = this.expr(-1, "type");
 	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokens(1, -2), this.token(-2)
 	).map(t => [t.text, t] as [string, Token]);
 	run(runtime:Runtime){
-		const varType = runtime.resolveVariableType(this.varType);
+		const varType = runtime.resolveVariableType(processTypeData(this.varType));
 		if(varType instanceof SetVariableType) fail({
 			summary: `Cannot declare a set variable with the DECLARE statement`,
 			help: [f.range`use the DEFINE statement instead, like this:\nDEFINE ${this.variables[0][0]} (your comma-separated values here): ${this.expr(-1, "type")}`]
@@ -45,6 +45,7 @@ export class DeclareStatement extends Statement {
 		for(const [variable, token] of this.variables){
 			runtime.defineVariable(variable, {
 				type: varType,
+				name: variable,
 				value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
 				declaration: this,
 				mutable: true,
@@ -67,6 +68,7 @@ export class ConstantStatement extends Statement {
 			?? crash(`evaluation of literals cannot fail`);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
+			name: this.name,
 			get value(){ return value; },
 			set value(value){ crash(`Attempted assignment to constant`); },
 			declaration: this,
@@ -91,6 +93,7 @@ export class DefineStatement extends Statement {
 		}, this.variableTypeToken);
 		runtime.defineVariable(this.name.text, {
 			type,
+			name: this.name.text,
 			declaration: this,
 			mutable: true,
 			value: this.values.map(t => (
@@ -141,7 +144,7 @@ export class TypeRecordStatement extends TypeStatement {
 		const fields:Record<string, [UnresolvedVariableType, TextRange]> = Object.create(null);
 		for(const statement of node.nodeGroups[0]){
 			if(!(statement instanceof DeclareStatement)) crash(`allowOnly is ["declare"]`);
-			statement.variables.forEach(([v, r]) => fields[v] = [statement.varType, r.range]);
+			statement.variables.forEach(([v, r]) => fields[v] = [processTypeData(statement.varType), r.range]);
 		}
 		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as const;
 	}
@@ -164,7 +167,9 @@ export class AssignmentStatement extends Statement {
 			if(type instanceof ClassVariableType){
 				if(configs.statements.auto_declare_classes.value){
 					runtime.getCurrentScope().variables[this.target.text] = {
-						type, value, declaration: this, mutable: true,
+						name: this.target.text, declaration: this,
+						mutable: true,
+						type, value,
 					};
 				} else fail({
 					summary: f.quote`Variable ${this.target.text} does not exist`,
@@ -193,11 +198,19 @@ export class OutputStatement extends Statement {
 		runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
 	}
 }
-@statement("input", "INPUT y", "keyword.input", "name")
+@statement("input", "INPUT y", "keyword.input", "expr+")
 export class InputStatement extends Statement {
-	name = this.token(1).text;
+	name = this.expr(1,
+		[Token, ExpressionASTArrayAccessNode, ExpressionASTBranchNode],
+		`Invalid INPUT target: must be a single variable name, an array access expression, or a property access expression`,
+		node => {
+			if(node instanceof Token) return node.type == "name";
+			if(node instanceof ExpressionASTBranchNode) return node.operator.id == "operator.access";
+			return true;
+		}
+	);
 	run(runtime:Runtime){
-		const variable = runtime.getVariable(this.name) ?? runtime.handleNonexistentVariable(this.name, this.nodes[1].range);
+		const variable = runtime.evaluateExpr(this.name, "variable");
 		if(!variable.mutable) fail(f.quote`Cannot INPUT ${this.name} because it is immutable`, this.nodes[1], this);
 		const input = runtime._input(f.text`Enter the value for variable "${this.name}" (type: ${variable.type})`, variable.type);
 		switch(variable.type){
@@ -243,14 +256,14 @@ export class ReturnStatement extends Statement {
 		if(fn instanceof ProgramASTBranchNode){
 			const statement = fn.controlStatements[0];
 			if(statement instanceof ProcedureStatement) fail(`Procedures cannot return a value.`, this);
-			type = statement.returnType;
+			type = statement.returnType();
 		} else {
 			if(fn instanceof ClassProcedureStatement) fail(`Procedures cannot return a value.`, this);
-			type = fn.returnType;
+			type = fn.returnType();
 		}
 		return {
 			type: "function_return" as const,
-			value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type)).value
+			value: runtime.evaluateUntyped(this.expression, runtime.resolveVariableType(type))
 		};
 	}
 }
@@ -432,6 +445,7 @@ export class ForStatement extends Statement {
 		
 		const variable:ConstantData = {
 			declaration: this,
+			name: this.name,
 			mutable: false,
 			type: PrimitiveVariableType.INTEGER,
 			value: null!,
@@ -543,8 +557,7 @@ export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
 	argsRange:TextRange;
-	returnType:UnresolvedVariableType;
-	returnTypeToken:ExpressionASTTypeNode;
+	returnTypeNode:ExpressionASTTypeNode;
 	name:string;
 	nameToken:Token;
 	static propagatesControlFlowInterruptions = false;
@@ -553,11 +566,11 @@ export class FunctionStatement extends Statement {
 		tokens = tokens.slice(offset);
 		this.args = parseFunctionArguments(tokens.slice(3, -3));
 		this.argsRange = this.args.size > 0 ? getTotalRange(tokens.slice(3, -3)) : tokens[2].rangeAfter();
-		this.returnType = processTypeData(tokens.at(-1)!);
-		this.returnTypeToken = tokens.at(-1)!;
+		this.returnTypeNode = tokens.at(-1)!;
 		this.nameToken = tokens[1];
 		this.name = tokens[1].text;
 	}
+	returnType():UnresolvedVariableType { return processTypeData(this.returnTypeNode); }
 	runBlock(runtime:Runtime, node:FunctionData<"function">){
 		runtime.defineFunction(this.name, node, this.nameToken.range);
 	}
@@ -722,7 +735,7 @@ export class ClassStatement extends TypeStatement {
 	name = this.token(1);
 	static allowOnly = new Set<StatementType>(["class_property", "class_procedure", "class_function"]);
 	static propagatesControlFlowInterruptions = false;
-	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
+	createClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		const classData = new ClassVariableType(false, this);
 		for(const node of branchNode.nodeGroups[0]){
 			if(node instanceof ProgramASTBranchNode){
@@ -746,7 +759,7 @@ export class ClassStatement extends TypeStatement {
 					if(classData.properties[variable]){
 						fail(f.quote`Duplicate declaration of class property ${variable}`, token, node);
 					} else {
-						classData.properties[variable] = [node.varType, node, token];
+						classData.properties[variable] = [processTypeData(node.varType), node, token];
 					}
 				}
 				classData.propertyStatements.push(node);
@@ -758,16 +771,16 @@ export class ClassStatement extends TypeStatement {
 		return classData;
 	}
 	createTypeBlock(runtime:Runtime, branchNode:ProgramASTBranchNode){
-		return [this.name.text, this.initializeClass(runtime, branchNode)] as [name: string, type: VariableType<false>];
+		return [this.name.text, this.createClass(runtime, branchNode)] as [name: string, type: VariableType<false>];
 	}
 }
 @statement("class.inherits", "CLASS Dog INHERITS Animal", "block", "keyword.class", "name", "keyword.inherits", "name")
 export class ClassInheritsStatement extends ClassStatement {
 	superClassName = this.token(3);
-	initializeClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
+	createClass(runtime:Runtime, branchNode:ProgramASTBranchNode):ClassVariableType<false> {
 		if(this.superClassName.text == this.name.text) fail(`A class cannot inherit from itself`, this.superClassName, this);
 		const baseClass = runtime.getClass(this.superClassName.text, this.superClassName.range, this);
-		const extensions = super.initializeClass(runtime, branchNode);
+		const extensions = super.createClass(runtime, branchNode);
 
 		//Apply the base class's properties and functions
 		extensions.baseClass = baseClass;

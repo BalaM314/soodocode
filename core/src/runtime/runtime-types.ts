@@ -7,9 +7,9 @@ This file contains the types for the runtime, such as the variable types and ass
 
 import { configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
-import type { ExpressionAST, ExpressionASTArrayTypeNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ProgramASTBranchNode, ProgramASTNodeGroup } from "../parser/index.js";
+import { processTypeData, type ExpressionAST, type ExpressionASTArrayTypeNode, type ExpressionASTNode, type ExpressionASTRangeTypeNode, type ProgramASTBranchNode, type ProgramASTNodeGroup } from "../parser/index.js";
 import { AssignmentStatement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "../statements/index.js";
-import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { Runtime } from "./runtime.js";
 
@@ -57,7 +57,9 @@ export const primitiveVariableTypeNames = [
 	"BOOLEAN",
 	"DATE",
 ] as const;
+/** The name of a primitive variable type, like INTEGER, STRING, or DATE. */
 export type PrimitiveVariableTypeName = typeof primitiveVariableTypeNames extends ReadonlyArray<infer T> ? T : never;
+/** Maps the name of a primitive variable type to the TS type used to store its data. */
 export type PrimitiveVariableTypeMapping<T extends PrimitiveVariableTypeName> =
 	T extends "INTEGER" ? number :
 	T extends "REAL" ? number :
@@ -67,10 +69,12 @@ export type PrimitiveVariableTypeMapping<T extends PrimitiveVariableTypeName> =
 	T extends "DATE" ? Date :
 	never;
 
+/** A type and value wrapped together, as an expanded union. */
 export type TypedValue<T extends VariableType = VariableType> =
 	//Trigger DCT
 	T extends unknown ? TypedValue_<T> : never;
 export type { TypedValue_ };
+/** A type and value wrapped together. */
 class TypedValue_<T extends VariableType> {
 	constructor(
 		public type:T,
@@ -86,16 +90,19 @@ class TypedValue_<T extends VariableType> {
 		| typeof ClassVariableType
 	>(clazz:Type):
 		this is TypedValue_<Type["prototype"]>;
-	typeIs<Type extends PrimitiveVariableTypeName>(type:Type):
+	typeIs<Type extends PrimitiveVariableTypeName>(...type:Type[]):
 		this is TypedValue_<PrimitiveVariableType<Type>>;
-	typeIs(type:unknown){
-		if(type instanceof Function && type.prototype instanceof BaseVariableType)
-			return this.type instanceof type;
-		if(typeof type == "string")
-			return this.type == PrimitiveVariableType.get(type);
+	typeIs(...type:PrimitiveVariableTypeName[] | [BaseVariableType]){
+		if(type[0] instanceof Function && type[0].prototype instanceof BaseVariableType)
+			return this.type instanceof type[0];
+		if(typeof type[0] == "string")
+			return this.type.is(...(type as PrimitiveVariableTypeName[]));
 		impossible();
 	}
-	/** MUST escape HTML special chars from user input. */
+	/**
+	 * Displays the value as formatted HTML.
+	 * Must escape HTML special chars from user input.
+	 */
 	asHTML(recursive:boolean):string {
 		if(this.type instanceof PrimitiveVariableType){
 			if(this.typeIs("INTEGER"))
@@ -116,6 +123,7 @@ class TypedValue_<T extends VariableType> {
 		}
 		return this.type.asHTML(this.value as never, recursive); //corr
 	}
+	/** Displays the value as a plain-text string. */
 	asString():string {
 		if(this.type instanceof PrimitiveVariableType){
 			if(this.typeIs("INTEGER"))
@@ -135,31 +143,39 @@ class TypedValue_<T extends VariableType> {
 		return this.type.asString(this.value as never); //corr
 	}
 }
+/** A collection of utility functions that generate a TypedValue of a particular type. */
 export const TypedValue = Object.fromEntries(primitiveVariableTypeNames.map(n =>
 	[n, function(value:VariableTypeMapping<PrimitiveVariableType>){
 		if(value == undefined){
-			value satisfies never;
-			crash(`nullish values are not allowed here`);
+			unreachable(value, `nullish values are not allowed here`);
 		}
 		return new TypedValue_(PrimitiveVariableType.get(n), value);
 	}] as const
 )) as {
 	[N in PrimitiveVariableTypeName]: (value:VariableTypeMapping<PrimitiveVariableType<N>>) => TypedValue_<PrimitiveVariableType<N>>;
 };
+/** Utility function to create a TypedValue. */
 export function typedValue<T extends VariableType>(type:T, value:VariableTypeMapping<T>):TypedValue {
 	if(type == null || value == null) impossible();
 	if(!(type instanceof BaseVariableType)){
-		(type satisfies never);
-		crash(`Type was not a valid type`, type);
+		unreachable(type, `Type was not a valid type`);
 	}
+	if(type instanceof ArrayVariableType && !type.lengthInformation)
+		crash(`Attempted to construct a TypedValue with an array type without a known length`);
 	return new TypedValue_(type, value) as TypedValue;
 }
 
+/** An {@link ExpressionASTNode} wrapped with its evaluation result, and a function to evaluate it. */
 export interface NodeValue {
 	node: ExpressionASTNode;
+	/**
+	 * Set to undefined if pre-evaluation has not been attempted yet.
+	 * Set to null if pre-evaluation has been attempted but failed.
+	 */
 	value: VariableValue | TypedValue | null | undefined;
 	init():void;
 }
+/** An {@link ExpressionASTNode} of known expected type wrapped with its evaluation result, and a function to evaluate it. */
 export class TypedNodeValue<
 	T extends ExpressionASTNode = ExpressionASTNode,
 	InputType extends PrimitiveVariableTypeName | VariableType = VariableType,
@@ -170,6 +186,10 @@ export class TypedNodeValue<
 	constructor(
 		public node: T,
 		inputType: InputType,
+		/**
+		 * Set to undefined if pre-evaluation has not been attempted yet.
+		 * Set to null if pre-evaluation has been attempted but failed.
+		 */
 		public value: VariableTypeMapping<Type> | null | undefined = undefined
 	){
 		this.type = ((typeof inputType == "string") ? PrimitiveVariableType.get(inputType) : inputType) as Type;
@@ -178,17 +198,23 @@ export class TypedNodeValue<
 		this.value = (Runtime.evaluateExpr(this.node, this.type) as TypedValue_<Type> | null)?.value ?? null;
 	}
 }
+/** An {@link ExpressionASTNode} of unknown type wrapped with its evaluation result, and a function to evaluate it. */
 export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implements NodeValue {
 	constructor(
 		public node: T
 	){}
 	range = this.node.range;
+	/**
+	 * Set to undefined if pre-evaluation has not been attempted yet.
+	 * Set to null if pre-evaluation has been attempted but failed.
+	 */
 	value: TypedValue | null | undefined;
 	init(){
 		this.value = Runtime.evaluateExpr(this.node);
 	}
 }
 
+/** Base class for variable types. */
 export abstract class BaseVariableType implements IFormattable {
 	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
 	abstract init(runtime:Runtime):void;
@@ -207,15 +233,23 @@ export abstract class BaseVariableType implements IFormattable {
 	abstract fmtText():string;
 }
 
+/** Discriminated union for {@link PrimitiveVariableType} */
 export type PrimitiveVariableType_<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> = T extends string ? PrimitiveVariableType<T> : never;
+/** A primitive variable type, like INTEGER, STRING, and DATE. */
 export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = PrimitiveVariableTypeName> extends BaseVariableType {
 	static all:PrimitiveVariableType[] = [];
 
+	/** An integer value. Currently, only integers from -9007199254740991 to 9007199254740991 are supported. */
 	static INTEGER = new PrimitiveVariableType("INTEGER");
+	/** A real number, more commonly known as a float or double. Uses a 64-bit float. */
 	static REAL = new PrimitiveVariableType("REAL");
+	/** A string of UTF-8 characters. */
 	static STRING = new PrimitiveVariableType("STRING");
+	/** A single Unicode Scalar Value, between U+0000 and U+10FFFF. */
 	static CHAR = new PrimitiveVariableType("CHAR");
+	/** A boolean value, TRUE or FALSE. */
 	static BOOLEAN = new PrimitiveVariableType("BOOLEAN");
+	/** A date. Stores the year, month, and day. */
 	static DATE = new PrimitiveVariableType("DATE");
 
 	private constructor(
@@ -284,6 +318,9 @@ export class IntegerRangeVariableType extends BaseVariableType {
 	fmtText(){
 		return `${this.low}..${this.high}`;
 	}
+	asNumberRange(){
+		return `${this.low} to ${this.high}`;
+	}
 	fmtDebug(){
 		return `IntegerRangeVariableType { ${this.low} .. ${this.high} }`;
 	}
@@ -296,15 +333,21 @@ export class IntegerRangeVariableType extends BaseVariableType {
 	overlaps(other:IntegerRangeVariableType){
 		return this.high >= other.low;
 	}
+	contains(other:IntegerRangeVariableType){
+		return this.low <= other.low && this.high >= other.high;
+	}
 	static from(node:ExpressionASTRangeTypeNode){
 		return new this(Number(node.low.text), Number(node.high.text), node.range);
 	}
 }
+//TODO! refactor variable types
+//Stop mutating them to initialize, create a different class
 /** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
 export class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
 	lengthInformation: [low:number, high:number][] | null = null;
+	private initialized = false;
 	static maxLength = 10_000_000;
 	constructor(
 		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,
@@ -313,6 +356,8 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		public range: TextRange,
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
+		this.initialized = true;
 		if(Array.isArray(this.elementType))
 			this.elementType = runtime.resolveVariableType(this.elementType);
 		if(this.lengthInformationExprs){
@@ -355,8 +400,11 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		return f.debug`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
-		if(!this.lengthInformation) fail(f.quote`${this} is not a valid variable type: length must be specified here`, undefined);
-		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, undefined);
+		if(!this.lengthInformation) fail({
+			summary: f.quote`${this} is not a valid variable type: length must be specified here`,
+			help: `specify the length by adding "[1:10]" after the keyword ARRAY`
+		}, this.range);
+		if(!this.elementType) fail(f.quote`${this} is not a valid variable type: element type must be specified here`, this.range);
 		const type = (this as ArrayVariableType<true>).elementType!;
 		if(type instanceof ArrayVariableType) crash(`Attempted to initialize array of arrays`);
 		if(type.is("REAL")){
@@ -423,6 +471,7 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 		public fields: Record<string, [type:(Init extends true ? never : UnresolvedVariableType) | VariableType, range:TextRange]>,
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
 		for(const [name, [field, range]] of Object.entries(this.fields)){
 			if(Array.isArray(field))
 				this.fields[name][0] = runtime.resolveVariableType(field);
@@ -468,6 +517,18 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 					`which requires initializing the field again`
 				],
 				help: `change the field's type to be a pointer`,
+			}, range);
+			if(type instanceof ArrayVariableType && !type.lengthInformation) fail({
+				summary: f.quote`Type ${this.name} cannot be initialized`,
+				elaboration: [
+					f.quote`When a variable of type ${this.name} is declared, all its fields are immediately initialized`,
+					f.quote`this includes the field ${name}, which does not have a known length and cannot be initialized`
+				],
+				help: [
+					`specify the length of the array type`,
+					f.quoteRange`if the length changes at runtime, change the field's type to be a pointer to ${type}`,
+					f.quoteRange`alternatively, convert this record type to a class, and assign to this field in the constructor so it does not need to be initialized`
+				],
 			}, range);
 		}
 	}
@@ -517,6 +578,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		public range: TextRange
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
 		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
 		(this as PointerVariableType<true>).initialized = true;
 	}
@@ -551,10 +613,12 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 		return null;
 	}
 	asHTML(value:VariableValue):string {
-		return "(pointer)";
+		const v = value as VariableTypeMapping<PointerVariableType>;
+		return `<span class="sth-type">(pointer to</span> ${v.name}<span class="sth-type">)</span>`;
 	}
 	asString(value:VariableValue):string {
-		return "(pointer)";
+		const v = value as VariableTypeMapping<PointerVariableType>;
+		return `(pointer to ${v.name})`;
 	}
 }
 export class EnumeratedVariableType extends BaseVariableType {
@@ -636,8 +700,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
 	init(runtime:Runtime){
+		if(this.initialized) crash(`Attempted to initialize already initialized type`);
 		for(const statement of this.propertyStatements){
-			const type = runtime.resolveVariableType(statement.varType);
+			const type = runtime.resolveVariableType(processTypeData(statement.varType));
 			for(const [name] of statement.variables){
 				this.properties[name][0] = type;
 			}
@@ -755,19 +820,18 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			statement: this.statement,
 			opaque: true,
 			types: Object.create(null),
-			variables: Object.fromEntries(Object.entries(this.properties).map(([k, v]) => [k, {
-				type: instance.propertyTypes[k] ?? v[0],
+			variables: Object.fromEntries(Object.entries((this as ClassVariableType<true>).properties).map(([k, v]) => [k, {
+				get type(){ return instance.propertyTypes[k] ?? v[0]; },
 				assignabilityType: v[0],
-				updateType(type){
-					if(v[0] instanceof ArrayVariableType && !v[0].lengthInformation){
-						instance.propertyTypes[k] = type;
-					}
-				},
+				updateType: v[0] instanceof ArrayVariableType && !v[0].lengthInformation ? (type) => {
+					instance.propertyTypes[k] = type;
+				} : undefined,
 				get value(){return instance.properties[k];},
 				set value(value){instance.properties[k] = value;},
 				declaration: v[1],
 				mutable: true,
-			} as VariableData]))
+				name: k,
+			} satisfies VariableData]))
 		};
 	}
 	iterateProperties<T>(value:VariableTypeMapping<ClassVariableType>, callback:(tval:TypedValue | null, name:string, statement:ClassPropertyStatement) => T):T[] {
@@ -816,6 +880,8 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	if(base == ext) return true;
 	if(Array.isArray(base) && Array.isArray(ext))
 		return base[1] == ext[1] || false;
+	if(Array.isArray(base) || Array.isArray(ext))
+		return false;
 	if(base instanceof ArrayVariableType && ext instanceof ArrayVariableType){
 		if(base.elementType != null){
 			if(ext.elementType == null) return [f.quote`Type "ANY" is not assignable to type ${base.elementType}`];
@@ -839,7 +905,6 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		}
 		return true;
 	}
-	if(base == PrimitiveVariableType.INTEGER && ext instanceof IntegerRangeVariableType) return true;
 	if(base instanceof PointerVariableType && ext instanceof PointerVariableType){
 		return typesEqual(base.target, ext.target) || [f.quote`Types ${base.target} and ${ext.target} are not equal`];
 	}
@@ -848,6 +913,11 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 	}
 	if(base instanceof ClassVariableType && ext instanceof ClassVariableType){
 		return ext.inherits(base) || false;
+	}
+	if(ext instanceof IntegerRangeVariableType){
+		if(base instanceof IntegerRangeVariableType) return base.contains(ext)
+			|| [f.quote`Range ${base.asNumberRange()} does not contain ${ext.asNumberRange()}`];
+		if(base.is("INTEGER")) return true;
 	}
 	return false;
 }
@@ -900,12 +970,12 @@ export function checkClassMethodsCompatible(runtime:Runtime, base:ClassMethodSta
 
 	if(base instanceof ClassFunctionStatement && derived instanceof ClassFunctionStatement){
 		let result;
-		if((result = typesAssignable(runtime.resolveVariableType(base.returnType), runtime.resolveVariableType(derived.returnType))) != true) //return type is covariant
+		if((result = typesAssignable(runtime.resolveVariableType(base.returnType()), runtime.resolveVariableType(derived.returnType()))) != true) //return type is covariant
 			fail({
-				summary: f.quote`Return type ${derived.returnType} is not assignable to ${base.returnType}`,
+				summary: f.quote`Return type ${derived.returnType()} is not assignable to ${base.returnType()}`,
 				elaboration: result ? result[0] : undefined,
 				help: result && result[1] ? result[1] : undefined,
-			}, derived.returnTypeToken, derived);
+			}, derived.returnTypeNode, derived);
 	}
 }
 
@@ -936,9 +1006,10 @@ export type VariableValue = VariableTypeMapping<any>;
 
 export const fileModes = ["READ", "WRITE", "APPEND", "RANDOM"] as const;
 export type FileMode = typeof fileModes extends ReadonlyArray<infer T> ? T : never;
+/** Asserts that the input is a valid file mode, and returns it. */
 export function FileMode(input:string):FileMode {
 	if(fileModes.includes(input)) return input;
-	crash(`${input} is not a valid file mode`);
+	crash(`Assertion failed: ${input} is not a valid file mode`);
 }
 export type File = {
 	readonly name: string;
@@ -971,6 +1042,8 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	/** Null indicates that the variable has not been initialized */
 	value: VariableTypeMapping<T> | Uninitialized;
 	declaration: DeclareStatement | FunctionStatement | ProcedureStatement | DefineStatement | AssignmentStatement | "dynamic";
+	/** Name for the variable, used for error messages */
+	name: string;
 	mutable: true;
 }
 export type ConstantData<T extends VariableType = VariableType> = {
@@ -978,6 +1051,7 @@ export type ConstantData<T extends VariableType = VariableType> = {
 	/** Cannot be null */
 	value: VariableTypeMapping<T>;
 	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
+	name: string;
 	mutable: false;
 }
 /** Either a function or a procedure */

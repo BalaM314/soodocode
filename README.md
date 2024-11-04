@@ -2,9 +2,17 @@
 
 Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Typescript.
 
+[![Image of sample program](./programs/demos/main.png)](./programs/demos/main.sc)
+
+## Website
+
 [Click here to view the site](https://balam314.github.io/soodocode)
 
-[![Image of sample program](./programs/demos/main.png)](./programs/demos/main.sc)
+## CLI
+
+Installation: `npm i -g soodocode-cli`
+
+Usage: `soodocode file.sc`
 
 [More demos](./programs/demos/demos.md)
 
@@ -33,17 +41,24 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Types
 
 ## Arrays
 * [x] n-dimensional arrays
-* [x] Arrays with generic size in function arguments
-* [x] Arrays with generic size in class properties
-* [x] Arrays with size determined by expressions
+* [x] Arrays with size determined by runtime-evaluated expressions
+* [x] Arrays with generic size
+  * [x] in function arguments
+  * [x] in function return types
+  * [x] in class fields
+  * [x] behind pointers
 
 ## Types
 * [x] Enums
-* [x] Pointers
-* [x] Recursive types
-* [x] Infinite pointer types
 * [x] Records
+* [x] Pointers
+  * [x] Infinite pointer types
+* [x] Recursive types
 * [x] Sets
+* [ ] Set operations
+* [x] Integer range type (1..10, 200..250)
+* [x] Sound type system
+  * Type checking is partly done at compile time (class inheritance, type esize check) and partly at runtime (everything else).
 
 ## Classes
 * [x] Classes
@@ -53,14 +68,15 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Types
 
 ## Files
 * [x] OPENFILE READFILE WRITEFILE CLOSEFILE statements
-* [ ] SEEK GETRECORD PUTRECORD statements
+* [x] READ WRITE APPEND file modes
+* [ ] SEEK GETRECORD PUTRECORD statements, RANDOM file mode
 * [x] File GUI
 * [x] EOF() function
 
 ## Misc
 * [x] Passing by value/reference for all variable types
 * [x] Shortened forms (for variable declaration and function arguments)
-* [x] Hundreds of error messages
+* [x] Robust, hundreds of error messages
 * [x] Typo checking
 * [x] Error ranges (underline the exact cause of the error, highlight the area around it)
 * [x] Configurable
@@ -73,3 +89,5 @@ Soodocode: a runtime for Cambridge CS (9618) pseudocode syntax, written in Types
 
 ## More information
 For a full list of features, see [features.md](docs/features.md)
+
+For some discussion of advanced language features, see [notes.md](docs/notes.md)

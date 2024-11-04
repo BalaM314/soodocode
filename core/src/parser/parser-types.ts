@@ -477,10 +477,12 @@ delete (ProgramASTNodeGroup as {from: any;}).from;
 export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "do_while", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"] as const;
 /** The valid types for a branch node in a program AST. */
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
+/** Asserts that the input is a valid ProgramASTBranchNodeType, and returns it. */
 export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType {
 	if(programASTBranchNodeTypes.includes(input)) return input;
-	crash(`"${input}" is not a valid program AST branch node type`);
+	crash(`Assertion failed: "${input}" is not a valid program AST branch node type`);
 }
+/** Determines the control statements stored by a {@link ProgramASTBranchNode}, based on the type. */
 export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> =
 	T extends "if" ? [IfStatement, Statement] | [IfStatement, ElseStatement, Statement] :
 	T extends "for" ? [ForStatement, ForEndStatement] :

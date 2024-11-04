@@ -161,7 +161,7 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 		},
 		coerce_arrays: {
 			name: "Allow testing equality between array types",
-			description: `If this is enabled, testing for equality between array types will be allowed if their lengths are different`,
+			description: `If this is disabled, testing for equality between array types with different lengths will throw an error instead of returning FALSE.`,
 			errorHelp: `Make this comparison always return FALSE`,
 			value: true,
 		},
@@ -176,7 +176,7 @@ export const configs = (<T extends PreprocessedConfigsObject>(data:T) =>
 		unspecified_length: {
 			name: "Unspecified length arrays",
 			shortDescription: `Allow arrays without a length in function arguments and class properties.`,
-			fullDescription: `This isn't fully variable length arrays, like in Python and Javascript: all arrays will still have a length, but functions can be more flexible.\nNot mentioned in any official pseudocode guides.`,
+			fullDescription: `This isn't fully variable length arrays, like in Python and Javascript: all arrays will still have a length, but functions can be more flexible.\nCan be used to create resizable array wrappers.\nNot mentioned in any official pseudocode guides.`,
 			value: true
 		},
 		max_size_bytes: {

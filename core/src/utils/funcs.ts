@@ -384,7 +384,9 @@ export function setConfig(value:"increase" | "decrease", config:Config<number, b
 	return { config, value };
 }
 
-
+/**
+ * This is the main way to generate an error condition. Throws a SoodocodeError, which is caught elsewhere.
+ */
 export function fail(message:ErrorMessage, rangeSpecific:TextRangeLike | null | undefined, rangeGeneral?:TextRangeLike | null, rangeOther?:TextRangeLike):never {
 	throw new SoodocodeError(message, getRange(rangeSpecific), getRange(rangeGeneral), getRange(rangeOther));
 }
@@ -392,12 +394,26 @@ export function rethrow(error:SoodocodeError, msg:(old:ErrorMessage) => ErrorMes
 	error.richMessage = msg(error.richMessage);
 	throw error;
 }
+/**
+ * Called when an invariant is violated, or when there is a mistake in the code. This will be reported as "Soodocode crashed! ...".
+ */
 export function crash(message:string, ...extra:unknown[]):never {
-	console.error(...extra);
+	if(extra.length > 0 && typeof console != "undefined") console.error(...extra);
 	throw new Error(message);
 }
+/**
+ * Use this function to mark cases that are completely unreachable.
+ * If the case is unreachable because a variable has type `never`, use {@link unreachable()} instead.
+ * If there is a specific reason why the code is unreachable, use {@link crash()} instead.
+ */
 export function impossible():never {
 	throw new Error(`this shouldn't be possible...`);
+}
+/**
+ * Use this function to mark cases that are completely unreachable because a value has type `never`.
+ */
+export function unreachable(input:never, message?:string):never {
+	throw new Error(message || `Entered unreachable code: expected a variable to have type never, but a value was produced: ${String(input)}`);
 }
 export function tryRun<T>(callback:() => T):[T, null] | [null, SoodocodeError] {
 	try {

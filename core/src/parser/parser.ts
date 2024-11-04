@@ -11,7 +11,7 @@ which is the preferred representation of the program.
 import { Token, TokenizedProgram, tokenTextMapping, TokenType } from "../lexer/index.js";
 import { ArrayVariableType, IntegerRangeVariableType, PrimitiveVariableType, UnresolvedVariableType } from "../runtime/runtime-types.js";
 import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPartial, FunctionArgumentPassMode, FunctionArguments, Statement, statements } from "../statements/index.js";
-import { biasedLevenshtein, crash, errorBoundary, ErrorMessage, f, fail, fakeObject, forceType, impossible, isKey, max, quote, RangeArray, RichErrorMessage, SoodocodeError, tryRun } from "../utils/funcs.js";
+import { biasedLevenshtein, crash, errorBoundary, ErrorMessage, f, fail, fakeObject, forceType, impossible, isKey, max, quote, RangeArray, RichErrorMessage, SoodocodeError, tryRun, unreachable } from "../utils/funcs.js";
 import { PartialKey, TextRange, TextRangeLike } from "../utils/types.js";
 import { closestKeywordToken, displayTokenMatcher, findLastNotInGroup, manageNestLevel, splitTokens, splitTokensOnComma } from "./funcs.js";
 import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
@@ -25,12 +25,12 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 	//Use state variables to remember the previous pass mode / type
 	//to handle things like `BYREF a, b, c, d: INTEGER`
 	let passMode:FunctionArgumentPassMode = "value";
-	let type:UnresolvedVariableType | null = null;
+	let type:(() => UnresolvedVariableType) | null = null;
 	//Split the arguments on commas
 	const argumentz = splitTokensOnComma(tokens).map<FunctionArgumentDataPartial>(section => {
 
 		let passMode:FunctionArgumentPassMode | null;
-		let type:UnresolvedVariableType | null;
+		let type:(() => UnresolvedVariableType) | null;
 
 		//Increase the offset by 1 to ignore the pass mode specifier if present
 		let offset = 0;
@@ -56,21 +56,21 @@ export const parseFunctionArguments = errorBoundary()(function _parseFunctionArg
 			const typeTokens = section.slice(offset + 2);
 			if(typeTokens.length == 0)
 				fail(`Expected a type, got end of function arguments`, section.at(-1)!.rangeAfter());
-			type = processTypeData(parseType(typeTokens, tokens));
+			type = () => processTypeData(parseType(typeTokens, tokens));
 		}
 		return [
 			section[offset + 0], //pass the token through so we can use it to generate errors
 			{ passMode, type }
 		];
 	})
-		.map<[name:Token, {type:UnresolvedVariableType | null, passMode:FunctionArgumentPassMode}]>(([name, data]) => [name, {
+		.map<[name:Token, {type:(() => UnresolvedVariableType) | null, passMode:FunctionArgumentPassMode}]>(([name, data]) => [name, {
 			passMode: data.passMode ? passMode = data.passMode : passMode,
 			type: data.type
 		}])
 		.reverse()
 		.map(([name, data]) => [name, {
 			passMode: data.passMode,
-			type: data.type ? type = data.type : type ?? fail(f.quote`Type not specified for function argument ${name}`, name)
+			type: (data.type ? type = data.type : type ?? fail(f.quote`Type not specified for function argument ${name}`, name))()
 		}] as const)
 		.reverse();
 	const argumentsMap:FunctionArguments = new Map(argumentz.map(([name, data]) => [name.text, data] as const));
@@ -90,9 +90,7 @@ export const processTypeData = errorBoundary()(function _processTypeData(typeNod
 		return ArrayVariableType.from(typeNode);
 	} else if(typeNode instanceof ExpressionASTRangeTypeNode){
 		return IntegerRangeVariableType.from(typeNode);
-	}
-	typeNode satisfies never;
-	impossible();
+	} else unreachable(typeNode);
 });
 
 /** Parses an ExpressionASTTypeNode from a list of tokens. */
@@ -218,7 +216,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 				fail(`Unexpected statement: ${errorMessage}`, statement, null);
 			lastNode.controlStatements_().push(statement);
 			lastNode.nodeGroups.push(new ProgramASTNodeGroup());
-		} else statement.category satisfies never;
+		} else unreachable(statement.category);
 	}
 	if(blockStack.length)
 		fail(f.quote`There were unclosed blocks: ${blockStack.at(-1)!.controlStatements[0]} requires a matching ${blockStack.at(-1)!.controlStatements[0].type.blockEndStatement().type} statement`, blockStack.at(-1)!.controlStatements[0], null);
@@ -550,7 +548,7 @@ export const parseExpression = errorBoundary({
 	if(input.length == 1) return parseExpressionLeafNode(input[0], allowSuper, allowNew);
 
 	/** Some logic in this function handles cases where the input might be valid, or there is a specifc error message to explain why is is not valid. */
-	let deferredError: typeof impossible = () => fail(`No operators found`, input.length > 0 ? input : undefined);
+	let deferredError: [string[], TextRangeLike | undefined] = [[`No operators found`], input.length > 0 ? input : undefined];
 
 	//Recursive descent parser, modified with a lot of extra cases.
 
@@ -584,7 +582,7 @@ export const parseExpression = errorBoundary({
 							//If the operator on the right was of lower priority, it would have already been selected for recursion
 							//so it must be a higher priority operator
 							if(right[0] && canBeOperator(right[0])){
-								deferredError = () => fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+								deferredError = [[f.text`Unexpected expression on right side of operator ${input[i]}`, `this is a unary postfix operator, it should come after an expression`], input[i]];
 								continue;
 							}
 						}
@@ -624,11 +622,17 @@ export const parseExpression = errorBoundary({
 					if(i != input.length - 1){ //if there are tokens to the right of a unary postfix operator
 						if(operator.fix == "unary_postfix_o_prefix" && left.length == 0) continue; //this is the prefix operator
 						if(input[i + 1] && canBeOperator(input[i + 1])){
-							deferredError = () => fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+							deferredError = [[
+								f.quote`Unexpected expression on right side of operator ${input[i]}`,
+								`this is a unary postfix operator, it should come after an expression`
+							], input[i]];
 							continue;
 						}
 						//No need to worry about operator priority changing for postfix
-						fail(f.text`Unexpected expression on right side of operator ${input[i]}`, input[i]);
+						fail({
+							summary: f.text`Unexpected expression on right side of operator ${input[i]}`,
+							elaboration: `this is a unary postfix operator, it should come after an expression`
+						}, input[i]);
 					}
 					if(left.length == 0) fail(f.text`Expected expression on left side of operator ${input[i]}`, input[i].rangeBefore());
 					return new ExpressionASTBranchNode(
@@ -651,7 +655,7 @@ export const parseExpression = errorBoundary({
 					}
 					if(operator == operators.access){
 						if(!(right.length == 1 && (right[0].type == "name" || right[0].type == "keyword.new"))){ //TODO properly handle keywords being names, everywhere
-							deferredError = () => fail(`Access operator can only have a single token to the right, which must be a property name`, right);
+							deferredError = [[`Access operator can only have a single token to the right, which must be a property name`], right];
 							continue;
 						}
 					}
@@ -701,7 +705,10 @@ export const parseExpression = errorBoundary({
 				),
 				input
 			);
-		else fail(f.quote`${parsedTarget} is not a valid function name, function names must be a single token, or the result of a property access`, parsedTarget);
+		else fail({
+			summary: f.quote`${parsedTarget} is not a valid function name`,
+			elaboration: `function names must be a single token, or the result of a property access`
+		}, parsedTarget);
 	}
 
 	//If the whole expression is surrounded by parentheses, parse the inner expression
@@ -726,5 +733,8 @@ export const parseExpression = errorBoundary({
 	}
 
 	//No operators found at all, invalid input
-	deferredError();
+	fail({
+		summary: `Invalid expression`,
+		elaboration: deferredError[0],
+	}, deferredError[1]);
 });

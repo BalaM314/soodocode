@@ -4,6 +4,7 @@
 		"tsBuildInfoFile": "build/.tsbuildinfo",
 		"outDir": "build/",
 		"rootDir": "./src",
+		"types": ["node", "jasmine"]
 	},
 	"include": [
 		"src/**.ts"

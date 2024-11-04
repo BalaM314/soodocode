@@ -28,9 +28,10 @@ This file contains CSS styles for the webpage.
 
 body {
 	margin: 0px;
+	background-color: #000;
 	background-image: var(--background-image-url);
 	background-repeat: no-repeat;
-	background-color: #000;
+	background-size: cover;
 	height: 100%;
 }
 html {

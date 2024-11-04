@@ -1,11 +1,14 @@
 # Soodocode features list
 
+This list is incomplete.
+
 # Syntax
 
 ## Literals
 
 * [x] Numeric literals
 * [x] String literals
+  * [x] Multiline string literals
 * [x] Char literals
 * [ ] Date literals
 
@@ -36,6 +39,10 @@
 | function call | \( ) | special | [x] |
 | new | NEW | special | [x] |
 
+## Comments
+* [x] Single line comments (from `//` not in a string, to the end of the line)
+* [x] Multiline comments (from `/*` not in a string, to the next `*/` )
+
 # Types
 
 ## Primitives
@@ -51,14 +58,20 @@
 
 ## User-defined types
 
-<!-- TODO more detail -->
-| Name | Comment | Supported |
-| ---- | ------- | --------- |
-| Record | Usually known as "struct". | [x] |
-| Pointer | Points at a variable and can be used to change it. | [x] |
-| Set | Similar to an array, but without ordering. | [~] |
-| Enum | Stores one of a few specified values. | [x] |
-| Class | Supports normal object-oriented programming features | [x] |
+| Name | Comment | Example | Supported |
+| ---- | ------- | ------- | --------- |
+| Record | Usually known as "struct". | TYPE name<br>DECLARE field: INTEGER<br>ENDTYPE | [x] |
+| Pointer | Points at a variable and can be used to change it. | TYPE name = ^INTEGER | [x] |
+| Set | Similar to an array, but without ordering. | TYPE name = SET OF INTEGER | [x] |
+| Enum | Stores one of a few specified values. | TYPE name = (value1, value2, value3) | [x] |
+| Class | Supports normal object-oriented programming features | CLASS name<br>ENDCLASS | [x] |
+| Integer range | An INTEGER between two values (inclusive). | 1..10 | [x] |
+
+### Records
+
+A record type is a user-defined composite data type, made up of zero or more fields.
+
+Initializing a variable of type (record type) causes all its fields to be initialized automatically.
 
 # Expressions
 

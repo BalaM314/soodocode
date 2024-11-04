@@ -1,6 +1,6 @@
 {
 	"name": "soodocode",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Runtime and checker for Cambridge Computer Science pseudocode",
 	"main": "build/index.js",
 	"repository": {
@@ -20,5 +20,6 @@
 		"url": "https://github.com/BalaM314/soodocode/issues"
 	},
 	"homepage": "https://github.com/BalaM314/soodocode#readme",
-	"type": "module"
+	"type": "module",
+	"dependencies": {}
 }

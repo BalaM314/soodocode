@@ -2,7 +2,7 @@ import { Symbol, SymbolType, Token, TokenType, tokenTextMapping } from "../../co
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "../../core/build/parser/index.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, Runtime, TypedNodeValue, UnresolvedVariableType, VariableType } from "../../core/build/runtime/index.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../core/build/statements/index.js";
-import { RangeArray, crash, fakeObject, forceType, impossible } from "../../core/build/utils/funcs.js";
+import { RangeArray, crash, fakeObject, forceType, impossible, unreachable } from "../../core/build/utils/funcs.js";
 import "../../core/build/utils/globals.js";
 import type { TextRange, TextRanged2 } from "../../core/build/utils/types.js";
 
@@ -96,6 +96,8 @@ export const operatorTokens: Record<OperatorName, Token> = {
 };
 
 export function token(type:TokenType, text:string):Token {
+	if(type == "string") if(!(text.at(0) == `"` && text.at(-1) == `"`)) crash(`Invalid test token of type string, missing double quotes: ${text}`);
+	if(type == "char") if(!(text.at(0) == `'` && text.at(2) == `'`)) crash(`Invalid test token of type char, missing single quotes: ${text}`);
 	return new Token(type, text, [-1, -1]);
 }
 export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
@@ -276,8 +278,7 @@ export function applyAnyRange<TIn extends
 	} else if("nodes" in input && "program" in input){
 		input.nodes.forEach(applyAnyRange);
 	} else {
-		input satisfies never;
-		crash(`Type error at applyAnyRange()`);
+		unreachable(input);
 	}
 	return input;
 }
@@ -446,9 +447,10 @@ export function classType(
 export function arrayType(
 	processedLengthInformation: [low:number, high:number][] | null,
 	elementType: VariableType,
+	init = true,
 ){
 	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType, [-1, -1]);
-	type.init(fakeObject<Runtime>({
+	if(init) type.init(fakeObject<Runtime>({
 		evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function"){
 			if(typeof type == "string") impossible();
 			if(expr instanceof Token) return Runtime.evaluateToken(expr, type) as never;
