@@ -675,6 +675,65 @@ OUTPUT aaa`,
 ["aaa"]
 ],
 //#endregion
+//#region pointers
+parse_pointer_type: [
+`TYPE pINTEGER = ^INTEGER`,
+[]
+],
+parse_pointer_reference_simple: [
+`TYPE pINTEGER = ^INTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+y <- ^x`,
+[]
+],
+parse_pointer_dereference_simple: [
+`TYPE pINTEGER = ^INTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+x <- y^`,
+`"y"`
+],
+parse_pointer_reference_double: [
+`TYPE pINTEGER = ^INTEGER
+TYPE ppINTEGER = ^pINTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+DECLARE z: ppINTEGER
+z <- ^^x`,
+[]
+],
+parse_pointer_dereference_double: [
+`TYPE pINTEGER = ^INTEGER
+TYPE ppINTEGER = ^pINTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+DECLARE z: ppINTEGER
+x <- z^^`,
+`"z"`
+],
+parse_pointer_reference_dereference_complex: [
+`TYPE pINTEGER = ^INTEGER
+TYPE ppINTEGER = ^pINTEGER
+TYPE pppINTEGER = ^ppINTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+DECLARE z: ppINTEGER
+y <- (^^^((z)^^))^`,
+`"z"`
+],
+
+read_from_pointer: [
+`TYPE pINTEGER = ^INTEGER
+DECLARE x, z: INTEGER
+DECLARE y: pINTEGER
+x <- 5
+y <- ^x
+z <- y^
+OUTPUT z`,
+["5"]
+],
+//#endregion
 //#region record types
 record_type_blank: [
 `TYPE amogus
