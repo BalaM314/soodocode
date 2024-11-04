@@ -342,7 +342,7 @@ export class IntegerRangeVariableType extends BaseVariableType {
 }
 //TODO! refactor variable types
 //Stop mutating them to initialize, create a different class
-/** Contains data about an array type. Processed from an ExpressionASTArrayTypeNode. */
+/** Contains data about an array type. Processed from an {@link ExpressionASTArrayTypeNode}. */
 export class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
@@ -653,33 +653,32 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	constructor(
 		public initialized: Init,
 		public name: string,
-		//TODO rename this to elementType
-		public baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
+		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
 	){super();}
 	init(runtime:Runtime){
-		if(Array.isArray(this.baseType)) this.baseType = runtime.resolveVariableType(this.baseType);
+		if(Array.isArray(this.elementType)) this.elementType = runtime.resolveVariableType(this.elementType);
 		(this as SetVariableType<true>).initialized = true;
 	}
 	fmtText():string {
-		return f.text`${this.name} (user-defined set type containing "${this.baseType ?? "ANY"}")`;
+		return f.text`${this.name} (user-defined set type containing "${this.elementType ?? "ANY"}")`;
 	}
 	fmtShort():string {
 		return this.name;
 	}
 	toQuotedString():string {
-		return f.text`"${this.name}" (user-defined set type containing "${this.baseType ?? "ANY"}")`;
+		return f.text`"${this.name}" (user-defined set type containing "${this.elementType ?? "ANY"}")`;
 	}
 	fmtDebug():string {
-		return f.debug`SetVariableType [${this.name}] (contains: ${this.baseType ?? "ANY"})`;
+		return f.debug`SetVariableType [${this.name}] (contains: ${this.elementType ?? "ANY"})`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		crash(`Cannot initialize a variable of type SET`);
 	}
 	mapValues<T>(value:VariableTypeMapping<SetVariableType>, callback:(tval:TypedValue) => T):T[] {
-		const baseType = (this as SetVariableType<true>).baseType
+		const elementType = (this as SetVariableType<true>).elementType
 			?? crash(`Attempted to display a set with no element type`);
 		return value.map(v =>
-			callback(typedValue(baseType, v))
+			callback(typedValue(elementType, v))
 		);
 	}
 	asHTML(value:VariableTypeMapping<SetVariableType>):string {
@@ -869,7 +868,7 @@ export function typesEqual(a:VariableType | UnresolvedVariableType, b:VariableTy
 			types.some(([_a, _b]) => a == _a && b == _b) || //Prevent infinite recursion on infinite pointer types
 			typesEqual(a.target, b.target, types.concat([[a, b]]))
 		)) ||
-		(a instanceof SetVariableType && b instanceof SetVariableType && a.baseType == b.baseType)
+		(a instanceof SetVariableType && b instanceof SetVariableType && a.elementType == b.elementType)
 	;
 }
 
@@ -912,7 +911,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		return typesEqual(base.target, ext.target) || [f.quote`Types ${base.target} and ${ext.target} are not equal`];
 	}
 	if(base instanceof SetVariableType && ext instanceof SetVariableType){
-		return base.baseType == null || (ext.baseType != null && typesEqual(base.baseType, ext.baseType) || [f.quote`Types ${base.baseType} and ${ext.baseType ?? "ANY"} are not equal`]);
+		return base.elementType == null || (ext.elementType != null && typesEqual(base.elementType, ext.elementType) || [f.quote`Types ${base.elementType} and ${ext.elementType ?? "ANY"} are not equal`]);
 	}
 	if(base instanceof ClassVariableType && ext instanceof ClassVariableType){
 		return ext.inherits(base) || false;

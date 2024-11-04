@@ -97,7 +97,7 @@ export class DefineStatement extends Statement {
 			declaration: this,
 			mutable: true,
 			value: this.values.map(t => (
-				Runtime.evaluateToken(t, type.baseType as PrimitiveVariableType)
+				Runtime.evaluateToken(t, type.elementType as PrimitiveVariableType)
 					?? crash(`evaluating a literal token cannot fail`)
 			).value)
 		}, this.name);

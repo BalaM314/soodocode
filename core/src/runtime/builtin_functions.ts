@@ -7,9 +7,11 @@ This file contains all builtin functions. Some defined in the insert, others wer
 /* eslint-disable @typescript-eslint/no-unsafe-unary-minus */
 
 
-import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, SetVariableType, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
-import type { Runtime } from "../runtime/runtime.js";
-import { f, fail, tryRun, unreachable } from "../utils/funcs.js";
+import { Token } from "../lexer/index.js";
+import { ExpressionAST } from "../parser/index.js";
+import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, SetVariableType, VariableType, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
+import { Runtime } from "../runtime/runtime.js";
+import { crash, f, fail, fakeObject, tryRun, unreachable } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached } from "../utils/types.js";
 
 
@@ -95,6 +97,11 @@ function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVaria
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
 
+function initializeArray(x:ArrayVariableType<false>):ArrayVariableType<true> {
+	x.init(fakeObject<Runtime>({}));
+	return x as never as ArrayVariableType<true>;
+}
+
 /** Cached result from calling getBuiltinFunctions() */
 let builtinFunctionsCache;
 /** Thunk to prevent initializing variable types at file load */
@@ -106,8 +113,7 @@ export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFun
 					passMode: "reference",
 					type: (Array.isArray(type) ? type : [type]).map(t =>
 						Array.isArray(t) ?
-							//TODO fix type error: this is ArrayVariableType<false>
-							new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
+							initializeArray(new ArrayVariableType<false>(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1]))
 						: typeof t == "string" ?
 							PrimitiveVariableType.get(t)
 						: "set" in t ?
