@@ -847,6 +847,37 @@ z <- y^
 OUTPUT z`,
 ["5"]
 ],
+write_to_pointer: [
+`TYPE pINTEGER = ^INTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+x <- 5
+y <- ^x
+y^ <- 6
+OUTPUT x`,
+["6"]
+],
+run_pointer_reference_dereference_complex: [
+`TYPE pINTEGER = ^INTEGER
+TYPE ppINTEGER = ^pINTEGER
+TYPE pppINTEGER = ^ppINTEGER
+DECLARE a, b: INTEGER
+DECLARE y: pINTEGER
+DECLARE z: ppINTEGER
+a <- 2
+b <- 3
+
+z <- ^^b
+OUTPUT z^^
+y <- ^a
+z <- ^y
+OUTPUT z^^
+z^ <- ^b
+OUTPUT z^^
+z^^ <- 4
+OUTPUT b`,
+["3", "2", "3", "4"]
+],
 //#endregion
 //#region record types
 record_type_blank: [
