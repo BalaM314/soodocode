@@ -653,30 +653,33 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	constructor(
 		public initialized: Init,
 		public name: string,
-		public baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType,
+		//TODO rename this to elementType
+		public baseType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
 	){super();}
 	init(runtime:Runtime){
 		if(Array.isArray(this.baseType)) this.baseType = runtime.resolveVariableType(this.baseType);
 		(this as SetVariableType<true>).initialized = true;
 	}
 	fmtText():string {
-		return f.text`${this.name} (user-defined set type containing "${this.baseType}")`;
+		return f.text`${this.name} (user-defined set type containing "${this.baseType ?? "ANY"}")`;
 	}
 	fmtShort():string {
 		return this.name;
 	}
 	toQuotedString():string {
-		return f.text`"${this.name}" (user-defined set type containing "${this.baseType}")`;
+		return f.text`"${this.name}" (user-defined set type containing "${this.baseType ?? "ANY"}")`;
 	}
 	fmtDebug():string {
-		return f.debug`SetVariableType [${this.name}] (contains: ${this.baseType})`;
+		return f.debug`SetVariableType [${this.name}] (contains: ${this.baseType ?? "ANY"})`;
 	}
 	getInitValue(runtime:Runtime):VariableValue | null {
 		crash(`Cannot initialize a variable of type SET`);
 	}
 	mapValues<T>(value:VariableTypeMapping<SetVariableType>, callback:(tval:TypedValue) => T):T[] {
+		const baseType = (this as SetVariableType<true>).baseType
+			?? crash(`Attempted to display a set with no element type`);
 		return value.map(v =>
-			callback(typedValue((this as SetVariableType<true>).baseType, v))
+			callback(typedValue(baseType, v))
 		);
 	}
 	asHTML(value:VariableTypeMapping<SetVariableType>):string {
@@ -909,7 +912,7 @@ export function typesAssignable(base:VariableType | UnresolvedVariableType, ext:
 		return typesEqual(base.target, ext.target) || [f.quote`Types ${base.target} and ${ext.target} are not equal`];
 	}
 	if(base instanceof SetVariableType && ext instanceof SetVariableType){
-		return typesEqual(base.baseType, ext.baseType) || [f.quote`Types ${base.baseType} and ${ext.baseType} are not equal`];
+		return base.baseType == null || (ext.baseType != null && typesEqual(base.baseType, ext.baseType) || [f.quote`Types ${base.baseType} and ${ext.baseType ?? "ANY"} are not equal`]);
 	}
 	if(base instanceof ClassVariableType && ext instanceof ClassVariableType){
 		return ext.inherits(base) || false;

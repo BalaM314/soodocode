@@ -96,11 +96,12 @@ function checkValueEquality<T extends VariableType>(type:T, a:VariableTypeMappin
 	if(type instanceof EnumeratedVariableType)
 		return a == b;
 	if(type instanceof SetVariableType){
+		const baseType = type.baseType ?? crash(`Unreachable: checking equality between sets, it should not be possible that both sets have element type "ANY"`);
 		forceType<VariableTypeMapping<SetVariableType>>(a);
 		forceType<VariableTypeMapping<SetVariableType>>(b);
 		return a.length == b.length &&
 			[...zip(a.values(), b.values())].every(
-				([aElement, bElement], i) => checkValueEquality(type.baseType, aElement, bElement, `${aPath}[${i}]`, `${bPath}[${i}]`, range)
+				([aElement, bElement], i) => checkValueEquality(baseType, aElement, bElement, `${aPath}[${i}]`, `${bPath}[${i}]`, range)
 			);
 	}
 	if(type instanceof ArrayVariableType){

@@ -25,9 +25,9 @@ export default tseslint.config(
 					ignoredNodes: [
 						"* > TemplateLiteral",
 						"TemplateLiteral ~ *",
-						"SwitchCase"
+						"SwitchCase",
+						"ConditionalExpression",
 					],
-					flatTernaryExpressions: true
 				}
 			],
 			"linebreak-style": "off",

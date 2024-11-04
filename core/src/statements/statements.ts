@@ -132,7 +132,7 @@ export class TypeSetStatement extends TypeStatement {
 	createType(runtime:Runtime){
 		return [this.name.text, new SetVariableType(
 			false, this.name.text, this.setType
-		)] as const; //TODO allow sets of UDTs
+		)] as const;
 	}
 }
 @statement("type", "TYPE StudentData", "block", "auto", "keyword.type", "name")

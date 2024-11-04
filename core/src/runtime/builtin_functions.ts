@@ -7,10 +7,11 @@ This file contains all builtin functions. Some defined in the insert, others wer
 /* eslint-disable @typescript-eslint/no-unsafe-unary-minus */
 
 
-import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, SetVariableType, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
 import type { Runtime } from "../runtime/runtime.js";
-import { f, fail, tryRun } from "../utils/funcs.js";
+import { f, fail, tryRun, unreachable } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached } from "../utils/types.js";
+
 
 //Warning: this file contains extremely sane code
 //Function implementations have the parameter arg types determined by the following generics
@@ -31,15 +32,19 @@ import type { BoxPrimitive, RangeAttached } from "../utils/types.js";
  * "STRING" -> string
  * ["STRING"] -> string
  * ["STRING", "NUMBER"] -> string
- * ["STRING, ["NUMBER"]] -> string | number[]
+ * ["STRING", ["NUMBER"]] -> string | number[]
+ * ["STRING", { set: "NUMBER" }] -> string | Set<number>
  * [["ANY"]] -> unknown[]
- **/
-type BuiltinFunctionArgType = PrimitiveVariableTypeName | (PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"])[];
+**/
+type BuiltinFunctionArgType = PrimitiveVariableTypeName | ComplexBuiltinFunctionArgType[];
+type ComplexBuiltinFunctionArgType = PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"] | {
+	set: PrimitiveVariableTypeName | "ANY";
+};
 type BuiltinFunctionArg = [name:string, type:BuiltinFunctionArgType];
 
 /** Maps BuiltinFunctionArgTypes to the JS type */
 type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
-	T extends Array<infer U extends PrimitiveVariableTypeName | [PrimitiveVariableTypeName | "ANY"]> ?
+	T extends Array<infer U extends ComplexBuiltinFunctionArgType> ?
 		U extends PrimitiveVariableTypeName ?
 			RangeAttached<PrimitiveVariableTypeMapping<U>> : //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
 		U extends [infer S] ?
@@ -49,7 +54,9 @@ type FunctionArgVariableTypeMapping<T extends BuiltinFunctionArgType> =
 					S extends "REAL" ? Float64Array :
 					never
 				)> :
-				RangeAttached<unknown[]>
+				RangeAttached<unknown[]> :
+		U extends { set: infer S extends PrimitiveVariableTypeName | "ANY" } ?
+			RangeAttached<VariableTypeMapping<SetVariableType> & Array<PrimitiveVariableTypeMapping<S extends "ANY" ? PrimitiveVariableTypeName : S>>>
 		: never :
 	T extends PrimitiveVariableTypeName
 		? RangeAttached<PrimitiveVariableTypeMapping<T>> //this is actually a RangeAttached<BoxPrimitive<...>> but that causes Typescript to complain
@@ -98,9 +105,14 @@ export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFun
 				args: new Map((data.args as BuiltinFunctionArg[]).map(([name, type]) => [name, {
 					passMode: "reference",
 					type: (Array.isArray(type) ? type : [type]).map(t =>
-						Array.isArray(t)
-							? new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
-							: PrimitiveVariableType.get(t)
+						Array.isArray(t) ?
+							//TODO fix type error: this is ArrayVariableType<false>
+							new ArrayVariableType(null, null, t[0] == "ANY" ? null : PrimitiveVariableType.get(t[0]), [-1, -1])
+						: typeof t == "string" ?
+							PrimitiveVariableType.get(t)
+						: "set" in t ?
+							new SetVariableType(true, name, t.set == "ANY" ? null : PrimitiveVariableType.get(t.set))
+						: unreachable(t)
 					),
 				}] as const)),
 				aliases: data.aliases ?? [],
@@ -168,7 +180,7 @@ export const preprocessedBuiltinFunctions = ({
 	//source: spec 5.5
 	LENGTH: fn({
 		args: [
-			["ThisString", [["ANY"], "STRING"]],
+			["ThisString", [["ANY"], "STRING", { set: "ANY" }]],
 		],
 		returnType: "INTEGER",
 		impl(x){
@@ -400,6 +412,7 @@ export const preprocessedBuiltinFunctions = ({
 			return Date.now() + timezone * 36_000;
 		}
 	}),
+	//Extensions
 	DOWNLOADIMAGE: fn({
 		args: [
 			["Bytes", [["INTEGER"]]],
@@ -431,5 +444,15 @@ export const preprocessedBuiltinFunctions = ({
 				return `Downloading...`;
 			}
 		}
+	}),
+	//Included for compatibility with pseudocode.pro
+	SIZE: fn({
+		args: [
+			["set", [{set: "ANY"}]]
+		],
+		returnType: "INTEGER",
+		impl(set){
+			return set.length;
+		},
 	}),
 }) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;
