@@ -141,11 +141,11 @@ export class TypeRecordStatement extends TypeStatement {
 	static propagatesControlFlowInterruptions = false;
 	static allowOnly = new Set<StatementType>(["declare"]);
 	createTypeBlock(runtime:Runtime, node:ProgramASTBranchNode){
-		const fields:Record<string, [UnresolvedVariableType, TextRange]> = Object.create(null);
-		for(const statement of node.nodeGroups[0]){
+		const fields = node.nodeGroups[0].reduce((acc, statement) => {
 			if(!(statement instanceof DeclareStatement)) crash(`allowOnly is ["declare"]`);
-			statement.variables.forEach(([v, r]) => fields[v] = [processTypeData(statement.varType), r.range]);
-		}
+			statement.variables.forEach(([v, r]) => acc[v] = [processTypeData(statement.varType), r.range]);
+			return acc;
+		}, Object.create(null) as Record<string, [UnresolvedVariableType, TextRange]>);
 		return [this.name.text, new RecordVariableType(false, this.name.text, fields)] as const;
 	}
 }
@@ -750,10 +750,7 @@ export class ClassStatement extends TypeStatement {
 							classData.ownMethods[method.name] = node as ClassMethodData
 						];
 					}
-				} else {
-					console.error({branchNode, node});
-					crash(`Invalid node in class block`);
-				}
+				} else crash(`Invalid node in class block`, {branchNode, node});
 			} else if(node instanceof ClassPropertyStatement){
 				for(const [variable, token] of node.variables){
 					if(classData.properties[variable]){
@@ -763,10 +760,7 @@ export class ClassStatement extends TypeStatement {
 					}
 				}
 				classData.propertyStatements.push(node);
-			} else {
-				console.error({branchNode, node});
-				crash(`Invalid node in class block`);
-			}
+			} else crash(`Invalid node in class block`, {branchNode, node});
 		}
 		return classData;
 	}

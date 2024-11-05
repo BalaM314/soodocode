@@ -966,13 +966,23 @@ export class Runtime {
 		return value.value ?? this.evaluateExpr(value.node, type);
 	}
 	/** Resolves an {@link UnresolvedVariableType} using the currently known types. */
-	resolveVariableType(type:UnresolvedVariableType):VariableType {
-		if(type instanceof PrimitiveVariableType) return type;
-		else if(type instanceof IntegerRangeVariableType) return type;
-		else if(type instanceof ArrayVariableType){
-			type.init(this);
-			return type as never as ArrayVariableType<true>;
-		} else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
+	resolveVariableType(type:UnresolvedVariableType | VariableType<false>):VariableType<true> {
+		if(Array.isArray(type)) return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
+		else return this.initializeType(type);
+	}
+	initializeType(type:ArrayVariableType<false>):ArrayVariableType<true>;
+	initializeType(type:RecordVariableType<false>):RecordVariableType<true>;
+	initializeType(type:PointerVariableType<false>):PointerVariableType<true>;
+	initializeType(type:SetVariableType<false>):SetVariableType<true>;
+	initializeType(type:ClassVariableType<false>):ClassVariableType<true>;
+	initializeType(type:VariableType<false>):VariableType<true>;
+	initializeType(type:VariableType<false>):VariableType<true> {
+		if(type instanceof ArrayVariableType) return type.init(this);
+		else if(type instanceof RecordVariableType) return type.init(this);
+		else if(type instanceof PointerVariableType) return type.init(this);
+		else if(type instanceof SetVariableType) return type.init(this);
+		else if(type instanceof ClassVariableType) return type.init(this);
+		else return type;
 	}
 	/** Called when a class doesn't exist; used to check for capitalization and typos. */
 	handleNonexistentClass(name:string, range:TextRangeLike, gRange:TextRangeLike):never {

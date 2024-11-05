@@ -344,44 +344,54 @@ export class IntegerRangeVariableType extends BaseVariableType {
 //Stop mutating them to initialize, create a different class
 /** Contains data about an array type. Processed from an {@link ExpressionASTArrayTypeNode}. */
 export class ArrayVariableType<Init extends boolean = true> extends BaseVariableType {
-	totalLength:number | null = null;
-	arraySizes:number[] | null = null;
-	lengthInformation: [low:number, high:number][] | null = null;
-	private initialized = false;
+	totalLength: Init extends true ? number | null : null = null;
+	arraySizes: Init extends true ? number[] | null : null = null;
+	lengthInformation: Init extends true ? [low:number, high:number][] | null : null = null;
 	static maxLength = 10_000_000;
 	constructor(
+		private readonly initialized:Init,
 		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,
 		public lengthInformationRange: TextRange | null,
-		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
+		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType<Init | true> | null,
 		public range: TextRange,
 	){super();}
-	init(runtime:Runtime){
-		if(this.initialized) crash(`Attempted to initialize already initialized type`);
-		this.initialized = true;
-		if(Array.isArray(this.elementType))
-			this.elementType = runtime.resolveVariableType(this.elementType);
+	initializedIs<T extends boolean>(value:T):this is ArrayVariableType<T> {
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+		return this.initialized === (value as boolean);
+	}
+	init(this:ArrayVariableType<false>, runtime:Runtime):ArrayVariableType<true> {
+		if(this.initialized) crash(`Type error: Attempted to initialize already initialized type`);
+		const elementType = this.elementType ? runtime.resolveVariableType(this.elementType) : null;
+		const out = new ArrayVariableType<true>(true,
+			this.lengthInformationExprs,
+			this.lengthInformationRange,
+			elementType,
+			this.range
+		);
 		if(this.lengthInformationExprs){
-			this.lengthInformation = new Array(this.lengthInformationExprs.length);
+			const lengthInformation = new Array(this.lengthInformationExprs.length);
 			for(const [i, [low_, high_]] of this.lengthInformationExprs.entries()){
 				const low = runtime.evaluateExpr(low_, PrimitiveVariableType.INTEGER).value;
 				const high = runtime.evaluateExpr(high_, PrimitiveVariableType.INTEGER).value;
 				if(high < low)
 					fail(`Invalid length information: upper bound cannot be less than lower bound`, high_);
-				this.lengthInformation[i] = [low, high];
+				lengthInformation[i] = [low, high];
 			}
-			this.arraySizes = this.lengthInformation.map(b => b[1] - b[0] + 1);
-			this.totalLength = this.arraySizes.reduce((a, b) => a * b, 1);
+			out.lengthInformation = lengthInformation;
+			out.arraySizes = lengthInformation.map(b => b[1] - b[0] + 1);
+			out.totalLength = out.arraySizes.reduce((a, b) => a * b, 1);
 		} else if(!configs.arrays.unspecified_length.value) fail({
 			summary: `Please specify the length of the array`,
 			help: enableConfig(configs.arrays.unspecified_length)
 		}, this.range);
+		return out;
 	}
 	validate(runtime:Runtime){
 		if(this.totalLength && this.totalLength > ArrayVariableType.maxLength)
 			fail(`Length ${this.totalLength} too large for array variable type`, this.range);
 	}
 	clone():ArrayVariableType<Init> {
-		const type = new ArrayVariableType<Init>(this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
+		const type = new ArrayVariableType<Init>(this.initialized, this.lengthInformationExprs, this.lengthInformationRange, this.elementType, this.range);
 		type.lengthInformation = this.lengthInformation;
 		type.arraySizes = this.arraySizes;
 		type.totalLength = this.totalLength;
@@ -438,6 +448,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	static from(node:ExpressionASTArrayTypeNode){
 		return new ArrayVariableType<false>(
+			false,
 			node.lengthInformation,
 			node.lengthInformation ? getTotalRange(node.lengthInformation.flat()) : null,
 			PrimitiveVariableType.resolve(node.elementType),
@@ -466,22 +477,22 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 export class RecordVariableType<Init extends boolean = true> extends BaseVariableType {
 	directDependencies = new Set<VariableType>();
 	constructor(
-		public initialized: Init,
+		public readonly initialized: Init,
 		public name: string,
-		public fields: Record<string, [type:(Init extends true ? never : UnresolvedVariableType) | VariableType, range:TextRange]>,
+		public fields: Record<string, [type:(Init extends true ? never : UnresolvedVariableType) | VariableType<Init | true>, range:TextRange]>,
 	){super();}
-	init(runtime:Runtime){
+	init(this:RecordVariableType<false>, runtime:Runtime):RecordVariableType<true> {
 		if(this.initialized) crash(`Attempted to initialize already initialized type`);
-		for(const [name, [field, range]] of Object.entries(this.fields)){
-			if(Array.isArray(field))
-				this.fields[name][0] = runtime.resolveVariableType(field);
-			else if(field instanceof ArrayVariableType)
-				field.init(runtime);
-			this.addDependencies(this.fields[name][0] as VariableType);
-		}
-		(this as RecordVariableType<true>).initialized = true;
+		const fields:RecordVariableType<true>["fields"] = Object.fromEntries(Object.entries(this.fields).map(([name, [field, range]]) => {
+			let initializedField:VariableType<true>;
+			if(Array.isArray(field)) initializedField = runtime.resolveVariableType(field);
+			else initializedField = runtime.initializeType(field);
+			this.addDependencies(initializedField);
+			return [name, [initializedField, range]];
+		}));
+		return new RecordVariableType(true, this.name, fields);
 	}
-	addDependencies(type:VariableType){
+	addDependencies(type:VariableType<true>){
 		if(type instanceof RecordVariableType){
 			this.directDependencies.add(type);
 			type.directDependencies.forEach(
@@ -491,9 +502,8 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 			this.addDependencies(type.elementType);
 		}
 	}
-	validate(){
-		const self = this as RecordVariableType<true>;
-		for(const [name, [type, range]] of Object.entries(self.fields)){
+	validate(this:RecordVariableType<true>){
+		for(const [name, [type, range]] of Object.entries(this.fields)){
 			if(type == this) fail({
 				summary: f.text`Recursive type "${this.name}" has infinite size`,
 				elaboration: [
@@ -510,7 +520,7 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 				],
 				help: `change the field's type to be "array of pointer to ${this.name}"`,
 			}, range);
-			if(type instanceof RecordVariableType && type.directDependencies.has(self)) fail({
+			if(type instanceof RecordVariableType && type.directDependencies.has(this)) fail({
 				summary: f.quote`Recursive type ${this.name} has infinite size`,
 				elaboration: [
 					`initializing field ${name} indirectly requires initializing the parent type,`,
@@ -572,15 +582,18 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 }
 export class PointerVariableType<Init extends boolean = true> extends BaseVariableType {
 	constructor(
-		public initialized: Init,
+		public readonly initialized: Init,
 		public name: string,
-		public target: (Init extends true ? never : UnresolvedVariableType) | VariableType,
+		public target: (Init extends true ? never : UnresolvedVariableType) | VariableType<Init | true>,
 		public range: TextRange
 	){super();}
-	init(runtime:Runtime){
+	init(this:PointerVariableType<false>, runtime:Runtime):PointerVariableType<true> {
 		if(this.initialized) crash(`Attempted to initialize already initialized type`);
-		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
-		(this as PointerVariableType<true>).initialized = true;
+		return new PointerVariableType(true,
+			this.name,
+			runtime.resolveVariableType(this.target),
+			this.range
+		);
 	}
 	validate(){
 		if(!configs.pointers.infinite_pointer_types.value){
@@ -651,13 +664,12 @@ export class EnumeratedVariableType extends BaseVariableType {
 }
 export class SetVariableType<Init extends boolean = true> extends BaseVariableType {
 	constructor(
-		public initialized: Init,
+		public readonly initialized: Init,
 		public name: string,
-		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType | null,
+		public elementType: (Init extends true ? never : UnresolvedVariableType) | VariableType<Init | true> | null,
 	){super();}
-	init(runtime:Runtime){
-		if(Array.isArray(this.elementType)) this.elementType = runtime.resolveVariableType(this.elementType);
-		(this as SetVariableType<true>).initialized = true;
+	init(this:SetVariableType<false>, runtime:Runtime):SetVariableType<true> {
+		return new SetVariableType(true, this.name, this.elementType ? runtime.resolveVariableType(this.elementType) : null);
 	}
 	fmtText():string {
 		return f.text`${this.name} (user-defined set type containing "${this.elementType ?? "ANY"}")`;
@@ -690,26 +702,28 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
 	name:string = this.statement.name.text;
-	baseClass:ClassVariableType<Init extends true ? true : boolean> | null = null;
+	baseClass:ClassVariableType<Init | true> | null = null;
 	constructor(
 		public initialized: Init,
 		public statement: ClassStatement,
 		/** Stores regular and inherited properties. */
-		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType, ClassPropertyStatement, TextRangeLike]> = Object.create(null) as never,
+		public properties: Record<string, [(Init extends true ? never : UnresolvedVariableType) | VariableType<Init | true>, ClassPropertyStatement, TextRangeLike]> = Object.create(null) as never,
 		/** Does not store inherited methods. */
 		public ownMethods: Record<string, ClassMethodData> = Object.create(null) as never,
-		public allMethods: Record<string, [source:ClassVariableType<Init extends true ? true : boolean>, data:ClassMethodData]> = Object.create(null) as never,
+		public allMethods: Record<string, [source:ClassVariableType<Init | true>, data:ClassMethodData]> = Object.create(null) as never,
 		public propertyStatements: ClassPropertyStatement[] = []
 	){super();}
-	init(runtime:Runtime){
+	init(this:ClassVariableType<false>, runtime:Runtime):ClassVariableType<true> {
 		if(this.initialized) crash(`Attempted to initialize already initialized type`);
-		for(const statement of this.propertyStatements){
+		const properties = this.propertyStatements.reduce((acc, statement) => {
 			const type = runtime.resolveVariableType(processTypeData(statement.varType));
 			for(const [name] of statement.variables){
-				this.properties[name][0] = type;
+				acc[name][0] = type;
 			}
-		}
-		(this as ClassVariableType<true>).initialized = true;
+			return acc;
+		}, Object.create(null) as ClassVariableType<true>["properties"]);
+		const allMethods = Object.fromEntries(Object.entries(this.allMethods).map(([name, [source, data]]) => [name, [source.init(runtime), data]]));
+		return new ClassVariableType(true, this.statement, properties, this.ownMethods, allMethods, this.propertyStatements);
 	}
 	fmtText(){
 		return f.text`${this.name} (user-defined class type)`;
