@@ -8,7 +8,7 @@ This file contains the types for the runtime, such as the variable types and ass
 import { configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
 import { processTypeData, type ExpressionAST, type ExpressionASTArrayTypeNode, type ExpressionASTNode, type ExpressionASTRangeTypeNode, type ProgramASTBranchNode, type ProgramASTNodeGroup } from "../parser/index.js";
-import { AssignmentStatement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement } from "../statements/index.js";
+import { AssignmentStatement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement, TypeEnumStatement } from "../statements/index.js";
 import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
 import { Runtime } from "./runtime.js";
@@ -626,7 +626,17 @@ export class EnumeratedVariableType extends BaseVariableType {
 		public name: string,
 		public values: string[]
 	){super();}
-	init(){}
+	init(runtime:Runtime){
+		for(const name of this.values){
+			runtime.getCurrentScope().variables[name] = {
+				declaration: "enum",
+				mutable: false,
+				name,
+				value: name,
+				type: this
+			};
+		}
+	}
 	fmtText(){
 		return `${this.name} (user-defined enumerated type)`;
 	}
@@ -1052,7 +1062,7 @@ export type ConstantData<T extends VariableType = VariableType> = {
 	type: T;
 	/** Cannot be null */
 	value: VariableTypeMapping<T>;
-	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement;
+	declaration: ConstantStatement | ForStatement | FunctionStatement | ProcedureStatement | "enum";
 	name: string;
 	mutable: false;
 }

@@ -109,7 +109,10 @@ const tokenTests = ((data:Record<string,
 			["name", "amoma"],
 			type,
 			[type, "amoma"],
-			r => r.getCurrentScope().types["amogusType"] = type
+			r => {
+				r.getCurrentScope().types["amogusType"] = type;
+				type.init(r);
+			}
 		];
 	})(),
 	enum_invalid_different: (() => {

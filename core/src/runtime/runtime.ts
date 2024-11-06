@@ -494,7 +494,10 @@ export class Runtime {
 	}
 	assignExpr(target:ExpressionAST, src:UntypedNodeValue){
 		const variable = this.evaluateExpr(target, "variable");
-		if(!variable.mutable) fail(f.quote`Cannot assign to constant ${target}`, target);
+		if(!variable.mutable){
+			if(variable.declaration == "enum") fail(f.quote`Cannot assign to enum value ${target}`, target);
+			fail(f.quote`Cannot assign to constant ${target}`, target);
+		}
 		const {type, value} = this.evaluateUntyped(src, variable.assignabilityType ?? variable.type);
 		variable.value = value;
 		variable.updateType?.(type);
@@ -835,12 +838,8 @@ export class Runtime {
 			if(type == "variable"){
 				const variable = this.getVariable(token.text);
 				if(variable) return variable;
-				const enumType = this.getEnumFromValue(token.text);
-				if(enumType) fail(f.quote`Cannot evaluate enum value ${token.text} as a variable`, token);
 				this.handleNonexistentVariable(token.text, token.range);
 			} else {
-				const enumType = this.getEnumFromValue(token.text);
-				if(enumType) return finishEvaluation(token.text, enumType, type);
 				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
 				if(variable.value == null) fail(f.quote`Variable ${token.text} has not been initialized`, token);
 				return finishEvaluation(variable.value, variable.type, type);
@@ -1081,16 +1080,6 @@ export class Runtime {
 		}
 		return null;
 	}
-	getEnumFromValue(name:string):EnumeratedVariableType | null {
-		for(let i = this.scopes.length - 1; i >= 0; i--){
-			const scope = this.scopes[i];
-			if(scope.opaque && i > 1 && this.scopes[0].statement == "global") i = 1; //skip to the global scope
-			const data = Object.values(scope.types)
-				.find((data):data is EnumeratedVariableType => data instanceof EnumeratedVariableType && data.values.includes(name));
-			if(data) return data;
-		}
-		return null;
-	}
 	getPointerTypeFor(type:VariableType):PointerVariableType | null {
 		for(let i = this.scopes.length - 1; i >= 0; i--){
 			const scope = this.scopes[i];
@@ -1120,7 +1109,11 @@ export class Runtime {
 	}
 	defineVariable(name:string, data:VariableData | ConstantData, range:TextRangeLike){
 		const currentScope = this.getCurrentScope();
-		if(name in currentScope.variables) fail(f.quote`Variable ${name} was already defined`, range);
+		if(name in currentScope.variables){
+			const existingVariable = currentScope.variables[name];
+			if(existingVariable.declaration == "enum") fail(f.quote`Identifier ${name} is already in use as a variant of the enum type ${existingVariable.type}`, range);
+			else fail(f.quote`Variable ${name} was already defined`, range);
+		}
 		currentScope.variables[name] = data;
 	}
 	defineFunction(name:string, data:FunctionData, range:TextRange){
@@ -1199,7 +1192,17 @@ export class Runtime {
 			const rType = this.resolveVariableType(type);
 			if(passMode == "reference"){
 				const varData = this.evaluateExpr(args[i], "variable");
-				if(!typesEqual(varData.type, rType)) fail(f.quote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}. Cannot coerce BYREF arguments, please change the variable's type or change the pass mode to BYVAL.`, args[i]);
+				if(!typesEqual(varData.type, rType)){
+					const assignable = typesAssignable(rType, varData.type);
+					fail({
+						summary: `Type mismatch`,
+						elaboration: [
+							f.quote`Expected the argument to be of type ${rType}, but it was of type ${varData.type}.`,
+							assignable && `Arguments that are passed by reference cannot be coerced to a wider type, because the function might change their value`
+						].filter(Boolean),
+						help: assignable ? f.short`Assign the value to a temp variable with type "${rType}"` : undefined,
+					}, args[i]);
+				}
 				scope.variables[name] = {
 					declaration: func,
 					name,

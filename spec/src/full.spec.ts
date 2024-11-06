@@ -2278,7 +2278,7 @@ ENDPROCEDURE
 CALL test(animal)
 CALL test(dog)
 CALL test(dogAnimal)`,
-`Cannot coerce BYREF`
+`by reference cannot be coerced`
 ],
 call_class_method_in_function_polymorphically_and_mutate_byval: [
 `CLASS Animal
