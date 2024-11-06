@@ -6,7 +6,8 @@
 		"rootDir": "./src",
 		"moduleResolution": "NodeNext",
 		"module": "NodeNext",
-		"types": ["node"]
+		"types": ["node"],
+		"noUncheckedIndexedAccess": true,
 	},
 	"include": [
 		"src/**.ts"
