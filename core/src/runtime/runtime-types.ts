@@ -347,7 +347,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	totalLength:number | null = null;
 	arraySizes:number[] | null = null;
 	lengthInformation: [low:number, high:number][] | null = null;
-	private initialized = false;
+	initialized = false;
 	static maxLength = 10_000_000;
 	constructor(
 		public lengthInformationExprs: [low:ExpressionAST, high:ExpressionAST][] | null,

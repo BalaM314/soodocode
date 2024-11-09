@@ -969,7 +969,7 @@ export class Runtime {
 		if(type instanceof PrimitiveVariableType) return type;
 		else if(type instanceof IntegerRangeVariableType) return type;
 		else if(type instanceof ArrayVariableType){
-			type.init(this);
+			if(!type.initialized) type.init(this);
 			return type as never as ArrayVariableType<true>;
 		} else return this.getType(type[1]) ?? this.handleNonexistentType(type[1], type[2]);
 	}
