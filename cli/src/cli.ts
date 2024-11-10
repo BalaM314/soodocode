@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { Application, ApplicationError } from "cli-app";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import fsP from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { Application, ApplicationError } from "@balam314/cli-app";
 import { configs, crash, f, File, FileSystem, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "soodocode";
 import "soodocode/utils/globals";
 
@@ -91,7 +91,12 @@ class NodeJSFileSystem implements FileSystem {
 }
 
 const soodocode = new Application("soodocode", "CLI interface for the Soodocode runtime");
-soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
+soodocode.onlyCommand().args({
+	positionalArgs: [{
+		name: "file",
+		description: "Path to the file to run",
+	}],
+}).impl(async (opts, app) => {
 	const filename = opts.positionalArgs[0]!;
 	let data = await fsP.readFile(filename, "utf-8")
 		.catch(() => fail(`Failed to read the file "${filename}"`));
@@ -116,6 +121,7 @@ soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
 	configs.arrays.max_size_bytes.value = 512 * 1024 * 1024; //512 MiB
 	try {
 		runtime.runProgram(parse(tokenize(symbolize(data))).nodes);
+		return 0;
 	} catch(err){
 		if(err instanceof SoodocodeError){
 			console.error(err.formatMessage(data));
@@ -124,13 +130,8 @@ soodocode.command("run", "Runs a soodocode file.", async (opts, app) => {
 		} else {
 			console.error(`Soodocode crashed! ${parseError(err)}`);
 		}
+		return 1;
 	}
-}, true, {
-	positionalArgs: [{
-		name: "file",
-		description: "Path to the file to run",
-		required: true,
-	}],
-}, ["execute", "r"]);
+});
 
-soodocode.run(process.argv);
+void soodocode.run(process.argv);

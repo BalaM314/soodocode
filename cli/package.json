@@ -1,6 +1,6 @@
 {
 	"name": "soodocode-cli",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "CLI frontend for soodocode",
 	"main": "build/cli.js",
 	"bin": {
@@ -35,7 +35,7 @@
 		"typescript-eslint": "^8.3.0"
 	},
 	"dependencies": {
-		"cli-app": "github:BalaM314/cli-app",
+		"@balam314/cli-app": "^3.0.2",
 		"soodocode": "^1.0.0"
 	},
 	"type": "module"
