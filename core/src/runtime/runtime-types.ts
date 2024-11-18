@@ -216,7 +216,7 @@ export class UntypedNodeValue<T extends ExpressionAST = ExpressionAST> implement
 
 /** Base class for variable types. */
 export abstract class BaseVariableType implements IFormattable {
-	abstract getInitValue(runtime:Runtime, requireInit:boolean):unknown;
+	abstract getInitValue(requireInit:boolean):unknown;
 	abstract init(runtime:Runtime):void;
 	validate(runtime:Runtime){}
 	is(...type:PrimitiveVariableTypeName[]){
@@ -285,7 +285,7 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	static resolve(token:Token):Exclude<UnresolvedVariableType, ArrayVariableType> {
 		return this.get(token.text) ?? ["unresolved", token.text, token.range];
 	}
-	getInitValue(runtime:Runtime, requireInit:boolean):number | string | boolean | Date | null {
+	getInitValue(requireInit:boolean):number | string | boolean | Date | null {
 		if(requireInit) return match(this.name, {
 			INTEGER: configs.default_values.INTEGER.value,
 			REAL: configs.default_values.REAL.value,
@@ -306,7 +306,7 @@ export class IntegerRangeVariableType extends BaseVariableType {
 	possible(){
 		return this.high >= this.low;
 	}
-	getInitValue(runtime:Runtime, requireInit:boolean):number | null {
+	getInitValue(requireInit:boolean):number | null {
 		if(requireInit){
 			if(!this.possible()) fail(f.quote`Cannot initialize variable of type ${this}`, this.range);
 			return this.low;
@@ -399,7 +399,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l}:${h}`).join(", ")}]` : "";
 		return f.debug`ARRAY${rangeText} OF ${this.elementType ?? "ANY"}`;
 	}
-	getInitValue(runtime:Runtime, requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
+	getInitValue(requireInit:boolean):VariableTypeMapping<ArrayVariableType> {
 		if(!this.lengthInformation) fail({
 			summary: f.quote`${this} is not a valid variable type: length must be specified here`,
 			help: `specify the length by adding "[1:10]" after the keyword ARRAY`
@@ -432,7 +432,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 			return new Float64Array(this.totalLength!).fill(configs.default_values.REAL.value);
 		else
 			return Array.from({length: this.totalLength!},
-				() => type.getInitValue(runtime, configs.initialization.arrays_default.value) as
+				() => type.getInitValue(configs.initialization.arrays_default.value) as
 					VariableTypeMapping<ArrayElementVariableType> | null
 			);
 	}
@@ -544,10 +544,10 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 	fmtDebug(){
 		return `RecordVariableType [${this.name}] (fields: ${Object.keys(this.fields).join(", ")})`;
 	}
-	getInitValue(runtime:Runtime, requireInit:boolean):VariableValue | null {
+	getInitValue(requireInit:boolean):VariableValue | null {
 		if(!this.initialized) crash(`Type not initialized`);
 		return Object.fromEntries(Object.entries((this as RecordVariableType<true>).fields)
-			.map(([k, [v, r]]) => [k, v.getInitValue(runtime, false)])
+			.map(([k, [v, r]]) => [k, v.getInitValue(false)])
 		) satisfies VariableTypeMapping<RecordVariableType>;
 	}
 	iterate<T>(value:VariableTypeMapping<RecordVariableType>, callback:(tval:TypedValue | null, name:string, range:TextRange) => T):T[] {
@@ -609,7 +609,7 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 	fmtDebug():string {
 		return f.short`PointerVariableType [${this.name}] to "${this.target}"`;
 	}
-	getInitValue(runtime:Runtime):VariableValue | null {
+	getInitValue():VariableValue | null {
 		return null;
 	}
 	asHTML(value:VariableValue):string {
@@ -649,7 +649,7 @@ export class EnumeratedVariableType extends BaseVariableType {
 	fmtDebug(){
 		return f.debug`EnumeratedVariableType [${this.name}] (values: ${this.values.join(", ")})`;
 	}
-	getInitValue(runtime:Runtime):VariableValue | null {
+	getInitValue():VariableValue | null {
 		return null;
 	}
 	asHTML(value:VariableTypeMapping<EnumeratedVariableType>):string {
@@ -681,7 +681,7 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 	fmtDebug():string {
 		return f.debug`SetVariableType [${this.name}] (contains: ${this.elementType ?? "ANY"})`;
 	}
-	getInitValue(runtime:Runtime):VariableValue | null {
+	getInitValue():VariableValue | null {
 		crash(`Cannot initialize a variable of type SET`);
 	}
 	mapValues<T>(value:VariableTypeMapping<SetVariableType>, callback:(tval:TypedValue) => T):T[] {
@@ -737,7 +737,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		return f.debug`ClassVariableType [${this.name}]`;
 	}
 
-	getInitValue(runtime:Runtime):VariableValue | null {
+	getInitValue():VariableValue | null {
 		return null;
 	}
 	validate(runtime:Runtime){
@@ -787,7 +787,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 			Object.create(null),
 			Object.fromEntries(Object.entries(This.properties).map(([k, v]) => [k, {
 				get(){
-					const value = v[0].getInitValue(runtime, false);
+					const value = v[0].getInitValue(false);
 					//Use defineProperty to make sure we're setting it on the values object, not the initializer object
 					Object.defineProperty(propertiesObj, k, {
 						configurable: true,
