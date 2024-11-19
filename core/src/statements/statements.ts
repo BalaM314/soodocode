@@ -9,10 +9,10 @@ This file contains the definitions for every statement type supported by Soodoco
 import { configs } from "../config/index.js";
 import { Token, TokenType } from "../lexer/index.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma } from "../parser/index.js";
-import { ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableScope, VariableType, VariableValue } from "../runtime/runtime-types.js";
+import { ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableData, VariableScope, VariableType, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
 import { combineClasses, crash, enableConfig, f, fail, getTotalRange, RangeArray } from "../utils/funcs.js";
-import type { TextRange } from "../utils/types.js";
+import type { TextRange, TextRanged2 } from "../utils/types.js";
 import { evaluate, finishStatements, statement } from "./decorators.js";
 import { FunctionArguments, StatementExecutionResult, StatementType } from "./statement-types.js";
 import { Statement } from "./statement.js";
@@ -32,24 +32,38 @@ export abstract class TypeStatement extends Statement {
 @statement("declare", "DECLARE variable: TYPE", "keyword.declare", ".+", "punctuation.colon", "type+")
 export class DeclareStatement extends Statement {
 	static requiresScope = true;
-	varType = this.expr(-1, "type");
-	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
+	readonly varType = this.expr(-1, "type");
+	readonly variables:[string, TextRanged2, VariableData | null][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokens(1, -2), this.token(-2)
-	).map(t => [t.text, t] as [string, Token]);
+	).map(t => [t.text, t, null] as const);
 	run(runtime:Runtime){
 		const varType = runtime.resolveVariableType(processTypeData(this.varType));
 		if(varType instanceof SetVariableType) fail({
 			summary: `Cannot declare a set variable with the DECLARE statement`,
 			help: [f.range`use the DEFINE statement instead, like this:\nDEFINE ${this.variables[0][0]} (your comma-separated values here): ${this.expr(-1, "type")}`]
 		}, this.nodes.at(-1));
-		for(const [variable, token] of this.variables){
-			runtime.defineVariable(variable, {
-				type: varType,
-				name: variable,
-				value: varType.getInitValue(runtime, configs.initialization.normal_variables_default.value),
-				declaration: this,
-				mutable: true,
-			}, token);
+		for(let i = 0; i < this.variables.length; i ++){
+			if(this.variables[i][2] && this.variables[i][2]!.canCache){
+				//this is the second time this statement is being run, so it must be in a loop or a function
+				//the tokens and expressions later on hold a reference to the variable data, and they don't need to resolve the name again
+
+				//type may change for arrays
+				this.variables[i][2]!.type = varType;
+				//reset the value
+				this.variables[i][2]!.value = varType.getInitValue(configs.initialization.normal_variables_default.value);
+
+				//it is possible that some statements that need this variable didn't get executed the first time, so it still needs to be added to the scope
+				runtime.defineVariable(this.variables[i][0], this.variables[i][2]!, this.variables[i][1]);
+			} else {
+				runtime.defineVariable(this.variables[i][0], this.variables[i][2] = {
+					type: varType,
+					name: this.variables[i][0],
+					value: varType.getInitValue(configs.initialization.normal_variables_default.value),
+					declaration: this,
+					mutable: true,
+					canCache: true,
+				}, this.variables[i][1]);
+			}
 		}
 	}
 }
@@ -99,7 +113,8 @@ export class DefineStatement extends Statement {
 			value: this.values.map(t => (
 				Runtime.evaluateToken(t, type.elementType as PrimitiveVariableType)
 					?? crash(`evaluating a literal token cannot fail`)
-			).value)
+			).value),
+			canCache: false,
 		}, this.name);
 	}
 }
@@ -170,6 +185,7 @@ export class AssignmentStatement extends Statement {
 						name: this.target.text, declaration: this,
 						mutable: true,
 						type, value,
+						canCache: false,
 					};
 				} else fail({
 					summary: f.quote`Variable ${this.target.text} does not exist`,
@@ -556,6 +572,7 @@ export class DoWhileEndStatement extends Statement {
 export class FunctionStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
+	argsCache:(VariableData | null)[] = [];
 	argsRange:TextRange;
 	returnTypeNode:ExpressionASTTypeNode;
 	name:string;
@@ -580,6 +597,7 @@ export class FunctionStatement extends Statement {
 export class ProcedureStatement extends Statement {
 	/** Mapping between name and type */
 	args:FunctionArguments;
+	argsCache:(VariableData | null)[] = [];
 	argsRange:TextRange;
 	name:string;
 	nameToken:Token;

@@ -624,16 +624,17 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 export class EnumeratedVariableType extends BaseVariableType {
 	constructor(
 		public name: string,
-		public values: string[]
+		public values: string[],
 	){super();}
+	private variablesCache: (ConstantData | null)[] = [];
 	init(runtime:Runtime){
-		for(const name of this.values){
-			runtime.getCurrentScope().variables[name] = {
+		for(let i = 0; i < this.values.length; i ++){
+			runtime.getCurrentScope().variables[this.values[i]] = this.variablesCache[i] ??= {
 				declaration: "enum",
 				mutable: false,
-				name,
-				value: name,
-				type: this
+				name: this.values[i],
+				value: this.values[i],
+				type: this,
 			};
 		}
 	}
@@ -843,6 +844,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 				declaration: v[1],
 				mutable: true,
 				name: k,
+				canCache: false,
 			} satisfies VariableData]))
 		};
 	}
@@ -1057,6 +1059,8 @@ export type VariableData<T extends VariableType = VariableType, /** Set this to 
 	/** Name for the variable, used for error messages */
 	name: string;
 	mutable: true;
+	/** Whether this VariableData is suitable for caching. */
+	canCache: boolean;
 }
 export type ConstantData<T extends VariableType = VariableType> = {
 	type: T;

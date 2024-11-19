@@ -345,7 +345,8 @@ export class Runtime {
 				declaration: target.declaration,
 				mutable: true,
 				get value(){ return target.value[index]; },
-				set value(val){ target.value[index] = val; }
+				set value(val){ target.value[index] = val; },
+				canCache: false,
 			};
 		}
 		const output = target.value[index];
@@ -421,7 +422,8 @@ export class Runtime {
 					declaration: (target! satisfies VariableData | ConstantData).declaration as never,
 					mutable: true, //Even if the record is immutable, the property is mutable
 					get value(){ return targetValue[property]; },
-					set value(val){ targetValue[property] = val; }
+					set value(val){ targetValue[property] = val; },
+					canCache: false,
 				} satisfies (VariableData | ConstantData);
 			}	else if(outType == "function"){
 				fail(f.quote`Expected this expression to evaluate to a function, but found a property access on a variable of type ${targetType}, which cannot have functions as properties`, expr);
@@ -481,7 +483,8 @@ export class Runtime {
 						get value(){ return classInstance.properties[property]; },
 						set value(val){
 							classInstance.properties[property] = val;
-						}
+						},
+						canCache: false,
 					} satisfies (VariableData | ConstantData);
 				}	else {
 					const outputType = targetType.getPropertyType(property, classInstance);
@@ -600,7 +603,8 @@ export class Runtime {
 								name: `(dynamic variable)`,
 								declaration: "dynamic",
 								mutable: true,
-								value: target.value
+								value: target.value,
+								canCache: false,
 							});
 						}
 						const pointerType = this.getPointerTypeFor(target.type) ?? fail(f.quote`Cannot find a pointer type for ${target.type}`, expr.operatorToken, expr);
@@ -609,10 +613,13 @@ export class Runtime {
 							name: `(dynamic variable)`,
 							declaration: "dynamic",
 							mutable: true,
-							value: target.value
+							value: target.value,
+							canCache: false,
 						}, pointerType, type);
 					}
-					const pointerType = this.getPointerTypeFor((variable as VariableData).assignabilityType ?? variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
+					const pointerType = this.getPointerTypeFor((variable as VariableData).assignabilityType ?? variable.type)
+						?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
+					if(variable.mutable) variable.canCache = false;
 					return finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
@@ -835,12 +842,10 @@ export class Runtime {
 		if(token.type == "name"){
 			if(type == "function") return this.getFunction(token);
 
+			const variable = this.evaluateTokenVariable(token);
 			if(type == "variable"){
-				const variable = this.getVariable(token.text);
-				if(variable) return variable;
-				this.handleNonexistentVariable(token.text, token.range);
+				return variable;
 			} else {
-				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
 				if(variable.value == null) fail(f.quote`Variable ${token.text} has not been initialized`, token);
 				return finishEvaluation(variable.value, variable.type, type);
 			}
@@ -876,8 +881,21 @@ export class Runtime {
 			default: fail(f.quote`Cannot evaluate token ${token}`, token);
 		}
 	}
+	evaluateTokenVariable(token: Token) {
+		if(token.cachedData && (token.cachedData as VariableData).canCache){
+			//if the cached variable data has canCache set to false, the declaration statement created a new variable
+			//check the scope chain to get a reference to it
+			//otherwise, cache is still good
+			return token.cachedData as VariableData | ConstantData;
+		} else {
+			const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
+			token.cachedData = variable;
+			return variable;
+		}
+	}
 	/** Special value used to catch errors caused by needing to access the value of "this" */
 	static NotStatic = Symbol("not static");
+
 	/**
 	 * Evaluates a token statically.
 	 * Fails if the evaluation needs access to data stored in a Runtime,
@@ -1209,18 +1227,26 @@ export class Runtime {
 					mutable: true,
 					type: rType,
 					get value(){ return varData.value ?? fail(`Variable (passed by reference) has not been initialized`, args[i]); },
-					set value(value){ varData.value = value; }
+					set value(value){ varData.value = value; },
+					canCache: false,
 				};
 			} else {
 				const { type, value } = this.evaluateExpr(args[i], rType);
 				if(type instanceof ArrayVariableType && !type.lengthInformation) crash(f.quote`evaluateExpr returned an array type of unspecified length at evaluating ${args[i]}`);
-				scope.variables[name] = {
-					declaration: func,
-					name,
-					mutable: true,
-					type,
-					value: this.cloneValue(rType, value)
-				};
+				if(func.argsCache[i] && func.argsCache[i].canCache){
+					func.argsCache[i].type = type;
+					func.argsCache[i].value = this.cloneValue(rType, value);
+					scope.variables[name] = func.argsCache[i];
+				} else {
+					scope.variables[name] = func.argsCache[i] = {
+						declaration: func,
+						name,
+						mutable: true,
+						type,
+						value: this.cloneValue(rType, value),
+						canCache: true,
+					};
+				}
 			}
 		}
 		return scope;

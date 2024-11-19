@@ -97,7 +97,8 @@ const tokenTests = ((data:Record<string,
 			name: "x",
 			declaration: null!,
 			type: PrimitiveVariableType.INTEGER,
-			value: 5
+			value: 5,
+			canCache: false,
 		}
 	],
 	enum_valid: (() => {
@@ -213,7 +214,8 @@ const expressionTests = ((data:Record<string, [
 				name: "amogus",
 				declaration: null!,
 				mutable: true,
-				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0]
+				value: [0, 0, 0, 0, 18, 0, 0, 0, 0, 0],
+				canCache: false,
 			};
 		}
 	],
@@ -236,7 +238,8 @@ const expressionTests = ((data:Record<string, [
 				mutable: true,
 				value: {
 					sus: 18
-				}
+				},
+				canCache: false,
 			};
 		}
 	],
@@ -268,7 +271,8 @@ const expressionTests = ((data:Record<string, [
 					bbb: {
 						ccc: 123
 					}
-				}
+				},
+				canCache: false,
 			};
 		}
 	],
@@ -293,7 +297,8 @@ const expressionTests = ((data:Record<string, [
 				mutable: true,
 				value: [null, {
 					ccc: 124
-				}, null, null, null]
+				}, null, null, null],
+				canCache: false,
 			};
 		}
 	],
@@ -310,7 +315,8 @@ const expressionTests = ((data:Record<string, [
 				name: "aaa",
 				declaration: null!,
 				mutable: true,
-				value: Date.now()
+				value: Date.now(),
+				canCache: false,
 			};
 		}
 	],
@@ -333,7 +339,8 @@ const expressionTests = ((data:Record<string, [
 				mutable: true,
 				value: {
 					sus: 18
-				}
+				},
+				canCache: false,
 			};
 		}
 	],
@@ -344,7 +351,8 @@ const expressionTests = ((data:Record<string, [
 			name: "amogus",
 			declaration: null!,
 			mutable: true,
-			value: 19
+			value: 19,
+			canCache: false,
 		};
 		return [
 			["tree", "pointer_reference", [
@@ -366,7 +374,8 @@ const expressionTests = ((data:Record<string, [
 			name: "amogus",
 			declaration: null!,
 			mutable: true,
-			value: Array(10).fill(null)
+			value: Array(10).fill(null),
+			canCache: false,
 		};
 		return [
 			["tree", "pointer_reference", [
@@ -389,7 +398,8 @@ const expressionTests = ((data:Record<string, [
 			name: "amogus",
 			declaration: null!,
 			mutable: true,
-			value: Array(10).fill(null)
+			value: Array(10).fill(null),
+			canCache: false,
 		};
 		return [
 			["tree", "pointer_reference", [
@@ -431,7 +441,8 @@ const expressionTests = ((data:Record<string, [
 			name: "amogus",
 			declaration: null!,
 			mutable: true,
-			value: 19
+			value: 19,
+			canCache: false,
 		};
 		return [
 			["tree", "pointer_reference", [
@@ -459,7 +470,8 @@ const expressionTests = ((data:Record<string, [
 					name: "amogus",
 					declaration: null!,
 					mutable: true,
-					value: 20
+					value: 20,
+					canCache: false,
 				};
 				r.getCurrentScope().types["intPtr"] = intPointer;
 				r.getCurrentScope().variables["amogus"] = amogusVar;
@@ -468,7 +480,8 @@ const expressionTests = ((data:Record<string, [
 					name: "amogusPtr",
 					mutable: true,
 					type: intPointer,
-					value: amogusVar
+					value: amogusVar,
+					canCache: false,
 				};
 			}
 		];
@@ -721,7 +734,8 @@ const expressionTests = ((data:Record<string, [
 						},
 						propertyTypes: {},
 						type: amogusClass
-					}
+					},
+					canCache: false,
 				} satisfies VariableData<ClassVariableType>;
 			}
 		];
@@ -757,7 +771,8 @@ const expressionTests = ((data:Record<string, [
 						},
 						propertyTypes: {},
 						type: amogusClass
-					}
+					},
+					canCache: false,
 				} satisfies VariableData<ClassVariableType>;
 			}
 		];
@@ -820,7 +835,8 @@ const expressionTests = ((data:Record<string, [
 						},
 						propertyTypes: {},
 						type: amogusClass
-					}
+					},
+					canCache: false,
 				} satisfies VariableData<ClassVariableType>;
 				r.getCurrentScope().variables["sus"] = {
 					declaration: null!,
@@ -833,7 +849,8 @@ const expressionTests = ((data:Record<string, [
 						},
 						propertyTypes: {},
 						type: amogusClass
-					}
+					},
+					canCache: false,
 				} satisfies VariableData<ClassVariableType>;
 			}
 		];
@@ -892,7 +909,8 @@ const expressionTests = ((data:Record<string, [
 					},
 					propertyTypes: {},
 					type: amogusClass
-				}
+				},
+				canCache: false,
 			} satisfies VariableData<ClassVariableType>;
 		}
 	],
@@ -953,7 +971,8 @@ const expressionTests = ((data:Record<string, [
 					},
 					propertyTypes: {},
 					type: amogusClass
-				}
+				},
+				canCache: false,
 			} satisfies VariableData<ClassVariableType>;
 		}
 	],
@@ -1012,7 +1031,8 @@ const expressionTests = ((data:Record<string, [
 					},
 					propertyTypes: {},
 					type: amogusClass
-				}
+				},
+				canCache: false,
 			} satisfies VariableData<ClassVariableType>;
 		}
 	],
@@ -1042,7 +1062,8 @@ const statementTests = ((data:Record<string, [
 			mutable: true,
 			type: PrimitiveVariableType.DATE,
 			name: "x",
-			value: null
+			value: null,
+			canCache: true,
 		})
 	],
 	files_open_nonexistent_for_read: [

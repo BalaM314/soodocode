@@ -126,6 +126,7 @@ export function TokenType(input:string):TokenType {
  * Determination of Tokens is context-specific.
  */
 export class Token implements TextRanged, IFormattable {
+	cachedData?: unknown;
 	constructor(
 		public type: TokenType,
 		public text: string,
