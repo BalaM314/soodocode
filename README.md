@@ -54,11 +54,11 @@ Usage: `soodocode file.sc`
 * [x] Pointers
   * [x] Infinite pointer types
 * [x] Recursive types
-* [x] Sets
+  * [x] Sets
 * [ ] Set operations
 * [x] Integer range type (1..10, 200..250)
 * [x] Sound type system
-  * Type checking is partly done at compile time (class inheritance, type esize check) and partly at runtime (everything else).
+  * Type checking is partly done at compile time (class inheritance, type size check) and partly at runtime (everything else).
 
 ## Classes
 * [x] Classes
