@@ -6,7 +6,7 @@ This file contains the base Statement class, which all the other statements exte
 */
 
 import { Token } from "../lexer/lexer-types.js";
-import { ExpressionAST, ExpressionASTNodeExt, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "../parser/parser-types.js";
+import { ExpressionAST, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, StatementNode, TokenMatcher } from "../parser/parser-types.js";
 import { StatementCheckTokenRange } from "../parser/parser.js";
 import { NodeValue, PrimitiveVariableTypeName, TypedNodeValue, UntypedNodeValue, VariableType } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
@@ -39,7 +39,7 @@ export class Statement implements TextRanged, IFormattable {
 	static allowOnly:Set<StatementType> | null = null;
 	/** If set, this statement is invalid and will fail with the below error message if it parses successfully. */
 	static invalidMessage: string | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:string, range?:TextRange]) = null;
-	constructor(public nodes:RangeArray<ExpressionASTNodeExt>){
+	constructor(public nodes:RangeArray<StatementNode>){
 		this.type = new.target;
 		this.stype = this.type.type;
 		this.category = this.type.category;
@@ -51,7 +51,7 @@ export class Statement implements TextRanged, IFormattable {
 		else crash(`Assertion failed: node at index ${ind} was not a token`);
 	}
 	/** Returns the nodes from `from` to `to` (exclusive) and asserts that they are all tokens. */
-	tokens(from:number, to:number):RangeArray<Token> {
+	tokens(from:number, to?:number):RangeArray<Token> {
 		const tokens = this.nodes.slice(from, to);
 		tokens.forEach((t, i) =>
 			t instanceof Token || crash(`Assertion failed: node at index ${i} was not a token`)
@@ -69,8 +69,8 @@ export class Statement implements TextRanged, IFormattable {
 	/** Returns the node at `ind` and asserts that it is a type. */
 	expr(ind:number, allowed:"type", error?:string):ExpressionASTTypeNode;
 	/** Returns the node at `ind` and asserts that it is one of the given types. */
-	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string, extraValidator?:(node:ExpressionASTNodeExt) => boolean):InstanceType<Type>;
-	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string, extraValidator:(node:ExpressionASTNodeExt) => boolean = () => true):ExpressionASTNodeExt {
+	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string, extraValidator?:(node:StatementNode) => boolean):InstanceType<Type>;
+	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string, extraValidator:(node:StatementNode) => boolean = () => true):StatementNode {
 		if(allowed === "type") allowed = ExpressionASTTypeNodes;
 		if(allowed === "expr") allowed = ExpressionASTNodes;
 

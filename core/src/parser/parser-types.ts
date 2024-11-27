@@ -22,6 +22,8 @@ export type ExpressionASTNode =
 | ExpressionASTClassInstantiationNode; //UPDATE: Statement.expr
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
 export type ExpressionASTLeafNode = Token;
+/** Represents a child node of a Statement. Can be a token (like a keyword, or mode specifier), a literal, an expression, or a type. */
+export type StatementNode = Token | ExpressionAST | ExpressionASTTypeNode;
 /** Represents a branch node (node with child nodes) in an expression AST. */
 export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 	range: TextRange;
@@ -119,7 +121,7 @@ export class ExpressionASTArrayTypeNode implements TextRanged, IFormattable {
 	){}
 	fmtText():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => f.text`${l}:${h}`).join(", ")}]` : "";
-		return `ARRAY OF ${this.elementType.text}`;
+		return `ARRAY${rangeText} OF ${this.elementType.text}`;
 	}
 	fmtDebug():string {
 		const rangeText = this.lengthInformation ? `[${this.lengthInformation.map(([l, h]) => `${l.fmtDebug()} : ${h.fmtDebug()}`).join(", ")}]` : "";
@@ -168,9 +170,8 @@ export class ExpressionASTRangeTypeNode implements TextRanged, IFormattable {
 // 	}
 // }
 /** Represents a node that represents a type, for example, a single token, or an array type node. */
-export type ExpressionASTTypeNode = Token | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode; //UPDATE: ExpressionASTTypeNodes
-/** Represents an "extended" expression AST node, which may also be an array type node */
-export type ExpressionASTNodeExt = ExpressionASTNode | ExpressionASTTypeNode;
+export type ExpressionASTTypeNode = ExpressionASTTypeLeafNode | ExpressionASTRangeTypeNode | ExpressionASTArrayTypeNode; //UPDATE: ExpressionASTTypeNodes
+export type ExpressionASTTypeLeafNode = Token;
 
 export const ExpressionASTTypeNodes = [
 	Token, ExpressionASTArrayTypeNode, ExpressionASTRangeTypeNode

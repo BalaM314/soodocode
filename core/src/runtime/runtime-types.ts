@@ -6,8 +6,7 @@ This file contains the types for the runtime, such as the variable types and ass
 */
 
 import { configs } from "../config/index.js";
-import { Token } from "../lexer/index.js";
-import { processTypeData, type ExpressionAST, type ExpressionASTArrayTypeNode, type ExpressionASTNode, type ExpressionASTRangeTypeNode, type ProgramASTBranchNode, type ProgramASTNodeGroup } from "../parser/index.js";
+import { ExpressionASTTypeLeafNode, processTypeData, type ExpressionAST, type ExpressionASTArrayTypeNode, type ExpressionASTNode, type ExpressionASTRangeTypeNode, type ProgramASTBranchNode, type ProgramASTNodeGroup } from "../parser/index.js";
 import { AssignmentStatement, BuiltinFunctionArguments, ClassFunctionStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, ConstantStatement, DeclareStatement, DefineStatement, ForStatement, FunctionStatement, ProcedureStatement, Statement, TypeEnumStatement } from "../statements/index.js";
 import { ConfigSuggestion, crash, enableConfig, escapeHTML, f, fail, getTotalRange, IFormattable, impossible, match, plural, RangeArray, setConfig, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
@@ -282,7 +281,7 @@ export class PrimitiveVariableType<T extends PrimitiveVariableTypeName = Primiti
 	static get(type:string):PrimitiveVariableType | undefined{
 		return this.valid(type) ? this[type] : undefined;
 	}
-	static resolve(token:Token):Exclude<UnresolvedVariableType, ArrayVariableType> {
+	static resolve(token:ExpressionASTTypeLeafNode):Exclude<UnresolvedVariableType, ArrayVariableType> {
 		return this.get(token.text) ?? ["unresolved", token.text, token.range];
 	}
 	getInitValue(runtime:Runtime, requireInit:boolean):number | string | boolean | Date | null {

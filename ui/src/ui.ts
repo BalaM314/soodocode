@@ -6,7 +6,7 @@ This file contains code for the user interface.
 */
 
 import * as sc from "../../core/build/index.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, File, LocalFileSystem, ProgramAST, ProgramASTNode, ProgramASTNodeGroup, Runtime, SoodocodeError, Statement, Token, capitalizeText, configs, crash, escapeHTML, f, fail, loadConfigs, parse, parseError, resetToDefaults, saveConfigs, symbolize, tokenize } from "../../core/build/index.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ExpressionASTRangeTypeNode, File, LocalFileSystem, ProgramAST, ProgramASTNode, ProgramASTNodeGroup, Runtime, SoodocodeError, Statement, StatementNode, Token, capitalizeText, configs, crash, escapeHTML, f, fail, loadConfigs, parse, parseError, resetToDefaults, saveConfigs, symbolize, tokenize } from "../../core/build/index.js";
 import "../../core/build/utils/globals.js";
 
 const savedProgramKey = "soodocode:savedProgram";
@@ -52,7 +52,7 @@ export function flattenTree(program:ProgramASTNodeGroup):(readonly [depth:number
 }
 
 /** Must escape HTML special chars from user input. */
-export function displayExpressionHTML(node:ExpressionASTNodeExt, expand = false, format = true):string {
+export function displayExpressionHTML(node:StatementNode, expand = false, format = true):string {
 	if(node instanceof Token || node instanceof ExpressionASTArrayTypeNode || node instanceof ExpressionASTRangeTypeNode)
 		return escapeHTML(node.fmtText());
 	if(node instanceof ExpressionASTFunctionCallNode || node instanceof ExpressionASTArrayAccessNode || node instanceof ExpressionASTClassInstantiationNode){

@@ -8,10 +8,10 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import { configs } from "../config/index.js";
 import { Token, TokenType } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTNodeExt, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma, StatementNode } from "../parser/index.js";
 import { ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableScope, VariableType, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
-import { combineClasses, crash, enableConfig, f, fail, getTotalRange, RangeArray } from "../utils/funcs.js";
+import { combineClasses, crash, enableConfig, f, fail, getTotalRange, match, RangeArray } from "../utils/funcs.js";
 import type { TextRange } from "../utils/types.js";
 import { evaluate, finishStatements, statement } from "./decorators.js";
 import { FunctionArguments, StatementExecutionResult, StatementType } from "./statement-types.js";
@@ -33,9 +33,9 @@ export abstract class TypeStatement extends Statement {
 export class DeclareStatement extends Statement {
 	static requiresScope = true;
 	varType = this.expr(-1, "type");
-	variables:[string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
+	variables:readonly [string, Token][] = getUniqueNamesFromCommaSeparatedTokenList(
 		this.tokens(1, -2), this.token(-2)
-	).map(t => [t.text, t] as [string, Token]);
+	).map(t => [t.text, t]);
 	run(runtime:Runtime){
 		const varType = runtime.resolveVariableType(processTypeData(this.varType));
 		if(varType instanceof SetVariableType) fail({
@@ -64,7 +64,7 @@ export class ConstantStatement extends Statement {
 	}
 	run(runtime:Runtime){
 		if(runtime.getVariable(this.name)) fail(`Constant ${this.name} was already declared`, this);
-		const { type, value } = Runtime.evaluateToken(this.expression)
+		const { type, value } = Runtime.evaluateExprLeaf(this.expression)
 			?? crash(`evaluation of literals cannot fail`);
 		runtime.getCurrentScope().variables[this.name] = {
 			type,
@@ -97,7 +97,7 @@ export class DefineStatement extends Statement {
 			declaration: this,
 			mutable: true,
 			value: this.values.map(t => (
-				Runtime.evaluateToken(t, type.elementType as PrimitiveVariableType)
+				Runtime.evaluateExprLeaf(t, type.elementType as PrimitiveVariableType)
 					?? crash(`evaluating a literal token cannot fail`)
 			).value)
 		}, this.name);
@@ -192,7 +192,7 @@ export class AssignmentBadStatement extends Statement {
 }
 @statement("output", `OUTPUT "message"`, "keyword.output", ".+")
 export class OutputStatement extends Statement {
-	outMessage = splitTokensOnComma(this.nodes.slice(1) as RangeArray<Token>)
+	outMessage = splitTokensOnComma(this.tokens(1))
 		.map(n => new UntypedNodeValue(parseExpression(n)));
 	run(runtime:Runtime){
 		runtime._output(this.outMessage.map(expr => runtime.evaluateUntyped(expr)));
@@ -365,7 +365,7 @@ export class CaseBranchStatement extends Statement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Try to evaluate the case token with the same type as the switch target
-		const { value:caseValue } = Runtime.evaluateToken(this.value, switchType)!;
+		const { value:caseValue } = Runtime.evaluateExprLeaf(this.value, switchType)!;
 		return switchValue == caseValue;
 	}
 }
@@ -397,8 +397,8 @@ export class CaseBranchRangeStatement extends CaseBranchStatement {
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
 		//Evaluate the case tokens with the same type as the switch target
-		const { value:lValue } = Runtime.evaluateToken(this.lowerBound, switchType)!;
-		const { value:uValue } = Runtime.evaluateToken(this.upperBound, switchType)!;
+		const { value:lValue } = Runtime.evaluateExprLeaf(this.lowerBound, switchType)!;
+		const { value:uValue } = Runtime.evaluateExprLeaf(this.upperBound, switchType)!;
 		return lValue <= switchValue && switchValue <= uValue;
 	}
 }
@@ -718,9 +718,12 @@ export class PutRecordStatement extends Statement implements IFileStatement {
 class ClassMemberStatement {
 	accessModifierToken: Token;
 	accessModifier: "public" | "private";
-	constructor(tokens:RangeArray<ExpressionASTNodeExt>){
+	constructor(tokens:RangeArray<StatementNode>){
 		this.accessModifierToken = tokens[0] as Token;
-		this.accessModifier = this.accessModifierToken.type.split("keyword.class_modifier.")[1] as "public" | "private";
+		this.accessModifier = match(this.accessModifierToken.type, {
+			"keyword.class_modifier.public": "public",
+			"keyword.class_modifier.private": "private",
+		}, null) ?? crash(`Impossible`);
 	}
 	run(){
 		crash(`Class sub-statements cannot be run normally`);

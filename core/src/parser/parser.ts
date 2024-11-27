@@ -510,7 +510,7 @@ export function checkTokens(tokens:RangeArray<Token>, input:TokenMatcher[]):bool
 function cannotEndExpression(token:Token){
 	return token.type.startsWith("operator.") || token.type == "parentheses.open" || token.type == "bracket.open";
 }
-function canBeOperator(token:Token){
+function canBeOperator(token:Token){ //TODO use a better data structure here
 	return Object.values(operators).find(o => o.token == token.type);
 }
 function canBeUnaryOperator(token:Token){

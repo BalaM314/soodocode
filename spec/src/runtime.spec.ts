@@ -2002,9 +2002,9 @@ describe("runtime's token evaluator", () => {
 			});
 			setup(runtime);
 			if(output[0] == "error"){
-				expect(() => runtime.evaluateToken(token, requestedType ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
+				expect(() => runtime.evaluateExprLeaf(token, requestedType ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
 			} else {
-				const {type, value} = runtime.evaluateToken(token, requestedType ?? undefined);
+				const {type, value} = runtime.evaluateExprLeaf(token, requestedType ?? undefined);
 				expect(type).toEqual(output[0]);
 				expect(value).toEqual(output[1]);
 			}

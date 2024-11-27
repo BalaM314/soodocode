@@ -8,7 +8,7 @@ This file contains the runtime, which executes the program AST.
 
 import { Config, configs } from "../config/index.js";
 import { Token } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
 import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
@@ -522,7 +522,7 @@ export class Runtime {
 		if(expr == undefined) crash(`expr was ${expr as null | undefined}`);
 
 		if(expr instanceof Token)
-			return this.evaluateToken(expr, type as never);
+			return this.evaluateExprLeaf(expr, type as never);
 
 		//Branch node
 
@@ -824,43 +824,43 @@ export class Runtime {
 		unreachable(expr.operator.category, JSON.stringify(expr.operator));
 	}
 	/** Evaluates an expression leaf node. */
-	evaluateToken(token:Token):TypedValue;
+	evaluateExprLeaf(node:ExpressionASTLeafNode):TypedValue;
 	/** Evaluates an expression leaf node, expecting it to be a (writable) variable. */
-	evaluateToken(token:Token, type:"variable"):VariableData | ConstantData;
+	evaluateExprLeaf(node:ExpressionASTLeafNode, type:"variable"):VariableData | ConstantData;
 	/** Evaluates an expression leaf node, expecting it to be a function. */
-	evaluateToken(token:Token, type:"function"):FunctionData | BuiltinFunctionData;
+	evaluateExprLeaf(node:ExpressionASTLeafNode, type:"function"):FunctionData | BuiltinFunctionData;
 	/** Evaluates an expression leaf node, expecting it to be of a specific type. */
-	evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
-	evaluateToken(token:Token, type?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
-		if(token.type == "name"){
-			if(type == "function") return this.getFunction(token);
+	evaluateExprLeaf<T extends VariableType | undefined>(node:ExpressionASTLeafNode, type:T):TypedValue<T extends undefined ? VariableType : T & {}>
+	evaluateExprLeaf(node:ExpressionASTLeafNode, type?:VariableType | "variable" | "function"):TypedValue | VariableData | ConstantData | FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
+		if(node.type == "name"){
+			if(type == "function") return this.getFunction(node);
 
 			if(type == "variable"){
-				const variable = this.getVariable(token.text);
+				const variable = this.getVariable(node.text);
 				if(variable) return variable;
-				this.handleNonexistentVariable(token.text, token.range);
+				this.handleNonexistentVariable(node.text, node.range);
 			} else {
-				const variable = this.getVariable(token.text) ?? this.handleNonexistentVariable(token.text, token.range);
-				if(variable.value == null) fail(f.quote`Variable ${token.text} has not been initialized`, token);
+				const variable = this.getVariable(node.text) ?? this.handleNonexistentVariable(node.text, node.range);
+				if(variable.value == null) fail(f.quote`Variable ${node.text} has not been initialized`, node);
 				return finishEvaluation(variable.value, variable.type, type);
 			}
 		}
-		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${token.text} as a ${type}`, token);
-		switch(token.type){
+		if(type == "variable" || type == "function") fail(f.quote`Cannot evaluate token ${node.text} as a ${type}`, node);
+		switch(node.type){
 			case "boolean.false":
 				return finishEvaluation(false, PrimitiveVariableType.BOOLEAN, type);
 			case "boolean.true":
 				return finishEvaluation(true, PrimitiveVariableType.BOOLEAN, type);
 			case "number.decimal": {
-				const val = Number(token.text);
+				const val = Number(node.text);
 				if(Number.isNaN(val)) crash(`number was nan`);
 				if(!Number.isFinite(val))
-					fail(f.quote`Value ${token} cannot be converted to a number: too large`, token);
+					fail(f.quote`Value ${node} cannot be converted to a number: too large`, node);
 				if(type?.is("INTEGER")){
 					if(!Number.isInteger(val))
-						fail(f.quote`Value ${token} cannot be converted to an integer`, token);
+						fail(f.quote`Value ${node} cannot be converted to an integer`, node);
 					if(!Number.isSafeInteger(val))
-						fail(f.quote`Value ${token} cannot be converted to an integer: too large`, token);
+						fail(f.quote`Value ${node} cannot be converted to an integer: too large`, node);
 					return TypedValue.INTEGER(val);
 				}
 				return finishEvaluation(val, PrimitiveVariableType.REAL, type);
@@ -869,11 +869,11 @@ export class Runtime {
 				if(type?.is("CHAR")) fail({
 					summary: `Cannot coerce a STRING literal to type CHAR`,
 					help: `use a CHAR literal instead, by replacing the double quotes with single quotes`
-				}, token);
-				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.STRING, type); //remove the quotes
+				}, node);
+				return finishEvaluation(node.text.slice(1, -1), PrimitiveVariableType.STRING, type); //remove the quotes
 			case "char":
-				return finishEvaluation(token.text.slice(1, -1), PrimitiveVariableType.CHAR, type); //remove the quotes
-			default: fail(f.quote`Cannot evaluate token ${token}`, token);
+				return finishEvaluation(node.text.slice(1, -1), PrimitiveVariableType.CHAR, type); //remove the quotes
+			default: fail(f.quote`Cannot evaluate token ${node}`, node);
 		}
 	}
 	/** Special value used to catch errors caused by needing to access the value of "this" */
@@ -883,20 +883,20 @@ export class Runtime {
 	 * Fails if the evaluation needs access to data stored in a Runtime,
 	 * for example, if it needs to read the value of a variable, or call a function.
 	 */
-	static evaluateToken(token:Token):TypedValue | null;
+	static evaluateExprLeaf(node:ExpressionASTLeafNode):TypedValue | null;
 	/**
 	 * Evaluates a token statically.
 	 * Fails if the evaluation needs access to data stored in a Runtime,
 	 * for example, if it needs to read the value of a variable, or call a function.
 	 */
-	static evaluateToken<T extends VariableType | undefined>(token:Token, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
-	static evaluateToken(token:Token, type?:VariableType):TypedValue | null {
+	static evaluateExprLeaf<T extends VariableType | undefined>(node:ExpressionASTLeafNode, type:T):TypedValue<T extends undefined ? VariableType : T & {}> | null;
+	static evaluateExprLeaf(node:ExpressionASTLeafNode, type?:VariableType):TypedValue | null {
 		//major shenanigans
 		try {
-			return this.prototype.evaluateToken.call(new Proxy({}, {
+			return this.prototype.evaluateExprLeaf.call(new Proxy({}, {
 				// eslint-disable-next-line @typescript-eslint/only-throw-error
 				get(){ throw Runtime.NotStatic; },
-			}), token, type);
+			}), node, type);
 		} catch(err){
 			if(err === Runtime.NotStatic) return null;
 			else throw err;
@@ -1122,9 +1122,10 @@ export class Runtime {
 		else if(name in this.builtinFunctions) fail(f.quote`Function or procedure ${name} has already been defined as a builtin function`, range);
 		this.functions[name] = data;
 	}
-	getFunction({text, range}:Token):FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
+	getFunction({text, range}:ExpressionASTLeafNode):FunctionData | BuiltinFunctionData | ClassMethodCallInformation {
 		if(this.classData && this.classData.clazz.allMethods[text]){
-			const [clazz, method] = this.classData.instance.type.allMethods[text] ?? crash(`Function exists on the variable type, so it must exist on the instance type`);
+			const [clazz, method] = this.classData.instance.type.allMethods[text]
+				?? crash(`Function exists on the variable type, so it must exist on the instance type`);
 			return { clazz, method, instance: this.classData.instance };
 		} else return this.functions[text] ?? this.builtinFunctions[text] ?? this.handleNonexistentFunction(text, range);
 	}

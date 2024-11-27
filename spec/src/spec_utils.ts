@@ -1,5 +1,5 @@
 import { Symbol, SymbolType, Token, TokenType, tokenTextMapping } from "../../core/build/lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNodeExt, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, operators } from "../../core/build/parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, StatementNode, operators } from "../../core/build/parser/index.js";
 import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, Runtime, TypedNodeValue, UnresolvedVariableType, VariableType } from "../../core/build/runtime/index.js";
 import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../core/build/statements/index.js";
 import { RangeArray, crash, fakeObject, forceType, impossible, unreachable } from "../../core/build/utils/funcs.js";
@@ -143,10 +143,10 @@ export function process_ExpressionASTRangeTypeNode(input:_ExpressionASTRangeType
 }
 
 export function process_ExpressionASTExt<TIn extends _ExpressionASTExt>(input:TIn):
-	TIn extends _ExpressionASTTypeNode ? ExpressionASTTypeNode : ExpressionASTNodeExt {
+	TIn extends _ExpressionASTTypeNode ? ExpressionASTTypeNode : StatementNode {
 	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input) as never;
 	if(is_ExpressionASTRangeTypeNode(input)) return process_ExpressionASTRangeTypeNode(input) as never;
-	else return (process_ExpressionAST(input) satisfies ExpressionASTNodeExt) as never;
+	else return (process_ExpressionAST(input) satisfies StatementNode) as never;
 }
 
 export function process_ExpressionAST<T extends _ExpressionASTNode>(input:T):Processed<T>;
@@ -226,7 +226,7 @@ function assignUnsafeChecked<T extends Record<K, unknown>, K extends PropertyKey
 export const anyRange = [jasmine.any(Number), jasmine.any(Number)] as never as jasmine.AsymmetricMatcher<TextRange>;
 /** Mutates input unsafely */
 export function applyAnyRange<TIn extends
-	ExpressionASTNodeExt | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<TextRanged2>
+	StatementNode | Statement | ProgramASTBranchNode | ProgramAST | RangeArray<TextRanged2>
 >(input:TIn):jasmine.Expected<TIn> {
 	if(input instanceof RangeArray){
 		assignUnsafeChecked(input, "range", anyRange);
@@ -453,7 +453,7 @@ export function arrayType(
 	if(init) type.init(fakeObject<Runtime>({
 		evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function"){
 			if(typeof type == "string") impossible();
-			if(expr instanceof Token) return Runtime.evaluateToken(expr, type) as never;
+			if(expr instanceof Token) return Runtime.evaluateExprLeaf(expr, type) as never;
 			else impossible();
 		}
 	}));

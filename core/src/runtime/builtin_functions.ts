@@ -7,11 +7,9 @@ This file contains all builtin functions. Some defined in the insert, others wer
 /* eslint-disable @typescript-eslint/no-unsafe-unary-minus */
 
 
-import { Token } from "../lexer/index.js";
-import { ExpressionAST } from "../parser/index.js";
-import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, SetVariableType, VariableType, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
+import { ArrayVariableType, BuiltinFunctionData, PrimitiveVariableType, PrimitiveVariableTypeMapping, PrimitiveVariableTypeName, SetVariableType, VariableTypeMapping, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
-import { crash, f, fail, fakeObject, tryRun, unreachable } from "../utils/funcs.js";
+import { f, fail, fakeObject, unreachable } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached } from "../utils/types.js";
 
 
