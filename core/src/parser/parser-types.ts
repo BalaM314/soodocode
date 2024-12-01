@@ -6,6 +6,7 @@ This file contains the types for the parser.
 */
 
 import { Token, TokenType } from "../lexer/index.js";
+import { PrimitiveVariableType, TypedValue, VariableValue } from "../runtime/index.js";
 import type { CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassInheritsStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassStatement, DoWhileEndStatement, DoWhileStatement, ElseStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, IfStatement, ProcedureStatement, Statement, SwitchStatement, TypeStatement, WhileStatement } from "../statements/index.js";
 import { crash, f, getTotalRange, IFormattable, match, RangeArray } from "../utils/funcs.js";
 import type { ClassProperties, TextRange, TextRanged } from "../utils/types.js";
@@ -21,9 +22,35 @@ export type ExpressionASTNode =
 | ExpressionASTArrayAccessNode
 | ExpressionASTClassInstantiationNode; //UPDATE: Statement.expr
 /** Represents a leaf node (node with no child nodes) in an expression AST. */
-export type ExpressionASTLeafNode = Token;
+export class ExpressionASTLeafNode<TokenType extends ExpressionASTLeafNodeType = ExpressionASTLeafNodeType> extends Token {
+	type!: TokenType;
+	data:LeafNodeDataMapping<TokenType> = match(this.type, {
+		name: null,
+		"number.decimal": TypedValue.REAL(Number(this.text)),
+		string: TypedValue.STRING(this.text.slice(1, -1)),
+		char: TypedValue.CHAR(this.text.slice(1, -1)),
+		"boolean.false": TypedValue.BOOLEAN(false),
+		"boolean.true": TypedValue.BOOLEAN(true),
+	});
+
+	static from(token:Token){
+		return new this(token.type, token.text, token.range);
+	}
+}
 /** Represents a child node of a Statement. Can be a token (like a keyword, or mode specifier), a literal, an expression, or a type. */
 export type StatementNode = Token | ExpressionAST | ExpressionASTTypeNode;
+export type LeafNodeDataMapping<T extends ExpressionASTLeafNodeType> = {
+	"name": null; //Identifier | null
+	"number.decimal": TypedValue<PrimitiveVariableType<"REAL">>;
+	"string": TypedValue<PrimitiveVariableType<"STRING">>;
+	"char": TypedValue<PrimitiveVariableType<"CHAR">>;
+	"boolean.false": TypedValue<PrimitiveVariableType<"BOOLEAN">>;
+	"boolean.true": TypedValue<PrimitiveVariableType<"BOOLEAN">>;
+}[T];
+export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"] as const satisfies TokenType[];
+export type ExpressionASTLeafNodeType = (typeof expressionLeafNodeTypes)[number];
+export const literalTypes = ["number.decimal", "string", "char", "boolean.false", "boolean.true"] as const satisfies TokenType[];
+export type ExpressionASTLiteralType = (typeof literalTypes)[number];
 /** Represents a branch node (node with child nodes) in an expression AST. */
 export class ExpressionASTBranchNode implements TextRanged, IFormattable {
 	range: TextRange;
@@ -499,3 +526,4 @@ export type ProgramASTBranchNodeTypeMapping<T extends ProgramASTBranchNodeType> 
 	T extends "class_function" ? [ClassFunctionStatement, ClassFunctionEndStatement] :
 	T extends "class_procedure" ? [ClassProcedureStatement, ClassProcedureEndStatement] :
 	Statement[];
+
