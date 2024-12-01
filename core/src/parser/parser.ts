@@ -14,7 +14,7 @@ import { CaseBranchRangeStatement, CaseBranchStatement, FunctionArgumentDataPart
 import { biasedLevenshtein, crash, errorBoundary, ErrorMessage, f, fail, fakeObject, forceType, impossible, isKey, max, quote, RangeArray, RichErrorMessage, SoodocodeError, tryRun, unreachable } from "../utils/funcs.js";
 import { PartialKey, TextRange, TextRangeLike } from "../utils/types.js";
 import { closestKeywordToken, displayTokenMatcher, findLastNotInGroup, manageNestLevel, splitTokens, splitTokensOnComma } from "./funcs.js";
-import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
+import { ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, expressionLeafNodeTypes, literalTypes, Operator, operators, operatorsByPriority, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, TokenMatcher } from "./parser-types.js";
 
 
 /** Parses function arguments (everything between the parentheses), such as `x:INTEGER, BYREF y, z:DATE` into a Map containing their data */
@@ -330,10 +330,21 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 	}
 	//Statement is invalid, choose the most relevant error message
 	//Check if it's a valid expression
-	//But not if it's a single token, because lots of random text is an identifier and therefore is a valid expression
 	const [expr] = tryRun(() => parseExpression(tokens));
-	if(expr && !(expr instanceof Token)){
-		if(expr instanceof ExpressionASTFunctionCallNode)
+	if(expr){
+		if(expr instanceof ExpressionASTLeafNode && expr.type == "name"){
+			//Expression is a single identifier, so it probably wasn't meant to be an expression
+			let help = undefined;
+			if(expr.text.toLowerCase().includes("help")) help = [
+				`for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`,
+				`for the programming language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
+				`for a list of language features, see https://github.com/BalaM314/soodocode/blob/master/docs/features.md`
+			];
+			fail({
+				summary: `Invalid statement`,
+				help
+			}, tokens);
+		} else if(expr instanceof ExpressionASTFunctionCallNode)
 			fail({
 				summary: `Expected a statement, not an expression`,
 				help: [f.range`use the CALL statement to evaluate this expression, by changing the line to "CALL ${tokens}"`],
@@ -517,9 +528,6 @@ function canBeUnaryOperator(token:Token){
 	return Object.values(operators).find(o => o.fix.startsWith("unary_prefix") && o.token == token.type);
 }
 
-export const expressionLeafNodeTypes:TokenType[] = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"];
-export const literalTypes:TokenType[] = ["number.decimal", "string", "char", "boolean.false", "boolean.true"];
-
 /** Parses the provided token as an expression leaf node. Examples: number, string, variable name */
 export function parseExpressionLeafNode(token:Token, allowSuper = false, allowNew = false):ExpressionASTLeafNode {
 	//Number, string, char, boolean, and variables can be parsed as-is
@@ -527,7 +535,7 @@ export function parseExpressionLeafNode(token:Token, allowSuper = false, allowNe
 		expressionLeafNodeTypes.includes(token.type) ||
 		(allowSuper && token.type == "keyword.super") ||
 		(allowNew && token.type == "keyword.new")
-	) return token;
+	) return ExpressionASTLeafNode.from(token);
 	else
 		fail(`Invalid expression leaf node`, token);
 };
@@ -608,7 +616,7 @@ export const parseExpression = errorBoundary({
 						const negativeNumber = right[0].clone();
 						negativeNumber.extendRange(input[i]);
 						negativeNumber.text = input[i].text + negativeNumber.text;
-						return negativeNumber;
+						return parseExpressionLeafNode(negativeNumber);
 					}
 					return new ExpressionASTBranchNode(
 						input[i],
