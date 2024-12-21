@@ -339,6 +339,14 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 				help: [f.range`use the CALL statement to evaluate this expression, by changing the line to "CALL ${tokens}"`],
 			}, tokens);
 		else fail(`Expected a statement, not an expression`, tokens);
+	} else if(expr instanceof Token && expr.text.toLowerCase() == "help"){
+		fail({
+			summary: `Expected a statement, not an expression`,
+			help: [
+				`for the language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
+				`for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`
+			],
+		}, tokens);
 	}
 
 	//Fail with the highest priority error
