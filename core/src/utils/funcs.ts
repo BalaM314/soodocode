@@ -176,6 +176,12 @@ export type ConfigSuggestion<T> = {
 	config: Config<T, boolean>;
 	value: T extends number ? "increase" | "decrease" : T;
 };
+export type HTMLMessage = {
+	/** This text will be inserted as HTML into the error message when Soodocode is being run in a web browser. */
+	html: string;
+	/** This text will be displayed if Soodocode is not being run in a web browser. */
+	text: string;
+}
 
 export type RichErrorMessage = {
 	/** Short summary of the error, displayed at the top */
@@ -192,7 +198,7 @@ export type RichErrorMessage = {
 	/**
 	 * Suggests a solution to the error
 	 */
-	help?: string | ErrorMessageLine[] | ConfigSuggestion<any>;
+	help?: string | (ErrorMessageLine | HTMLMessage)[] | ConfigSuggestion<any>;
 };
 
 export type ErrorMessage = string | RichErrorMessage;
@@ -231,9 +237,12 @@ export class SoodocodeError extends Error {
 			}
 			const { help } = this.richMessage;
 			if(help){
-				if(Array.isArray(help) || typeof help === "string"){
-					//Lines or string
-					output += array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n");
+				if(typeof help === "string"){
+					return `help: ${help}`;
+				} else if(Array.isArray(help)){
+					output += help.map(line =>
+						`help: ${typeof line != "string" && "text" in line ? line.text : formatErrorLine(line, sourceCode)}`
+					).join("\n");
 				} else {
 					output += `help: ${help.message ?? `To allow this`}, ${
 						help.value === true ? `enable the config "${help.config.name}"` :
@@ -257,17 +266,23 @@ export class SoodocodeError extends Error {
 			let output = "";
 			output += span(formatErrorLine(this.richMessage.summary, sourceCode), "error-message") + "\n";
 			if(this.richMessage.elaboration){
-				output += array(this.richMessage.elaboration).map(line => "  &bull; " + span(formatErrorLine(line, sourceCode), "error-message-elaboration") + "\n").join("");
+				output += array(this.richMessage.elaboration).map(line =>
+					"  &bull; " + span(formatErrorLine(line, sourceCode), "error-message-elaboration") + "\n"
+				).join("");
 			}
 			if(this.richMessage.context){
-				output += array(this.richMessage.context).map(line => "\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n").join("");
+				output += array(this.richMessage.context).map(line =>
+					"\t" + span(formatErrorLine(line, sourceCode), "error-message-context") + "\n"
+				).join("");
 			}
 			const { help } = this.richMessage;
 			if(help){
 				output += "\n"; //Extra blank line before the help message
 				if(Array.isArray(help) || typeof help === "string"){
 					//Lines or string
-					output += span(array(help).map(line => `help: ${formatErrorLine(line, sourceCode)}`).join("\n"), "error-message-help");
+					output += `<span class="error-message-help">${array(help).map(line =>
+						`help: ${typeof line != "string" && "html" in line ? line.html : formatErrorLine(line, sourceCode)}`
+					).join("\n")}</span>`;
 				} else {
 					const shouldCreateButton = typeof help.value !== "string";
 					//Add a button that enables it
