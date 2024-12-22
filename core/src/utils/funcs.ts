@@ -238,7 +238,7 @@ export class SoodocodeError extends Error {
 			const { help } = this.richMessage;
 			if(help){
 				if(typeof help === "string"){
-					return `help: ${help}`;
+					output += `help: ${help}`;
 				} else if(Array.isArray(help)){
 					output += help.map(line =>
 						`help: ${typeof line != "string" && "text" in line ? line.text : formatErrorLine(line, sourceCode)}`
