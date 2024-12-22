@@ -343,8 +343,16 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 		fail({
 			summary: `Expected a statement, not an expression`,
 			help: [
-				`for the language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
-				`for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`
+				{
+					text: `for the language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
+					html: `for the language specification, <a href="https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf">click here</a>`,
+				},{
+					text: `for a small example program, write \`OUTPUT "Hello, world!"\``,
+					html: `<span class="error-message-help-clickable" onclick='document.getElementById("soodocode-input").value = \`OUTPUT "Hello, world!"\`'>for a small example program, click here</span>`
+				},{
+					text: `for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`,
+					html: `<span class="error-message-help-clickable" onclick='document.getElementById("sample-programs-dialog").showModal()'>for a list of sample programs, click here</span>`
+				}
 			],
 		}, tokens);
 	}
