@@ -27,6 +27,7 @@ const executeSoodocodeButton = getElement("execute-soodocode-button", HTMLButton
 const uploadButton = getElement("upload-button", HTMLInputElement);
 const settingsDialog = getElement("settings-dialog", HTMLDialogElement);
 const filesDialog = getElement("files-dialog", HTMLDialogElement);
+const sampleProgramsDialog = getElement("sample-programs-dialog", HTMLDialogElement);
 const fileSelect = getElement("files-dialog-select", HTMLSelectElement);
 const fileDownloadButton = getElement("files-dialog-download", HTMLSpanElement);
 const fileUploadButton = getElement("files-dialog-upload", HTMLSpanElement);
@@ -34,6 +35,7 @@ const fileCreateButton = getElement("files-dialog-create", HTMLSpanElement);
 const fileDeleteButton = getElement("files-dialog-delete", HTMLSpanElement);
 const fileContents = getElement("files-dialog-contents", HTMLTextAreaElement);
 const fileDialogUploadInput = getElement("file-dialog-upload-button", HTMLInputElement);
+const sampleProgramsContent = getElement("sample-programs-content", HTMLDivElement);
 
 export function getElement<T extends typeof HTMLElement>(id:string, type:T, mode:"id" | "class" = "id"){
 	const element:unknown = mode == "class" ? document.getElementsByClassName(id)[0] : document.getElementById(id);
@@ -194,6 +196,71 @@ export function generateConfigsDialog(){
 
 }
 
+const sampleProgramData = [
+	["Hello World", [
+		["features/helloworld", "Hello World", "A simple program that outputs the text \"Hello, world!\"."],
+	]],
+	["Data structures", [
+		["programs/resizable-array-wrapper", "Vector", "A resizable array, or vector. Has O(1+) insertion performance (amortized constant), meaning that even though insertion sometimes requires copying all elements, which is O(n), the average performance is O(1)."],
+		["programs/binarytree", "Binary Tree", "A binary search tree with O(log n) average performance for search, insertion, and deletion."],
+	]],
+	["Features", [
+		["programs/inheritance", "Inheritance", "A program that uses inheritance in classes."],
+		["demos/varlength-arrays", "Variable length arrays", "A program showcasing variable length arrays. Although pseudocode arrays always have a fixed length, in some cases it is possible to allow variable length arrays while maintaining compatibility with the official specification. <a href='https://github.com/BalaM314/soodocode/blob/master/docs/notes.md#a-note-on-variable-length-array-types'>More information</a>"],
+		["demos/pointer-names", "Pointer names", "A program that outputs a pointer. When outputting a pointer, soodocode will attempt to display a useful name."],
+		["demos/output-color", "Output colors", "A program showcasing output colors. Soodocode adds color when outputting arrays, records, classes, and values inside composite data types."],
+		["demos/classes/contravariance", "Contravariance", "A program showcasing <a target='_blank' href='https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)#Inheritance_in_object-oriented_languages'>contravariance.</a>"],
+	]],
+	["Errors", [
+		["demos/errors/flag", "Flag", "A program which is invalid because it attempts to store a flag in a character literal. Flags are actually two characters."],
+		["demos/errors/array-out-of-bounds", "Array index out of bounds", "A program which attempts to access an invalid index in an array."],
+		["demos/errors/typo3", "Typo", "A program containing a typo. Soodocode suggests a fix for the typo."],
+	]],
+	["Misc", [
+		["programs/sieve", "Sieve of Eratosthenes", "The Sieve of Eratosthenes, a program which is commonly used for performance testing."],
+		["programs/quine", "Quine", "A program that outputs its own source code. Must be run through the <a target='_blank' href='https://github.com/BalaM314/soodocode/?tab=readme-ov-file#cli'>CLI version</a>."],
+		["programs/aprilfools", "April Fools", "An April Fools program."],
+	]],
+] satisfies Array<[category:string, programs:Array<[path:string, name:string, description:string]>]>;
+
+export function generateSampleProgramsDialog(){
+	for(const [headerText, samplePrograms] of sampleProgramData){
+		const header = document.createElement("h2");
+		header.className = "sample-programs-subheader";
+		header.innerText = headerText;
+		sampleProgramsContent.appendChild(header);
+		const category = document.createElement("div");
+		category.className = "sample-programs-category";
+		for(const [path, name, description] of samplePrograms){
+			const url = `https://balam314.github.io/soodocode/programs/${path}.sc`;
+			const item = document.createElement("div");
+			item.className = "sample-programs-item";
+			const programName = document.createElement("div");
+			programName.className = "sample-programs-name";
+			programName.innerText = name;
+			item.appendChild(programName);
+			item.innerHTML += description;
+			item.addEventListener("click", async (e) => {
+				console.error(e.target);
+				if(e.target instanceof HTMLAnchorElement) return;
+				if(e.shiftKey) getSelection()?.removeAllRanges();
+				try {
+					item.style.cursor = "wait";
+					const data = await fetch(url).then(r => r.text());
+					const opened = importProgram(data, e.shiftKey, true);
+					if(opened) sampleProgramsDialog.close();
+				} catch(err){
+					alert(`Failed to load the program.`);
+				} finally {
+					item.style.removeProperty("cursor");
+				}
+			});
+			category.appendChild(item);
+		}
+		sampleProgramsContent.appendChild(category);
+	}
+}
+
 
 export function evaluateExpressionDemo(node:ExpressionASTNode):number {
 	if(node instanceof Token){
@@ -261,14 +328,15 @@ function setupEventHandlers(){
 		reader.onload = e => {
 			const content = e.target?.result?.toString();
 			if(content == null) return;
-			if(confirm(`Are you sure you want to load this file? This will erase your current program.`)){
-				soodocodeInput.value = content;
-			}
+			importProgram(content);
 		};
 	};
 	getElement("settings-dialog-button", HTMLSpanElement).addEventListener("click", () => {
 		generateConfigsDialog(); //update before showing
 		settingsDialog.showModal();
+	});
+	getElement("programs-dialog-button", HTMLSpanElement).addEventListener("click", () => {
+		sampleProgramsDialog.showModal();
 	});
 	getElement("settings-dialog-reset-default", HTMLSpanElement).addEventListener("click", () => {
 		if(confirm(`Are you sure you want to restore all settings to their default values?`)){
@@ -282,6 +350,23 @@ function setupEventHandlers(){
 	});
 	executeSoodocodeButton.addEventListener("click", () => executeSoodocode());
 	dumpTokensButton.addEventListener("click", displayAST);
+}
+
+/**
+ * @returns whether the program was imported successfully
+ */
+function importProgram(content:string, bypassConfirm = false, canBypassConfirm = false){
+	if(soodocodeInput.value.trim().length == 0){
+		soodocodeInput.value = content;
+		return true;
+	} else {
+		const message = `Are you sure you want to load this file? This will erase your current program.` + (canBypassConfirm ? `\nHold Shift to bypass this dialog.` : "");
+		if(bypassConfirm || confirm(message)){
+			soodocodeInput.value = content;
+			return true;
+		}
+	}
+	return false;
 }
 
 function setupAutosave(){
@@ -718,6 +803,7 @@ function main(){
 	setupAutosave();
 	setupFileGUI();
 	generateConfigsDialog();
+	generateSampleProgramsDialog();
 	setupTextEditor();
 	setupHeaderEasterEgg();
 	dumpFunctionsToGlobalScope();

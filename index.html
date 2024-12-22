@@ -47,6 +47,7 @@
 				<button id="dump-tokens-button">Parse</button>
 				<span id="settings-dialog-button" class="text-button" style="font-size: 25px; color: #CFC;" aria-haspopup="dialog" tabindex="0" role="button">Settings 🛠</span>
 				<span id="files-dialog-button" class="text-button" style="font-size: 25px; color: #FCC;" aria-haspopup="dialog" tabindex="0" role="button">Files 📂</span>
+				<span id="programs-dialog-button" class="text-button" style="font-size: 25px; color: #CCF;" aria-haspopup="dialog" tabindex="0" role="button">Programs 📝</span>
 			</div>
 			<h2>Program output</h2>
 			<div id="output-div" class="output-div"></div>
@@ -86,6 +87,17 @@
 						</div>
 					</div>
 					<textarea id="files-dialog-contents" disabled></textarea>
+				</div>
+			</dialog>
+			<dialog id="sample-programs-dialog" class="dialog">
+				<div id="sample-programs-inner">
+					<div id="sample-programs-header" class="dialog-header">
+						<span id="sample-programs-header-text">Sample Programs</span>
+					</div>
+					<span id="sample-programs-close" class="text-button dialog-close" role="button" aria-label="close" tabindex="0" onclick="document.getElementById('sample-programs-dialog').close()">❌</span>
+					<div id="sample-programs-content">
+						<!-- Generated in TS -->
+					</div>
 				</div>
 			</dialog>
 			<footer>

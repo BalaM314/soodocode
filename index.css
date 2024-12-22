@@ -432,6 +432,40 @@ td, th {
 	cursor: not-allowed;
 }
 
+.sample-programs-category {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+	row-gap: 8px;
+}
+@media screen and (max-width: 430px) {
+	.sample-programs-category {
+		grid-template-columns: 1fr;
+	}
+}
+.sample-programs-subheader {
+	font-size: 35px;
+	color: yellow;
+	display: block;
+	margin-top: 20px;
+	margin-bottom: 3px;
+	border-bottom: 3px solid #FFF5;
+}
+
+.sample-programs-name {
+	font-size: 25px;
+	color: #CFC;
+	margin-bottom: 6px;
+}
+
+.sample-programs-item {
+	cursor: pointer;
+	padding: 0 6px;
+	user-select: none;
+}
+.sample-programs-item:hover {
+	background-color: #FFF2;
+}
+
 .text-button {
 	cursor: pointer;
 }
