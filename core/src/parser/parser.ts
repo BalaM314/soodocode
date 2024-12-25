@@ -738,8 +738,17 @@ export const parseExpression = errorBoundary({
 	if(bracketIndex != null && input.at(-1)?.type == "bracket.close"){
 		const target = input.slice(0, bracketIndex);
 		const indicesTokens = input.slice(bracketIndex + 1, -1);
-		if(target.length == 0) fail(`Missing target in array index expression`, input[0].rangeBefore());
-		if(indicesTokens.length == 0) fail(`Missing indices in array index expression`, input[0].rangeAfter());
+		if(target.length == 0) fail({
+			summary: `Missing target in array index expression`,
+			help: `are you trying to use an array literal? Soodocode does not have array literals, you must declare an array and manually set each slot.`,
+		}, input[0].rangeBefore());
+		if(indicesTokens.length == 0) fail({
+			summary: `Missing indices in array index expression`,
+			elaboration: [
+				`This looks like an array index expression, of the form "array[1]" or "variable[a, b]"`,
+				`but there are no indices between the square brackets`
+			]
+		}, input[0].rangeAfter());
 		const parsedTarget = parseExpression(target, true);
 		return new ExpressionASTArrayAccessNode(
 			parsedTarget,
