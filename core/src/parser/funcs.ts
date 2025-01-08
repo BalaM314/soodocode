@@ -119,10 +119,10 @@ export function findLastNotInGroup(arr:RangeArray<Token>, target:TokenType):numb
 	return null;
 }
 
-export function getUniqueNamesFromCommaSeparatedTokenList(tokens:RangeArray<Token>, nextToken?:Token, validNames:TokenType[] = ["name"]):RangeArray<Token> {
+export function getUniqueNamesFromCommaSeparatedTokenList<Tk extends Token>(tokens:RangeArray<Tk>, nextToken?:Token, validNames:TokenType[] = ["name"]):RangeArray<Tk> {
 	if(tokens.length == 0) return tokens;
 
-	const names:Token[] = [];
+	const names:Tk[] = [];
 	let expected:"name" | "comma" = "name";
 	for(const token of tokens){
 		if(expected == "name"){
@@ -142,7 +142,7 @@ export function getUniqueNamesFromCommaSeparatedTokenList(tokens:RangeArray<Toke
 		const duplicateToken = names.find((a, i) => names.find((b, j) => a.text == b.text && i != j)) ?? crash(`Unable to find the duplicate name in ${names.join(" ")}`);
 		fail(f.quote`Duplicate name ${duplicateToken} in list`, duplicateToken, tokens);
 	}
-	return new RangeArray<Token>(names);
+	return new RangeArray<Tk>(names);
 }
 
 export function closestKeywordToken(input:string, threshold = 2.01):TokenType | undefined {

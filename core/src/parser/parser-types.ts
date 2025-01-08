@@ -6,7 +6,7 @@ This file contains the types for the parser.
 */
 
 import { Token, TokenType } from "../lexer/index.js";
-import { PrimitiveVariableType, TypedValue, VariableValue } from "../runtime/index.js";
+import { type PrimitiveVariableType, TypedValue } from "../runtime/runtime-types.js";
 import type { CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassInheritsStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassStatement, DoWhileEndStatement, DoWhileStatement, ElseStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, IfStatement, ProcedureStatement, Statement, SwitchStatement, TypeStatement, WhileStatement } from "../statements/index.js";
 import { crash, f, getTotalRange, IFormattable, match, RangeArray } from "../utils/funcs.js";
 import type { ClassProperties, TextRange, TextRanged } from "../utils/types.js";
@@ -31,6 +31,8 @@ export class ExpressionASTLeafNode<TokenType extends ExpressionASTLeafNodeType =
 		char: TypedValue.CHAR(this.text.slice(1, -1)),
 		"boolean.false": TypedValue.BOOLEAN(false),
 		"boolean.true": TypedValue.BOOLEAN(true),
+		"keyword.super": null,
+		"keyword.new": null,
 	});
 
 	static from(token:Token){
@@ -46,8 +48,10 @@ export type LeafNodeDataMapping<T extends ExpressionASTLeafNodeType> = {
 	"char": TypedValue<PrimitiveVariableType<"CHAR">>;
 	"boolean.false": TypedValue<PrimitiveVariableType<"BOOLEAN">>;
 	"boolean.true": TypedValue<PrimitiveVariableType<"BOOLEAN">>;
+	"keyword.super": null;
+	"keyword.new": null;
 }[T];
-export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true"] as const satisfies TokenType[];
+export const expressionLeafNodeTypes = ["number.decimal", "name", "string", "char", "boolean.false", "boolean.true", "keyword.super", "keyword.new"] as const satisfies TokenType[];
 export type ExpressionASTLeafNodeType = (typeof expressionLeafNodeTypes)[number];
 export const literalTypes = ["number.decimal", "string", "char", "boolean.false", "boolean.true"] as const satisfies TokenType[];
 export type ExpressionASTLiteralType = (typeof literalTypes)[number];
@@ -507,7 +511,11 @@ export const programASTBranchNodeTypes = ["if", "for", "for.step", "while", "do_
 export type ProgramASTBranchNodeType = typeof programASTBranchNodeTypes extends ReadonlyArray<infer T> ? T : never;
 /** Asserts that the input is a valid ProgramASTBranchNodeType, and returns it. */
 export function ProgramASTBranchNodeType(input:string):ProgramASTBranchNodeType {
-	if(programASTBranchNodeTypes.includes(input)) return input;
+	//TODO fix this hack
+	const _programASTBranchNodeTypes:typeof programASTBranchNodeTypes = [
+		"if", "for", "for.step", "while", "do_while", "function", "procedure", "switch", "type", "class", "class.inherits", "class_function", "class_procedure"
+	];
+	if(_programASTBranchNodeTypes.includes(input)) return input;
 	crash(`Assertion failed: "${input}" is not a valid program AST branch node type`);
 }
 /** Determines the control statements stored by a {@link ProgramASTBranchNode}, based on the type. */

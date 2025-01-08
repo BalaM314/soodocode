@@ -7,14 +7,15 @@ This file contains the runtime, which executes the program AST.
 
 
 import { Config, configs } from "../config/index.js";
-import { Token } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, isLiteral, operators } from "../parser/index.js";
-import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
-import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, match, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
-import { getBuiltinFunctions } from "./builtin_functions.js";
-import { LocalFileSystem, FileSystem } from "./files.js";
-import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedNodeValue, TypedValue, TypedValue_, UnresolvedVariableType, UntypedNodeValue, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue, typesAssignable, typesEqual } from "./runtime-types.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
+import { Token } from "../lexer/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, operators } from "../parser/index.js";
+import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
+import { getBuiltinFunctions } from "./builtin-functions.js";
+import { FileSystem, LocalFileSystem } from "./files.js";
+import { typesAssignable, typesEqual } from "./runtime-funcs.js";
+import { ArrayVariableType, BuiltinFunctionData, ClassMethodData, ClassMethodStatement, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, IntegerRangeVariableType, OpenedFile, OpenedFileOfType, PointerVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, RecordVariableType, SetVariableType, TypedNodeValue, TypedValue, TypedValue_, UnresolvedVariableType, UntypedNodeValue, VariableData, VariableScope, VariableType, VariableTypeMapping, VariableValue, typedValue } from "./runtime-types.js";
 
 /** A class method, wrapped together with the information needed to call it. */
 export type ClassMethodCallInformation = {

@@ -8,7 +8,7 @@ This file contains the definitions for every statement type supported by Soodoco
 
 import { configs } from "../config/index.js";
 import { Token, TokenType } from "../lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma, StatementNode } from "../parser/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTTypeNode, getUniqueNamesFromCommaSeparatedTokenList, isLiteral, literalTypes, parseExpression, parseExpressionLeafNode, parseFunctionArguments, processTypeData, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, splitTokensOnComma, StatementNode } from "../parser/index.js";
 import { ClassMethodData, ClassVariableType, ConstantData, EnumeratedVariableType, FileMode, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, SetVariableType, TypedNodeValue, UnresolvedVariableType, UntypedNodeValue, VariableScope, VariableType, VariableValue } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
 import { combineClasses, crash, enableConfig, f, fail, getTotalRange, match, RangeArray } from "../utils/funcs.js";
@@ -57,7 +57,7 @@ export class DeclareStatement extends Statement {
 export class ConstantStatement extends Statement {
 	static requiresScope = true;
 	name = this.token(1).text;
-	expression = this.token(3);
+	expression = this.eleaf(3);
 	preRun(group: ProgramASTNodeGroup, node?:ProgramASTBranchNode){
 		super.preRun(group, node);
 		group.hasTypesOrConstants = true;
@@ -83,8 +83,8 @@ export class DefineStatement extends Statement {
 	variableTypeToken = this.token(-1);
 	variableType = processTypeData(this.variableTypeToken);
 	values = getUniqueNamesFromCommaSeparatedTokenList(
-		this.tokens(3, -3), this.token(-3), literalTypes
-	);
+		new RangeArray(this.tokens(3, -3)), this.token(-3), literalTypes
+	).map(n => parseExpressionLeafNode(n));
 	run(runtime:Runtime){
 		const type = runtime.resolveVariableType(this.variableType);
 		if(!(type instanceof SetVariableType)) fail({
@@ -201,10 +201,10 @@ export class OutputStatement extends Statement {
 @statement("input", "INPUT y", "keyword.input", "expr+")
 export class InputStatement extends Statement {
 	name = this.expr(1,
-		[Token, ExpressionASTArrayAccessNode, ExpressionASTBranchNode],
+		[ExpressionASTLeafNode, ExpressionASTArrayAccessNode, ExpressionASTBranchNode],
 		`Invalid INPUT target: must be a single variable name, an array access expression, or a property access expression`,
 		node => {
-			if(node instanceof Token) return node.type == "name";
+			if(node instanceof ExpressionASTLeafNode) return node.type == "name";
 			if(node instanceof ExpressionASTBranchNode) return node.operator.id == "operator.access";
 			return true;
 		}
@@ -360,7 +360,14 @@ export class SwitchStatement extends Statement {
 }
 @statement("case", "5: ", "block_multi_split", "#", "literal|otherwise", "punctuation.colon")
 export class CaseBranchStatement extends Statement {
-	value = this.token(0);
+	value = this.expr(0,
+		[ExpressionASTLeafNode, Token],
+		undefined,
+		(node):node is ExpressionASTLeafNode | (Token & { type: "keyword.otherwise" }) => {
+			if(node.constructor === Token) return node.type == "keyword.otherwise";
+			return true;
+		}
+	);
 	static blockType:ProgramASTBranchNodeType = "switch";
 	branchMatches(switchType:VariableType, switchValue:VariableValue){
 		if(this.value.type == "keyword.otherwise") return true;
@@ -371,8 +378,8 @@ export class CaseBranchStatement extends Statement {
 }
 @statement("case.range", "5 TO 10: ", "block_multi_split", "#", "literal", "keyword.to", "literal", "punctuation.colon")
 export class CaseBranchRangeStatement extends CaseBranchStatement {
-	lowerBound = this.token(0);
-	upperBound = this.token(2);
+	lowerBound = this.eleaf(0);
+	upperBound = this.eleaf(2);
 	static blockType:ProgramASTBranchNodeType = "switch";
 	static allowedTypes = ["number.decimal", "char"] satisfies TokenType[];
 	constructor(tokens:RangeArray<Token>){

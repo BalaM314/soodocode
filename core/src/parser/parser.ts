@@ -309,6 +309,12 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 			}
 			const [out, err] = tryRun(() => new possibleStatement(new RangeArray(result.map(part => {
 				if(part instanceof Token) return part;
+				if(part.type == "token"){
+					const negativeNumber = tokens[part.end].clone();
+					negativeNumber.extendRange(tokens[part.start]);
+					negativeNumber.text = tokens[part.start].text + negativeNumber.text;
+					return parseExpressionLeafNode(negativeNumber);
+				}
 				const tks = tokens.slice(part.start, part.end + 1);
 				if(part.type == "expression") return parseExpression(tks);
 				return parseType(tks, tokens);
@@ -334,38 +340,38 @@ export const parseStatement = errorBoundary()(function _parseStatement(tokens:Ra
 	if(expr){
 		if(expr instanceof ExpressionASTLeafNode && expr.type == "name"){
 			//Expression is a single identifier, so it probably wasn't meant to be an expression
-			let help = undefined;
-			if(expr.text.toLowerCase().includes("help")) help = [
-				`for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`,
-				`for the programming language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
-				`for a list of language features, see https://github.com/BalaM314/soodocode/blob/master/docs/features.md`
-			];
-			fail({
-				summary: `Invalid statement`,
-				help
+			if(expr.text.toLowerCase().includes("help")) fail({
+				summary: `Expected a statement, not an expression`,
+				help: [
+					{
+						text: `for the language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
+						html: `for the language specification, <a href="https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf">click here</a>`,
+					},{
+						text: `for a small example program, write \`OUTPUT "Hello, world!"\``,
+						html: `<span class="error-message-help-clickable" onclick='document.getElementById("soodocode-input").value = \`OUTPUT "Hello, world!"\`'>for a small example program, click here</span>`
+					},{
+						text: `for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`,
+						html: `<span class="error-message-help-clickable" onclick='document.getElementById("sample-programs-dialog").showModal()'>for a list of sample programs, click here</span>`
+					}
+				],
 			}, tokens);
+			else {
+				let help = undefined;
+				const keyword = closestKeywordToken(expr.text);
+				if(keyword) help = [
+					`did you mean "${tokenTextMapping[keyword as keyof typeof tokenTextMapping]}"`
+				];
+				fail({
+					summary: `Invalid statement`,
+					help
+				}, tokens);
+			}
 		} else if(expr instanceof ExpressionASTFunctionCallNode)
 			fail({
 				summary: `Expected a statement, not an expression`,
 				help: [f.range`use the CALL statement to evaluate this expression, by changing the line to "CALL ${tokens}"`],
 			}, tokens);
 		else fail(`Expected a statement, not an expression`, tokens);
-	} else if(expr instanceof Token && expr.text.toLowerCase() == "help"){
-		fail({
-			summary: `Expected a statement, not an expression`,
-			help: [
-				{
-					text: `for the language specification, see https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf`,
-					html: `for the language specification, <a href="https://www.cambridgeinternational.org/Images/697401-2026-pseudocode-guide-for-teachers.pdf">click here</a>`,
-				},{
-					text: `for a small example program, write \`OUTPUT "Hello, world!"\``,
-					html: `<span class="error-message-help-clickable" onclick='document.getElementById("soodocode-input").value = \`OUTPUT "Hello, world!"\`'>for a small example program, click here</span>`
-				},{
-					text: `for a list of sample programs, see https://github.com/BalaM314/soodocode/tree/master/programs/programs`,
-					html: `<span class="error-message-help-clickable" onclick='document.getElementById("sample-programs-dialog").showModal()'>for a list of sample programs, click here</span>`
-				}
-			],
-		}, tokens);
 	}
 
 	//Fail with the highest priority error
@@ -379,7 +385,7 @@ export function isLiteral(type:TokenType){
 }
 
 /** start and end are inclusive */
-export type StatementCheckTokenRange = (Token | {type:"expression" | "type"; start:number; end:number});
+export type StatementCheckTokenRange = Token | {type:"expression" | "type" | "token"; start:number; end:number};
 type StatementCheckFailResult = { message: ErrorMessage; priority: number; range: TextRange | null; };
 /**
  * Checks if a RangeArray<Token> is valid for a statement type. If it is, it returns the information needed to construct the statement.
@@ -466,13 +472,13 @@ export function checkStatement(statement:typeof Statement, input:RangeArray<Toke
 				j ++; //Token matches, move to next one
 			} else if(statement.tokens[i] == "literal" || statement.tokens[i] == "literal|otherwise"){
 				if(isLiteral(input[j].type) || (statement.tokens[i] == "literal|otherwise" && input[j].type == "keyword.otherwise")){
-					output.push(input[j++]); //The current token is a valid literal or it's "otherwise" and that's allowed
+					//The current token is a valid literal or it's "otherwise" and that's allowed
+					const outToken = input[j];
+					output.push(outToken.type == "keyword.otherwise" ? outToken : { type: "expression", start: j, end: j });
+					j ++;
 				} else if(input[j].type == "operator.minus" && j + 1 < input.length && input[j + 1].type == "number.decimal"){
 					//Replace the number token with a negative number, and drop the minus operator
-					const negativeNumber = input[j + 1].clone();
-					negativeNumber.extendRange(input[j]);
-					negativeNumber.text = input[j].text + negativeNumber.text;
-					output.push(negativeNumber);
+					output.push({ type: "token", start: j, end: j + 1 });
 					j += 2;
 				} else return getMessage(statement.tokens[i], input[j], 5);
 			} else return getMessage(statement.tokens[i], input[j], 5);
@@ -548,12 +554,11 @@ function canBeUnaryOperator(token:Token){
 export function parseExpressionLeafNode(token:Token, allowSuper = false, allowNew = false):ExpressionASTLeafNode {
 	//Number, string, char, boolean, and variables can be parsed as-is
 	if(
-		expressionLeafNodeTypes.includes(token.type) ||
+		(token.type != "keyword.super" && token.type != "keyword.new" && expressionLeafNodeTypes.includes(token.type)) ||
 		(allowSuper && token.type == "keyword.super") ||
 		(allowNew && token.type == "keyword.new")
 	) return ExpressionASTLeafNode.from(token);
-	else
-		fail(`Invalid expression leaf node`, token);
+	else fail(`Invalid expression leaf node`, token);
 };
 
 /** Parses an expression from a list of tokens. */

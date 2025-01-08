@@ -5,8 +5,9 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file is used for import management.
 */
 
-export * from "./builtin_functions.js";
+export * from "./builtin-functions.js";
 export * from "./files.js";
 export * from "./runtime-types.js";
+export * from "./runtime-funcs.js";
 export * from "./runtime.js";
 

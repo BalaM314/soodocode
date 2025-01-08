@@ -6,7 +6,7 @@ This file contains the base Statement class, which all the other statements exte
 */
 
 import { Token } from "../lexer/lexer-types.js";
-import { ExpressionAST, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, StatementNode, TokenMatcher } from "../parser/parser-types.js";
+import { ExpressionAST, ExpressionASTLeafNode, ExpressionASTNodes, ExpressionASTTypeNode, ExpressionASTTypeNodes, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTNodeGroup, StatementNode, TokenMatcher } from "../parser/parser-types.js";
 import { StatementCheckTokenRange } from "../parser/parser.js";
 import { NodeValue, PrimitiveVariableTypeName, TypedNodeValue, UntypedNodeValue, VariableType } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
@@ -58,9 +58,23 @@ export class Statement implements TextRanged, IFormattable {
 		);
 		return tokens as RangeArray<Token>;
 	}
+	/** Returns the node at `ind` and asserts that it is an ExpressionASTLeafNode. */
+	eleaf(ind:number):ExpressionASTLeafNode {
+		const node = this.nodes.at(ind);
+		if(node instanceof ExpressionASTLeafNode) return node;
+		else crash(`Assertion failed: node at index ${ind} was not an ExpressionASTLeafNode`);
+	}
+	/** Returns the nodes from `from` to `to` (exclusive) and asserts that they are all ExpressionASTLeafNodes. */
+	eleafs(from:number, to?:number):RangeArray<ExpressionASTLeafNode> {
+		const tokens = this.nodes.slice(from, to);
+		tokens.forEach((t, i) =>
+			t instanceof ExpressionASTLeafNode || crash(`Assertion failed: node at index ${i} was not a token`)
+		);
+		return tokens as RangeArray<ExpressionASTLeafNode>;
+	}
 	/** Returns the node at `ind` as a TypedNodeValue. */
-	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):TypedNodeValue<Token, InputType> {
-		return new TypedNodeValue(this.token(ind), type);
+	tokenT<InputType extends PrimitiveVariableTypeName | VariableType>(ind:number, type:InputType):TypedNodeValue<ExpressionASTLeafNode, InputType> {
+		return new TypedNodeValue(this.eleaf(ind), type);
 	}
 	/** Returns the node at `ind` and asserts that it is an expression. */
 	expr(ind:number):ExpressionAST;
@@ -69,8 +83,12 @@ export class Statement implements TextRanged, IFormattable {
 	/** Returns the node at `ind` and asserts that it is a type. */
 	expr(ind:number, allowed:"type", error?:string):ExpressionASTTypeNode;
 	/** Returns the node at `ind` and asserts that it is one of the given types. */
-	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string, extraValidator?:(node:StatementNode) => boolean):InstanceType<Type>;
-	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string, extraValidator:(node:StatementNode) => boolean = () => true):StatementNode {
+	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error?:string):InstanceType<Type>;
+	/** Returns the node at `ind` and asserts that it is one of the given types. */
+	expr<Type extends new (...args:any[]) => {}, ValidatedType extends StatementNode>(ind:number, allowed:Type[], error:string | undefined, extraValidator:(node:StatementNode) => node is ValidatedType):InstanceType<Type> & ValidatedType;
+	/** Returns the node at `ind` and asserts that it is one of the given types. */
+	expr<Type extends new (...args:any[]) => {}>(ind:number, allowed:Type[], error:string | undefined, extraValidator:(node:StatementNode) => boolean):InstanceType<Type>;
+	expr(ind:number, allowed:"expr" | "type" | readonly (new (...args:any[]) => {})[] = "expr", error?:string | undefined, extraValidator:(node:StatementNode) => boolean = () => true):StatementNode {
 		if(allowed === "type") allowed = ExpressionASTTypeNodes;
 		if(allowed === "expr") allowed = ExpressionASTNodes;
 
@@ -78,7 +96,10 @@ export class Statement implements TextRanged, IFormattable {
 			return this.nodes.at(ind) as ExpressionAST;
 
 		if(error != undefined) fail(error, this.nodes.at(ind));
-		else crash(`Assertion failed: node at index ${ind} was not an expression`);
+		else {
+			console.error(this.nodes, extraValidator.toString());
+			crash(`Assertion failed: node at index ${ind} was not an expression`);
+		}
 	}
 	/** Returns the node at `ind` as an untyped node value. */
 	exprT(ind:number):UntypedNodeValue<ExpressionAST>;
