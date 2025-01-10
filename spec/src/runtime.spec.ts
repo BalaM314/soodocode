@@ -1,23 +1,22 @@
 /* eslint-disable indent */
 import "jasmine";
-import { Token } from "../../core/build/lexer/index.js";
-import { ExpressionAST, ProgramAST, ProgramASTLeafNode } from "../../core/build/parser/index.js";
+import { ExpressionAST, ExpressionASTLeafNode, ProgramAST, ProgramASTLeafNode } from "../../core/build/parser/index.js";
 import { ArrayVariableType, ClassVariableType, EnumeratedVariableType, FunctionData, PointerVariableType, PrimitiveVariableType, RecordVariableType, Runtime, VariableData, VariableType, VariableValue } from "../../core/build/runtime/index.js";
-import { AssignmentStatement, CallStatement, CaseBranchStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, DeclareStatement, DefineStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, StatementExecutionResult, SwitchStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../core/build/statements/index.js";
+import { CallStatement, ClassFunctionEndStatement, ClassFunctionStatement, ClassProcedureEndStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, ProcedureStatement, ReturnStatement, StatementExecutionResult } from "../../core/build/statements/index.js";
 import { SoodocodeError, crash } from "../../core/build/utils/funcs.js";
-import { _ExpressionAST, _ProgramAST, _ProgramASTLeafNode, _Token, _VariableType, anyRange, arrayType, classType, process_ExpressionAST, process_ProgramAST, process_ProgramASTNode, process_Statement, process_Token, process_VariableType, token } from "./spec_utils.js";
+import { _ExpressionAST, _ExpressionASTLeafNode, _ProgramAST, _ProgramASTLeafNode, _VariableType, anyRange, arrayType, classType, process_ExpressionAST, process_ExpressionASTLeafNode, process_ProgramAST, process_ProgramASTNode, process_Statement, process_VariableType, token } from "./spec_utils.js";
 
-const tokenTests = ((data:Record<string,
-	[token:_Token, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
+const eleafTests = ((data:Record<string,
+	[eleaf:_ExpressionASTLeafNode, type:_VariableType | null, output:[type:_VariableType, value:VariableValue] | ["error"], setup?:(r:Runtime) => unknown]
 >) => Object.entries(data).map<[
 		name:string,
-		token:Token,
+		eleaf:ExpressionASTLeafNode,
 		type:VariableType | null,
 		output:[type:VariableType, value:VariableValue] | ["error"],
 		setup:(r:Runtime) => unknown
 	]>(([k, v]) => [
 		k,
-		process_Token(v[0]),
+		process_ExpressionASTLeafNode(v[0]),
 		process_VariableType(v[1]),
 		v[2].length == 1 ? v[2] : [process_VariableType(v[2][0]), v[2][1]],
 		v[3] ?? (() => {})
@@ -490,9 +489,7 @@ const expressionTests = ((data:Record<string, [
 						"keyword.returns",
 						"INTEGER",
 					]],
-					[statements.byType["function.end"], [
-						"keyword.function",
-					]],
+					["FunctionEnd"]
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
@@ -527,9 +524,7 @@ const expressionTests = ((data:Record<string, [
 						"keyword.returns",
 						"INTEGER",
 					]],
-					[statements.byType["function.end"], [
-						"keyword.function",
-					]],
+					["FunctionEnd"]
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
@@ -560,9 +555,7 @@ const expressionTests = ((data:Record<string, [
 						"keyword.returns",
 						"INTEGER",
 					]],
-					[statements.byType["function.end"], [
-						"keyword.function",
-					]],
+					["FunctionEnd"]
 				],
 				nodeGroups: [[
 					[ReturnStatement, [
@@ -645,14 +638,7 @@ const expressionTests = ((data:Record<string, [
 					]]
 				],
 				nodeGroups: [[
-					[AssignmentStatement, [
-						"prop",
-						"operator.assignment",
-						["tree", "add", [
-							"arg",
-							22
-						]]
-					]]
+					["Assignment", "prop", ["tree", "add", ["arg", 22]]]
 				]],
 			}
 		});
@@ -1030,12 +1016,7 @@ const statementTests = ((data:Record<string, [
 	[k, process_Statement(v[0]), v[1], v[2], v[3] ?? []]
 ))({
 	declare1: [
-		[DeclareStatement, [
-			"keyword.declare",
-			"x",
-			"punctuation.colon",
-			"DATE",
-		]],
+		["Declare", ["x"], "DATE"],
 		r => {},
 		r => expect(r.scopes[0]?.variables?.x).toEqual({
 			declaration: jasmine.any(DeclareStatement),
@@ -1046,22 +1027,12 @@ const statementTests = ((data:Record<string, [
 		})
 	],
 	files_open_nonexistent_for_read: [
-		[OpenFileStatement, [
-			"keyword.open_file",
-			["string", `"amogus.txt"`],
-			"keyword.for",
-			"keyword.file_mode.read"
-		]],
+		["OpenFile", ["string", `"amogus.txt"`], "READ"],
 		r => {},
 		"error"
 	],
 	files_open_nonexistent_for_write: [
-		[OpenFileStatement, [
-			"keyword.open_file",
-			["string", `"amogus.txt"`],
-			"keyword.for",
-			"keyword.file_mode.write"
-		]],
+		["OpenFile", ["string", `"amogus.txt"`], "WRITE"],
 		r => {},
 		r => expect(r.openFiles["amogus.txt"]).toEqual({
 			name: "amogus.txt",
@@ -1071,12 +1042,7 @@ const statementTests = ((data:Record<string, [
 		})
 	],
 	files_open_nonexistent_for_append: [
-		[OpenFileStatement, [
-			"keyword.open_file",
-			["string", `"amogus.txt"`],
-			"keyword.for",
-			"keyword.file_mode.append"
-		]],
+		["OpenFile", ["string", `"amogus.txt"`], "APPEND"],
 		r => {},
 		r => expect(r.openFiles["amogus.txt"]).toEqual({
 			name: "amogus.txt",
@@ -1086,22 +1052,12 @@ const statementTests = ((data:Record<string, [
 		})
 	],
 	files_open_nonexistent_for_random: [
-		[OpenFileStatement, [
-			"keyword.open_file",
-			["string", `"amogus.txt"`],
-			"keyword.for",
-			"keyword.file_mode.random"
-		]],
+		["OpenFile", ["string", `"amogus.txt"`], "RANDOM"],
 		r => {},
 		"error"
 	],
 	files_open_existent_for_read: [
-		[OpenFileStatement, [
-			"keyword.open_file",
-			["string", `"amogus.txt"`],
-			"keyword.for",
-			"keyword.file_mode.read"
-		]],
+		["OpenFile", ["string", `"amogus.txt"`], "READ"],
 		r => r.fs.createFile("amogus.txt"),
 		r => expect(r.openFiles["amogus.txt"]).toEqual({
 			text: "",
@@ -1183,118 +1139,45 @@ const programTests = ((data:Record<string,
 ))({
 	declare_assign_output: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"STRING",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
-				["string", `"amogus"`],
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]],
+			["Declare", ["x"], "STRING"],
+			["Assignment", "x", ["string", `"amogus"`]],
+			["Output", "x"],
 		],
 		`amogus`
 	],
 	define: [
 		[
-			[TypeSetStatement, [
-				"keyword.type",
-				"setofinteger",
-				"operator.equal_to",
-				"keyword.set",
-				"keyword.of",
-				"INTEGER",
-			]],
-			[DefineStatement, [
-				"keyword.define",
-				"amogus",
-				"parentheses.open",
-				1,
-				"punctuation.comma",
-				2,
-				"punctuation.comma",
-				3,
-				"parentheses.close",
-				"punctuation.colon",
-				"setofinteger",
-			]]
+			["TypeSet", "setofinteger", "INTEGER"],
+			["Define", "amogus", [1, 2, 3], "setofinteger"]
 		],
 		``
 	],
 	define_invalid_type: [
 		[
-			[TypeSetStatement, [
-				"keyword.type",
-				"setofinteger",
-				"operator.equal_to",
-				"keyword.set",
-				"keyword.of",
-				"INTEGER",
-			]],
-			[DefineStatement, [
-				"keyword.define",
-				"amogus",
-				"parentheses.open",
-				["char", "'c'"],
-				"parentheses.close",
-				"punctuation.colon",
-				"setofinteger",
-			]]
+			["TypeSet", "setofinteger", "INTEGER"],
+			["Define", "amogus", [["char", "'c'"]], "setofinteger"]
 		],
 		["error"]
 	],
 	case_simple: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"INTEGER",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
-				2,
-			]],
+			["Declare", "x", "INTEGER"],
+			["Assignment", "x", 2],
 			{
 				type: "switch",
 				controlStatements: [
-					[SwitchStatement, [
-						"keyword.case",
-						"keyword.of",
-						"x",
-					]],
-					[CaseBranchStatement, [
-						1,
-						"punctuation.colon",
-					]],
-					[CaseBranchStatement, [
-						2,
-						"punctuation.colon",
-					]],
-					[statements.byType["switch.end"], [
-						"keyword.case_end",
-					]],
+					["Switch", "x"],
+					["CaseBranch", 1],
+					["CaseBranch", 2],
+					["SwitchEnd"],
 				],
 				nodeGroups: [
 					[],
 					[
-						[OutputStatement, [
-							"keyword.output",
-							["string", `"a"`],
-						]],
+						["Output", ["string", `"a"`]],
 					],
 					[
-						[OutputStatement, [
-							"keyword.output",
-							["string", `"b"`],	
-						]]
+						["Output", ["string", `"b"`]]
 					],
 				]
 			}
@@ -1303,40 +1186,19 @@ const programTests = ((data:Record<string,
 	],
 	case_variable_input_type_mismatch: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"INTEGER",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
-				2,
-			]],
+			["Declare", ["x"], "INTEGER"],
+			["Assignment", "x", 2],
 			{
 				type: "switch",
 				controlStatements: [
-					[SwitchStatement, [
-						"keyword.case",
-						"keyword.of",
-						"x",
-					]],
-					[CaseBranchStatement, [
-						["number.decimal", "2.1"],
-						"punctuation.colon",
-					]],
-					[statements.byType["switch.end"], [
-						"keyword.case_end",
-					]],
+					["Switch", "x"],
+					["CaseBranch", ["number.decimal", "2.1"]],
+					["SwitchEnd"],
 				],
 				nodeGroups: [
 					[],
 					[
-						[OutputStatement, [
-							"keyword.output",
-							["string", `"a"`],
-						]],
+						["Output", ["string", `"a"`]],
 					],
 				]
 			}
@@ -1348,26 +1210,14 @@ const programTests = ((data:Record<string,
 			{
 				type: "switch",
 				controlStatements: [
-					[SwitchStatement, [
-						"keyword.case",
-						"keyword.of",
-						2,
-					]],
-					[CaseBranchStatement, [
-						["number.decimal", "2.1"],
-						"punctuation.colon",
-					]],
-					[statements.byType["switch.end"], [
-						"keyword.case_end",
-					]],
+					["Switch", 2],
+					["CaseBranch", ["number.decimal", "2.1"]],
+					["SwitchEnd"],
 				],
 				nodeGroups: [
 					[],
 					[
-						[OutputStatement, [
-							"keyword.output",
-							["string", `"a"`],
-						]],
+						["Output", ["string", `"a"`]],
 					],
 				]
 			}
@@ -1392,10 +1242,7 @@ const programTests = ((data:Record<string,
 				]]
 			],
 			nodeGroups: [[
-				[OutputStatement, [
-					"keyword.output",
-					"x",
-				]],
+				["Output", "x"],
 			]],
 		}],
 		`1\n2\n3\n4\n5\n6\n7\n8\n9\n10`
@@ -1420,60 +1267,53 @@ const programTests = ((data:Record<string,
 				]]
 			],
 			nodeGroups: [[
-				[OutputStatement, [
-					"keyword.output",
-					"x",
-				]],
+				["Output", "x"],
 			]],
 		}],
 		`1\n3\n5\n7\n9\n11\n13\n15`
 	],
 	builtin_function_left: [
 		[
-			[OutputStatement, [
-				"keyword.output",
+			["Output",
 				"LEFT",
 				"parentheses.open",
 				["string", `"amogus sussy"`],
 				"punctuation.comma",
 				5,
 				"parentheses.close",
-			]]
+			]
 		],
 		`amogu`
 	],
 	builtin_function_left_invalid_negative: [
 		[
-			[OutputStatement, [
-				"keyword.output",
+			["Output",
 				"LEFT",
 				"parentheses.open",
 				["string", `"amogus sussy"`],
 				"punctuation.comma",
 				-5,
 				"parentheses.close",
-			]]
+			]
 		],
 		["error"],
 	],
 	builtin_function_left_invalid_too_large: [
 		[
-			[OutputStatement, [
-				"keyword.output",
+			["Output",
 				"LEFT",
 				"parentheses.open",
 				["string", `"amogus sussy"`],
 				"punctuation.comma",
 				55,
 				"parentheses.close",
-			]]
+			]
 		],
 		["error"],
 	],
 	builtin_function_mid: [
 		[
-			[OutputStatement, [
-				"keyword.output",
+			["Output",
 				"MID",
 				"parentheses.open",
 				["string", `"amogus sussy"`],
@@ -1482,7 +1322,7 @@ const programTests = ((data:Record<string,
 				"punctuation.comma",
 				3,
 				"parentheses.close",
-			]]
+			]
 		],
 		`mog`
 	],
@@ -1523,268 +1363,136 @@ const programTests = ((data:Record<string,
 	],
 	builtin_function_to_upper_string: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"STRING",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
+			["Declare", ["x"], "STRING"],
+			["Assignment", "x",
 				["tree", ["function call","TO_UPPER"], [
 					["string", `"amogus SUssy"`],
 				]]
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]]
+			],
+			["Output", "x"]
 		],
 		`AMOGUS SUSSY`
 	],
 	builtin_function_to_upper_char: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"CHAR",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
-				["tree", ["function call", "TO_UPPER"], [
-					["char", `'a'`],
-				]]
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]]
+			["Declare", ["x"], "CHAR"],
+			["Assignment", "x", ["tree", ["function call", "TO_UPPER"], [
+				["char", `'a'`],
+			]]],
+			["Output", "x"]
 		],
 		`A`
 	],
 	builtin_function_num_to_str_literal: [
 		[
-			[OutputStatement, [
-				"keyword.output",
+			["Output",
 				"NUM_TO_STR",
 				"parentheses.open",
 				571,
 				"parentheses.close",
-			]]
+			]
 		],
 		`571`
 	],
 	builtin_function_num_to_str_integer_string: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"INTEGER",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
-				2,
-			]],
-			[OutputStatement, [
-				"keyword.output",
+			["Declare", ["x"], "INTEGER"],
+			["Assignment", "x", 2],
+			["Output",
 				"NUM_TO_STR",
 				"parentheses.open",
 				"x",
 				"parentheses.close",
-			]]
+			]
 		],
 		`2`
 	],
 	builtin_function_num_to_str_real_string: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"REAL",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
-				["number.decimal", `2.21`],
-			]],
-			[OutputStatement, [
-				"keyword.output",
+			["Declare", ["x"], "REAL"],
+			["Assignment", "x", ["number.decimal", `2.21`]],
+			["Output",
 				"NUM_TO_STR",
 				"parentheses.open",
 				"x",
 				"parentheses.close",
-			]]
+			]
 		],
 		`2.21`
 	],
 	builtin_function_num_to_str_int_char: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"CHAR",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
+			["Declare", ["x"], "CHAR"],
+			["Assignment", "x",
 				["tree", ["function call","NUM_TO_STR"], [
 					2,
 				]],
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]]
+			],
+			["Output", "x"]
 		],
 		`2`
 	],
 	builtin_function_str_to_num_char_int: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"INTEGER",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
+			["Declare", ["x"], "INTEGER"],
+			["Assignment", "x",
 				["tree", ["function call","STR_TO_NUM"], [
 					["char", "'2'"],
-				]],
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]]
+				]]
+			],
+			["Output", "x"]
 		],
 		`2`
 	],
 	builtin_function_str_to_num_string_real: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"REAL",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
+			["Declare", ["x"], "REAL"],
+			["Assignment", "x",
 				["tree", ["function call","STR_TO_NUM"], [
 					["string", `"1.2345"`],
 				]],
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]]
+			],
+			["Output", "x"]
 		],
 		`1.2345`
 	],
 	builtin_function_str_to_num_string_invalid: [
 		[
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"REAL",
-			]],
-			[AssignmentStatement, [
-				"x",
-				"operator.assignment",
+			["Declare", ["x"], "REAL"],
+			["Assignment", "x",
 				["tree", ["function call","STR_TO_NUM"], [
 					["string", `"amogus"`],
 				]],
-			]],
-			[OutputStatement, [
-				"keyword.output",
-				"x",
-			]]
+			],
+			["Output", "x"]
 		],
 		["error"]
 	],
 	files_eof: [
 		[
-			[OpenFileStatement, [
-				"keyword.open_file",
-				["string", `"amogus.txt"`],
-				"keyword.for",
-				"keyword.file_mode.write",
-			]],
-			[WriteFileStatement, [
-				"keyword.write_file",
-				["string", `"amogus.txt"`],
-				"punctuation.comma",
-				["string", `"a"`],
-			]],
-			[WriteFileStatement, [
-				"keyword.write_file",
-				["string", `"amogus.txt"`],
-				"punctuation.comma",
-				["string", `"b"`],
-			]],
-			[WriteFileStatement, [
-				"keyword.write_file",
-				["string", `"amogus.txt"`],
-				"punctuation.comma",
-				["string", `"c"`],
-			]],
-			[CloseFileStatement, [
-				"keyword.close_file",
-				["string", `"amogus.txt"`],
-			]],
-			[OpenFileStatement, [
-				"keyword.open_file",
-				["string", `"amogus.txt"`],
-				"keyword.for",
-				"keyword.file_mode.read",
-			]],
-			[DeclareStatement, [
-				"keyword.declare",
-				"x",
-				"punctuation.colon",
-				"STRING",
-			]],
+			["OpenFile", ["string", `"amogus.txt"`], "WRITE"],
+			["WriteFile", ["string", `"amogus.txt"`], ["string", `"a"`]],
+			["WriteFile", ["string", `"amogus.txt"`], ["string", `"b"`]],
+			["WriteFile", ["string", `"amogus.txt"`], ["string", `"c"`]],
+			["CloseFile", ["string", `"amogus.txt"`]],
+			["OpenFile", ["string", `"amogus.txt"`], "READ"],
+			["Declare", ["x"], "STRING"],
 			{
 				type: "while",
 				controlStatements: [
-					[WhileStatement, [
-						"keyword.while",
-						["tree", "not", [
-							["tree", ["function call","EOF"], [	
-								["string", `"amogus.txt"`],
-							]]
+					["While", ["tree", "not", [
+						["tree", ["function call", "EOF"], [	
+							["string", `"amogus.txt"`],
 						]]
-					]],
-					[statements.byType["while.end"], [
-						"keyword.while_end",
-					]]
+					]]],
+					["WhileEnd"],
 				],
 				nodeGroups: [[
-					[ReadFileStatement, [
-						"keyword.read_file",
-						["string", `"amogus.txt"`],
-						"punctuation.comma",
-						"x",
-					]],
-					[OutputStatement, [
-						"keyword.output",
-						"x",
-					]],
+					["ReadFile", ["string", `"amogus.txt"`], "x"],
+					["Output", "x"]
 				]],
 			},
-			[CloseFileStatement, [
-				"keyword.close_file",
-				["string", `"amogus.txt"`],
-			]],
+			["CloseFile", ["string", `"amogus.txt"`]],
 		],
 		`a\nb\nc`
 	],
@@ -1801,10 +1509,7 @@ const programTests = ((data:Record<string,
 					]]
 				],
 				nodeGroups: [[
-					[OutputStatement, [
-						"keyword.output",
-						["string", `"hi"`]
-					]]
+					["Output", ["string", `"hi"`]]
 				]]
 			},
 			[CallStatement, [
@@ -1830,18 +1535,10 @@ const programTests = ((data:Record<string,
 					]]
 				],
 				nodeGroups: [[
-					[ReturnStatement, [
-						"keyword.return",
-						5
-					]]
+					["Return", 5]
 				]]
 			},
-			[OutputStatement, [
-				"keyword.output",
-				"amogus",
-				"parentheses.open",
-				"parentheses.close",
-			]]
+			["Output", "amogus", "parentheses.open", "parentheses.close"]
 		],
 		`5`
 	],
@@ -1869,50 +1566,26 @@ const programTests = ((data:Record<string,
 					]]
 				],
 				nodeGroups: [[
-					[AssignmentStatement, [
-						["tree", ["array access", "arr"], [
-							1,
-						]],
-						"operator.assignment",
-						6
-					]],
-					[OutputStatement, [
-						"keyword.output",
-						"arr",
-						"bracket.open",
-						1,
-						"bracket.close",
-					]],
+					["Assignment", ["tree", ["array access", "arr"], [1]], 6],
+					["Output", "arr", "bracket.open", 1, "bracket.close"],
 				]]
 			},
-			[DeclareStatement, [
-				"keyword.declare",
-				"foo",
-				"punctuation.colon",
-				[[
-					[1, 10]
-				], "INTEGER"]
-			]],
-			[AssignmentStatement, [
+			["Declare", ["foo"], [[
+				[1, 10]
+			], "INTEGER"]],
+			["Assignment",
 				["tree", ["array access", "foo"], [
 					1,
 				]],
-				"operator.assignment",
 				5
-			]],
+			],
 			[CallStatement, [
 				"keyword.call",
 				["tree", ["function call","amogus"], [
 					"foo"
 				]]
 			]],
-			[OutputStatement, [
-				"keyword.output",
-				"foo",
-				"bracket.open",
-				1,
-				"bracket.close",
-			]],
+			["Output", "foo", "bracket.open", 1, "bracket.close"],
 		],
 		`6\n5`
 	],
@@ -1940,50 +1613,25 @@ const programTests = ((data:Record<string,
 					]]
 				],
 				nodeGroups: [[
-					[AssignmentStatement, [
-						["tree", ["array access", "arr"], [
-							1,
-						]],
-						"operator.assignment",
-						6
-					]],
-					[OutputStatement, [
-						"keyword.output",
-						"arr",
-						"bracket.open",
+					["Assignment", ["tree", ["array access", "arr"], [
 						1,
-						"bracket.close",
-					]],
+					]], 6],
+					["Output", "arr", "bracket.open", 1, "bracket.close"],
 				]]
 			},
-			[DeclareStatement, [
-				"keyword.declare",
-				"foo",
-				"punctuation.colon",
-				[[
-					[1, 10]
-				], "INTEGER"]
-			]],
-			[AssignmentStatement, [
-				["tree", ["array access", "foo"], [
-					1,
-				]],
-				"operator.assignment",
-				5
-			]],
+			["Declare", ["foo"], [[
+				[1, 10]
+			], "INTEGER"]],
+			["Assignment", ["tree", ["array access", "foo"], [
+				1,
+			]], 5],
 			[CallStatement, [
 				"keyword.call",
 				["tree", ["function call","amogus"], [
 					"foo"
 				]]
 			]],
-			[OutputStatement, [
-				"keyword.output",
-				"foo",
-				"bracket.open",
-				1,
-				"bracket.close",
-			]],
+			["Output", "foo", "bracket.open", 1, "bracket.close"],
 		],
 		`6\n6`
 	],
@@ -1991,7 +1639,7 @@ const programTests = ((data:Record<string,
 
 
 describe("runtime's token evaluator", () => {
-	for(const [name, token, requestedType, output, setup] of tokenTests){
+	for(const [name, eleaf, requestedType, output, setup] of eleafTests){
 		it(`should produce the expected output for ${name}`, () => {
 			const runtime = new Runtime(() => crash(`Cannot input`), () => crash(`Cannot output`));
 			runtime.scopes.push({
@@ -2002,9 +1650,9 @@ describe("runtime's token evaluator", () => {
 			});
 			setup(runtime);
 			if(output[0] == "error"){
-				expect(() => runtime.evaluateExprLeaf(token, requestedType ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
+				expect(() => runtime.evaluateExprLeaf(eleaf, requestedType ?? undefined)).toThrowMatching(e => e instanceof SoodocodeError);
 			} else {
-				const {type, value} = runtime.evaluateExprLeaf(token, requestedType ?? undefined);
+				const {type, value} = runtime.evaluateExprLeaf(eleaf, requestedType ?? undefined);
 				expect(type).toEqual(output[0]);
 				expect(value).toEqual(output[1]);
 			}

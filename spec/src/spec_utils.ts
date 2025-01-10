@@ -1,7 +1,7 @@
 import { Symbol, SymbolType, Token, TokenType, tokenTextMapping } from "../../core/build/lexer/index.js";
-import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, StatementNode, operators } from "../../core/build/parser/index.js";
-import { ArrayVariableType, ClassMethodData, ClassVariableType, PrimitiveVariableType, PrimitiveVariableTypeName, Runtime, TypedNodeValue, UnresolvedVariableType, VariableType } from "../../core/build/runtime/index.js";
-import { ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, DeclareStatement, DoWhileEndStatement, ForEndStatement, FunctionStatement, OutputStatement, ProcedureStatement, Statement, SwitchStatement, statements } from "../../core/build/statements/index.js";
+import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTArrayTypeNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTRangeTypeNode, ExpressionASTTypeNode, Operator, OperatorName, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType, ProgramASTLeafNode, ProgramASTNode, ProgramASTNodeGroup, StatementNode, expressionLeafNodeTypes, operators } from "../../core/build/parser/index.js";
+import { ArrayVariableType, ClassMethodData, ClassVariableType, FileMode, PrimitiveVariableType, PrimitiveVariableTypeName, Runtime, TypedNodeValue, UnresolvedVariableType, VariableType } from "../../core/build/runtime/index.js";
+import { AssignmentStatement, CallStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassFunctionStatement, ClassInheritsStatement, ClassProcedureStatement, ClassPropertyStatement, ClassStatement, CloseFileStatement, ConstantStatement, DeclareStatement, DefineStatement, DoWhileEndStatement, ElseStatement, ForEndStatement, ForStatement, ForStepStatement, FunctionStatement, IfStatement, InputStatement, OpenFileStatement, OutputStatement, ProcedureStatement, ReadFileStatement, ReturnStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement, WhileStatement, WriteFileStatement, statements } from "../../core/build/statements/index.js";
 import { RangeArray, crash, fakeObject, forceType, impossible, unreachable } from "../../core/build/utils/funcs.js";
 import "../../core/build/utils/globals.js";
 import type { TextRange, TextRanged2 } from "../../core/build/utils/types.js";
@@ -51,16 +51,9 @@ export type _ProgramASTBranchNode = {
 	nodeGroups: _ProgramASTNode[][];
 }
 
-export type Processed<T> =
+export type ProcessedNonExpr<T> =
 	T extends _Symbol ? Symbol :
 	T extends _Token ? Token :
-	T extends _ExpressionAST ? ExpressionAST :
-	T extends _ExpressionASTLeafNode ? ExpressionASTLeafNode :
-	T extends _ExpressionASTOperatorBranchNode ? ExpressionASTBranchNode :
-	T extends _ExpressionASTBranchNode ? ExpressionASTBranchNode | ExpressionASTArrayAccessNode | ExpressionASTFunctionCallNode | ExpressionASTClassInstantiationNode :
-	T extends _ExpressionASTArrayTypeNode ? ExpressionASTArrayTypeNode :
-	T extends _ExpressionASTRangeTypeNode ? ExpressionASTRangeTypeNode :
-	T extends _ExpressionASTExt ? ExpressionAST | ExpressionASTArrayTypeNode :
 	T extends _VariableType ? VariableType :
 	T extends _UnresolvedVariableType ? UnresolvedVariableType :
 	T extends _Operator ? Operator :
@@ -69,6 +62,17 @@ export type Processed<T> =
 	T extends _ProgramASTLeafNode ? ProgramASTLeafNode :
 	T extends _ProgramASTNode ? ProgramASTNode :
 	T extends _ProgramASTBranchNode ? ProgramASTBranchNode :
+	never
+;
+
+export type ProcessedExpr<T> =
+	T extends _ExpressionAST ? ExpressionAST :
+	T extends _ExpressionASTLeafNode ? ExpressionASTLeafNode :
+	T extends _ExpressionASTOperatorBranchNode ? ExpressionASTBranchNode :
+	T extends _ExpressionASTBranchNode ? ExpressionASTBranchNode | ExpressionASTArrayAccessNode | ExpressionASTFunctionCallNode | ExpressionASTClassInstantiationNode :
+	T extends _ExpressionASTArrayTypeNode ? ExpressionASTArrayTypeNode :
+	T extends _ExpressionASTRangeTypeNode ? ExpressionASTRangeTypeNode :
+	T extends _ExpressionASTExt ? ExpressionAST | ExpressionASTArrayTypeNode :
 	never
 ;
 
@@ -100,6 +104,11 @@ export function token(type:TokenType, text:string):Token {
 	if(type == "char") if(!(text.at(0) == `'` && text.at(2) == `'`)) crash(`Invalid test token of type char, missing single quotes: ${text}`);
 	return new Token(type, text, [-1, -1]);
 }
+export function eleaf(type:TokenType, text:string):ExpressionASTLeafNode {
+	if(type == "string") if(!(text.at(0) == `"` && text.at(-1) == `"`)) crash(`Invalid test token of type string, missing double quotes: ${text}`);
+	if(type == "char") if(!(text.at(0) == `'` && text.at(2) == `'`)) crash(`Invalid test token of type char, missing single quotes: ${text}`);
+	return new ExpressionASTLeafNode(type, text, [-1, -1]);
+}
 export function symbol([type, text]:[type:SymbolType, text:string]):Symbol {
 	return new Symbol(type, text, [-1, -1]);
 }
@@ -109,6 +118,26 @@ export function process_Token(input:_Token):Token {
 	else if(input in tokenTextMapping) return token(input as keyof typeof tokenTextMapping, tokenTextMapping[input as keyof typeof tokenTextMapping]);
 	else if(input.includes(".")) crash(`Invalid name type token shorthand ${input}`);
 	else return token("name", input);
+}
+export function process_ExpressionASTLeafNode(input:_ExpressionASTLeafNode):ExpressionASTLeafNode {
+	if(Array.isArray(input)) return eleaf(...input);
+	else if(typeof input == "number") return eleaf("number.decimal", input.toString());
+	else if(input in tokenTextMapping) return eleaf(input as keyof typeof tokenTextMapping, tokenTextMapping[input as keyof typeof tokenTextMapping]);
+	else if(input.includes(".")) crash(`Invalid name type token shorthand ${input}`);
+	else return eleaf("name", input);
+}
+export function process_ExpressionASTLeafNodeOrToken(input:_ExpressionASTLeafNode | _Token):ExpressionASTLeafNode | Token {
+	if(Array.isArray(input)){
+		const [type, text] = input;
+		if(expressionLeafNodeTypes.includes(type)) return eleaf(type, text);
+		else return token(type, text);
+	} else if(typeof input == "number") return eleaf("number.decimal", input.toString());
+	else if(input in tokenTextMapping){
+		return (expressionLeafNodeTypes.includes(input) ? eleaf : token)(
+			input as keyof typeof tokenTextMapping, tokenTextMapping[input as keyof typeof tokenTextMapping]
+		);
+	} else if(input.includes(".")) crash(`Invalid name type token shorthand ${input}`);
+	else return eleaf("name", input);
 }
 //\[("operator\.and"|"keyword\.file_mode\.append"|"keyword\.array"|"keyword\.pass_mode\.by_reference"|"keyword\.pass_mode\.by_value"|"keyword\.call"|"keyword\.case"|"keyword\.class"|"keyword\.close_file"|"keyword\.constant"|"keyword\.declare"|"keyword\.define"|"operator\.integer_divide"|"keyword\.else"|"keyword\.case_end"|"keyword\.class_end"|"keyword\.function_end"|"keyword\.if_end"|"keyword\.procedure_end"|"keyword\.type_end"|"keyword\.while_end"|"boolean\.false"|"keyword\.for"|"keyword\.function"|"keyword\.get_record"|"keyword\.if"|"keyword\.inherits"|"keyword\.input"|"operator\.mod"|"keyword\.new"|"keyword\.for_end"|"operator\.not"|"keyword\.of"|"keyword\.open_file"|"operator\.or"|"keyword\.otherwise"|"keyword\.output"|"keyword\.class_modifier\.private"|"keyword\.procedure"|"keyword\.class_modifier\.public"|"keyword\.put_record"|"keyword\.file_mode\.random"|"keyword\.file_mode\.read"|"keyword\.read_file"|"keyword\.do_while"|"keyword\.return"|"keyword\.returns"|"keyword\.seek"|"keyword\.set"|"keyword\.step"|"keyword\.super"|"keyword\.then"|"keyword\.to"|"boolean\.true"|"keyword\.type"|"keyword\.dowhile_end"|"keyword\.while"|"keyword\.file_mode\.write"|"keyword\.write_file"|"operator\.assignment"|"operator\.greater_than_equal"|"operator\.less_than_equal"|"operator\.not_equal_to"|"operator\.equal_to"|"operator\.greater_than"|"operator\.less_than"|"operator\.add"|"operator\.minus"|"operator\.multiply"|"operator\.divide"|"operator\.pointer"|"operator\.string_concatenate"|"parentheses\.open"|"parentheses\.close"|"bracket\.open"|"bracket\.close"|"brace\.open"|"brace\.close"|"punctuation\.colon"|"punctuation\.semicolon"|"punctuation\.comma"|"punctuation\.period"|"newline"),( ?)".+?"\]
 
@@ -149,10 +178,10 @@ export function process_ExpressionASTExt<TIn extends _ExpressionASTExt>(input:TI
 	else return (process_ExpressionAST(input) satisfies StatementNode) as never;
 }
 
-export function process_ExpressionAST<T extends _ExpressionASTNode>(input:T):Processed<T>;
-export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
+export function process_ExpressionAST<T extends _ExpressionAST | _Token>(input:T):ProcessedExpr<T>;
+export function process_ExpressionAST(input:_ExpressionAST | _Token):ExpressionAST | ExpressionASTTypeNode | Token {
 	if(typeof input == "string" || typeof input == "number" || input.length == 2){
-		return process_Token(input);
+		return process_ExpressionASTLeafNodeOrToken(input);
 	} else {
 		if(Array.isArray(input[1]) && input[1][0] == "array access"){
 			return new ExpressionASTArrayAccessNode(
@@ -184,6 +213,14 @@ export function process_ExpressionAST(input:_ExpressionAST):ExpressionAST {
 			);
 		}
 	}
+}
+
+export function process_ExpressionASTExtPreferToken<TIn extends _ExpressionASTExt | _Token>(input:TIn):
+	TIn extends _ExpressionASTTypeNode ? ExpressionASTTypeNode : StatementNode | Token {
+	if(is_ExpressionASTArrayTypeNode(input)) return process_ExpressionASTArrayTypeNode(input);
+	if(is_ExpressionASTRangeTypeNode(input)) return process_ExpressionASTRangeTypeNode(input);
+	if(typeof input == "string" || typeof input == "number" || input.length == 2) return process_Token(input);
+	else return (process_ExpressionAST(input) satisfies StatementNode) as never;
 }
 
 export function process_ProgramAST(input:_ProgramAST, program:string = "" /* SPECNULL */):ProgramAST {
@@ -299,23 +336,140 @@ const statementCreators = {
 		] satisfies _Token[] as _Token[]).slice(0, -1),
 		"punctuation.colon",
 		typeof type == "string" ? ["name", type] : type,
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken))),
+	Constant: (variable:string, value:_ExpressionASTLeafNode) => new ConstantStatement(new RangeArray(([
+		"keyword.constant",
+		["name", variable],
+		"operator.equal_to",
+		value
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	Define: (name:string, values:_ExpressionASTLeafNode[], type:string) => new DefineStatement(new RangeArray(([
+		"keyword.define",
+		["name", name],
+		"parentheses.open",
+		...values.flatMap(value => [
+			value,
+			"punctuation.comma"
+		] satisfies _Token[]).slice(0, -1),
+		"parentheses.close",
+		"punctuation.colon",
+		["name", type],
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken))),
+	TypePointer: (name:string, type:string | _ExpressionASTArrayTypeNode) => new TypePointerStatement(new RangeArray(([
+		"keyword.type",
+		["name", name],
+		"operator.equal_to",
+		"operator.pointer",
+		typeof type == "string" ? ["name", type] : type,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken))),
+	TypeEnum: (name:string, values:string[]) => new TypeEnumStatement(new RangeArray(([
+		"keyword.type",
+		["name", name],
+		"operator.equal_to",
+		"parentheses.open",
+		...values.flatMap(v => [["name", v], "punctuation.comma"] satisfies _Token[]).slice(0, -1),
+		"parentheses.close",
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken))),
+	TypeSet: (name:string, type:string) => new TypeSetStatement(new RangeArray(([
+		"keyword.type",
+		["name", name],
+		"operator.equal_to",
+		"keyword.set",
+		"keyword.of",
+		["name", type],
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken))),
+	TypeRecord: (name:string) => new TypeRecordStatement(new RangeArray(([
+		"keyword.type",
+		["name", name],
+	] satisfies _Token[]).map(process_Token))),
+	Assignment: (target:_ExpressionAST, source:_ExpressionAST) => new AssignmentStatement(new RangeArray(([
+		target,
+		"operator.assignment",
+		source,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
 	Output: (...variables:_Token[]) => new OutputStatement(new RangeArray(([
 		"keyword.output",
 		...variables,
-	] satisfies _Token[] as _Token[]).map(process_ExpressionASTExt) as never)),
-	Procedure: (name:string, args:[string, string | _Token[]][]) => new ProcedureStatement(new RangeArray(([
-		"keyword.procedure",
-		["name", name],
-		"parentheses.open",
-		...args.flatMap(([argName, type]) => [
-			["name", argName],
-			"punctuation.colon",
-			...(Array.isArray(type) ? type : [["name", type] as _Token]),
-			"punctuation.comma"
-		] satisfies _Token[] as _Token[]).slice(0, -1),
-		"parentheses.close",
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _Token[]).map(process_Token))),
+	Input: (variable:_ExpressionAST) => new InputStatement(new RangeArray(([
+		"keyword.input",
+		variable,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	Return: (expr:_ExpressionAST) => new ReturnStatement(new RangeArray(([
+		"keyword.return",
+		expr,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	Call: (func:_ExpressionAST) => new CallStatement(new RangeArray(([
+		"keyword.call",
+		func,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	If: (expr:_ExpressionAST) => new IfStatement(new RangeArray(([
+		"keyword.if",
+		expr,
+		"keyword.then",
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	Else: () => new ElseStatement(new RangeArray(([
+		"keyword.else",
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	IfEnd: () => new statements.byType["if.end"](new RangeArray(([
+		"keyword.if_end"
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	Switch: (expr:_ExpressionAST) => new SwitchStatement(new RangeArray(([
+		"keyword.case",
+		"keyword.of",
+		expr
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	SwitchEnd: () => new statements.byType["switch.end"](new RangeArray(([
+		"keyword.case_end"
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	CaseBranch: (expr:_Token) => new CaseBranchStatement(new RangeArray(([
+		expr,
+		"punctuation.colon",
+	] satisfies _Token[]).map(process_ExpressionASTExt))),
+	CaseBranchRange: (from:_Token, to:_Token) => new CaseBranchRangeStatement(new RangeArray(([
+		from,
+		"keyword.to",
+		to,
+		"punctuation.colon",
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	For: (variable:_Token, from:_ExpressionAST, to:_ExpressionAST) => new ForStatement(new RangeArray((([
+		"keyword.for",
+		variable,
+	] satisfies _Token[]).map(process_Token) as ExpressionAST[]).concat(([
+		"operator.assignment",
+		from,
+		"keyword.to",
+		to,
+	] satisfies _ExpressionAST[]).map(process_ExpressionASTExt) as never))),
+	ForStep: (variable:_Token, from:_ExpressionAST, to:_ExpressionAST, step:_ExpressionAST) => new ForStepStatement(new RangeArray((([
+		"keyword.for",
+		variable,
+	] satisfies _Token[]).map(process_Token) as ExpressionAST[]).concat(([
+		"operator.assignment",
+		from,
+		"keyword.to",
+		to,
+		"keyword.step",
+		step
+	] satisfies _ExpressionAST[]).map(process_ExpressionASTExt) as never))),
+	ForEnd: (variable:string) => new ForEndStatement(new RangeArray(([
+		"keyword.for_end",
+		["name", variable]
+	] satisfies _Token[]).map(process_Token))),
+	While: (expr:_ExpressionAST) => new WhileStatement(new RangeArray(([
+		"keyword.while",
+		expr,
+	] satisfies _ExpressionAST[]).map(process_ExpressionASTExt))),
+	WhileEnd: () => new statements.byType["while.end"](new RangeArray(([
+		"keyword.while_end"
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	DoWhile: () => new statements.byType["do_while"](new RangeArray(([
+		"keyword.do_while"
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	DoWhileEnd: (expr:_ExpressionASTNode) => new DoWhileEndStatement(new RangeArray(([
+		"keyword.dowhile_end",
+		expr
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
 	Function: (name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new FunctionStatement(new RangeArray(([
 		"keyword.function",
 		["name", name],
@@ -329,54 +483,63 @@ const statementCreators = {
 		"parentheses.close",
 		"keyword.returns",
 		returnType
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken) as never)),
 	FunctionEnd: () => new statements.byType["function.end"](new RangeArray(([
 		"keyword.function_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	Procedure: (name:string, args:[string, string | _Token[]][]) => new ProcedureStatement(new RangeArray(([
+		"keyword.procedure",
+		["name", name],
+		"parentheses.open",
+		...args.flatMap(([argName, type]) => [
+			["name", argName],
+			"punctuation.colon",
+			...(Array.isArray(type) ? type : [["name", type] as _Token]),
+			"punctuation.comma"
+		] satisfies _Token[] as _Token[]).slice(0, -1),
+		"parentheses.close",
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken) as never)),
 	ProcedureEnd: () => new statements.byType["procedure.end"](new RangeArray(([
 		"keyword.procedure_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
 	TypeEnd: () => new statements.byType["type.end"](new RangeArray(([
 		"keyword.type_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
-	IfEnd: () => new statements.byType["if.end"](new RangeArray(([
-		"keyword.if_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
-	Switch: (expr:_ExpressionAST) => new SwitchStatement(new RangeArray(([
-		"keyword.case",
-		"keyword.of",
-		expr
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
-	SwitchEnd: () => new statements.byType["switch.end"](new RangeArray(([
-		"keyword.case_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
-	ForEnd: (variable:string) => new ForEndStatement(new RangeArray(([
-		"keyword.for_end",
-		["name", variable]
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
-	WhileEnd: () => new statements.byType["while.end"](new RangeArray(([
-		"keyword.while_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
-	DoWhile: () => new statements.byType["do_while"](new RangeArray(([
-		"keyword.do_while"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
-	DoWhileEnd: (expr:_ExpressionASTNode) => new DoWhileEndStatement(new RangeArray(([
-		"keyword.dowhile_end",
-		expr
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	OpenFile: (filename:_ExpressionAST, mode:FileMode) => new OpenFileStatement(new RangeArray(([
+		"keyword.open_file",
+		filename,
+		"keyword.for",
+		`keyword.file_mode.${mode.toLowerCase() as Lowercase<FileMode>}` as const satisfies TokenType
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	CloseFile: (filename:_ExpressionAST) => new CloseFileStatement(new RangeArray(([
+		"keyword.close_file",
+		filename,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	ReadFile: (filename:_ExpressionAST, variable:_ExpressionAST) => new ReadFileStatement(new RangeArray(([
+		"keyword.read_file",
+		filename,
+		"punctuation.comma",
+		variable,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	WriteFile: (filename:_ExpressionAST, variable:_ExpressionAST) => new WriteFileStatement(new RangeArray(([
+		"keyword.write_file",
+		filename,
+		"punctuation.comma",
+		variable,
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
 	Class: (name:string) => new ClassStatement(new RangeArray(([
 		"keyword.class",
 		["name", name]
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _Token[]).map(process_Token))),
 	ClassInherits: (name:string, base:string) => new ClassInheritsStatement(new RangeArray(([
 		"keyword.class",
 		["name", name],
 		"keyword.inherits",
 		["name", base]
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _Token[]).map(process_Token))),
 	ClassEnd: () => new statements.byType["class.end"](new RangeArray(([
 		"keyword.class_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExt))),
 	ClassProperty: (accessModifier:"public" | "private", variables:string | string[], type:string | _ExpressionASTArrayTypeNode) => new ClassPropertyStatement(new RangeArray(([
 		TokenType("keyword.class_modifier." + accessModifier),
 		...[variables].flat().flatMap(variable => [
@@ -385,7 +548,7 @@ const statementCreators = {
 		] satisfies _Token[] as _Token[]).slice(0, -1),
 		"punctuation.colon",
 		typeof type == "string" ? ["name", type] : type,
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken))),
 	ClassProcedure: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][]) => new ClassProcedureStatement(new RangeArray(([
 		TokenType("keyword.class_modifier." + accessModifier),
 		"keyword.procedure",
@@ -398,7 +561,7 @@ const statementCreators = {
 			"punctuation.comma"
 		] satisfies _Token[] as _Token[]).slice(0, -1),
 		"parentheses.close",
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken) as never)),
 	ClassFunction: (accessModifier:"public" | "private", name:string, args:[string, string | _Token[]][], returnType:string | _ExpressionASTArrayTypeNode) => new ClassFunctionStatement(new RangeArray(([
 		TokenType("keyword.class_modifier." + accessModifier),
 		"keyword.function",
@@ -413,13 +576,13 @@ const statementCreators = {
 		"parentheses.close",
 		"keyword.returns",
 		returnType
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt) as never)),
+	] satisfies _ExpressionASTExt[]).map(process_ExpressionASTExtPreferToken) as never)),
 	ClassProcedureEnd: () => new statements.byType["class_procedure.end"](new RangeArray(([
 		"keyword.procedure_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	] satisfies _Token[]).map(process_Token))),
 	ClassFunctionEnd: () => new statements.byType["class_function.end"](new RangeArray(([
 		"keyword.function_end"
-	] satisfies _ExpressionASTExt[] as _ExpressionASTExt[]).map(process_ExpressionASTExt))),
+	] satisfies _Token[]).map(process_Token))),
 };
 export function statement<T extends keyof typeof statementCreators>(statementName:T, ...args:Parameters<(typeof statementCreators)[T]>){
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -449,7 +612,7 @@ export function arrayType(
 	elementType: VariableType,
 	init = true,
 ){
-	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => token("number.decimal", v.toString()))) ?? null, [-1, -1], elementType, [-1, -1]);
+	const type = new ArrayVariableType(processedLengthInformation?.map(r => r.map(v => eleaf("number.decimal", v.toString()))) ?? null, [-1, -1], elementType, [-1, -1]);
 	if(init) type.init(fakeObject<Runtime>({
 		evaluateExpr(expr:ExpressionAST, type?:VariableType | "variable" | "function"){
 			if(typeof type == "string") impossible();

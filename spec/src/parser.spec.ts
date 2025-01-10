@@ -10,9 +10,9 @@ import "jasmine";
 import { Token, TokenizedProgram } from "../../core/build/lexer/index.js";
 import { ExpressionAST, ExpressionASTTypeNode, parse, parseExpression, parseFunctionArguments, parseStatement, parseType, ProgramAST, ProgramASTBranchNode, ProgramASTBranchNodeType } from "../../core/build/parser/index.js";
 import { PrimitiveVariableType, Runtime, UnresolvedVariableType } from "../../core/build/runtime/index.js";
-import { AssignmentStatement, CaseBranchRangeStatement, CaseBranchStatement, ClassStatement, DefineStatement, DoWhileStatement, ForStatement, ForStepStatement, FunctionArgumentPassMode, IfStatement, InputStatement, Statement, SwitchStatement, TypeEnumStatement, TypePointerStatement, TypeRecordStatement, TypeSetStatement } from "../../core/build/statements/index.js";
+import { ClassStatement, DoWhileStatement, FunctionArgumentPassMode, IfStatement, Statement, SwitchStatement } from "../../core/build/statements/index.js";
 import { impossible, RangeArray, SoodocodeError } from "../../core/build/utils/funcs.js";
-import { _ExpressionAST, _ExpressionASTTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExt, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
+import { _ExpressionAST, _ExpressionASTTypeNode, _ProgramAST, _Statement, _Token, _UnresolvedVariableType, applyAnyRange, arrayType, fakeStatement, process_ExpressionAST, process_ExpressionASTExtPreferToken, process_ProgramAST, process_Statement, process_Token, process_UnresolvedVariableType, token } from "./spec_utils.js";
 
 //i miss rust macros
 
@@ -1459,10 +1459,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.input",
 			"amogus",
 		],
-		[InputStatement, [
-			"keyword.input",
-			"amogus",
-		]]
+		["Input", "amogus"]
 	],
 	inputBad1: [
 		[
@@ -1556,19 +1553,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"punctuation.colon",
 			"setofinteger",
 		],
-		[DefineStatement, [
-			"keyword.define",
-			"amogus",
-			"parentheses.open",
-			1,
-			"punctuation.comma",
-			2,
-			"punctuation.comma",
-			3,
-			"parentheses.close",
-			"punctuation.colon",
-			"setofinteger",
-		]]
+		["Define", "amogus", [1, 2, 3], "setofinteger"]
 	],
 	typePointer: [
 		[
@@ -1578,13 +1563,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.pointer",
 			"INTEGER",
 		],
-		[TypePointerStatement, [
-			"keyword.type",
-			"amogus",
-			"operator.equal_to",
-			"operator.pointer",
-			"INTEGER",
-		]]
+		["TypePointer", "amogus", "INTEGER"],
 	],
 	typePointer2: [
 		[
@@ -1594,13 +1573,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.pointer",
 			"RecordThing",
 		],
-		[TypePointerStatement, [
-			"keyword.type",
-			"sussy",
-			"operator.equal_to",
-			"operator.pointer",
-			"RecordThing",
-		]]
+		["TypePointer", "sussy", "RecordThing"]
 	],
 	typePointer_array: [
 		[
@@ -1617,18 +1590,15 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.of",
 			"INTEGER",
 		],
-		[TypePointerStatement, [
-			"keyword.type",
+		["TypePointer", 
 			"sussy",
-			"operator.equal_to",
-			"operator.pointer",
 			[
 				[
 					[1, 10]
 				],
 				"INTEGER",
 			],
-		]]
+		]
 	],
 	typePointer_invalid: [
 		[
@@ -1650,16 +1620,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"sugoma",
 			"parentheses.close",
 		],
-		[TypeEnumStatement, [
-			"keyword.type",
-			"amogus",
-			"operator.equal_to",
-			"parentheses.open",
-			"amogus",
-			"punctuation.comma",
-			"sugoma",
-			"parentheses.close",
-		]]
+		["TypeEnum", "amogus", ["amogus", "sugoma"]],
 	],
 	typeEnum_invalid_extra_comma: [
 		[
@@ -1706,14 +1667,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.of",
 			"INTEGER",
 		],
-		[TypeSetStatement, [
-			"keyword.type",
-			"amogus",
-			"operator.equal_to",
-			"keyword.set",
-			"keyword.of",
-			"INTEGER",
-		]]
+		["TypeSet", "amogus", "INTEGER"]
 	],
 	typeSet_invalid_nonprimitive: [
 		[
@@ -1731,10 +1685,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.type",
 			"amogus",
 		],
-		[TypeRecordStatement, [
-			"keyword.type",
-			"amogus",
-		]]
+		["TypeRecord", "amogus"]
 	],
 	assign: [
 		[
@@ -1742,11 +1693,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.assignment",
 			31415,
 		],
-		[AssignmentStatement, [
-			"amogus",
-			"operator.assignment",
-			31415,
-		]]
+		["Assignment", "amogus", 31415]
 	],
 	assign2: [
 		[
@@ -1754,11 +1701,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.assignment",
 			"y",
 		],
-		[AssignmentStatement, [
-			"x",
-			"operator.assignment",
-			"y",
-		]]
+		["Assignment", "x", "y"]
 	],
 	assignbad1: [
 		[
@@ -1776,14 +1719,9 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"x",
 			"keyword.then",
 		],
-		[IfStatement, [
-			"keyword.if",
-			["tree", "less_than", [
-				5,
-				"x",
-			]],
-			"keyword.then",
-		]]
+		["If", ["tree", "less_than", [
+			5, "x",
+		]]]
 	],
 	switch1: [
 		[
@@ -1806,10 +1744,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			5,
 			"punctuation.colon",
 		],
-		[CaseBranchStatement, [
-			5,
-			"punctuation.colon",
-		]],
+		["CaseBranch", 5],
 		["switch", SwitchStatement]
 	],
 	casebranch2: [
@@ -1817,10 +1752,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["string", `"hello"`],
 			"punctuation.colon",
 		],
-		[CaseBranchStatement, [
-			["string", `"hello"`],
-			"punctuation.colon",
-		]],
+		["CaseBranch", ["string", `"hello"`]],
 		["switch", SwitchStatement]
 	],
 	casebranch3: [
@@ -1829,10 +1761,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			5,
 			"punctuation.colon",
 		],
-		[CaseBranchStatement, [
-			-5,
-			"punctuation.colon",
-		]],
+		["CaseBranch", -5],
 		["switch", SwitchStatement]
 	],
 	casebranch4: [
@@ -1840,10 +1769,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.otherwise",
 			"punctuation.colon",
 		],
-		[CaseBranchStatement, [
-			"keyword.otherwise",
-			"punctuation.colon",
-		]],
+		["CaseBranch", "keyword.otherwise"],
 		["switch", SwitchStatement]
 	],
 	casebranch_invalid_expr: [
@@ -1886,12 +1812,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			5,
 			"punctuation.colon",
 		],
-		[CaseBranchRangeStatement, [
-			5,
-			"keyword.to",
-			5,
-			"punctuation.colon",
-		]],
+		["CaseBranchRange", 5, 5],
 		["switch", SwitchStatement]
 	],
 	casebranchrange_2: [
@@ -1901,12 +1822,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			["char", `'e'`],
 			"punctuation.colon",
 		],
-		[CaseBranchRangeStatement, [
-			["char", `'c'`],
-			"keyword.to",
-			["char", `'e'`],
-			"punctuation.colon",
-		]],
+		["CaseBranchRange", ["char", `'c'`], ["char", `'e'`]],
 		["switch", SwitchStatement]
 	],
 	casebranchrange_3: [
@@ -1917,12 +1833,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			5,
 			"punctuation.colon",
 		],
-		[CaseBranchRangeStatement, [
-			-5,
-			"keyword.to",
-			5,
-			"punctuation.colon",
-		]],
+		["CaseBranchRange", -5, 5],
 		["switch", SwitchStatement]
 	],
 	casebranchrange_4: [
@@ -1934,12 +1845,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			1,
 			"punctuation.colon",
 		],
-		[CaseBranchRangeStatement, [
-			-5,
-			"keyword.to",
-			-1,
-			"punctuation.colon",
-		]],
+		["CaseBranchRange", -5, -1],
 		["switch", SwitchStatement]
 	],
 	casebranchrange_invalid_notstatic: [
@@ -1994,14 +1900,7 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.to",
 			10,
 		],
-		[ForStatement, [
-			"keyword.for",
-			"x",
-			"operator.assignment",
-			1,
-			"keyword.to",
-			10,
-		]]
+		["For", "x", 1, 10]
 	],
 	for_expr: [
 		[
@@ -2014,17 +1913,10 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"operator.add",
 			"14",
 		],
-		[ForStatement, [
-			"keyword.for",
-			"x",
-			"operator.assignment",
+		["For", "x", "y", ["tree", "add", [
 			"y",
-			"keyword.to",
-			["tree", "add", [
-				"y",
-				"14",
-			]]
-		]]
+			"14",
+		]]]
 	],
 	for_step: [
 		[
@@ -2039,19 +1931,10 @@ const parseStatementTests = ((data:Record<string, [program:_Token[], output:_Sta
 			"keyword.step",
 			2,
 		],
-		[ForStepStatement, [
-			"keyword.for",
-			"x",
-			"operator.assignment",
+		["ForStep", "x", "y", ["tree", "add", [
 			"y",
-			"keyword.to",
-			["tree", "add", [
-				"y",
-				14,
-			]],
-			"keyword.step",
-			2,
-		]],
+			14,
+		]], 2],
 	],
 	until1: [
 		[
@@ -2381,16 +2264,9 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			31415,
 		],[
 			["Output", ["string", `"amogus"`]],
-			[InputStatement, [
-				"keyword.input",
-				"amogus",
-			]],
+			["Input", "amogus"],
 			["Declare", "amogus", "INTEGER"],
-			[AssignmentStatement, [
-				"amogus",
-				"operator.assignment",
-				31415,
-			]],
+			["Assignment", "amogus", 31415]
 		]
 	],
 	if: [
@@ -2410,21 +2286,14 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			"keyword.if_end",
 		],
 		[
-			[InputStatement, [
-				"keyword.input",
-				"x"
-			]],
+			["Input", "x"],
 			{
 				type: "if",
 				controlStatements: [
-					[IfStatement, [
-						"keyword.if",
-						["tree", "less_than", [
-							"x",
-							5,
-						]],
-						"keyword.then",
-					]],
+					["If", ["tree", "less_than", [
+						"x",
+						5,
+					]]],
 					["IfEnd"]
 				],
 				nodeGroups: [[
@@ -2461,21 +2330,14 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			"keyword.if_end",
 		],
 		[
-			[InputStatement, [
-				"keyword.input",
-				"x",
-			]],
+			["Input", "x"],
 			{
 				type: "if",
 				controlStatements: [
-					[IfStatement, [
-						"keyword.if",
-						["tree", "less_than", [
-							"x",
-							5,
-						]],
-						"keyword.then",
-					]],
+					["If", ["tree", "less_than", [
+						"x",
+						5,
+					]]],
 					["IfEnd"],
 				],
 				nodeGroups: [[
@@ -2483,14 +2345,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 					{
 						type: "if",
 						controlStatements: [
-							[IfStatement, [
-								"keyword.if",
-								["tree", "less_than", [
-									"x",
-									2,
-								]],
-								"keyword.then",
-							]],
+							["If", ["tree", "less_than", [
+								"x",
+								2,
+							]]],
 							["IfEnd"]
 						],
 						nodeGroups: [[
@@ -2522,10 +2380,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			{
 				type: "type",
 				controlStatements: [
-					[TypeRecordStatement, [
-						"keyword.type",
-						"amogus",
-					]],
+					["TypeRecord", "amogus"],
 					["TypeEnd"],
 				],
 				nodeGroups: [[
@@ -2583,14 +2438,8 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			type: "switch",
 			controlStatements: [
 				["Switch", "x"],
-				[CaseBranchStatement, [
-					1,
-					"punctuation.colon",
-				]],
-				[CaseBranchStatement, [
-					2,
-					"punctuation.colon",
-				]],
+				["CaseBranch", 1],
+				["CaseBranch", 2],
 				["SwitchEnd"],
 			],
 			nodeGroups: [
@@ -2662,36 +2511,12 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 			type: "switch",
 			controlStatements: [
 				["Switch", "x"],
-				[CaseBranchStatement, [
-					1,
-					"punctuation.colon",
-				]],
-				[CaseBranchStatement, [
-					-1,
-					"punctuation.colon",
-				]],
-				[CaseBranchRangeStatement, [
-					1,
-					"keyword.to",
-					2,
-					"punctuation.colon",
-				]],
-				[CaseBranchRangeStatement, [
-					-1,
-					"keyword.to",
-					2,
-					"punctuation.colon",
-				]],
-				[CaseBranchRangeStatement, [
-					-2,
-					"keyword.to",
-					-1,
-					"punctuation.colon",
-				]],
-				[CaseBranchStatement, [
-					"keyword.otherwise",
-					"punctuation.colon",
-				]],
+				["CaseBranch", 1],
+				["CaseBranch", -1],
+				["CaseBranchRange", 1, 2],
+				["CaseBranchRange", -1, 2],
+				["CaseBranchRange", -2, -1],
+				["CaseBranch", "keyword.otherwise"],
 				["SwitchEnd"],
 			],
 			nodeGroups: [
@@ -2771,14 +2596,7 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		[{
 			type: "for",
 			controlStatements: [
-				[ForStatement, [
-					"keyword.for",
-					"x",
-					"operator.assignment",
-					1,
-					"keyword.to",
-					10,
-				]],
+				["For", "x", 1, 10],
 				["ForEnd", "x"]
 			],
 			nodeGroups: [[
@@ -2806,17 +2624,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		[{
 			type: "for",
 			controlStatements: [
-				[ForStatement, [
-					"keyword.for",
-					"x",
-					"operator.assignment",
+				["For", "x", "y", ["tree", "add", [
 					"y",
-					"keyword.to",
-					["tree", "add", [
-						"y",
-						"14",
-					]]
-				]],
+					"14",
+				]]],
 				["ForEnd", "x"]
 			],
 			nodeGroups: [[
@@ -2846,19 +2657,10 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 		[{
 			type: "for.step",
 			controlStatements: [
-				[ForStepStatement, [
-					"keyword.for",
-					"x",
-					"operator.assignment",
+				["ForStep", "x", "y", ["tree", "add", [
 					"y",
-					"keyword.to",
-					["tree", "add", [
-						"y",
-						14,
-					]],
-					"keyword.step",
-					2,
-				]],
+					14,
+				]], 2],
 				["ForEnd", "x"]
 			],
 			nodeGroups: [[
@@ -2922,16 +2724,8 @@ const parseProgramTests = ((data:Record<string, [program:_Token[], output:_Progr
 						["ClassProcedureEnd"],
 					],
 					nodeGroups: [[
-						[AssignmentStatement, [
-							"name",
-							"operator.assignment",
-							"Name",
-						]],
-						[AssignmentStatement, [
-							"susLevel",
-							"operator.assignment",
-							"SusLevel",
-						]],
+						["Assignment", "name", "Name"],
+						["Assignment", "susLevel", "SusLevel"],
 					]]
 				}
 			]]
@@ -3459,7 +3253,7 @@ const parseTypeTests = Object.entries<[input:_Token[], output:_ExpressionASTType
 }).map<{name:string; input:RangeArray<Token>; output:jasmine.Expected<ExpressionASTTypeNode> | "error";}>(([name, [input, output]]) => ({
 	name,
 	input: new RangeArray<Token>(input.map(process_Token)),
-	output: output == "error" ? (output as "error") : applyAnyRange(process_ExpressionASTExt(output))
+	output: output == "error" ? (output as "error") : applyAnyRange(process_ExpressionASTExtPreferToken(output))
 }));
 
 
