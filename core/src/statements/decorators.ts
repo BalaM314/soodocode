@@ -47,16 +47,18 @@ export function statement<TClass extends typeof Statement>(type:StatementType, e
 	return function (input:TClass, context:ClassDecoratorContext<TClass>):TClass {
 		input.type = type;
 		input.example = example;
-
 		forceType<StatementDecoratorMetadata>(context.metadata);
 		input.evaluatableFields = (context.metadata.evaluatableFields ?? []);
 		context.metadata.done = true;
-
+		
 		if(args[0] == "block" || args[0] == "block_end" || args[0] == "block_multi_split"){
 			input.category = args[0];
 			args.shift();
 		} else {
 			input.category = "normal";
+		}
+		if(input.category == "block"){
+			if(!Object.hasOwn(input, "branchNodeType")) input.branchNodeType = type as ProgramASTBranchNodeType; //checked in finishStatements
 		}
 		if(args[0] == "auto" && input.category == "block"){
 			args.shift();
@@ -115,6 +117,9 @@ export function statement<TClass extends typeof Statement>(type:StatementType, e
 /** Called after all statement types have been defined and registered. May be called multiple times if necessary. */
 export function finishStatements(){
 	statements.irregular.sort((a, b) => a.tokensSortScore() - b.tokensSortScore());
+	for(const statement of Object.values(statements.byType)){
+		if(statement.category == "block") ProgramASTBranchNodeType(statement.branchNodeType);
+	}
 }
 
 /**

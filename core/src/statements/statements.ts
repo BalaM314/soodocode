@@ -276,14 +276,23 @@ export class CallStatement extends Statement {
 			//Class method
 			runtime.callClassMethod(func.method, func.clazz, func.instance, this.func.args, false);
 		} else {
-			if("name" in func) fail(`CALL cannot be used on builtin functions, because they have no side effects`, this.func);
-			if(func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
-				fail({
-					summary: `CALL cannot be used on functions.`,
-					elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
-					help: enableConfig(configs.statements.call_functions)
-				}, this.func);
-			runtime.callFunction(func, this.func.args);
+			if("name" in func){
+				if(func.returnType && !configs.statements.call_functions.value)
+					fail({
+						summary: `CALL cannot be used on functions.`,
+						elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
+						help: enableConfig(configs.statements.call_functions)
+					}, this.func);
+				runtime.callBuiltinFunction(func, this.func.args, { value: false });
+			} else {
+				if(func.controlStatements[0] instanceof FunctionStatement && !configs.statements.call_functions.value)
+					fail({
+						summary: `CALL cannot be used on functions.`,
+						elaboration: `Cambridge says so in section 8.2 of the official pseudocode guide.`,
+						help: enableConfig(configs.statements.call_functions)
+					}, this.func);
+				runtime.callFunction(func, this.func.args);
+			}
 		}
 	}
 }
@@ -533,6 +542,10 @@ export class WhileStatement extends Statement {
 			if(result) return result;
 		}
 	}
+}
+@statement("while.do", "WHILE c < 20 DO", "block", "keyword.while", "expr+", "keyword.do")
+class WhileDoStatement extends WhileStatement {
+	static branchNodeType = "while" as const;
 }
 @statement("do_while", "REPEAT", "block", "keyword.do_while")
 export class DoWhileStatement extends Statement {

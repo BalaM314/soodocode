@@ -16,7 +16,7 @@ export const statementTypes = [
 	"if", "if.end", "else",
 	"switch", "switch.end", "case", "case.range",
 	"for", "for.step", "for.end",
-	"while", "while.end",
+	"while", "while.do", "while.end",
 	"do_while", "do_while.end",
 	"function", "function.end",
 	"procedure", "procedure.end",

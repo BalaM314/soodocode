@@ -27,6 +27,7 @@ export class Statement implements TextRanged, IFormattable {
 	preRunDone = false;
 
 	static type:StatementType = null!; //Assigned in the decorator
+	static branchNodeType:ProgramASTBranchNodeType = null!; //Assigned in the decorator
 	static category:StatementCategory = null!; //Assigned in the decorator
 	static example:string = null!; //Assigned in the decorator
 	static tokens:(TokenMatcher | "#")[] = null!; //Assigned in the decorator
@@ -164,6 +165,7 @@ export class Statement implements TextRanged, IFormattable {
 			"for.step": "FOR (step)",
 			"for.end": "NEXT",
 			"while": "WHILE",
+			"while.do": "WHILE (do)",
 			"while.end": "ENDWHILE",
 			"do_while": "REPEAT",
 			"do_while.end": "UNTIL",

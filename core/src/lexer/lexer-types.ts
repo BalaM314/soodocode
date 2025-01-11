@@ -98,7 +98,7 @@ export const tokenTypes = [
 	"keyword.declare", "keyword.define", "keyword.constant", "keyword.output", "keyword.input", "keyword.call",
 	"keyword.if", "keyword.then", "keyword.else", "keyword.if_end",
 	"keyword.for", "keyword.to", "keyword.for_end", "keyword.step",
-	"keyword.while", "keyword.while_end", "keyword.do_while", "keyword.dowhile_end",
+	"keyword.while", "keyword.while_end", "keyword.do_while", "keyword.dowhile_end", "keyword.do",
 	"keyword.function", "keyword.function_end", "keyword.procedure", "keyword.procedure_end", "keyword.return", "keyword.returns",
 	"keyword.pass_mode.by_reference", "keyword.pass_mode.by_value",
 	"keyword.type", "keyword.type_end",
