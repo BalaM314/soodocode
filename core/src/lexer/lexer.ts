@@ -1,5 +1,5 @@
 /* @license
-Copyright © <BalaM314>, 2024. All Rights Reserved.
+Copyright © <BalaM314>, 2025. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
 This file contains the lexer, which takes the raw user input and processes it;

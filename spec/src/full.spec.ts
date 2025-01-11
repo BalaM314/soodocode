@@ -1,5 +1,5 @@
 /**
-Copyright © <BalaM314>, 2024. All Rights Reserved.
+Copyright © <BalaM314>, 2025. All Rights Reserved.
 This file is part of soodocode. Soodocode is open source and is available at https://github.com/BalaM314/soodocode
 
 This file contains blackbox tests that can be applied to other pseudocode engines.
@@ -1302,8 +1302,8 @@ OUTPUT a >= b`,
 ],
 comparison_dates: [
 `DECLARE a, b: DATE
-a <- SETDATE(12, 1, 2024)
-b <- SETDATE(13, 1, 2024)
+a <- SETDATE(12, 1, 2025)
+b <- SETDATE(13, 1, 2025)
 OUTPUT a < a
 OUTPUT a < b
 OUTPUT a <= a

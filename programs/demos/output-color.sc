@@ -27,8 +27,8 @@ CLASS Foo
     outer.field4[2] <- 2
     outer.field4[3] <- 3
     outer.field4[4] <- 4
-    inner.field1 <- SETDATE(31, 5, 2024)
-    outer.inner.field1 <- SETDATE(15, 1, 2024)
+    inner.field1 <- SETDATE(31, 5, 2025)
+    outer.inner.field1 <- SETDATE(15, 1, 2025)
     inner.field2[2] <- 4.5
     outer.inner.field2[2] <- 45
   ENDPROCEDURE
