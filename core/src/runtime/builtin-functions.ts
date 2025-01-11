@@ -68,12 +68,12 @@ type FunctionArgs<TSuppliedArgs extends BuiltinFunctionArg[]> =
 		: {
 			[K in keyof TSuppliedArgs]: FunctionArgVariableTypeMapping<TSuppliedArgs[K][1]>; //discard the name, use the other generic to get the corresponding type
 		};
-type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TReturn extends PrimitiveVariableTypeName> = {
+type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TReturn extends PrimitiveVariableTypeName | null> = {
 	/** The names and types of the arguments required by this function. */
 	args: TArgs;
 	returnType: TReturn;
 	/** The implementation of this function. */
-	impl(this:Runtime, ...args:FunctionArgs<TArgs>):PrimitiveVariableTypeMapping<TReturn>;
+	impl(this:Runtime, ...args:FunctionArgs<TArgs>):TReturn extends PrimitiveVariableTypeName ? PrimitiveVariableTypeMapping<TReturn> : void;
 	/**
 	 * List of aliases. The function can also be called by any of these names.
 	 *
@@ -91,7 +91,7 @@ type PreprocesssedBuiltinFunctionData<TArgs extends BuiltinFunctionArg[], TRetur
 	aliases?: string[];
 };
 /** Wrapper function used to get the correct type definitions for a preprocessed builtin function data. */
-function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName>(data:PreprocesssedBuiltinFunctionData<T, S>){
+function fn<const T extends BuiltinFunctionArg[], const S extends PrimitiveVariableTypeName | null>(data:PreprocesssedBuiltinFunctionData<T, S>){
 	return data as PreprocesssedBuiltinFunctionData<BuiltinFunctionArg[], PrimitiveVariableTypeName>;
 }
 
@@ -424,7 +424,7 @@ export const preprocessedBuiltinFunctions = ({
 			["Height", "INTEGER"],
 			["Filename", "STRING"],
 		],
-		returnType: "STRING",
+		returnType: null,
 		impl(bytes, width, height, filename){
 			if(bytes.length != width * height * 4) fail(`Incorrect array length: expected width * height * 4 (${width * height * 4}), got ${bytes.length}\nhelp: bytes should contain the image data in RGBA format, 4 bytes for each pixel`, bytes);
 			if(typeof ImageData == "undefined" || typeof createImageBitmap == "undefined" || typeof document == "undefined"){
@@ -445,7 +445,6 @@ export const preprocessedBuiltinFunctions = ({
 					el.click();
 					document.body.removeChild(el);
 				});
-				return `Downloading...`;
 			}
 		}
 	}),

@@ -542,7 +542,7 @@ export class Runtime {
 				const output = this.callClassMethod(func.method, func.clazz, func.instance, expr.args, true);
 				return finishEvaluation(output.value, output.type, type);
 			} else if("name" in func){
-				const output = this.callBuiltinFunction(func, expr.args);
+				const output = this.callBuiltinFunction(func, expr.args, { value: true });
 				return finishEvaluation(output.value, output.type, type);
 			} else {
 				if(func.type == "procedure") fail(f.quote`Procedure ${expr.functionName} does not return a value.`, expr.functionName);
@@ -1274,12 +1274,19 @@ export class Runtime {
 			return output.value as never;
 		}
 	}
-	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):TypedValue {
+	callBuiltinFunction<T extends boolean>(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, expected:{
+		type?: VariableType;
+		value: T;
+	}):T extends true ? TypedValue : void
+	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, expected:{
+		type?: VariableType;
+		value: boolean;
+	}):TypedValue | void {
 		if(fn.args.size != args.length) fail({
 			summary: f.quote`Incorrect number of arguments for function ${fn.name}`,
 			elaboration: `Expected ${plural(fn.args.size, "argument")}, but received ${plural(args.length, "argument")}`
 		}, args);
-		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
+		if(expected.value && !fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const evaluatedArgs:[VariableValue, TextRange][] = [];
 		let i = 0;
 		nextArg:
@@ -1299,8 +1306,11 @@ export class Runtime {
 				//Attach the range to the values
 				Object.assign(boxPrimitive(value), {range})
 			);
-		if(returnType) return typedValue(returnType, coerceValue(fn.impl.apply(this, processedArgs), fn.returnType, returnType));
-		else return typedValue(fn.returnType, fn.impl.apply(this, processedArgs));
+		if(!expected.value) fn.impl.apply(this, processedArgs);
+		else {
+			if(expected.type == undefined) return typedValue(fn.returnType!, fn.impl.apply(this, processedArgs));
+			else return typedValue(expected.type, coerceValue(fn.impl.apply(this, processedArgs), fn.returnType!, expected.type));
+		}
 	}
 	/**
 	 * @param allScopesEmpty If true, the scopes are all empty and are therefore optional.
