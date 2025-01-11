@@ -1182,7 +1182,7 @@ export class Runtime {
 	assembleScope(func:ProcedureStatement | FunctionStatement, args:RangeArray<ExpressionAST>){
 		if(func.args.size != args.length) fail({
 			summary: f.quote`Incorrect number of arguments for function ${func.name}`,
-			elaboration: `Expected ${plural(func.args.size, "arguments")}, but received ${plural(args.length, "arguments")}`
+			elaboration: `Expected ${plural(func.args.size, "argument")}, but received ${plural(args.length, "argument")}`
 		}, args);
 		const scope:VariableScope = {
 			statement: func,
@@ -1277,7 +1277,7 @@ export class Runtime {
 	callBuiltinFunction(fn:BuiltinFunctionData, args:RangeArray<ExpressionAST>, returnType?:VariableType):TypedValue {
 		if(fn.args.size != args.length) fail({
 			summary: f.quote`Incorrect number of arguments for function ${fn.name}`,
-			elaboration: `Expected ${plural(fn.args.size, "arguments")}, but received ${plural(args.length, "arguments")}`
+			elaboration: `Expected ${plural(fn.args.size, "argument")}, but received ${plural(args.length, "argument")}`
 		}, args);
 		if(!fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
 		const evaluatedArgs:[VariableValue, TextRange][] = [];
