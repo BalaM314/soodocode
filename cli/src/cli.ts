@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { Application, ApplicationError } from "@balam314/cli-app";
 import { configs, crash, f, File, FileSystem, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "soodocode";
-import "soodocode/build/utils/globals";
+import "soodocode/build/utils/globals.js";
 
 function fail(message:string):never {
 	throw new ApplicationError(message);
@@ -100,7 +100,7 @@ soodocode.onlyCommand().args({
 	const filename = opts.positionalArgs[0]!;
 	let data = await fsP.readFile(filename, "utf-8")
 		.catch(() => fail(`Failed to read the file "${filename}"`));
-	
+
 	//Trim shebang
 	if(data.startsWith("#!")){
 		data = data.replace(/^#!.*\n/, "");
