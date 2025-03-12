@@ -7,7 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { Application, ApplicationError } from "@balam314/cli-app";
 import { configs, crash, f, File, FileSystem, parse, parseError, Runtime, fail as scFail, SoodocodeError, symbolize, tokenize } from "soodocode";
-import "soodocode/utils/globals";
+import "soodocode/build/utils/globals";
 
 function fail(message:string):never {
 	throw new ApplicationError(message);
