@@ -301,7 +301,14 @@ export class CallStatement extends Statement {
 @statement("illegal.end", "END", "block_end", "keyword.end", ".*")
 export class EndBadStatement extends Statement {
 	static invalidMessage:typeof Statement.invalidMessage = (result, context) =>
-		[f.quote`Expected a block end statement, like ${context?.controlStatements[0].type.blockEndStatement().example ?? "ENDIF"}`];
+		[{
+			summary: 'Invalid syntax',
+			elaboration: [
+				`"END" is not a valid statement`,
+				f.quote`Expected a block end statement, like ${context?.controlStatements[0].type.blockEndStatement().example ?? "ENDIF"}`
+			],
+			help: f.quote`change this line to ${context?.controlStatements[0].type.blockEndStatement().example ?? "ENDIF"}`
+		}, (result[0] as Token).range];
 }
 
 @statement("if", "IF a < 5 THEN", "block", "auto", "keyword.if", "expr+", "keyword.then")
@@ -520,7 +527,14 @@ export class ForEndStatement extends Statement {
 export class ForEndBadStatement extends Statement {
 	static blockType: ProgramASTBranchNodeType = "for";
 	static invalidMessage:typeof Statement.invalidMessage = (result, context) =>
-		[`Expected the loop variable name "${(context!.controlStatements[0] as ForStatement).name}", got end of line\nhelp: change "NEXT" to "NEXT ${(context!.controlStatements[0] as ForStatement).name}"`, (result[0] as Token).rangeAfter()];
+		[{
+			summary: "Invalid syntax",
+			elaboration: [
+				f.quote`Expected the variable name ${(context!.controlStatements[0] as ForStatement).name}, got end of line`,
+				`The NEXT statement must repeat name of the variable used for the for loop`
+			],
+			help: f.quote`help: change "NEXT" to NEXT ${(context!.controlStatements[0] as ForStatement).name}`
+		}, (result[0] as Token).rangeAfter()];
 }
 
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")

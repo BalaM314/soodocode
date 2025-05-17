@@ -10,7 +10,7 @@ import { ExpressionAST, ExpressionASTLeafNode, ExpressionASTNodes, ExpressionAST
 import { StatementCheckTokenRange } from "../parser/parser.js";
 import { NodeValue, PrimitiveVariableTypeName, TypedNodeValue, UntypedNodeValue, VariableType } from "../runtime/runtime-types.js";
 import { Runtime } from "../runtime/runtime.js";
-import { Abstract, crash, fail, getTotalRange, RangeArray, type IFormattable } from "../utils/funcs.js";
+import { Abstract, crash, ErrorMessage, fail, getTotalRange, RangeArray, type IFormattable } from "../utils/funcs.js";
 import type { TextRange, TextRanged } from "../utils/types.js";
 import { statements } from "./registry.js";
 import { LegalStatementType, StatementCategory, StatementExecutionResult, StatementType } from "./statement-types.js";
@@ -39,7 +39,7 @@ export class Statement implements TextRanged, IFormattable {
 	/** If set, only the specified statement classes will only be checked for in blocks of this statement. Make sure to add the end statement. */
 	static allowOnly:Set<StatementType> | null = null;
 	/** If set, this statement is invalid and will fail with the below error message if it parses successfully. */
-	static invalidMessage: string | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:string, range?:TextRange]) = null;
+	static invalidMessage: ErrorMessage | null | ((parseOutput:StatementCheckTokenRange[], context:ProgramASTBranchNode | null) => [message:ErrorMessage, range?:TextRange]) = null;
 	constructor(public nodes:RangeArray<StatementNode>){
 		this.type = new.target;
 		this.stype = this.type.type;

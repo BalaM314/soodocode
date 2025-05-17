@@ -1045,6 +1045,7 @@ export class Runtime {
 	handleNonexistentVariable(name:string, range:TextRangeLike):never {
 		const allVariables:string[] = [
 			...[...this.activeScopes()].flatMap(s => Object.keys(s.variables)),
+			"TRUE", "FALSE",
 		];
 		let found;
 		if((found =
