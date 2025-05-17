@@ -520,7 +520,7 @@ export class ForEndStatement extends Statement {
 export class ForEndBadStatement extends Statement {
 	static blockType: ProgramASTBranchNodeType = "for";
 	static invalidMessage:typeof Statement.invalidMessage = (result, context) =>
-		[`Expected ${(context!.controlStatements[0] as ForStatement).name}, got end of line`, (result[0] as Token).rangeAfter()];
+		[`Expected the loop variable name "${(context!.controlStatements[0] as ForStatement).name}", got end of line\nhelp: change "NEXT" to "NEXT ${(context!.controlStatements[0] as ForStatement).name}"`, (result[0] as Token).rangeAfter()];
 }
 
 @statement("while", "WHILE c < 20", "block", "auto", "keyword.while", "expr+")
