@@ -689,6 +689,16 @@ export class Runtime {
 				} else if(expr.operator == operators.subtract){
 					fail(`Cannot subtract an enum value from a number`, expr);
 				} else fail(f.quote`Expected the expression "$rc" to evaluate to a value of type ${guessedType}, but it returns an enum value`, expr.nodes[1]);
+			} else if(left.typeIs('STRING') && right.typeIs('STRING')){
+				fail({
+					summary: 'Invalid operand types',
+					elaboration: 'the addition operator (+) is used to add numbers',
+					help: [
+						'use the string concatenation operator (&) to join strings',
+						!isNaN(Number(left.value)) && !isNaN(Number(right.value)) &&
+							'to add the values of these strings, convert them to numbers using the STR_TO_NUM function',
+					].filter(Boolean),
+				}, expr.operatorToken, expr);
 			} else {
 				left = coerceValue(left.value, left.type, guessedType, expr.nodes[0]);
 				right = coerceValue(right.value, right.type, guessedType, expr.nodes[1]);
