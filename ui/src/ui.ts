@@ -220,6 +220,7 @@ const sampleProgramData = [
 		["programs/sieve", "Sieve of Eratosthenes", "The Sieve of Eratosthenes, a program which is commonly used for performance testing."],
 		["programs/quine", "Quine", "A program that outputs its own source code. Must be run through the <a target='_blank' href='https://github.com/BalaM314/soodocode/?tab=readme-ov-file#cli'>CLI version</a>."],
 		["programs/aprilfools", "April Fools", "An April Fools program."],
+		["programs/fizzbuzz", "Fizzbuzz", "An implementation of fizzbuzz."],
 	]],
 ] satisfies Array<[category:string, programs:Array<[path:string, name:string, description:string]>]>;
 
