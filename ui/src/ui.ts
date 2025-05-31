@@ -755,6 +755,9 @@ function loadAll(){
 	if(savedProgram && savedProgram.trim().length > 0 && soodocodeInput.value.trim().length == 0){
 		//If there is a saved program, and the input is empty
 		soodocodeInput.value = savedProgram;
+	} else if(soodocodeInput.value.trim().length == 0){
+		//Load the hello world program as a default
+		soodocodeInput.value = sampleProgramData[0][1][0][1];
 	}
 	loadConfigs();
 }
