@@ -247,7 +247,7 @@ export function generateSampleProgramsDialog(){
 				if(e.shiftKey) getSelection()?.removeAllRanges();
 				try {
 					item.style.cursor = "wait";
-					const data = await fetch(url).then(r => r.text());
+					const data = await fetch(url).then(r => r.ok ? r.text() : crash(''));
 					const opened = importProgram(data, e.shiftKey, true);
 					if(opened) sampleProgramsDialog.close();
 				} catch(err){
