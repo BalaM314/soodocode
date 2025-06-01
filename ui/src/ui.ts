@@ -223,6 +223,29 @@ const sampleProgramData = [
 		["programs/fizzbuzz", "Fizzbuzz", "An implementation of fizzbuzz."],
 	]],
 ] satisfies Array<[category:string, programs:Array<[path:string, name:string, description:string]>]>;
+const defaultProgram = `\
+// Soodocode Runtime: Example program
+OUTPUT "Hello, world!"
+
+FOR i <- 1 TO 100
+  IF i MOD 15 = 0 THEN
+    OUTPUT "FizzBuzz"
+  ELSE; IF i MOD 5 = 0 THEN
+    OUTPUT "Buzz"
+  ELSE; IF i MOD 3 = 0 THEN
+    OUTPUT "Fizz"
+  ELSE
+    OUTPUT i
+  ENDIF; ENDIF; ENDIF
+NEXT i
+
+TYPE pINTEGER = ^INTEGER
+DECLARE x: INTEGER
+DECLARE y: pINTEGER
+y <- ^x
+y^ <- 5
+OUTPUT "x is ", x
+`;
 
 export function generateSampleProgramsDialog(){
 	for(const [headerText, samplePrograms] of sampleProgramData){
@@ -758,7 +781,7 @@ function loadAll(){
 		soodocodeInput.value = savedProgram;
 	} else if(soodocodeInput.value.trim().length == 0){
 		//Load the hello world program as a default
-		soodocodeInput.value = sampleProgramData[0][1][0][1];
+		soodocodeInput.value = defaultProgram;
 	}
 	loadConfigs();
 }
