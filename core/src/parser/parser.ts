@@ -568,7 +568,7 @@ export const parseExpression = errorBoundary({
 })(function _parseExpression(
 	input:RangeArray<Token>,
 	/** Used to set the general range for errors to be the outermost expression (which is the only one where recursive is false). */
-	recursive:boolean = false,
+	recursive:boolean = false, //This is not unused!
 	allowSuper:boolean = false,
 	allowNew:boolean = false,
 ):ExpressionASTNode {
