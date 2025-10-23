@@ -613,7 +613,8 @@ export class Runtime {
 							value: target.value
 						}, pointerType, type);
 					}
-					const pointerType = this.getPointerTypeFor((variable as VariableData).assignabilityType ?? variable.type) ?? fail(f.quote`Cannot find a pointer type for ${variable.type}`, expr.operatorToken, expr);
+					const assignabilityType = (variable as VariableData).assignabilityType ?? variable.type;
+					const pointerType = this.getPointerTypeFor(assignabilityType) ?? fail(f.quote`Cannot find a pointer type for ${assignabilityType}`, expr.operatorToken, expr);
 					return finishEvaluation(variable, pointerType, type);
 				}
 				case operators.pointer_dereference: {
