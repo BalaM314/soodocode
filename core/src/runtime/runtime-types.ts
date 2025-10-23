@@ -580,7 +580,8 @@ export class PointerVariableType<Init extends boolean = true> extends BaseVariab
 	){super();}
 	init(runtime:Runtime){
 		if(this.initialized) crash(`Attempted to initialize already initialized type`);
-		if(Array.isArray(this.target)) this.target = runtime.resolveVariableType(this.target);
+		if(Array.isArray(this.target) || this.target instanceof ArrayVariableType)
+			this.target = runtime.resolveVariableType(this.target as UnresolvedVariableType | ArrayVariableType<false>);
 		(this as PointerVariableType<true>).initialized = true;
 	}
 	validate(){
