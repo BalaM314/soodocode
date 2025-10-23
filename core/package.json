@@ -1,6 +1,6 @@
 {
 	"name": "soodocode",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "Runtime and checker for Cambridge Computer Science pseudocode",
 	"main": "build/index.js",
 	"repository": {
