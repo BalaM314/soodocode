@@ -112,6 +112,7 @@ soodocode.onlyCommand().args({
 			return promptSync();
 		},
 		function output(values){
+			console.log('calling asString');
 			console.log(values.map(v => v.asString()).join(""));
 		},
 		new NodeJSFileSystem(),

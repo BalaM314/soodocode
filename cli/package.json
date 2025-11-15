@@ -28,15 +28,15 @@
 	},
 	"homepage": "https://github.com/BalaM314/soodocode/cli/#readme",
 	"devDependencies": {
-		"@eslint/js": "^9.0.0",
-		"@types/node": "^18.15.11",
-		"eslint": "^9.0.0",
-		"typescript": "^5.5.4",
-		"typescript-eslint": "^8.3.0"
+		"@eslint/js": "^9.39.1",
+		"@types/node": "^18.19.130",
+		"eslint": "^9.39.1",
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.46.4"
 	},
 	"dependencies": {
-		"@balam314/cli-app": "^3.0.2",
-		"soodocode": "^1.0.0"
+		"@balam314/cli-app": "^3.4.0",
+		"soodocode": "^1.3.1"
 	},
 	"type": "module"
 }
