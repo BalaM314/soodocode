@@ -125,16 +125,16 @@ class TypedValue_<T extends VariableType> {
 		return this.type.asHTML(this.value as never, recursive); //corr
 	}
 	/** Displays the value as a plain-text string. */
-	asString():string {
+	asString(recursive = false):string {
 		if(this.type instanceof PrimitiveVariableType){
 			if(this.typeIs("INTEGER"))
 				return this.value.toString();
 			if(this.typeIs("REAL"))
 				return Number.isInteger(this.value) ? this.value.toFixed(1) : this.value.toString();
 			if(this.typeIs("CHAR"))
-				return this.value;
+				return recursive ? `'${this.value}'` : this.value;
 			if(this.typeIs("STRING"))
-				return this.value;
+				return recursive ? `"${this.value}"` : this.value;
 			if(this.typeIs("BOOLEAN"))
 				return this.value.toString().toUpperCase();
 			if(this.typeIs("DATE"))
@@ -460,7 +460,7 @@ export class ArrayVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	asString(value:VariableTypeMapping<ArrayVariableType>):string {
 		return `[${
-			this.mapValues(value, tval => tval?.asString() ?? `(uninitialized)`).join(", ")
+			this.mapValues(value, tval => tval?.asString(true) ?? `(uninitialized)`).join(", ")
 		}]`;
 	}
 }
@@ -566,7 +566,7 @@ export class RecordVariableType<Init extends boolean = true> extends BaseVariabl
 	asString(value:VariableTypeMapping<RecordVariableType>):string {
 		return `${this.name} {\n${
 			this.iterate(value, (tval, name) =>
-				`\t${name}: ${tval != null ? tval.asString() : '(uninitialized)'},`.replaceAll("\n", "\n\t") + "\n"
+				`\t${name}: ${tval != null ? tval.asString(true) : '(uninitialized)'},`.replaceAll("\n", "\n\t") + "\n"
 			).join("")
 		}}`;
 	}
@@ -697,7 +697,7 @@ export class SetVariableType<Init extends boolean = true> extends BaseVariableTy
 		return `Set <span style="sth-bracket">[</span>${this.mapValues(value, tval => tval.asHTML(true)).join(", ")}<span style="sth-bracket">]</span>`;
 	}
 	asString(value:VariableTypeMapping<SetVariableType>):string {
-		return `Set [${this.mapValues(value, tval => tval.asString()).join(", ")}]`;
+		return `Set [${this.mapValues(value, tval => tval.asString(true)).join(", ")}]`;
 	}
 }
 export class ClassVariableType<Init extends boolean = true> extends BaseVariableType {
