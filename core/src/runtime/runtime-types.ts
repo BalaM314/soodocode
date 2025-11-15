@@ -861,9 +861,9 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 		}<span class="sth-brace">}</span>`;
 	}
 	asString(value:VariableTypeMapping<ClassVariableType>):string {
-		return `${escapeHTML(this.name)} {\n${
+		return `${this.name} {\n${
 			this.iterateProperties(value, (tval, name) => {
-				return `\t${escapeHTML(name)}: ${tval != null ? tval.asHTML(true) : '<span class="sth-invalid">(uninitialized)</span>'},`.replaceAll("\n", "\n\t") + "\n";
+				return `\t${name}: ${tval != null ? tval.asString(true) : '(uninitialized)'},`.replaceAll("\n", "\n\t") + "\n";
 			}).join("")
 		}}`;
 	}
