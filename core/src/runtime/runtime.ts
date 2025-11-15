@@ -1419,13 +1419,17 @@ export class Runtime {
 		}
 	}
 	/** Runs a block as the main program. Creates a global scope, and checks for unclosed files. */
-	runProgram(code:ProgramASTNodeGroup){
+	runProgram(
+		code:ProgramASTNodeGroup,
+		variables: Record<string, VariableData | ConstantData> = Object.create(null),
+		types: Record<string, VariableType> = Object.create(null)
+	){
 		code.preRun();
 		this.runBlock(code, false, {
 			statement: "global",
 			opaque: true,
-			variables: Object.create(null),
-			types: Object.create(null),
+			variables,
+			types,
 		});
 
 		for(const [name, file] of Object.entries(this.openFiles)){
