@@ -46,9 +46,10 @@ CLASS VecInteger
 	ENDPROCEDURE
 	PRIVATE PROCEDURE resizeBackingArray(Length: INTEGER)
 		IF length < Length THEN
+			OUTPUT "Resizing backing array to ", Length
 			DECLARE newArr: ARRAY[0:Length - 1] OF INTEGER
 			FOR i <- 1 TO length - 1
-					newArr[i] <- array[i]
+				newArr[i] <- array[i]
 			NEXT i
 			array <- newArr
 			arrayLength <- Length
