@@ -26,6 +26,14 @@ mostlyEmpty: [
 `,
 []
 ],
+garbageSymbols: [
+`!@#$%^&*()_+-={}|[]\\;':",./<>?`,
+"Invalid"
+],
+backslash: [
+`\\`,
+"Invalid"
+],
 output_basic: [
 `OUTPUT "Hello world!"`,
 ["Hello world!"]

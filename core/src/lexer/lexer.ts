@@ -361,10 +361,10 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			state.doubleQuotedString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
-		else if(symbol.type === "unknown") fail(f.quote`Invalid character ${symbol}`, symbol);
-		else if([
+		else if(symbol.type === "unknown" || symbol.type === "escape_character") fail(f.quote`Invalid character ${symbol}`, symbol);
+		else if(([
 			"escape.quote.double", "escape.quote.single", "escape.backslash", "escape.tab", "escape.newline"
-		].includes(symbol.type)) fail(f.quote`Invalid escape sequence ${symbol}: escape sequences are only allowed within strings`, symbol);
+		] as const).includes(symbol.type)) fail(f.quote`Invalid escape sequence ${symbol}: escape sequences are only allowed within strings`, symbol);
 		else if(symbol.type === "numeric_fragment"){
 			state.decimalNumber = "allowDecimal";
 			if(isNaN(Number(symbol.text))) crash(`Invalid parsed number ${symbol.text}`);
