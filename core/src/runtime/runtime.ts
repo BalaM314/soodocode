@@ -150,7 +150,7 @@ function coerceValue<T extends VariableType, S extends VariableType>(value:Varia
 	if(from.is("STRING") && to.is("CHAR")){
 		if(configs.coercion.string_to_char.value){
 			const v = (value as VariableTypeMapping<PrimitiveVariableType<"STRING" | "CHAR">>);
-			if(v.length == 1) return v as never;
+			if([...v].length == 1) return v as never;
 			else assignabilityError = f.quote`the length of the string ${v} is not 1`;
 		} else configToEnable = configs.coercion.string_to_char;
 	}
