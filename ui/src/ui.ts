@@ -203,6 +203,7 @@ const sampleProgramData = [
 	["Data structures", [
 		["programs/resizable-array-wrapper", "Vector", "A resizable array, or vector. Has O(1+) insertion performance (amortized constant), meaning that even though insertion sometimes requires copying all elements, which is O(n), the average performance is O(1)."],
 		["programs/binarytree", "Binary Tree", "A binary search tree with O(log n) average performance for search, insertion, and deletion."],
+		["programs/hashmap", "Hashmap", "A data structure which maps strings to other strings with sublinear get/insert performance."],
 	]],
 	["Features", [
 		["programs/inheritance", "Inheritance", "A program that uses inheritance in classes."],
@@ -221,6 +222,7 @@ const sampleProgramData = [
 		["programs/quine", "Quine", "A program that outputs its own source code. Must be run through the <a target='_blank' href='https://github.com/BalaM314/soodocode/?tab=readme-ov-file#cli'>CLI version</a>."],
 		["programs/aprilfools", "April Fools", "An April Fools program."],
 		["programs/fizzbuzz", "Fizzbuzz", "An implementation of fizzbuzz."],
+		["programs/markov-babbler", "Markov babbler", "A first-order markov babbler, trained on selected text from <a target='_blank' href='https://github.com/BalaM314/soodocode/blob/master/docs/notes.md'>notes.md</a>."],
 	]],
 ] satisfies Array<[category:string, programs:Array<[path:string, name:string, description:string]>]>;
 const defaultProgram = `\
