@@ -42,7 +42,7 @@ export type VariableTypeMapping<T> = //ONCHANGE: update ArrayElementVariableValu
 			[index:string]: VariableTypeMapping<any> | null;
 		};
 		/** Used to store the real type for varlength array properties */
-		propertyTypes: Record<string, VariableType>;
+		propertyTypes: Partial<Record<string, VariableType>>;
 		/** Necessary for polymorphism */
 		type: ClassVariableType;
 	} :
@@ -850,7 +850,7 @@ export class ClassVariableType<Init extends boolean = true> extends BaseVariable
 	}
 	iterateProperties<T>(value:VariableTypeMapping<ClassVariableType>, callback:(tval:TypedValue | null, name:string, statement:ClassPropertyStatement) => T):T[] {
 		return Object.entries((this as ClassVariableType<true>).properties).map(([name, [type, statement]]) =>
-			callback(value.properties[name] != null ? typedValue(type, value.properties[name]) : null, name, statement)
+			callback(value.properties[name] != null ? typedValue(value.propertyTypes[name] ?? type, value.properties[name]) : null, name, statement)
 		);
 	}
 	asHTML(value:VariableTypeMapping<ClassVariableType>):string {
