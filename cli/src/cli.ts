@@ -97,7 +97,7 @@ soodocode.onlyCommand().args({
 		description: "Path to the file to run",
 	}],
 }).impl(async (opts, app) => {
-	const filename = opts.positionalArgs[0]!;
+	const filename = opts.positionalArgs[0];
 	let data = await fsP.readFile(filename, "utf-8")
 		.catch(() => fail(`Failed to read the file "${filename}"`));
 
