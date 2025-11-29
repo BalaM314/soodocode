@@ -1425,17 +1425,20 @@ export class Runtime {
 		types: Record<string, VariableType> = Object.create(null)
 	){
 		code.preRun();
-		this.runBlock(code, false, {
+		const scope: VariableScope = {
 			statement: "global",
 			opaque: true,
 			variables,
 			types,
-		});
+		};
+		this.runBlock(code, false, scope);
 
 		for(const [name, file] of Object.entries(this.openFiles)){
 			if(file == undefined) delete this.openFiles[name];
 			else fail(f.quote`File ${name} was not closed`, file.openRange);
 		}
+
+		return scope;
 	}
 	/** Gets an opened file, failing if it has not been opened. */
 	getOpenFile(filename:string):OpenedFile;
