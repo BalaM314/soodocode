@@ -1174,9 +1174,13 @@ export class Runtime {
 		//DATE
 		if(value instanceof Date) return new Date(value) as VariableTypeMapping<T>;
 		//ARRAY types
-		if(Array.isArray(value)) return value.slice().map(v =>
-			this.cloneValue((type as ArrayVariableType).elementType ?? crash(`Cannot clone value in an array of unknown type`), v)
-		) as VariableTypeMapping<T>;
+		if(type instanceof ArrayVariableType){
+			forceType<VariableTypeMapping<ArrayVariableType>>(value);
+			if(Array.isArray(value)) return value.map(v =>
+				this.cloneValue(type.elementType ?? crash(`Cannot clone value in an array of unknown type`), v)
+			) as VariableTypeMapping<T>;
+			else return value.slice() as VariableTypeMapping<T>;
+		}
 		if(type instanceof PointerVariableType) return value; //just pass it through, because pointer data doesn't have any mutable sub items (other than the variable itself)
 		if(type instanceof RecordVariableType) return Object.fromEntries(Object.entries(value)
 			.map(([k, v]) => [k, this.cloneValue(type.fields[k][0], v as VariableValue)])
