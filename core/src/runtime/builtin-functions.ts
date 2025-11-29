@@ -142,8 +142,7 @@ export const preprocessedBuiltinFunctions = ({
 			["x", "INTEGER"],
 		],
 		returnType: "STRING",
-		impl(str, num){
-			const chars = [...str];
+		impl({chars}, num){
 			//CONFIG unicode mode
 			if(num < 0) fail(`Number ${num} is negative`, num);
 			if(num > chars.length) fail(`Number ${num} is greater than the length of the string (${chars.length})`, num);
@@ -157,8 +156,7 @@ export const preprocessedBuiltinFunctions = ({
 			["x", "INTEGER"],
 		],
 		returnType: "STRING",
-		impl(str, num){
-			const chars = [...str];
+		impl({chars}, num){
 			if(num < 0) fail(`Number ${num} is negative`, num);
 			if(num > chars.length) fail(`Number ${num} is greater than the length of the string (${chars.length})`, num);
 			return chars.slice(-num).join("");
@@ -172,11 +170,10 @@ export const preprocessedBuiltinFunctions = ({
 			["Length", "INTEGER"],
 		],
 		returnType: "STRING",
-		impl(str, start, length){
-			const chars = [...str];
+		impl({chars, range}, start, length){
 			if(start < 1) fail(`Start index ${start} is less than 1`, start);
 			if(length < 1) fail(`Slice length ${length} is less than 1`, length);
-			if(length + start - 1 > chars.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${chars.length})`, str);
+			if(length + start - 1 > chars.length) fail(`End of slice (${length} + ${start}) is greater than the length of the string (${chars.length})`, range);
 			return chars.slice(start - 1, start + length - 1).join("");
 		},
 		aliases: ["SUBSTRING"]
@@ -190,7 +187,7 @@ export const preprocessedBuiltinFunctions = ({
 		impl(x){
 			if(Array.isArray(x))
 				return x.length;
-			else return [...x].length;
+			else return x.chars.length;
 		},
 	}),
 	//Source: s23 P22 insert

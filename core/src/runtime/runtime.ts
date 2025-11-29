@@ -8,7 +8,7 @@ This file contains the runtime, which executes the program AST.
 
 import { Config, configs } from "../config/index.js";
 import type { BoxPrimitive, RangeAttached, TextRange, TextRangeLike } from "../utils/types.js";
-import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, plural, rethrow, setConfig, shallowCloneOwnProperties, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
+import { ConfigSuggestion, RangeArray, SoodocodeError, biasedLevenshtein, boxPrimitive, crash, enableConfig, errorBoundary, f, fail, forceType, groupArray, impossible, min, plural, rethrow, setConfig, shallowCloneOwnProperties, splitStringToChars, tryRun, tryRunOr, unreachable, zip } from "../utils/funcs.js";
 import { Token } from "../lexer/index.js";
 import { ExpressionAST, ExpressionASTArrayAccessNode, ExpressionASTBranchNode, ExpressionASTClassInstantiationNode, ExpressionASTFunctionCallNode, ExpressionASTLeafNode, ExpressionASTNode, ProgramASTBranchNode, ProgramASTNodeGroup, operators } from "../parser/index.js";
 import { ClassFunctionStatement, ClassProcedureStatement, ClassStatement, ConstantStatement, FunctionStatement, ProcedureStatement, Statement, TypeStatement } from "../statements/index.js";
@@ -1303,14 +1303,14 @@ export class Runtime {
 			elaboration: `Expected ${plural(fn.args.size, "argument")}, but received ${plural(args.length, "argument")}`
 		}, args);
 		if(expected.value && !fn.returnType) fail(f.quote`Builtin function ${fn.name} does not return a value`, undefined);
-		const evaluatedArgs:[VariableValue, TextRange][] = [];
+		const evaluatedArgs:[VariableValue, TextRange, VariableType][] = [];
 		let i = 0;
 		nextArg:
 		for(const [name, {type}] of fn.args.entries()){
 			const errors:SoodocodeError[] = [];
 			for(const possibleType of type){
 				if(tryRunOr(() => {
-					evaluatedArgs.push([this.evaluateExpr(args[i], possibleType).value, args[i].range]);
+					evaluatedArgs.push([this.evaluateExpr(args[i], possibleType).value, args[i].range, possibleType]);
 					i ++;
 				}, err => errors.push(err)))
 					continue nextArg;
@@ -1318,10 +1318,17 @@ export class Runtime {
 			throw errors.at(-1) ?? crash(`Builtin function ${fn.name} has an argument ${name} that does not accept any types`);
 		}
 		const processedArgs:RangeAttached<BoxPrimitive<VariableValue>>[] =
-			evaluatedArgs.map(([value, range]) =>
-				//Attach the range to the values
-				Object.assign(boxPrimitive(value), {range})
-			);
+			evaluatedArgs.map(([value, range, type]) => {
+				if(type == PrimitiveVariableType.STRING){
+					return Object.assign(new String(value), {
+						range,
+						chars: splitStringToChars(value as string)
+					});
+				} else {
+					//Attach the range to the values
+					return Object.assign(boxPrimitive(value), {range});
+				}
+			});
 		if(!expected.value) fn.impl.apply(this, processedArgs);
 		else {
 			if(expected.type == undefined) return typedValue(fn.returnType!, fn.impl.apply(this, processedArgs));

@@ -620,6 +620,21 @@ export function match<K extends PropertyKey, const O extends Partial<Record<K, u
 export function match(value:PropertyKey, clauses:Record<PropertyKey, unknown>, defaultValue?:unknown):unknown {
 	return value in clauses ? clauses[value] : defaultValue;
 }
+
+const splitStringCache: Array<[string, string[]]> = [
+	["", []],
+	["", []],
+];
+export function splitStringToChars(value:string):string[] {
+	if(splitStringCache[0][0] == value) return splitStringCache[0][1];
+	if(splitStringCache[1][0] == value) return splitStringCache[1][1];
+	const chars = [...value];
+	if(value.length > 100){
+		splitStringCache[1] = splitStringCache[0];
+		splitStringCache[0] = [value, chars];
+	}
+	return chars;
+}
 //#endregion
 //#region iterators
 type Iterators<T extends unknown[]> = {

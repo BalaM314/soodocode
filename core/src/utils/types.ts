@@ -60,5 +60,6 @@ export type TextRanged2 = {
 export type TextRangeLike = TextRange | TextRanged | (TextRange | TextRanged)[];
 export type RangeAttached<T> = T & {
 	range: TextRange;
-};
+// eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
+} & (T extends String ? {chars: string[]} : {});
 
