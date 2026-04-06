@@ -16,7 +16,7 @@ FOR n <- 2 TO limit
 		primeCount <- primeCount + 1
 		
 		// Then mark all its multiples as not prime
-		FOR i <- n TO limit STEP n
+		FOR i <- 2 * n TO limit STEP n
 			isPrime[i] <- FALSE
 		NEXT i
 	ENDIF
