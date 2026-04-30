@@ -361,8 +361,13 @@ export function tokenize(input:SymbolizedProgram):TokenizedProgram {
 			state.doubleQuotedString = symbol;
 			currentString += symbol.text;
 		} else if(symbol.type === "space") void 0;
-		else if(symbol.type === "unknown" || symbol.type === "escape_character") fail(f.quote`Invalid character ${symbol}`, symbol);
-		else if(([
+		else if(symbol.type === "unknown" || symbol.type === "escape_character"){
+			if(symbol.text == "÷") fail({
+				summary: f.quote`Invalid character ${symbol}`,
+				help: `The division operator is / for floating-point division and DIV for integer division`
+			}, symbol);
+			fail(f.quote`Invalid character ${symbol}`, symbol);
+		} else if(([
 			"escape.quote.double", "escape.quote.single", "escape.backslash", "escape.tab", "escape.newline"
 		] as const).includes(symbol.type)) fail(f.quote`Invalid escape sequence ${symbol}: escape sequences are only allowed within strings`, symbol);
 		else if(symbol.type === "numeric_fragment"){
