@@ -207,6 +207,7 @@ const sampleProgramData = [
 	]],
 	["Features", [
 		["programs/inheritance", "Inheritance", "A program that uses inheritance in classes."],
+		["programs/lambda-functions", "Lambda functions", "A program that declares two functions and passes them around as values."],
 		["demos/varlength-arrays", "Variable length arrays", "A program showcasing variable length arrays. Although pseudocode arrays always have a fixed length, in some cases it is possible to allow variable length arrays while maintaining compatibility with the official specification. <a href='https://github.com/BalaM314/soodocode/blob/master/docs/notes.md#a-note-on-variable-length-array-types'>More information</a>"],
 		["demos/pointer-names", "Pointer names", "A program that outputs a pointer. When outputting a pointer, soodocode will attempt to display a useful name."],
 		["demos/output-color", "Output colors", "A program showcasing output colors. Soodocode adds color when outputting arrays, records, classes, and values inside composite data types."],
