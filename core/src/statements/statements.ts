@@ -543,7 +543,7 @@ export class WhileStatement extends Statement {
 	runBlock(runtime:Runtime, node:ProgramASTBranchNode<"while">){
 		
 		//Register the execution of an infinite amount of statements if the condition is constant true
-		if(node.nodeGroups[0].length == 0 && this.condition.value === true)
+		if(!node.nodeGroups[0].hasReturn && this.condition.value === true)
 			runtime.statementExecuted(this, Infinity);
 
 		while(runtime.evaluate(this.condition)){
