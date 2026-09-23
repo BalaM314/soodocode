@@ -259,7 +259,9 @@ export const preprocessedBuiltinFunctions = ({
 		],
 		returnType: "BOOLEAN",
 		impl(str){
-			const out = Number(str.valueOf());
+			const string = str.trim();
+			if(string == "") return false;
+			const out = Number(string);
 			return !isNaN(out) && Number.isFinite(out);
 		},
 	}),
