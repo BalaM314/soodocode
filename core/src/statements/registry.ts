@@ -5,9 +5,9 @@ This file is part of soodocode. Soodocode is open source and is available at htt
 This file contains the object that stores all registered statements.
 */
 
-import { TokenType } from "../lexer/lexer-types";
-import { Statement } from "./statement";
-import { StatementType } from "./statement-types";
+import type { TokenType } from "../lexer/lexer-types.js";
+import type { Statement } from "./statement.js";
+import type { StatementType } from "./statement-types.js";
 
 /** Stores all statement constructors. */
 export const statements = {
