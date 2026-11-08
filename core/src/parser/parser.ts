@@ -219,7 +219,7 @@ export function parse({program, tokens}:TokenizedProgram):ProgramAST {
 		} else unreachable(statement.category);
 	}
 	if(blockStack.length)
-		fail(f.quote`There were unclosed blocks: ${blockStack.at(-1)!.controlStatements[0]} requires a matching ${blockStack.at(-1)!.controlStatements[0].type.blockEndStatement().type} statement`, blockStack.at(-1)!.controlStatements[0], null);
+		fail(f.quote`There were unclosed blocks: ${blockStack.at(-1)!.controlStatements[0]} requires a matching ${blockStack.at(-1)!.controlStatements[0].type.blockEndStatement().example} statement`, blockStack.at(-1)!.controlStatements[0], null);
 	return {
 		program,
 		nodes: programNodes
@@ -261,7 +261,7 @@ export function getPossibleStatements(tokens:RangeArray<Token>, context:ProgramA
 				//Return them anyway, and throw the error later
 				return [
 					validStatements,
-					statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${context!.type} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
+					statement => fail(`${statement.typeName()} statement is not valid here: the only statements allowed in ${ProgramASTBranchNode.typeName(context!.type)} blocks are ${[...ctx.allowOnly!].map(s => `"${Statement.typeName(s)}"`).join(", ")}`, tokens)
 				];
 			} else validStatements = allowedValidStatements;
 		}
