@@ -122,7 +122,7 @@ export const getBuiltinFunctions = ():Record<keyof typeof preprocessedBuiltinFun
 				aliases: data.aliases ?? [],
 				name,
 				//UNSOUND
-				// eslint-disable-next-line @typescript-eslint/unbound-method
+				// eslint-disable-next-line @typescript-eslint/unbound-method, @typescript-eslint/no-unnecessary-type-assertion
 				impl: data.impl as never as ((this:Runtime, ...args:RangeAttached<BoxPrimitive<VariableValue>>[]) => VariableTypeMapping<PrimitiveVariableType>),
 				returnType: PrimitiveVariableType.get(data.returnType as PrimitiveVariableTypeName)
 			}]
@@ -455,6 +455,51 @@ export const preprocessedBuiltinFunctions = ({
 		returnType: "INTEGER",
 		impl(set){
 			return set.length;
+		},
+	}),
+	SIN: fn({
+		args: [
+			["x", "REAL"]
+		],
+		returnType: "REAL",
+		impl(x){
+			return Math.sin(x);
+		},
+	}),
+	COS: fn({
+		args: [
+			["x", "REAL"]
+		],
+		returnType: "REAL",
+		impl(x){
+			return Math.cos(x);
+		},
+	}),
+	TAN: fn({
+		args: [
+			["x", "REAL"]
+		],
+		returnType: "REAL",
+		impl(x){
+			return Math.tan(x);
+		},
+	}),
+	LOG: fn({
+		args: [
+			["x", "REAL"]
+		],
+		returnType: "REAL",
+		impl(x){
+			return Math.log(x);
+		},
+	}),
+	SQRT: fn({
+		args: [
+			["x", "REAL"]
+		],
+		returnType: "REAL",
+		impl(x){
+			return Math.sqrt(x);
 		},
 	}),
 }) satisfies Record<string, PreprocesssedBuiltinFunctionData<any, any>>;
